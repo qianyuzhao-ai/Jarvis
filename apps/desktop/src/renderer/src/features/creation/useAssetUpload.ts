@@ -74,6 +74,9 @@ export function useAssetUpload(
         let url: string;
         try {
           const response = await window.desktop!.generation.upload({
+            requestId: crypto.randomUUID(),
+            projectId,
+            nodeId: id,
             settings,
             file: { name: file.name, kind, mime, bytes: new Uint8Array(await file.arrayBuffer()) },
           });

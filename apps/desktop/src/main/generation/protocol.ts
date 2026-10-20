@@ -150,14 +150,15 @@ export async function generate(
   url: string,
   input: GenerationInput,
   reqFrom: string,
+  requestJson?: string,
 ): Promise<string> {
   const endpoint = httpUrl.parse(url);
-  const body = payload(input, reqFrom);
+  const body = requestJson ?? JSON.stringify(payload(input, reqFrom));
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body,
       dispatcher,
       redirect: 'error',
     });
@@ -181,7 +182,7 @@ export async function generate(
     networkFailure(error, true);
   }
 }
-export async function upload(request: UploadRequest): Promise<{ url: string }> {
+export function uploadDescription(request: UploadRequest) {
   const { file, settings } = request;
   if (!file.mime.startsWith(file.kind + '/')) throw new Error('素材类型不匹配');
   const limit = UPLOAD_LIMIT_MIB[file.kind] * 1024 * 1024;
@@ -190,6 +191,17 @@ export async function upload(request: UploadRequest): Promise<{ url: string }> {
   const url = httpUrl.parse(
     file.kind === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl,
   );
+  return {
+    endpoint: url,
+    requestJson: JSON.stringify({
+      req_from: settings.reqFrom,
+      files: [{ name: file.name, content_type: file.mime, size_bytes: file.bytes.byteLength }],
+    }),
+  };
+}
+export async function upload(request: UploadRequest): Promise<{ url: string }> {
+  const { file, settings } = request;
+  const { endpoint: url } = uploadDescription(request);
   const form = new FormData();
   form.set('req_from', settings.reqFrom);
   form.set('files', new Blob([new Uint8Array(file.bytes)], { type: file.mime }), file.name);

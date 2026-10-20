@@ -4,6 +4,7 @@ import type { DesktopInfo } from '../shared/desktop-info';
 const desktop: DesktopInfo = {
   platform: process.platform,
   generation: {
+    exportProject: (request) => ipcRenderer.invoke('generation:export-project', request),
     mediaUrl: (url) => ipcRenderer.invoke('generation:media-url', url),
     upload: (request) => ipcRenderer.invoke('generation:upload', request),
     start: (request) => ipcRenderer.invoke('generation:start', request),

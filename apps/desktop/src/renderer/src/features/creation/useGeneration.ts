@@ -116,6 +116,9 @@ export function useGeneration(
           let url = reference.uploadedFor === uploadedFor ? reference.uploadedUrl : undefined;
           if (!url) {
             const response = await bridge.upload({
+              requestId: crypto.randomUUID(),
+              projectId,
+              nodeId,
               settings,
               file: {
                 name: reference.name,

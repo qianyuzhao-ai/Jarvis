@@ -2,10 +2,24 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { z } from 'zod';
-import { jobSchema, httpUrl, type GenerationJob, type StartRequest } from '../../shared/generation';
+import {
+  jobSchema,
+  httpUrl,
+  requestRecordSchema,
+  type GenerationJob,
+  type StartRequest,
+  type RequestRecord,
+} from '../../shared/generation';
 import { generate, payload, ServiceError } from './protocol';
 
-const storedJob = jobSchema.extend({ fingerprint: z.string() });
+const storedJob = jobSchema.extend({
+  fingerprint: z.string(),
+  requestJson: z.string().optional(),
+  endpoint: z.string().optional(),
+  model: z.string().optional(),
+  duration: z.number().optional(),
+  finishedAt: z.number().optional(),
+});
 type StoredJob = z.infer<typeof storedJob>;
 export class GenerationJobs {
   private jobs = new Map<string, StoredJob>();
@@ -36,6 +50,11 @@ export class GenerationJobs {
     const job = this.jobs.get(requestId);
     return job ? jobSchema.parse(job) : null;
   }
+  records(projectId: string): RequestRecord[] {
+    return [...this.jobs.values()]
+      .filter((job) => job.projectId === projectId)
+      .map((job) => requestRecordSchema.parse({ ...job, operation: 'generation' }));
+  }
   private persist() {
     const snapshot = JSON.stringify([...this.jobs.values()]);
     const write = this.writes.then(async () => {
@@ -49,7 +68,7 @@ export class GenerationJobs {
   start(request: StartRequest): Promise<GenerationJob> {
     const pending = this.starts.then(async () => {
       httpUrl.parse(request.settings.generateUrl);
-      payload(request.input, request.settings.reqFrom);
+      const body = payload(request.input, request.settings.reqFrom);
       const fingerprint = createHash('sha256')
         .update(
           JSON.stringify({
@@ -82,6 +101,10 @@ export class GenerationJobs {
         status: 'running',
         startedAt: Date.now(),
         fingerprint,
+        requestJson: JSON.stringify(body),
+        endpoint: request.settings.generateUrl,
+        model: request.input.model,
+        duration: 'duration' in body.config ? body.config.duration : undefined,
       };
       this.jobs.set(job.requestId, job);
       try {
@@ -105,12 +128,14 @@ export class GenerationJobs {
         request.settings.generateUrl,
         request.input,
         request.settings.reqFrom,
+        job.requestJson,
       );
       job.status = 'succeeded';
     } catch (error) {
       job.status = error instanceof ServiceError && error.unknown ? 'unknown' : 'failed';
       job.error = error instanceof Error ? error.message : '生成失败';
     }
+    job.finishedAt = Date.now();
     try {
       await this.persist();
     } catch {

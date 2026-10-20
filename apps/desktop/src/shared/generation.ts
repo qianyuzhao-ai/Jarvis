@@ -57,6 +57,9 @@ export const startRequestSchema = z.object({
   input: generationInputSchema,
 });
 export const uploadRequestSchema = z.object({
+  requestId: z.uuid(),
+  projectId: z.uuid(),
+  nodeId: z.uuid(),
   settings: serviceSettingsSchema,
   file: z.object({
     name: z.string().min(1).max(500),
@@ -76,6 +79,30 @@ export const jobSchema = z.object({
   error: z.string().optional(),
   warning: z.string().optional(),
 });
+export const requestRecordSchema = z.object({
+  requestId: z.uuid(),
+  projectId: z.uuid(),
+  nodeId: z.uuid(),
+  operation: z.enum(['generation', 'upload']),
+  kind: z.enum(['image', 'video', 'audio']),
+  status: z.enum(['running', 'succeeded', 'failed', 'unknown']),
+  startedAt: z.number(),
+  finishedAt: z.number().optional(),
+  endpoint: z.string().optional(),
+  requestJson: z.string().optional(),
+  model: z.string().optional(),
+  duration: z.number().optional(),
+  resultUrl: z.string().optional(),
+  fileName: z.string().optional(),
+  error: z.string().optional(),
+  warning: z.string().optional(),
+});
+export type RequestRecord = z.infer<typeof requestRecordSchema>;
+export const exportProjectSchema = z.object({
+  projectId: z.uuid(),
+  projectName: z.string().trim().min(1).max(200),
+});
+export type ExportProject = z.infer<typeof exportProjectSchema>;
 export type GenerationInput = z.infer<typeof generationInputSchema>;
 export type StartRequest = z.infer<typeof startRequestSchema>;
 export type UploadRequest = z.infer<typeof uploadRequestSchema>;
@@ -83,6 +110,9 @@ export type GenerationJob = z.infer<typeof jobSchema>;
 export type ServiceSettings = z.infer<typeof serviceSettingsSchema>;
 export type BridgeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface GenerationBridge {
+  exportProject(
+    request: ExportProject,
+  ): Promise<BridgeResult<{ canceled: boolean; filePath?: string }>>;
   mediaUrl(url: string): Promise<BridgeResult<string>>;
   upload(request: UploadRequest): Promise<BridgeResult<{ url: string }>>;
   start(request: StartRequest): Promise<BridgeResult<GenerationJob>>;

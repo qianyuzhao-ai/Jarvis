@@ -27,6 +27,7 @@ import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
+import { CanvasExport } from './CanvasExport';
 import { generationBusy } from './useGeneration';
 import {
   createMedia,
@@ -216,9 +217,12 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             }}
           />
         </div>
-        <div className="canvas-status">
-          <span role="status">{status}</span>
-        </div>
+        <CanvasExport
+          key={project.id}
+          projectId={project.id}
+          projectName={project.name}
+          status={status}
+        />
       </header>
       <div
         className="canvas-body"

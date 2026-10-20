@@ -1,12 +1,24 @@
-import { ipcMain, net, protocol, type WebContents, type IpcMainInvokeEvent } from 'electron';
+import {
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  net,
+  protocol,
+  type WebContents,
+  type IpcMainInvokeEvent,
+} from 'electron';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import { GenerationJobs } from './jobs';
-import { upload } from './protocol';
+import { UploadHistory } from './upload-history';
+import { createProjectWorkbook, exportFileName } from './export-project';
 import {
   startRequestSchema,
   uploadRequestSchema,
   httpUrl,
+  exportProjectSchema,
   type BridgeResult,
 } from '../../shared/generation';
 
@@ -26,6 +38,13 @@ function assertSender(event: IpcMainInvokeEvent) {
 }
 export async function registerGeneration(file: string) {
   const jobs = new GenerationJobs(file);
+  const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'));
+  let uploadHistoryError = false;
+  try {
+    await uploads.initialize();
+  } catch {
+    uploadHistoryError = true;
+  }
   const mediaUrls = new Map<string, string>();
   const mediaIds = new Map<string, string>();
   let storageError = false;
@@ -36,7 +55,7 @@ export async function registerGeneration(file: string) {
   }
   function handle<T>(
     channel: string,
-    callback: (request: unknown) => Promise<T> | T,
+    callback: (request: unknown, event: IpcMainInvokeEvent) => Promise<T> | T,
     requiresJobs = true,
   ) {
     ipcMain.handle(channel, async (event, request): Promise<BridgeResult<T>> => {
@@ -44,7 +63,7 @@ export async function registerGeneration(file: string) {
         assertSender(event);
         if (requiresJobs && storageError)
           throw new Error('本地任务记录无法读取，原文件已保留；请先恢复记录再生成');
-        return { ok: true, value: await callback(request) };
+        return { ok: true, value: await callback(request, event) };
       } catch (error) {
         return {
           ok: false,
@@ -58,9 +77,35 @@ export async function registerGeneration(file: string) {
       }
     });
   }
-  handle('generation:upload', (request) => upload(uploadRequestSchema.parse(request)), false);
+  handle(
+    'generation:upload',
+    (request) => {
+      if (uploadHistoryError) throw new Error('上传请求账本无法读取，原文件已保留；请先恢复记录');
+      return uploads.upload(uploadRequestSchema.parse(request));
+    },
+    false,
+  );
   handle('generation:start', (request) => jobs.start(startRequestSchema.parse(request)));
   handle('generation:get', (request) => jobs.get(z.uuid().parse(request)));
+  handle('generation:export-project', async (request, event) => {
+    if (uploadHistoryError) throw new Error('上传请求账本无法读取，导出已停止以免遗漏记录');
+    const project = exportProjectSchema.parse(request);
+    const owner = BrowserWindow.fromWebContents(event.sender);
+    if (!owner) throw new Error('未找到当前画布窗口');
+    const selection = await dialog.showSaveDialog(owner, {
+      title: '导出画布请求记录',
+      defaultPath: exportFileName(project.projectName),
+      filters: [{ name: 'Excel 工作簿', extensions: ['xlsx'] }],
+    });
+    if (selection.canceled || !selection.filePath) return { canceled: true };
+    const filePath = selection.filePath.toLowerCase().endsWith('.xlsx')
+      ? selection.filePath
+      : selection.filePath + '.xlsx';
+    const records = [...jobs.records(project.projectId), ...uploads.records(project.projectId)];
+    const bytes = await createProjectWorkbook(project, records);
+    await writeFile(filePath, bytes);
+    return { canceled: false, filePath };
+  });
   handle(
     'generation:media-url',
     (request) => {
