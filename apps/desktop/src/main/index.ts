@@ -33,7 +33,9 @@ async function createWindow(): Promise<void> {
     minHeight: 640,
     show: false,
     backgroundColor: '#f0f1f2',
-    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 23 } }
+      : {}),
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,

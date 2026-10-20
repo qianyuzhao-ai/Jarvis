@@ -73,7 +73,7 @@ button:focus-visible {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 56px;
+  height: 60px;
   flex-shrink: 0;
 }
 
@@ -166,7 +166,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 56px;
+  min-height: 60px;
   flex-shrink: 0;
   padding: 0 24px;
   font-size: 13px;
