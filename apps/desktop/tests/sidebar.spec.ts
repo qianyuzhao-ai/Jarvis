@@ -53,7 +53,8 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     expect(intermediate).toBeLessThan(0);
     expect(intermediate).toBeGreaterThan(-230);
     // Reverse before the exit has completed.
-    await page.getByRole('button', { name: '展开侧栏' }).click({ force: true });
+    await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect
       .poll(() =>
         page.locator('.sidebar-shell').evaluate((n) => Math.round(n.getBoundingClientRect().x)),
