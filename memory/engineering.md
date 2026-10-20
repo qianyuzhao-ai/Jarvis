@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## 协作说明合并（2026-10-21）
+
+- 用户要求将 `CLAUDE.md` 合入 `AGENTS.md` 并删除前者。已将当前范围、常用命令、目录结构、技术栈和进程安全约束合入 `AGENTS.md`，去除重复的阅读入口；项目协作说明统一维护在 `AGENTS.md`。
+- 验证：核对原有内容均已迁移或由现有规则覆盖；确认 `CLAUDE.md` 已删除，`git diff --check` 通过。
+
 ## Biome 代码检查迁移（2026-10-21）
 
 - 用户要求 ESLint 改用 Biome。当前使用 `@biomejs/biome@2.5.15`，根目录 `biome.json` 管理规则；`pnpm lint` 直接检查整个工作区，桌面包的 lint 也使用 Biome。保留 Prettier 负责格式化（包括 Markdown/YAML），Biome formatter 与 assist 关闭。
