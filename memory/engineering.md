@@ -2,6 +2,26 @@
 
 最后更新：2026-10-21
 
+## GitHub Apple Silicon 打包流程（2026-10-21）
+
+- 用户随后指定当前变更为 `0.1.1` 并要求试跑。根包与桌面包版本均已改为 0.1.1，版本记录已补；release 输出目录按版本区分，避免覆盖旧产物。本地重新运行 `pnpm test:smoke`，33 项同轮通过；真实打包得到 0.1.1 arm64 未签名 DMG/ZIP，主程序架构、应用 Info.plist 版本、DMG 校验和、ZIP 完整性均通过。`pnpm check` 通过。`pnpm install --frozen-lockfile` 在现有本地模块目录上遇到无 TTY 删除确认而中止；版本修改不涉及依赖，没有绕过项目的批量删除限制，GitHub 全新 runner 将正常安装。
+- 远端功能分支已推送并创建 [PR #3](https://github.com/qianyuzhao-ai/Jarvis/pull/3) 指向 develop。PR 的 Apple Silicon CI 已被 GitHub 接收，但截至本轮检查仍显示 queued、没有步骤日志。工作流尚未进入默认分支 main，手动触发返回 404；GitHub 文档要求 workflow_dispatch 的工作流先存在于默认分支，故远端手动打包与标签发布尚未实测。
+- 新增 PR/主线 CI 和 macOS arm64 打包工作流。CI 在 `macos-15` Apple Silicon runner 上执行 `pnpm check`、真实 Electron 窗口测试；打包工作流支持 Actions 手动触发（仅上传运行 Artifact）及 `v*` 标签触发（先校验标签版本与 main 祖先关系，再创建 GitHub 预发布）。仅产出 DMG/ZIP，不生成 Intel 或 universal 版本。
+- 按用户最新要求，签名和公证留待后续；当前 release 配置显式关闭签名、公证和 Hardened Runtime，文件名包含 `unsigned`，标签发布标记为预发布。未配置正式图标，也未实现自动更新；现有 `mac.minimumSystemVersion` 仍为 26.0。
+- 本地已执行与工作流相同的 arm64 electron-builder 打包命令，得到 `Jarvis-0.1.0-macos-arm64-unsigned.dmg` 和 `.zip`；`lipo` 确认主程序 arm64，`hdiutil verify` 与 `unzip -t` 通过，`pnpm check` 与构建通过。第一次沙箱运行因无法解析 github.com 失败，允许联网后下载 Electron 并成功打包。GitHub Actions 尚未在远端实际运行，不能将本地结果称为远端 CI/发布通过。
+
+## Prompt 素材引用（2026-10-21）
+
+- 上轮画布多选已按用户要求单独提交为 `f44b5e2`。本轮在同一画布功能分支增加 Prompt `@` 候选和高亮标签，候选来自面板参考素材及连线素材。按图片、视频、音频各自的数组顺序编号；生成前将 `@kind_N` 转为 `<<<kind_N>>>`，缺少对应素材时明确失败，不发送生成请求。面板参考素材变化时按素材 ID 重算已有标签位置，移除素材的标签同步移除。
+- 沿用现有图像节点只接受图片、视频节点可接受图片/视频/音频的规则。没有改变服务端协议、上传顺序或连线规则；Figma 未同步。
+- 验证：`pnpm check`、`pnpm build`、完整 33 项 Electron 窗口回归同轮通过；真实请求断言覆盖图片与视频占位符，窗口截图核对标签显示。
+
+## 画布多选、批量连线与下载（2026-10-21）
+
+- 工作分支 `feature/canvas-multi-select` 从干净的 `develop` 创建。本轮实现框选多节点、Shift/Cmd/Ctrl 加选、框选不弹编辑面板，多选操作栏支持选择目标节点批量连线和批量下载；普通单节点编辑保留。批量连线先按现有规则验证全部来源，再一次写入，任一来源不合法则整组不写入。下载依次调用现有受限 IPC，支持图片、视频和音频；无可用 URL 的节点跳过，取消保存时停止后续文件并汇总数量。
+- 编辑面板用 Motion 淡入 180ms，遵守减少动态效果。音频下载增加协议类型、文件扩展名与原生保存框文案；没有扩展生成服务能力。
+- 验证：`pnpm check`、`pnpm build`、`git diff --check` 及真实 Electron 窗口 32 项完整回归同轮通过。新增测试覆盖框选不弹面板、三张图片批量连线、混合图片/音频/视频连线与下载、批量连接失败时不留部分连线。调试中完整回归曾暴露旧键盘选边被取消选中事件覆盖，已修复；面板淡入不改变尺寸。
+
 ## PyCharm TypeScript 模块解析修复（2026-10-21）
 
 - 用户提供 `electron.vite.config.ts` 的导入红线截图。实际打开文件和 Problems 面板复现 10 项诊断：3 个 TS2307 明确指出当前 moduleResolution 无法解析已有类型，另有 emptyOutDir 连带错误和隐式 any；此前 IDE MCP 返回空 errors 未涵盖这些现场诊断，不能作为编辑器无错误的证据。

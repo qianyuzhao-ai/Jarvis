@@ -40,6 +40,25 @@ export function connectionIssue(project: Project, connection: Connection): strin
   }
   return null;
 }
+export function connectSelected(
+  project: Project,
+  sourceIds: string[],
+  target: string,
+): {
+  project: Project;
+  issue: string | null;
+} {
+  let next = project;
+  for (const source of sourceIds) {
+    const issue = connectionIssue(next, { source, target });
+    if (issue) return { project, issue };
+    next = {
+      ...next,
+      edges: [...next.edges, { id: crypto.randomUUID(), source, target }],
+    };
+  }
+  return { project: next, issue: null };
+}
 export function relatedWorkflow(edges: Link[], selected: string | null) {
   const nodes = new Set<string>();
   const links = new Set<string>();

@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 AIGC 创作空间的界面和基础交互，尚未接入 Pi Agent。
 
-当前源码版本：`0.1.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.1.1`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
@@ -46,6 +46,13 @@ pnpm dev
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
 当前本地验证平台为 macOS arm64。应用未配置正式图标、Developer ID 签名、公证或自动更新，仅用于本地开发验证；Windows 尚未验证。
+
+## GitHub 打包与发布
+
+- PR 合入 `develop` 或 `main` 前，`.github/workflows/ci.yml` 在 macOS Apple Silicon runner 上执行 `pnpm check` 和真实 Electron 窗口测试。
+- 合入工作流后，可在 GitHub Actions 手动运行 **Package macOS Apple Silicon**，下载本次运行的 DMG/ZIP Artifact；手动运行不会创建 Release。
+- 按 `memory/git-workflow.md` 完成 release/hotfix 与 `main` 的合并，确保根目录和桌面包版本相同，再在 `main` 的发布提交上推送对应的 `v<版本号>` 标签。标签工作流会核对版本和 `main` 祖先关系，测试、打包并创建 GitHub **预发布**，上传 arm64 DMG/ZIP。
+- 产物文件名带 `unsigned`。当前没有 Developer ID 签名和 Apple 公证，macOS Gatekeeper 可能阻止直接打开；这些包用于先验证打包和发布链路，不能视为正式可信安装包。当前打包配置最低系统版本为 macOS 26.0。
 
 ## 目录
 

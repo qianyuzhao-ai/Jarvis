@@ -25,6 +25,14 @@ const extensions: Record<string, string> = {
   'video/x-matroska': 'mkv',
   'video/ogg': 'ogv',
   'video/x-msvideo': 'avi',
+  'audio/mpeg': 'mp3',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/mp4': 'm4a',
+  'audio/aac': 'aac',
+  'audio/flac': 'flac',
+  'audio/webm': 'webm',
 };
 function downloadFileName(request: DownloadMedia, contentType: string) {
   const path = new URL(request.url).pathname;
@@ -41,12 +49,18 @@ function downloadFileName(request: DownloadMedia, contentType: string) {
   const allowed =
     request.kind === 'image'
       ? ['png', 'jpg', 'jpeg', 'webp', 'gif', 'avif', 'bmp', 'tif', 'tiff', 'svg', 'heic', 'heif']
-      : ['mp4', 'webm', 'mov', 'mkv', 'ogv', 'avi', 'm4v'];
+      : request.kind === 'video'
+        ? ['mp4', 'webm', 'mov', 'mkv', 'ogv', 'avi', 'm4v']
+        : ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'webm'];
   const fromName = extname(original).slice(1).toLowerCase();
   const extension =
     extensions[contentType] ??
-    (allowed.includes(fromName) ? fromName : request.kind === 'image' ? 'png' : 'mp4');
-  const name = (parse(original).name || (request.kind === 'image' ? '图像' : '视频')).slice(0, 100);
+    (allowed.includes(fromName)
+      ? fromName
+      : { image: 'png', video: 'mp4', audio: 'mp3' }[request.kind]);
+  const name = (
+    parse(original).name || { image: '图像', video: '视频', audio: '音频' }[request.kind]
+  ).slice(0, 100);
   return { name: `${name}.${extension}`, extension };
 }
 export async function downloadMedia(
@@ -78,12 +92,15 @@ export async function downloadMedia(
     const selection = preferences.dontAskAgain
       ? { canceled: false, filePath: join(preferences.directory, suggested.name) }
       : await dialog.showSaveDialog(owner, {
-          title: request.kind === 'image' ? '下载图像' : '下载视频',
+          title: `下载${{ image: '图像', video: '视频', audio: '音频' }[request.kind]}`,
           defaultPath: preferences.directory
             ? join(preferences.directory, suggested.name)
             : suggested.name,
           filters: [
-            { name: request.kind === 'image' ? '图像' : '视频', extensions: [suggested.extension] },
+            {
+              name: { image: '图像', video: '视频', audio: '音频' }[request.kind],
+              extensions: [suggested.extension],
+            },
           ],
         });
     if (selection.canceled || !selection.filePath) return { canceled: true };

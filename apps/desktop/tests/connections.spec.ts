@@ -1,9 +1,11 @@
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
 import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
   acceptsSource,
+  connectSelected,
   connectionIssue,
   linkedReferences,
   relatedWorkflow,
@@ -16,6 +18,11 @@ import {
   type CanvasNode,
   type WorkspaceData,
 } from '../src/renderer/src/features/creation/types';
+import {
+  promptMentions,
+  rebaseLocalMentions,
+  submittedPrompt,
+} from '../src/renderer/src/features/creation/prompt-mentions';
 
 const image: CanvasNode = {
   id: 'image',
@@ -71,6 +78,124 @@ test('connection type matrix, duplicates, cycles and reference limits are enforc
   }));
   expect(connectionIssue(project, { source: 'asset-image', target: 'image' })).toContain('最多 9');
   expect(projectSchema.parse({ ...createProject(), edges: undefined }).edges).toEqual([]);
+});
+
+test('batch connections commit together and reject mixed invalid sources', () => {
+  const project = { ...createProject(), nodes: [image, video, ...assets] };
+  const imageResult = connectSelected(project, ['image', 'asset-image'], 'video');
+  expect(imageResult.issue).toBeNull();
+  expect(imageResult.project.edges.map(({ source, target }) => [source, target])).toEqual([
+    ['image', 'video'],
+    ['asset-image', 'video'],
+  ]);
+  const invalid = connectSelected(project, ['asset-image', 'asset-audio'], 'image');
+  expect(invalid.issue).toContain('仅接收图像');
+  expect(invalid.project).toBe(project);
+  expect(project.edges).toHaveLength(0);
+});
+
+test('prompt mentions follow per-kind upload array order and reject missing positions', () => {
+  const target = {
+    ...video,
+    data: {
+      ...video.data,
+      references: [
+        { id: 'r-image', name: 'first.png', type: 'image' as const, blob: new Blob() },
+        { id: 'r-audio', name: 'first.wav', type: 'audio' as const, blob: new Blob() },
+      ],
+    },
+  };
+  const project = {
+    ...createProject(),
+    nodes: [target, image, ...assets],
+    edges: [
+      { id: 'a', source: 'asset-video', target: 'video' },
+      { id: 'b', source: 'asset-audio', target: 'video' },
+      { id: 'c', source: 'image', target: 'video' },
+    ],
+  };
+  expect(promptMentions(project, target).map(({ token }) => token)).toEqual([
+    '@image_1',
+    '@audio_1',
+    '@video_1',
+    '@audio_2',
+    '@image_2',
+  ]);
+  expect(
+    submittedPrompt('use @image_2 with @audio_1 and @video_1', { image: 2, audio: 2, video: 1 }),
+  ).toBe('use <<<image_2>>> with <<<audio_1>>> and <<<video_1>>>');
+  expect(() => submittedPrompt('@audio_3', { image: 2, audio: 2, video: 1 })).toThrow('不存在');
+  expect(
+    rebaseLocalMentions(
+      '@image_1 then @image_2 and linked @image_3',
+      [
+        { id: 'a', name: 'a', type: 'image', blob: new Blob() },
+        { id: 'b', name: 'b', type: 'image', blob: new Blob() },
+      ],
+      [{ id: 'b', name: 'b', type: 'image', blob: new Blob() }],
+    ),
+  ).toBe(' then @image_1 and linked @image_2');
+});
+
+test('marquee selection keeps the editor closed and connects selected images to one target', async () => {
+  const app = await launch();
+  const page = await app.firstWindow();
+  const mock = await fixture(page);
+  try {
+    const first = await node(page, mock.ids.imageAsset).boundingBox();
+    const last = await node(page, mock.ids.imageB).boundingBox();
+    if (!first || !last) throw new Error('节点未显示');
+    await page.mouse.move(first.x - 12, first.y - 12);
+    await page.mouse.down();
+    await page.mouse.move(last.x + last.width + 12, last.y + last.height + 12, { steps: 12 });
+    await page.mouse.up();
+    await expect(page.getByRole('toolbar', { name: '多选节点操作' })).toContainText(
+      '已选择 3 个节点',
+    );
+    await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
+    await page.getByRole('button', { name: '连接到节点' }).click();
+    await node(page, mock.ids.video).click({ position: { x: 30, y: 30 } });
+    await expect(page.locator('.react-flow__edge')).toHaveCount(3);
+    await expect(page.getByText('已连接 3 个节点')).toBeVisible();
+  } finally {
+    await app.close();
+    await mock.close();
+  }
+});
+
+test('mixed media selection connects to video and downloads image, audio and video', async () => {
+  const app = await launch();
+  const page = await app.firstWindow();
+  const mock = await fixture(page);
+  try {
+    await node(page, mock.ids.imageAsset).click({ position: { x: 30, y: 30 } });
+    await node(page, mock.ids.audio).click({ position: { x: 30, y: 30 }, modifiers: ['Shift'] });
+    await node(page, mock.ids.videoAsset).click({
+      position: { x: 30, y: 30 },
+      modifiers: ['Shift'],
+    });
+    await expect(page.getByRole('toolbar', { name: '多选节点操作' })).toContainText(
+      '已选择 3 个节点',
+    );
+    await page.getByRole('button', { name: '连接到节点' }).click();
+    await node(page, mock.ids.video).click({ position: { x: 30, y: 30 } });
+    await expect(page.locator('.react-flow__edge')).toHaveCount(3);
+    const paths = ['image.png', 'audio.wav', 'video.webm'].map((name) =>
+      test.info().outputPath(name),
+    );
+    await app.evaluate(({ dialog }, outputPaths) => {
+      let index = 0;
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: outputPaths[index++]! });
+    }, paths);
+    await page.getByRole('button', { name: '下载可用文件 (3)' }).click();
+    await expect(page.getByText('批量下载：已下载 3 个，跳过 0 个，失败 0 个')).toBeVisible();
+    expect((await readFile(paths[0]!)).subarray(0, 8)).toEqual(png.subarray(0, 8));
+    expect((await readFile(paths[1]!)).toString('ascii', 0, 4)).toBe('RIFF');
+    expect((await readFile(paths[2]!)).length).toBeGreaterThan(0);
+  } finally {
+    await app.close();
+    await mock.close();
+  }
 });
 
 test('highlight follows all ancestors and descendants without lighting sibling branches', () => {
@@ -362,7 +487,10 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
       [ids.videoAsset, ids.video],
       [ids.imageAsset, ids.sibling],
     ];
-    for (const [source, target] of pairs) await connect(page, source!, target!);
+    for (const [index, [source, target]] of pairs.entries()) {
+      await connect(page, source!, target!);
+      await expect(page.locator('.react-flow__edge')).toHaveCount(index + 1);
+    }
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await page.locator('.react-flow__pane').click({ position: { x: 1200, y: 650 } });
     await expect(page.locator('.workflow-edge-active')).toHaveCount(0);
