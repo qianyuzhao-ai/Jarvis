@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-Electron + React 桌面基础工程。尚未接入 Pi Agent 或业务工具；不要因为旧方案存在规划而自动扩展实现。
+Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedDB 本地保存。尚未接入 Pi Agent 或真实生成服务；不要因为旧方案存在规划而自动扩展实现。
 
 ## 命令
 
