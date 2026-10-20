@@ -72,8 +72,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeVisible();
     await expect(page.getByLabel('图像提示词')).toHaveValue('窗边的橘猫，温暖自然光');
     await page.getByLabel('选择模型', { exact: true }).selectOption('nano-banana-pro');
-    await page.getByRole('button', { name: /1:1.*2K/ }).click();
-    await page.getByLabel('尺寸 / 比例').selectOption('16:9');
+    await page.getByLabel('宽高比', { exact: true }).selectOption('16:9');
     await page.getByLabel('分辨率', { exact: true }).selectOption('4K');
     await page.getByLabel('选择参考素材').setInputFiles({
       name: 'reference.png',
@@ -105,6 +104,20 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await expect(nodes).toHaveCount(2);
     await nodes.last().click();
     await expect(page.getByRole('region', { name: '视频编辑面板' })).toBeVisible();
+    const videoControls = page.getByRole('group', { name: '视频参数' });
+    await expect(videoControls.locator('select')).toHaveCount(4);
+    expect(
+      await videoControls
+        .locator('select')
+        .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label'))),
+    ).toEqual(['选择模型', '视频时长', '宽高比', '分辨率']);
+    const tops = await videoControls
+      .locator('.parameter-control')
+      .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().top));
+    expect(new Set(tops).size).toBe(1);
+    await page.getByLabel('宽高比', { exact: true }).selectOption('16:9');
+    await page.getByLabel('分辨率', { exact: true }).selectOption('4k');
+
     await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeHidden();
     await page.getByLabel('视频提示词').fill('镜头缓慢推进');
     await page.getByRole('button', { name: '放大编辑', exact: true }).click();
@@ -112,6 +125,8 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '还原面板', exact: true }).click();
     await expect(page.getByLabel('视频提示词')).toHaveValue('镜头缓慢推进');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.5');
+    await expect(page.getByLabel('分辨率', { exact: true })).toHaveValue('1080p');
+    await page.screenshot({ path: test.info().outputPath('video-parameter-cards.png') });
     await page.getByLabel('视频时长').selectOption('30');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.0');
     await expect(page.getByLabel('视频时长')).toHaveValue('15');

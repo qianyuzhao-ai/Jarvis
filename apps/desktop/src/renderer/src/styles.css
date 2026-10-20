@@ -1160,3 +1160,71 @@ svg {
   top: auto;
   bottom: 4px;
 }
+.node-editor-bottom {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+.node-parameters {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+}
+.parameter-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 90px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--node-border);
+  border-radius: 8px;
+  background: var(--node-field);
+  cursor: pointer;
+  box-shadow: 0 1px 1px rgb(0 0 0 / 3%);
+}
+.parameter-control-model {
+  min-width: 160px;
+}
+.parameter-control-value {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.parameter-control-value > span {
+  flex: 1;
+}
+.parameter-control-value > svg:last-child {
+  color: var(--color-secondary);
+}
+.parameter-control select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  opacity: 0;
+}
+.parameter-control:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.parameter-control[data-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}
+.node-editor-bottom > .icon-button {
+  flex-shrink: 0;
+}
+.node-editor-bottom > .editor-spacer {
+  display: none;
+}
