@@ -56,10 +56,13 @@ test('connection type matrix, duplicates, cycles and reference limits are enforc
   project.nodes.push(secondImage);
   project.edges.push({ id: 'b', source: 'second-image', target: 'image' });
   expect(connectionIssue(project, { source: 'image', target: 'second-image' })).toContain('循环');
-  const more = Array.from({ length: 9 }, (_, index): CanvasNode => ({
-    ...image,
-    id: `ref-${index}`,
-  }));
+  const more = Array.from(
+    { length: 9 },
+    (_, index): CanvasNode => ({
+      ...image,
+      id: `ref-${index}`,
+    }),
+  );
   project.nodes.push(...more);
   project.edges = more.map((node, index) => ({
     id: `c${index}`,

@@ -2,6 +2,39 @@
 
 最后更新：2026-10-21
 
+## PyCharm TypeScript 模块解析修复（2026-10-21）
+
+- 用户提供 `electron.vite.config.ts` 的导入红线截图。实际打开文件和 Problems 面板复现 10 项诊断：3 个 TS2307 明确指出当前 moduleResolution 无法解析已有类型，另有 emptyOutDir 连带错误和隐式 any；此前 IDE MCP 返回空 errors 未涵盖这些现场诊断，不能作为编辑器无错误的证据。
+- 根因是桌面包仅有 `tsconfig.node.json`、`tsconfig.web.json`、`tsconfig.test.json`，没有供 TypeScript 服务发现的默认入口。新增 `apps/desktop/tsconfig.json`，使用空 files 和 references 引用三个现有配置，让编辑器读取既有 Bundler 模块解析；没有修改导入或关闭类型检查。类型检查命令继续分别执行三个配置。
+- 验证：PyCharm 实际 Problems 面板从 10 项降到 1 项，TS2307、连带 TS2769 和隐式 any 提示消失；剩余“未使用的默认导出”为 IDE 对工具配置入口的检查提示，未通过注释屏蔽。`pnpm check`、默认入口 `tsc -p apps/desktop/tsconfig.json` 和 `git diff --check` 通过。
+
+## PyCharm 格式工具对齐（2026-10-21）
+
+- 用户反馈编辑器中出现大量格式提示。当前 `pnpm check` 通过，IDE MCP 检查 `apps/desktop/electron.vite.config.ts` 和 `apps/desktop/src/renderer/src/features/creation/Canvas.tsx` 均返回空 errors；尚未取得用户所指文件和提示原文，不能据此断言全部提示已消失。
+- 检查发现本地 PyCharm 仍保留 Prettier 自动模式，Biome 自动配置和保存格式化已开，但 LSP 格式化未开。已在当前项目设置中禁用 ESLint/Prettier、启用 Biome LSP 格式化、保留保存格式化并关闭保存时导入排序（与仓库 assist 关闭保持一致）。应用设置后 IDE 显示 Biome server restarted，回读 `.idea/biome.xml`、`.idea/prettier.xml` 确认设置写入。
+- `.idea/` 被 Git 忽略，本次 IDE 设置仅影响本机。未关闭 TypeScript 或其他内置代码检查，具体剩余诊断需依据用户提供的提示定位。
+
+## 统一使用 Biome（2026-10-21）
+
+- 用户进一步确认只保留 Biome。已移除 Prettier 依赖、锁文件条目、`.prettierrc.json` 和 `.prettierignore`，后两者按明确路径逐个删除；ESLint 的配置与依赖已在上一轮移除。下方首次迁移记录中的“保留 Prettier”仅代表当时状态，由本节替代。
+- `pnpm check` 使用 Biome 同时检查代码与格式，再运行 TypeScript；`pnpm lint` 单独检查代码；`pnpm format` / `pnpm format:check` 使用 Biome。README 和 AGENTS.md 的当前工具链同步更新。
+- Biome 覆盖 JS/TS、JSON/JSONC、CSS（启用 Tailwind 指令解析）；延续 2 空格、100 列、JS/CSS 单引号与分号习惯。Markdown/YAML/HTML 不纳入当前 Biome 格式检查，不为这些文件保留额外格式工具。保留既有 renderer 边界和 Hooks 规则；assist 继续关闭。
+- 验证：`pnpm check`、`pnpm format:check`、构建及 `git diff --check` 通过；两个测试文件仅有 Biome 自动换行/缩进差异。配置、包清单和锁文件已无 ESLint/Prettier 引用，历史工程记录保留迁移说明。
+
+## 协作说明合并（2026-10-21）
+
+- 用户要求将 `CLAUDE.md` 合入 `AGENTS.md` 并删除前者。已将当前范围、常用命令、目录结构、技术栈和进程安全约束合入 `AGENTS.md`，去除重复的阅读入口；项目协作说明统一维护在 `AGENTS.md`。
+- 验证：核对原有内容均已迁移或由现有规则覆盖；确认 `CLAUDE.md` 已删除，`git diff --check` 通过。
+
+## Biome 代码检查迁移（2026-10-21）
+
+- 用户要求 ESLint 改用 Biome。当前使用 `@biomejs/biome@2.5.15`，根目录 `biome.json` 管理规则；`pnpm lint` 直接检查整个工作区，桌面包的 lint 也使用 Biome。保留 Prettier 负责格式化（包括 Markdown/YAML），Biome formatter 与 assist 关闭。
+- 已移除 ESLint 配置、直接依赖、锁文件依赖和 TypeScript ESLint 的安装年龄例外；README/CLAUDE 工程约定同步更新。没有改动业务源码。
+- 使用官方 `biome migrate eslint --include-inspired --write` 迁移后整理重复覆盖；显式补回 renderer 的 `electron`、`fs`、`path`、`child_process` 及 `node:*` 禁止导入规则。保留 Hook 顶层调用、依赖检查及 React Refresh 导出检查，警告仍使 lint 失败。
+- 规则差异：迁移工具报告原 109 条规则中 22 条尚无实现，包含 React Compiler 相关 Hooks 规则（purity、refs、set-state-in-effect/render 等），不能宣称与旧 ESLint 完全等价。Biome 的 noEmptyBlockStatements 也禁止空函数回调，noShadowRestrictedNames 也禁止 Map 等普通全局名称遮蔽；为保持原有代码行为关闭这两条。useErrorCause 不强制无参数 catch 添加参数；Hook 依赖检查不报告额外依赖，允许已有 retry 触发重跑。
+- 验证：`pnpm check`、`pnpm build`、桌面包独立 lint、`git diff --check` 通过。单个临时 TSX 反例验证 renderer 的 Node/Electron 导入、条件 Hook、遗漏依赖均触发对应诊断，随后逐文件删除该反例。仅工具链变更，未运行 Electron 窗口回归。
+- 本轮工作分支 `feature/biome-lint`；用户随后授权本地提交本轮迁移，未授权推送或合并。
+
 ## 0.1.0 源码版本准备（2026-10-21）
 
 - 用户要求以当前修改确立 0.1 版本并按 Gitflow 推送。使用 `0.1.0`，桌面包版本保持原有 `0.1.0`，工作区根包同步为 `0.1.0`；内部配置包独立版本保持不变。
