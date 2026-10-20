@@ -1,4 +1,5 @@
 import type { ThemePreference } from './theme';
+import { DownloadSettings } from './DownloadSettings';
 const choices = [
   ['system', '跟随系统'],
   ['light', 'Light Mode'],
@@ -33,6 +34,7 @@ export function GeneralSettings({
           ))}
         </div>
       </div>
+      <DownloadSettings />
     </section>
   );
 }

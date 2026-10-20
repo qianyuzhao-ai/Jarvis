@@ -4,6 +4,7 @@ import { IconButton } from '../../components/IconButton';
 import { UrlMedia } from './UrlMedia';
 import type { AssetNode as AssetNodeType, CanvasNode } from './types';
 import { NodePorts } from './NodePorts';
+import { NodeDownload } from './NodeDownload';
 
 export function AssetNode({ id, data, selected, isConnectable }: NodeProps<AssetNodeType>) {
   const flow = useReactFlow<CanvasNode>();
@@ -30,6 +31,14 @@ export function AssetNode({ id, data, selected, isConnectable }: NodeProps<Asset
         </>
       )}
       <div className="asset-actions nodrag nopan">
+        {data.upload.status === 'ready' && data.kind !== 'audio' && (
+          <NodeDownload
+            key={data.upload.url}
+            url={data.upload.url}
+            kind={data.kind}
+            fileName={data.name}
+          />
+        )}
         <IconButton
           label={`删除资源 ${data.name}`}
           onClick={() => void flow.deleteElements({ nodes: [{ id }] })}

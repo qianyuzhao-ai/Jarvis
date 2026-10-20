@@ -103,6 +103,17 @@ export const exportProjectSchema = z.object({
   projectName: z.string().trim().min(1).max(200),
 });
 export type ExportProject = z.infer<typeof exportProjectSchema>;
+export const downloadMediaSchema = z.object({
+  url: httpUrl,
+  kind: z.enum(['image', 'video']),
+  fileName: z.string().max(500).optional(),
+});
+export type DownloadMedia = z.infer<typeof downloadMediaSchema>;
+export const downloadPreferencesSchema = z.object({
+  directory: z.string(),
+  dontAskAgain: z.boolean(),
+});
+export type DownloadPreferences = z.infer<typeof downloadPreferencesSchema>;
 export type GenerationInput = z.infer<typeof generationInputSchema>;
 export type StartRequest = z.infer<typeof startRequestSchema>;
 export type UploadRequest = z.infer<typeof uploadRequestSchema>;
@@ -110,6 +121,14 @@ export type GenerationJob = z.infer<typeof jobSchema>;
 export type ServiceSettings = z.infer<typeof serviceSettingsSchema>;
 export type BridgeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface GenerationBridge {
+  getDownloadPreferences(): Promise<BridgeResult<DownloadPreferences>>;
+  chooseDownloadDirectory(): Promise<
+    BridgeResult<{ canceled: boolean; preferences: DownloadPreferences }>
+  >;
+  setDownloadDontAsk(value: boolean): Promise<BridgeResult<DownloadPreferences>>;
+  downloadMedia(
+    request: DownloadMedia,
+  ): Promise<BridgeResult<{ canceled: boolean; filePath?: string }>>;
   exportProject(
     request: ExportProject,
   ): Promise<BridgeResult<{ canceled: boolean; filePath?: string }>>;

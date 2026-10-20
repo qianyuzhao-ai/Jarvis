@@ -3,6 +3,7 @@ import type { NodeProps } from '@xyflow/react';
 import type { MediaNode } from './types';
 import { UrlMedia } from './UrlMedia';
 import { NodePorts } from './NodePorts';
+import { NodeDownload } from './NodeDownload';
 export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<MediaNode>) {
   const Icon = data.kind === 'image' ? Image : Video;
   return (
@@ -20,6 +21,11 @@ export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<Me
           <Icon size={24} strokeWidth={1.75} />
           <span>点击编辑{data.kind === 'image' ? '图像' : '视频'}</span>
         </>
+      )}
+      {data.result && (
+        <div className="asset-actions nodrag nopan">
+          <NodeDownload key={data.result.url} url={data.result.url} kind={data.kind} />
+        </div>
       )}
       {data.generation && (
         <span className="node-task-status" role="status">

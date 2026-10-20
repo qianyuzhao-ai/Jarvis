@@ -1,6 +1,6 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { resolve } from 'node:path';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { generate, payload, ServiceError } from '../src/main/generation/protocol';
@@ -362,6 +362,17 @@ test('Electron uploads references, generates image and video, and restores resul
       video_list: [mock.base + '/reference/ref.webm', mock.base + '/reference/ref-second.webm'],
       audio_list: [mock.base + '/reference/ref.wav', mock.base + '/reference/ref-second.wav'],
     });
+    await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
+    for (const kind of ['图像', '视频']) {
+      const filePath = test.info().outputPath(kind === '图像' ? 'result.png' : 'result.webm');
+      await app.evaluate(({ dialog }, filePath) => {
+        dialog.showSaveDialog = async () => ({ canceled: false, filePath });
+      }, filePath);
+      await page.getByRole('button', { name: `下载${kind}`, exact: true }).click();
+      await expect(page.locator('.node-download-notice').last()).toContainText('已下载');
+      expect(await readFile(filePath)).toEqual(kind === '图像' ? png : Buffer.from(bytes));
+    }
+    await page.locator('.react-flow__node-media').last().click();
     mock.setMode('disconnect');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.locator('.editor-notice')).toContainText('结果未知');

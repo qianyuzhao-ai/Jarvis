@@ -1,4 +1,5 @@
 import {
+  app,
   BrowserWindow,
   dialog,
   ipcMain,
@@ -14,11 +15,14 @@ import { writeFile } from 'node:fs/promises';
 import { GenerationJobs } from './jobs';
 import { UploadHistory } from './upload-history';
 import { createProjectWorkbook, exportFileName } from './export-project';
+import { downloadMedia } from './download-media';
+import { DownloadPreferencesStore } from './download-preferences';
 import {
   startRequestSchema,
   uploadRequestSchema,
   httpUrl,
   exportProjectSchema,
+  downloadMediaSchema,
   type BridgeResult,
 } from '../../shared/generation';
 
@@ -37,6 +41,15 @@ function assertSender(event: IpcMainInvokeEvent) {
     throw new Error('请求来源不可信');
 }
 export async function registerGeneration(file: string) {
+  const downloadPreferences = new DownloadPreferencesStore(
+    join(dirname(file), 'download-preferences.json'),
+  );
+  let preferencesError = false;
+  try {
+    await downloadPreferences.initialize();
+  } catch {
+    preferencesError = true;
+  }
   const jobs = new GenerationJobs(file);
   const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'));
   let uploadHistoryError = false;
@@ -87,6 +100,47 @@ export async function registerGeneration(file: string) {
   );
   handle('generation:start', (request) => jobs.start(startRequestSchema.parse(request)));
   handle('generation:get', (request) => jobs.get(z.uuid().parse(request)));
+  const preferences = () => {
+    if (preferencesError) throw new Error('下载设置无法读取，原文件已保留，请先恢复设置文件');
+    return downloadPreferences.get();
+  };
+  handle('downloads:get-preferences', () => preferences(), false);
+  handle(
+    'downloads:set-dont-ask',
+    (value) => {
+      preferences();
+      return downloadPreferences.setDontAsk(z.boolean().parse(value));
+    },
+    false,
+  );
+  handle(
+    'downloads:choose-directory',
+    async (_, event) => {
+      const current = preferences();
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      if (!owner) throw new Error('未找到设置窗口');
+      const result = await dialog.showOpenDialog(owner, {
+        title: '选择默认下载文件夹',
+        defaultPath: current.directory || app.getPath('downloads'),
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (result.canceled || !result.filePaths[0]) return { canceled: true, preferences: current };
+      return {
+        canceled: false,
+        preferences: await downloadPreferences.setDirectory(result.filePaths[0]),
+      };
+    },
+    false,
+  );
+  handle(
+    'generation:download-media',
+    (request, event) => {
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      if (!owner) throw new Error('未找到当前画布窗口');
+      return downloadMedia(downloadMediaSchema.parse(request), owner, preferences());
+    },
+    false,
+  );
   handle('generation:export-project', async (request, event) => {
     if (uploadHistoryError) throw new Error('上传请求账本无法读取，导出已停止以免遗漏记录');
     const project = exportProjectSchema.parse(request);

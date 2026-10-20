@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
+  --radius-control: 8px;
   --color-canvas: #fdfdfc;
   --color-sidebar: #f0f1f2;
   --color-surface: #ffffff;
@@ -1065,11 +1066,41 @@ svg {
   width: calc(100% - 32px);
 }
 .asset-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   position: absolute;
   top: 8px;
   right: 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--flow-control);
+}
+.node-download-button[aria-busy='true'] svg {
+  animation: node-download-spin 1s linear infinite;
+}
+@keyframes node-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.node-download-notice {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: 300px;
+  padding: 6px 10px;
+  border: 1px solid var(--flow-border);
+  border-radius: var(--radius-control);
+  background: var(--flow-control);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .node-download-button[aria-busy='true'] svg {
+    animation: none;
+  }
 }
 .asset-name {
   position: absolute;
@@ -1121,7 +1152,7 @@ svg {
 .node-task-status {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
   padding: 3px 8px;
   background: var(--color-surface);
   border-radius: 6px;
@@ -1157,6 +1188,46 @@ svg {
   flex-direction: column;
   gap: 32px;
   max-width: 700px;
+}
+.download-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.download-settings h2 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+.download-directory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.download-directory-row > div {
+  min-width: 0;
+}
+.download-directory-row > button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.download-directory {
+  overflow-wrap: anywhere;
+}
+.download-dont-ask {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.download-dont-ask input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
 }
 .general-settings h1 {
   font-size: 24px;
