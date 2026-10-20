@@ -10,6 +10,10 @@ import {
   useReactFlow,
   useViewport,
   type NodeChange,
+  type EdgeChange,
+  type Connection,
+  MarkerType,
+  Position,
 } from '@xyflow/react';
 import {
   ChevronLeft,
@@ -29,9 +33,11 @@ import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
 import { CanvasExport } from './CanvasExport';
 import { generationBusy } from './useGeneration';
+import { connectionIssue, relatedWorkflow } from './connections';
 import {
   createMedia,
   type CanvasNode,
+  type CanvasEdge,
   type MediaData,
   type MediaNode,
   type Project,
@@ -52,6 +58,8 @@ type Props = {
 };
 function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, onImport }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const [connectionNotice, setConnectionNotice] = useState('');
   const [size, setSize] = useState({ width: 1000, height: 700 });
   const [editorHeight, setEditorHeight] = useState(200);
   const container = useRef<HTMLDivElement>(null);
@@ -61,6 +69,32 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   const [importNotice, setImportNotice] = useState('');
   const flow = useReactFlow<CanvasNode>();
   const viewport = useViewport();
+  const related = useMemo(
+    () => relatedWorkflow(project.edges, selected),
+    [project.edges, selected],
+  );
+  const edges = useMemo<CanvasEdge[]>(
+    () =>
+      project.edges.map((edge) => {
+        const highlighted = related.links.has(edge.id);
+        return {
+          ...edge,
+          sourceHandle: 'output',
+          targetHandle: 'input',
+          selected: edge.id === selectedEdge,
+          animated: highlighted,
+          className: `workflow-edge${highlighted ? ' workflow-edge-active' : ''}`,
+          zIndex: 0,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: highlighted ? 'var(--color-accent)' : 'var(--workflow-edge)',
+            width: 14,
+            height: 14,
+          },
+        };
+      }),
+    [project.edges, related, selectedEdge],
+  );
   useEffect(() => {
     const el = container.current;
     if (!el) return;
@@ -75,12 +109,16 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       project.nodes.map((n) => ({
         ...n,
         selected: n.id === selected,
+        className: related.nodes.has(n.id) ? 'workflow-node-related' : '',
+        zIndex: 10,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
         ariaLabel: `${{ image: '图像', video: '视频', audio: '音频' }[n.data.kind]}${n.type === 'asset' ? '资源' : ''}节点`,
         width: 360,
         height: 240,
         measured: { width: 360, height: 240 },
       })),
-    [project.nodes, selected],
+    [project.nodes, selected, related],
   );
   const active = nodes.find((n): n is MediaNode => n.id === selected && n.type === 'media');
   function importFiles(files: File[], screen: { x: number; y: number }) {
@@ -143,16 +181,48 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       return node && !generationBusy(node.data);
     });
     const selection = items.find((c) => c.type === 'select' && c.selected);
-    if (selection?.type === 'select') setSelected(selection.id);
+    if (selection?.type === 'select') {
+      setSelected(selection.id);
+      setSelectedEdge(null);
+    }
     if (!persistent.length) return;
-    onChange((p) => ({
-      ...p,
-      nodes: applyNodeChanges(persistent, p.nodes).map(({ id, type, position, data }) =>
+    onChange((p) => {
+      const next = applyNodeChanges(persistent, p.nodes).map(({ id, type, position, data }) =>
         type === 'asset'
-          ? { id, type: 'asset', position, data }
-          : { id, type: 'media', position, data },
-      ),
-    }));
+          ? { id, type: 'asset' as const, position, data }
+          : { id, type: 'media' as const, position, data },
+      );
+      const ids = new Set(next.map((node) => node.id));
+      return {
+        ...p,
+        nodes: next,
+        edges: p.edges.filter((edge) => ids.has(edge.source) && ids.has(edge.target)),
+      };
+    });
+  }
+  function edgeChanges(items: EdgeChange<CanvasEdge>[]) {
+    for (const change of items)
+      if (change.type === 'select') {
+        if (change.selected) setSelected(null);
+        setSelectedEdge((previous) =>
+          change.selected ? change.id : previous === change.id ? null : previous,
+        );
+      }
+    const removed = new Set(
+      items.flatMap((change) => (change.type === 'remove' ? [change.id] : [])),
+    );
+    if (removed.size)
+      onChange((p) => ({ ...p, edges: p.edges.filter((edge) => !removed.has(edge.id)) }));
+  }
+  function connect(connection: Connection) {
+    const issue = connectionIssue(project, connection);
+    if (issue) {
+      setConnectionNotice(issue);
+      return;
+    }
+    setConnectionNotice('');
+    const edge = { id: crypto.randomUUID(), source: connection.source, target: connection.target };
+    onChange((p) => (connectionIssue(p, connection) ? p : { ...p, edges: [...p.edges, edge] }));
   }
   const left = active
     ? Math.max(
@@ -249,16 +319,42 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             importFiles(Array.from(e.dataTransfer.files), { x: e.clientX, y: e.clientY });
         }}
       >
-        <ReactFlow<CanvasNode>
+        <ReactFlow<CanvasNode, CanvasEdge>
           nodes={nodes}
+          edges={edges}
           nodeTypes={nodeTypes}
           onNodesChange={changes}
+          onEdgesChange={edgeChanges}
+          onConnect={connect}
+          isValidConnection={(connection) => !connectionIssue(project, connection)}
+          onConnectEnd={(_, state) => {
+            if (state.isValid || !state.fromNode || !state.toNode) return;
+            const forward = state.fromHandle?.type === 'source';
+            const issue = connectionIssue(project, {
+              source: forward ? state.fromNode.id : state.toNode.id,
+              target: forward ? state.toNode.id : state.fromNode.id,
+            });
+            if (issue) setConnectionNotice(issue);
+          }}
           defaultViewport={project.viewport}
           onMoveEnd={(_, v) => patch({ viewport: v })}
-          onNodeClick={(_, n) => setSelected(n.id)}
-          onPaneClick={() => setSelected(null)}
+          onNodeClick={(_, n) => {
+            setSelected(n.id);
+            setSelectedEdge(null);
+          }}
+          onEdgeClick={(_, edge) => {
+            setSelected(null);
+            setSelectedEdge(edge.id);
+          }}
+          onPaneClick={() => {
+            setSelected(null);
+            setSelectedEdge(null);
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') setSelected(null);
+            if (e.key === 'Escape') {
+              setSelected(null);
+              setSelectedEdge(null);
+            }
           }}
           snapToGrid={project.snap}
           snapGrid={[24, 24]}
@@ -266,7 +362,11 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           maxZoom={2.5}
           deleteKeyCode={['Backspace', 'Delete']}
           colorMode={theme}
-          nodesConnectable={false}
+          zIndexMode="manual"
+          elevateEdgesOnSelect={false}
+          elevateNodesOnSelect={false}
+          edgesReconnectable={false}
+          connectionRadius={24}
           panOnScroll
           selectionOnDrag
           panOnDrag={[1, 2]}
@@ -328,6 +428,12 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             </IconButton>
           </Panel>
         </ReactFlow>
+        {connectionNotice && (
+          <div className="canvas-import-notice" role="alert">
+            {connectionNotice}
+            <button onClick={() => setConnectionNotice('')}>关闭</button>
+          </div>
+        )}
         {dragging && (
           <div className="canvas-drop-hint" role="status">
             <Upload size={24} />
@@ -345,10 +451,17 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             <MediaEditor
               key={active.id}
               data={active.data}
+              connectedCount={project.edges.filter((edge) => edge.target === active.id).length}
               onGenerate={() => onGenerate(active.id)}
               onClose={() => setSelected(null)}
               onDelete={() => {
-                onChange((p) => ({ ...p, nodes: p.nodes.filter((n) => n.id !== active.id) }));
+                onChange((p) => ({
+                  ...p,
+                  nodes: p.nodes.filter((n) => n.id !== active.id),
+                  edges: p.edges.filter(
+                    (edge) => edge.source !== active.id && edge.target !== active.id,
+                  ),
+                }));
                 setSelected(null);
               }}
               onChange={(data) =>

@@ -2,10 +2,12 @@ import { Image, Video } from 'lucide-react';
 import type { NodeProps } from '@xyflow/react';
 import type { MediaNode } from './types';
 import { UrlMedia } from './UrlMedia';
-export function MediaPlaceholder({ data, selected }: NodeProps<MediaNode>) {
+import { NodePorts } from './NodePorts';
+export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<MediaNode>) {
   const Icon = data.kind === 'image' ? Image : Video;
   return (
     <div className="media-placeholder" data-selected={selected} data-ready={Boolean(data.result)}>
+      <NodePorts input enabled={isConnectable} />
       {data.result ? (
         <UrlMedia
           key={data.result.url}

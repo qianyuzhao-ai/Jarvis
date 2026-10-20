@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Node } from '@xyflow/react';
+import type { Edge, Node } from '@xyflow/react';
 import { httpUrl } from '../../../../shared/generation';
 
 export const assetSchema = z.object({
@@ -54,11 +54,13 @@ const mediaNodeSchema = z.object({
   data: mediaSchema,
 });
 const nodeSchema = z.discriminatedUnion('type', [mediaNodeSchema, assetNodeSchema]);
+export const edgeSchema = z.object({ id: z.string(), source: z.string(), target: z.string() });
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),
   updatedAt: z.number(),
   nodes: z.array(nodeSchema),
+  edges: z.array(edgeSchema).default([]),
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number().positive() }),
   minimap: z.boolean(),
   dots: z.boolean(),
@@ -82,6 +84,7 @@ export type MediaNode = Node<MediaData, 'media'>;
 export type AssetData = z.infer<typeof assetSchema>;
 export type AssetNode = Node<AssetData, 'asset'>;
 export type CanvasNode = MediaNode | AssetNode;
+export type CanvasEdge = Edge;
 export type Reference = z.infer<typeof referenceSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Settings = z.infer<typeof settingsSchema>;
@@ -99,6 +102,7 @@ export function createProject(): Project {
     name: '未命名项目',
     updatedAt: Date.now(),
     nodes: [],
+    edges: [],
     viewport: { x: 0, y: 0, zoom: 1 },
     minimap: false,
     dots: true,

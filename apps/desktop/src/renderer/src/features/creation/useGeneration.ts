@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
-  REFERENCE_LIMITS,
   generationInputSchema,
   httpUrl,
   serviceSettingsSchema,
@@ -8,6 +7,7 @@ import {
   type GenerationJob,
 } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
+import { linkedReferences, validateReferences } from './connections';
 import type { AssetData, MediaData, MediaNode, WorkspaceData } from './types';
 import type { ChangeWorkspace } from './useWorkspace';
 
@@ -65,11 +65,11 @@ export function useGeneration(
       const key = projectId + ':' + nodeId;
       if (starting.current.has(key)) return;
       const snapshot = getCurrent();
-      const node = snapshot.projects
-        .find((p) => p.id === projectId)
-        ?.nodes.find((n) => n.id === nodeId);
+      const project = snapshot.projects.find((p) => p.id === projectId);
+      const node = project?.nodes.find((n) => n.id === nodeId);
       const bridge = window.desktop?.generation;
-      if (!node || node.type !== 'media' || !bridge || generationBusy(node.data)) return;
+      if (!project || !node || node.type !== 'media' || !bridge || generationBusy(node.data))
+        return;
       if (
         node.data.generation?.status === 'unknown' &&
         !window.confirm('上次任务结果未知，上游可能已生成。重新生成可能产生重复费用，确定继续吗？')
@@ -80,16 +80,8 @@ export function useGeneration(
         startedAt = Date.now();
       let sent = false;
       try {
-        for (const kind of ['image', 'audio', 'video'] as const) {
-          const count = node.data.references.filter((r) => r.type === kind).length;
-          if (
-            count > REFERENCE_LIMITS[kind] ||
-            (node.data.kind === 'image' && kind !== 'image' && count > 0)
-          )
-            throw new Error(
-              '参考素材超过限制或类型不匹配，请在放大面板中移除多余素材。图片最多 9 张，视频和音频各最多 3 个；图像节点仅接受图片。',
-            );
-        }
+        const linked = linkedReferences(project, nodeId);
+        validateReferences(node.data, linked);
         const settings = serviceSettingsSchema.parse(snapshot.settings);
         httpUrl.parse(settings.generateUrl);
         const input: GenerationInput = generationInputSchema.parse({
@@ -144,6 +136,18 @@ export function useGeneration(
                 : 'audioList'
           ].push(url);
         }
+        for (const reference of linked) {
+          const urls =
+            input[
+              reference.kind === 'image'
+                ? 'imageList'
+                : reference.kind === 'video'
+                  ? 'videoList'
+                  : 'audioList'
+            ];
+          if (!urls.includes(reference.url)) urls.push(reference.url);
+        }
+        generationInputSchema.parse(input);
         await patch(projectId, nodeId, (d) => ({
           ...d,
           generation: { requestId, status: 'submitting', startedAt },

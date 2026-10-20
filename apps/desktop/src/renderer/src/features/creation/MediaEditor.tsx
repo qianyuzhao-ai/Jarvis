@@ -13,12 +13,14 @@ export function MediaEditor({
   onClose,
   onDelete,
   onGenerate,
+  connectedCount = 0,
 }: {
   data: MediaData;
   onChange: (data: MediaData) => void;
   onClose: () => void;
   onDelete: () => void;
   onGenerate: () => void;
+  connectedCount?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement>(null);
@@ -144,6 +146,11 @@ export function MediaEditor({
         {referenceError && (
           <p className="editor-notice error-text" role="alert">
             {referenceError}
+          </p>
+        )}
+        {connectedCount > 0 && (
+          <p className="editor-notice" role="status">
+            已连入 {connectedCount} 个参考节点，生成时使用上游已完成的 URL。
           </p>
         )}
         {task && (

@@ -263,6 +263,7 @@ h1 {
 }
 
 .theme-root {
+  --workflow-edge: #a3a6aa;
   --color-canvas: #fdfdfc;
   --color-sidebar: #f0f1f2;
   --color-surface: #fff;
@@ -288,6 +289,7 @@ h1 {
   color-scheme: light;
 }
 .theme-root[data-theme='dark'] {
+  --workflow-edge: #686b70;
   color-scheme: dark;
   --color-canvas: #202020;
   --color-sidebar: #292929;
@@ -716,6 +718,75 @@ svg {
 .react-flow__node-asset {
   border: 0;
   border-radius: 8px;
+  background: var(--flow-bg);
+}
+.react-flow .react-flow__edges {
+  z-index: 0;
+}
+.react-flow svg.react-flow__connectionline {
+  z-index: 0 !important;
+}
+.react-flow .workflow-edge .react-flow__edge-path,
+.react-flow .react-flow__connection-path {
+  stroke: var(--workflow-edge);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+.react-flow .workflow-edge-active .react-flow__edge-path,
+.react-flow .workflow-edge.selected .react-flow__edge-path,
+.react-flow .workflow-edge:focus-visible .react-flow__edge-path {
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+.react-flow .workflow-edge-active.animated .react-flow__edge-path {
+  stroke-dasharray: 5 6;
+  animation: workflow-ants 0.9s linear infinite;
+}
+@keyframes workflow-ants {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+.react-flow .workflow-node-related .media-placeholder {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.react-flow .react-flow__node.selected .media-placeholder {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.react-flow .workflow-port {
+  width: 20px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+}
+.workflow-port::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--flow-bg);
+  border-radius: 50%;
+  background: var(--workflow-edge);
+  pointer-events: none;
+}
+.workflow-port:focus-visible {
+  outline: 2px solid var(--color-accent);
+  border-radius: 4px;
+}
+.workflow-port.connectingto.valid::after,
+.workflow-port:hover::after,
+.workflow-port:focus-visible::after {
+  background: var(--color-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-flow .workflow-edge-active.animated .react-flow__edge-path {
+    animation: none;
+  }
 }
 .media-placeholder {
   width: 360px;

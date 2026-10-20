@@ -3,8 +3,9 @@ import { useReactFlow, type NodeProps } from '@xyflow/react';
 import { IconButton } from '../../components/IconButton';
 import { UrlMedia } from './UrlMedia';
 import type { AssetNode as AssetNodeType, CanvasNode } from './types';
+import { NodePorts } from './NodePorts';
 
-export function AssetNode({ id, data, selected }: NodeProps<AssetNodeType>) {
+export function AssetNode({ id, data, selected, isConnectable }: NodeProps<AssetNodeType>) {
   const flow = useReactFlow<CanvasNode>();
   const Icon = data.kind === 'image' ? Image : data.kind === 'video' ? Video : Music;
   return (
@@ -13,6 +14,7 @@ export function AssetNode({ id, data, selected }: NodeProps<AssetNodeType>) {
       data-selected={selected}
       data-ready={data.upload.status === 'ready'}
     >
+      <NodePorts input={false} enabled={isConnectable} />
       {data.upload.status === 'ready' ? (
         <UrlMedia key={data.upload.url} url={data.upload.url} kind={data.kind} label={data.name} />
       ) : data.upload.status === 'failed' ? (
