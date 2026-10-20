@@ -88,10 +88,10 @@ export function createMedia(kind: MediaData['kind']): MediaData {
   return {
     kind,
     prompt: '',
-    model: '',
-    size: kind === 'image' ? '1:1' : 'adaptive',
+    model: kind === 'image' ? 'gpt-image-2.5-flare' : 'seedance-2.5',
+    size: kind === 'image' ? '16:9(2k)' : '16:9',
     resolution: kind === 'image' ? '2K' : '1080p',
-    quality: 'high',
+    quality: 'medium',
     duration: 5,
     generateAudio: true,
     references: [],
