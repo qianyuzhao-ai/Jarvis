@@ -28,7 +28,7 @@ import {
 
 const trusted = new Map<number, string>();
 export function trustGenerationWindow(contents: WebContents, url: string) {
-  trusted.set(contents.id, url);
+  trusted.set(contents.id, new URL(url).href);
   contents.once('destroyed', () => trusted.delete(contents.id));
 }
 function assertSender(event: IpcMainInvokeEvent) {
