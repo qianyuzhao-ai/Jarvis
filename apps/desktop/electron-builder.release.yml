@@ -1,0 +1,13 @@
+extends: ./electron-builder.yml
+directories:
+  output: ../../release/github-${version}
+mac:
+  artifactName: Jarvis-${version}-macos-${arch}-unsigned.${ext}
+  identity: null
+  hardenedRuntime: false
+  notarize: false
+  target:
+    - target: dmg
+      arch: arm64
+    - target: zip
+      arch: arm64

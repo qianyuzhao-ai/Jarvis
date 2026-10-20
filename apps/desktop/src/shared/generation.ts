@@ -105,7 +105,7 @@ export const exportProjectSchema = z.object({
 export type ExportProject = z.infer<typeof exportProjectSchema>;
 export const downloadMediaSchema = z.object({
   url: httpUrl,
-  kind: z.enum(['image', 'video']),
+  kind: z.enum(['image', 'video', 'audio']),
   fileName: z.string().max(500).optional(),
 });
 export type DownloadMedia = z.infer<typeof downloadMediaSchema>;

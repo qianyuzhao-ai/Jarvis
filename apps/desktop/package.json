@@ -1,6 +1,6 @@
 {
   "name": "@jarvis/desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Jarvis desktop workbench",
   "author": "Hugo",
@@ -12,7 +12,7 @@
     "start": "electron-vite preview",
     "build": "electron-vite build",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json && tsc -p tsconfig.test.json",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "biome lint . --error-on-warnings",
     "test:smoke": "playwright test",
     "package:dir": "node scripts/package.mjs"
   },

@@ -295,6 +295,10 @@ test('Electron uploads references, generates image and video, and restores resul
       { name: 'ref-z.png', mimeType: 'image/png', buffer: png },
       { name: 'ref-a.png', mimeType: 'image/png', buffer: png },
     ]);
+    await page.getByLabel('图像提示词').fill('a cat @');
+    await page.getByRole('option', { name: /图片 1.*ref-z.png/ }).click();
+    await expect(page.locator('.prompt-tag')).toHaveText('@image_1');
+    await page.screenshot({ path: test.info().outputPath('prompt-mention.png') });
     mock.setMode('upload-fail');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await expect(page.locator('.editor-notice')).toContainText('files[0].url');
@@ -328,6 +332,8 @@ test('Electron uploads references, generates image and video, and restores resul
       { name: 'ref-second.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) },
       { name: 'ref-second.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFFfixture') },
     ]);
+    await page.getByLabel('视频提示词').fill('slow camera @video_2 @audio_1');
+    await expect(page.locator('.prompt-tag')).toHaveText(['@video_2', '@audio_1']);
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
     await expect
@@ -353,12 +359,14 @@ test('Electron uploads references, generates image and video, and restores resul
       .map((c) => JSON.parse(c.body.toString()));
     expect(requests[0]).toMatchObject({
       req_from: 'test-client',
+      prompt: 'a cat <<<image_1>>>',
       image_list: [mock.base + '/reference/ref-z.png', mock.base + '/reference/ref-a.png'],
       config: { n: 1 },
     });
     expect(requests[1]).toMatchObject({
       model_name: 'seedance',
       mode: 'reference_image',
+      prompt: 'slow camera <<<video_2>>> <<<audio_1>>>',
       video_list: [mock.base + '/reference/ref.webm', mock.base + '/reference/ref-second.webm'],
       audio_list: [mock.base + '/reference/ref.wav', mock.base + '/reference/ref-second.wav'],
     });
