@@ -1,6 +1,6 @@
 extends: ./electron-builder.yml
 directories:
-  output: ../../release/github
+  output: ../../release/github-${version}
 mac:
   artifactName: Jarvis-${version}-macos-${arch}-unsigned.${ext}
   identity: null

@@ -4,6 +4,8 @@
 
 ## GitHub Apple Silicon 打包流程（2026-10-21）
 
+- 用户随后指定当前变更为 `0.1.1` 并要求试跑。根包与桌面包版本均已改为 0.1.1，版本记录已补；release 输出目录按版本区分，避免覆盖旧产物。本地重新运行 `pnpm test:smoke`，33 项同轮通过；真实打包得到 0.1.1 arm64 未签名 DMG/ZIP，主程序架构、应用 Info.plist 版本、DMG 校验和、ZIP 完整性均通过。`pnpm check` 通过。`pnpm install --frozen-lockfile` 在现有本地模块目录上遇到无 TTY 删除确认而中止；版本修改不涉及依赖，没有绕过项目的批量删除限制，GitHub 全新 runner 将正常安装。
+- 远端功能分支已推送并创建 [PR #3](https://github.com/qianyuzhao-ai/Jarvis/pull/3) 指向 develop。PR 的 Apple Silicon CI 已被 GitHub 接收，但截至本轮检查仍显示 queued、没有步骤日志。工作流尚未进入默认分支 main，手动触发返回 404；GitHub 文档要求 workflow_dispatch 的工作流先存在于默认分支，故远端手动打包与标签发布尚未实测。
 - 新增 PR/主线 CI 和 macOS arm64 打包工作流。CI 在 `macos-15` Apple Silicon runner 上执行 `pnpm check`、真实 Electron 窗口测试；打包工作流支持 Actions 手动触发（仅上传运行 Artifact）及 `v*` 标签触发（先校验标签版本与 main 祖先关系，再创建 GitHub 预发布）。仅产出 DMG/ZIP，不生成 Intel 或 universal 版本。
 - 按用户最新要求，签名和公证留待后续；当前 release 配置显式关闭签名、公证和 Hardened Runtime，文件名包含 `unsigned`，标签发布标记为预发布。未配置正式图标，也未实现自动更新；现有 `mac.minimumSystemVersion` 仍为 26.0。
 - 本地已执行与工作流相同的 arm64 electron-builder 打包命令，得到 `Jarvis-0.1.0-macos-arm64-unsigned.dmg` 和 `.zip`；`lipo` 确认主程序 arm64，`hdiutil verify` 与 `unzip -t` 通过，`pnpm check` 与构建通过。第一次沙箱运行因无法解析 github.com 失败，允许联网后下载 Electron 并成功打包。GitHub Actions 尚未在远端实际运行，不能将本地结果称为远端 CI/发布通过。

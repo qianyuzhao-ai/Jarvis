@@ -43,18 +43,19 @@ jobs:
         run: pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
       - name: Verify package architecture
         run: |
-          app="release/github/mac-arm64/Jarvis.app"
+          version="$(node -p 'require("./apps/desktop/package.json").version')"
+          release_dir="release/github-${version}"
+          app="$release_dir/mac-arm64/Jarvis.app"
           test -d "$app"
           test "$(lipo -archs "$app/Contents/MacOS/Jarvis")" = arm64
-          version="$(node -p 'require("./apps/desktop/package.json").version')"
-          test -f "release/github/Jarvis-${version}-macos-arm64-unsigned.dmg"
-          test -f "release/github/Jarvis-${version}-macos-arm64-unsigned.zip"
+          test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
+          test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Jarvis-macos-arm64-unsigned-${{ github.run_id }}
           path: |
-            release/github/*.dmg
-            release/github/*.zip
+            release/github-*/*.dmg
+            release/github-*/*.zip
           if-no-files-found: error
       - name: Publish GitHub Release
         if: github.ref_type == 'tag'
@@ -62,5 +63,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            release/github/*.dmg release/github/*.zip \
+            release/github-*/*.dmg release/github-*/*.zip \
             --verify-tag --generate-notes --prerelease --title "$GITHUB_REF_NAME (unsigned, Apple Silicon)"
