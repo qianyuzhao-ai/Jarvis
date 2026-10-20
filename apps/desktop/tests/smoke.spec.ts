@@ -90,10 +90,10 @@ test('canvas editing, model constraints, references, toggles and persistence', a
         const windowSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
         return Boolean(
           panel &&
-          panel.x >= 0 &&
-          panel.y >= 60 &&
-          panel.x + panel.width <= windowSize.width &&
-          panel.y + panel.height <= windowSize.height - 60,
+            panel.x >= 0 &&
+            panel.y >= 60 &&
+            panel.x + panel.width <= windowSize.width &&
+            panel.y + panel.height <= windowSize.height - 60,
         );
       })
       .toBe(true);

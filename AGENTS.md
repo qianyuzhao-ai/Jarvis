@@ -20,7 +20,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 - `apps/desktop/src/renderer`：React UI；禁止直接导入 Electron 和 Node API。
 - `apps/desktop/src/shared`：共享类型。
 - `packages/config`：共享 TypeScript 配置。
-- 使用 pnpm、TypeScript strict、Biome + Prettier、Tailwind v4 和 Lucide。
+- 使用 pnpm、TypeScript strict、Biome、Tailwind v4 和 Lucide。
 - React 组件使用 PascalCase 文件名，其余模块使用 kebab-case。
 - 不关闭 sandbox/contextIsolation，不向 renderer 暴露通用文件、Shell 或 IPC 接口。
 - 新增原生能力时设计明确的最小接口，再补对应验证。
