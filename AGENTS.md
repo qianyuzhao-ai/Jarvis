@@ -61,12 +61,13 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 
 ## Git 分支管理
 
-本项目采用用户指定的 Gitflow 方案，具体规则见 [memory/git-workflow.md](memory/git-workflow.md)。
+本项目采用用户最新确定的简化 Gitflow，具体规则见 [memory/git-workflow.md](memory/git-workflow.md)。
 
 - `main` 对应参考图中的 `master`，保存正式发布状态；`develop` 为日常开发集成分支。
 - 新功能从 `develop` 创建 `feature/*`，完成后合回 `develop`，不直接在 `main` 开发。
-- 发布从 `develop` 创建 `release/*`，仅做发布准备和缺陷修复；完成后合入 `main`、打版本标签，并回合 `develop`。
-- 线上紧急修复从 `main` 创建 `hotfix/*`，完成后合入 `main`、打版本标签，并同步到 `develop`；存在待发布分支时也要包含该修复。
+- 准备发版时先在 `develop` 完成版本号和变更记录，再从 `develop` 向 `main` 提 PR；合并后在 `main` 的合并提交上打 `v<版本号>` 标签。正常发版不再创建 `release/*` 分支。
+- 只有版本标签触发一次 GitHub 云端 macOS arm64 构建；已存在标签的失败或取消任务可手动输入该标签重试。PR 与 main/develop 推送不触发云端构建。
+- 线上紧急修复从 `main` 创建 `hotfix/*`，经 PR 合入 `main`、打版本标签，并同步到 `develop`。
 - 操作前检查实际分支和未提交改动，保留已有工作，不重置或丢弃改动；分支初始化记录见 `memory/git-workflow.md`。
 - 采用此方案不等于授权自动提交、推送、合并、打标签或发布；这些操作仍按当前任务的授权范围执行。
 

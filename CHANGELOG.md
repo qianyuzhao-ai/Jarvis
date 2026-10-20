@@ -1,10 +1,19 @@
 # 版本记录
 
+## 0.1.2 — 2026-10-21
+
+- 发版流程改为功能 PR 合入 `develop`，发版时 `develop` 直接 PR 到 `main`；只有 `v<版本号>` 标签触发一次 GitHub macOS arm64 云端构建。
+- 取消 PR 和普通分支推送的云端构建；失败或取消的标签任务可手动输入原标签重试，重试前校验版本、`main` 祖先关系和是否已有 Release。
+- 补齐 0.1.1 版本记录中已进入主线的 Biome、TypeScript 项目配置和仓库规则变更。
+
+此版本用于试验新的单次构建流程。DMG/ZIP 仍未签名和公证，产物及 GitHub 预发布明确标记 `unsigned`。
+
 ## 0.1.1 — 2026-10-21
 
 - 画布支持框选多个节点、整组连线和批量下载图片、视频、音频；框选不打开编辑面板，编辑面板加入轻微淡入。
 - 图像和视频 Prompt 支持 `@` 引用参考素材，高亮显示，并按各素材数组顺序在生成请求中写入 `<<<image_1>>>` 等占位符。
-- GitHub Actions 增加 macOS Apple Silicon CI、手动打包和版本标签预发布流程，仅生成 arm64 DMG/ZIP。
+- 工程检查从 ESLint/Prettier 统一迁移到 Biome，补齐 PyCharm 的 TypeScript 项目入口；仓库建立 Gitflow 分支保护规则。
+- GitHub Actions 按版本标签执行一次 macOS Apple Silicon 打包与预发布，支持取消或失败后手动重试已有标签；仅生成 arm64 DMG/ZIP。
 
 此版本的安装包仍未签名和公证，文件名标记 `unsigned`，GitHub Release 标记为预发布。真实生成服务仍需单独联调。
 
