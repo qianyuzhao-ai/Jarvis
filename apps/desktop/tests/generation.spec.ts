@@ -54,7 +54,19 @@ async function service() {
     if (path.startsWith('/upload')) {
       res.setHeader('Content-Type', 'application/json');
       if (mode === 'upload-fail') res.end(JSON.stringify({ files: [] }));
-      else res.end(JSON.stringify({ files: [{ url: base + '/image.png', status: 'duplicate' }] }));
+      else {
+        const filename =
+          Buffer.concat(chunks)
+            .toString()
+            .match(/filename="([^"]+)"/)?.[1] ?? 'unknown';
+        res.end(
+          JSON.stringify({
+            files: [
+              { url: base + '/reference/' + encodeURIComponent(filename), status: 'duplicate' },
+            ],
+          }),
+        );
+      }
       return;
     }
     if (mode === 'disconnect') {
@@ -149,6 +161,20 @@ test('payload families and response failures match the protocol', async () => {
     payload(input({ kind: 'video', model: 'seedance-2.0', size: '16:9', duration: 30 }), 'test'),
   ).toMatchObject({ config: { duration: 15 } });
   expect(() => payload(input({ duration: 31 }), 'test')).toThrow();
+  expect(() =>
+    payload(input({ imageList: Array(10).fill('https://example.invalid/ref.png') }), 'test'),
+  ).toThrow();
+  expect(() =>
+    payload(
+      input({
+        kind: 'video',
+        model: 'seedance-2.0',
+        size: '16:9',
+        audioList: Array(4).fill('https://example.invalid/ref.wav'),
+      }),
+      'test',
+    ),
+  ).toThrow();
   expect(() => payload(input({ prompt: '  ' }), 'test')).toThrow();
   const mock = await service();
   try {
@@ -265,9 +291,10 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.locator('.react-flow__node-media').last().click();
     await page.getByLabel('图像提示词').fill('a cat');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2');
-    await page
-      .getByLabel('选择参考素材')
-      .setInputFiles({ name: 'ref.png', mimeType: 'image/png', buffer: png });
+    await page.getByLabel('选择参考素材').setInputFiles([
+      { name: 'ref-z.png', mimeType: 'image/png', buffer: png },
+      { name: 'ref-a.png', mimeType: 'image/png', buffer: png },
+    ]);
     mock.setMode('upload-fail');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await expect(page.locator('.editor-notice')).toContainText('files[0].url');
@@ -298,6 +325,8 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByLabel('选择参考素材').setInputFiles([
       { name: 'ref.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) },
       { name: 'ref.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFFfixture') },
+      { name: 'ref-second.webm', mimeType: 'video/webm', buffer: Buffer.from(bytes) },
+      { name: 'ref-second.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFFfixture') },
     ]);
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
@@ -324,14 +353,14 @@ test('Electron uploads references, generates image and video, and restores resul
       .map((c) => JSON.parse(c.body.toString()));
     expect(requests[0]).toMatchObject({
       req_from: 'test-client',
-      image_list: [mock.base + '/image.png'],
+      image_list: [mock.base + '/reference/ref-z.png', mock.base + '/reference/ref-a.png'],
       config: { n: 1 },
     });
     expect(requests[1]).toMatchObject({
       model_name: 'seedance',
       mode: 'reference_image',
-      video_list: [mock.base + '/image.png'],
-      audio_list: [mock.base + '/image.png'],
+      video_list: [mock.base + '/reference/ref.webm', mock.base + '/reference/ref-second.webm'],
+      audio_list: [mock.base + '/reference/ref.wav', mock.base + '/reference/ref-second.wav'],
     });
     mock.setMode('disconnect');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();

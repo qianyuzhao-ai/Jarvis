@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
+  REFERENCE_LIMITS,
   generationInputSchema,
   httpUrl,
   serviceSettingsSchema,
   type GenerationInput,
   type GenerationJob,
 } from '../../../../shared/generation';
+import { numberReferences } from './reference-order';
 import type { MediaData, WorkspaceData } from './types';
 import type { ChangeWorkspace } from './useWorkspace';
 
@@ -75,6 +77,16 @@ export function useGeneration(
         startedAt = Date.now();
       let sent = false;
       try {
+        for (const kind of ['image', 'audio', 'video'] as const) {
+          const count = node.data.references.filter((r) => r.type === kind).length;
+          if (
+            count > REFERENCE_LIMITS[kind] ||
+            (node.data.kind === 'image' && kind !== 'image' && count > 0)
+          )
+            throw new Error(
+              '参考素材超过限制或类型不匹配，请在放大面板中移除多余素材。图片最多 9 张，视频和音频各最多 3 个；图像节点仅接受图片。',
+            );
+        }
         const settings = serviceSettingsSchema.parse(snapshot.settings);
         httpUrl.parse(settings.generateUrl);
         const input: GenerationInput = generationInputSchema.parse({
@@ -87,7 +99,7 @@ export function useGeneration(
           ...d,
           generation: { requestId, status: 'uploading', startedAt },
         }));
-        for (const reference of node.data.references) {
+        for (const { item: reference } of numberReferences(node.data.references)) {
           const target =
             reference.type === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl;
           httpUrl.parse(target);

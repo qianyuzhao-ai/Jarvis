@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const REFERENCE_LIMITS = { image: 9, audio: 3, video: 3 } as const;
+
 export const serviceSettingsSchema = z.object({
   reqFrom: z.string().trim().min(1, '请在设置中填写 req_from').max(100),
   generateUrl: z.string(),
@@ -42,9 +44,9 @@ export const generationInputSchema = z.object({
     .int()
     .refine((n) => n === -1 || (n >= 4 && n <= 30), '视频时长应为 4–30 秒或自动'),
   generateAudio: z.boolean(),
-  imageList: z.array(httpUrl).max(16),
-  videoList: z.array(httpUrl).max(3),
-  audioList: z.array(httpUrl).max(3),
+  imageList: z.array(httpUrl).max(REFERENCE_LIMITS.image),
+  videoList: z.array(httpUrl).max(REFERENCE_LIMITS.video),
+  audioList: z.array(httpUrl).max(REFERENCE_LIMITS.audio),
 });
 export const startRequestSchema = z.object({
   requestId: z.uuid(),

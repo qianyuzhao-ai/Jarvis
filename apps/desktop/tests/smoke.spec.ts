@@ -219,3 +219,96 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await app.close();
   }
 });
+
+test('references stay stacked in compact mode and enforce per-kind limits', async () => {
+  const app = await launch();
+  try {
+    const page = await app.firstWindow();
+    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '图像', exact: true }).click();
+    await page.locator('.react-flow__node-media').first().click();
+    await page.getByLabel('图像提示词').fill('专注编辑提示词');
+    const buffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=',
+      'base64',
+    );
+    const files = (kind: string, count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        name: `${kind}-${i}`,
+        mimeType: kind === 'image' ? 'image/png' : kind === 'video' ? 'video/webm' : 'audio/wav',
+        buffer,
+      }));
+    const before = await page.getByRole('region', { name: '图像编辑面板' }).boundingBox();
+    await page.getByLabel('选择参考素材').setInputFiles(files('image', 9));
+    await expect(page.getByRole('button', { name: '查看 9 个参考素材' })).toBeVisible();
+    const after = await page.getByRole('region', { name: '图像编辑面板' }).boundingBox();
+    expect(after?.height).toBe(before?.height);
+    expect(after?.width).toBe(before?.width);
+    await page.screenshot({ path: test.info().outputPath('references-stacked.png') });
+    await page
+      .getByLabel('选择参考素材')
+      .setInputFiles([...files('image', 1), ...files('audio', 1)]);
+    await expect(page.getByRole('alert')).toContainText('最多 9 张');
+    await expect(page.getByRole('alert')).toContainText('只支持参考图片');
+    await page.getByRole('button', { name: '查看 9 个参考素材' }).click();
+    await expect(page.locator('.reference-item')).toHaveCount(9);
+    await page.getByRole('button', { name: '关闭编辑面板' }).click();
+    await page.getByRole('button', { name: '视频', exact: true }).click();
+    await page.locator('.react-flow__node-media').last().click();
+    const videoBefore = await page.getByRole('region', { name: '视频编辑面板' }).boundingBox();
+    await page
+      .getByLabel('选择参考素材')
+      .setInputFiles([...files('image', 9), ...files('audio', 3), ...files('video', 3)]);
+    await expect(page.getByRole('button', { name: '查看 15 个参考素材' })).toBeVisible();
+    expect((await page.getByRole('region', { name: '视频编辑面板' }).boundingBox())?.height).toBe(
+      videoBefore?.height,
+    );
+    await page
+      .getByLabel('选择参考素材')
+      .setInputFiles([...files('image', 1), ...files('audio', 1), ...files('video', 1)]);
+    await expect(page.getByRole('alert')).toContainText('参考图片最多 9 张');
+    await expect(page.getByRole('alert')).toContainText('参考音频最多 3 个');
+    await expect(page.getByRole('alert')).toContainText('参考视频最多 3 个');
+    await page.getByRole('button', { name: '查看 15 个参考素材' }).click();
+    await expect(page.locator('.reference-item')).toHaveCount(15);
+    await expect(page.locator('.reference-item .reference-index')).toHaveText([
+      ...Array.from({ length: 9 }, (_, i) => `图片 ${i + 1}`),
+      '音频 1',
+      '音频 2',
+      '音频 3',
+      '视频 1',
+      '视频 2',
+      '视频 3',
+    ]);
+    const layout = await page.getByRole('dialog', { name: '视频编辑面板' }).evaluate((panel) => {
+      const refs = panel.querySelector('.references')!,
+        prompt = panel.querySelector('textarea')!;
+      return {
+        promptY: prompt.getBoundingClientRect().top,
+        refsBottom: refs.getBoundingClientRect().bottom,
+        scrollable: refs.scrollWidth > refs.clientWidth,
+        rows: Array.from(refs.querySelectorAll('.reference-item')).map(
+          (n) => n.getBoundingClientRect().top,
+        ),
+      };
+    });
+    expect(new Set(layout.rows).size).toBe(1);
+    expect(layout.scrollable).toBe(true);
+    expect(layout.promptY).toBeGreaterThan(layout.refsBottom);
+    await page.screenshot({ path: test.info().outputPath('references-expanded.png') });
+    await page.getByRole('button', { name: '移除 audio-0', exact: true }).click();
+    await expect(page.locator('.reference-item')).toHaveCount(14);
+    await expect(page.locator('[data-reference-type="audio"] .reference-index')).toHaveText([
+      '音频 1',
+      '音频 2',
+    ]);
+    await expect(page.locator('[data-reference-type="audio"]').first()).toHaveAttribute(
+      'title',
+      '音频 1 · audio-1',
+    );
+    await page.getByRole('button', { name: '还原面板', exact: true }).click();
+    await expect(page.getByRole('button', { name: '查看 14 个参考素材' })).toBeVisible();
+  } finally {
+    await app.close();
+  }
+});

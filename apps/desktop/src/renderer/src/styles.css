@@ -1044,14 +1044,119 @@ svg {
 }
 .media-editor.is-expanded .editor-top {
   flex: 1;
-  min-height: 136px;
+  min-height: 252px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-rows: 108px minmax(96px, 1fr);
 }
 .media-editor.is-expanded textarea {
+  grid-column: 1;
+  grid-row: 2;
   align-self: stretch;
-  height: auto;
+  width: 100%;
+  height: 100%;
+}
+.media-editor.is-expanded .references {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  max-width: none;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+.media-editor.is-expanded .reference-add,
+.media-editor.is-expanded .reference-item {
+  flex: 0 0 72px;
+}
+.media-editor.is-expanded .editor-window-actions {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: start;
 }
 .media-editor.is-expanded .editor-bottom,
 .media-editor.is-expanded .parameter-panel,
 .media-editor.is-expanded .editor-notice {
   flex-shrink: 0;
+}
+.references-compact {
+  position: relative;
+  flex: 0 0 84px;
+  width: 84px;
+  height: 104px;
+  max-width: 84px;
+}
+.reference-stack {
+  position: absolute;
+  inset: 0;
+  width: 84px;
+  height: 104px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.reference-stack-card {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 72px;
+  height: 96px;
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  background: var(--node-field);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.reference-stack-card img,
+.reference-stack-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.reference-count {
+  position: absolute;
+  z-index: 4;
+  top: 4px;
+  left: 4px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-radius: 4px;
+  min-width: 20px;
+  padding: 1px 5px;
+  text-align: center;
+  font-size: 11px;
+}
+.reference-add.reference-add-overlay {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--node-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+
+.reference-index {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
+  padding: 2px 4px;
+  max-width: calc(100% - 26px);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 16px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.reference-count {
+  top: auto;
+  bottom: 4px;
 }

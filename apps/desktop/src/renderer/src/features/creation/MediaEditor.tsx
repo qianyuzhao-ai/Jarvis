@@ -35,6 +35,7 @@ export function MediaEditor({
       next ? promptRef.current?.focus() : expandedButton.current?.focus(),
     );
   }
+  const [referenceError, setReferenceError] = useState('');
   const [options, setOptions] = useState(false);
   const busy = generationBusy(data);
   const task = data.generation;
@@ -88,6 +89,9 @@ export function MediaEditor({
       >
         <div className="editor-top">
           <References
+            expanded={expanded}
+            onExpand={() => toggleExpanded(true)}
+            onError={setReferenceError}
             disabled={busy}
             data={data}
             onChange={(references) => update({ references })}
@@ -243,6 +247,11 @@ export function MediaEditor({
               <span>单次生成 1 张</span>
             )}
           </fieldset>
+        )}
+        {referenceError && (
+          <p className="editor-notice error-text" role="alert">
+            {referenceError}
+          </p>
         )}
         {task && (
           <div className="editor-notice" role="status">
