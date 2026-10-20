@@ -55,6 +55,7 @@
 
 - 2026-10-21：0.1.1 已由 PR #3 合入 develop、PR #4 合入 main，`v0.1.1` 标签指向 main 合并提交 `c425462`。旧工作流在多个事件上排入 macOS runner 队列；用户要求全部取消，现无运行中的任务，也未创建 GitHub Release。用户随后将正常流程改为 develop 直接 PR main，只有标签触发一次云端构建；本轮在 `feature/single-build-release` 落实。下方“仓库没有 Actions workflow”是规则配置当时的历史状态。
 - 旧 `release/0.1.1` 回合 PR #5 因新流程而关闭，未删除分支；其中缺失的 Biome/PyCharm 版本记录已纳入 `feature/single-build-release`。
+- 历史过程：PR #3 的 develop 合并提交为 `7c8f1c4`；当时从该提交创建 `release/0.1.1`，后经 PR #4 进入 main。旧工作流曾支持手动 Artifact 与 `v*` 标签预发布，现已由单次标签流程替代。
 
 - 自动删除来源分支：`delete_branch_on_merge=true`，GitHub PR 合并后执行，不主动清理历史分支；已授权的手动清理见变更记录。受删除保护的分支不会按此设置自动删除。
 - [主分支保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491765)：用户创建，目标 main/develop，Active，无 bypass。已核对禁止删除、禁止强推、必须 PR、0 人审批、只允许 Merge commit；本轮补开“合并前解决所有讨论”。今后 main/develop 更新必须通过 PR，不再直接推送本地合并结果。
