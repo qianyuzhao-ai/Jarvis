@@ -21,7 +21,7 @@ concurrency:
 jobs:
   package:
     name: Build unsigned arm64 package
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 60
     env:
       RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -64,8 +64,11 @@ jobs:
           app="$release_dir/mac-arm64/Jarvis.app"
           test -d "$app"
           test "$(lipo -archs "$app/Contents/MacOS/Jarvis")" = arm64
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "$version"
           test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
           test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
+          hdiutil verify "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
+          unzip -tqq "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Jarvis-macos-arm64-unsigned-${{ github.run_id }}
