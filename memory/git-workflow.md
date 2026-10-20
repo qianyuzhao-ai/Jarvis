@@ -11,17 +11,20 @@
 - 原图来源链接：<http://nvie.com/posts/a-successful-git-branching-model/>。本次依据用户提供的 PDF 整理，未额外核对网页。
 - 本文件为对原图分支流程的中文整理，并补充本仓库的命名与执行约定。
 
-## 分支职责和流向
+## 当前分支职责和流向（2026-10-21 用户更新）
+
+用户指定新流程的首次试验版本为 `0.1.2`。先将 `feature/single-build-release` PR 到 develop，再由 develop PR 到 main，最后创建 `v0.1.2`，仅触发一次云端 arm64 构建；版本标签和 GitHub Release 仍以实际远端状态为准。
 
 | 分支 | 从哪里创建 | 用途 | 完成后合入 |
 | --- | --- | --- | --- |
 | `main` | 现有主分支 | 正式发布状态；对应原图 `master` | 长期保留 |
-| `develop` | 初始从 `main` 创建 | 集成下一版本的开发成果 | 通过 release 流程发布 |
+| `develop` | 初始从 `main` 创建 | 集成下一版本的开发成果；发版前更新版本和变更记录 | 经 PR 直接合入 `main` |
 | `feature/<主题>` | `develop` | 独立功能开发，可跨越多个发布周期 | `develop` |
-| `release/<版本>` | `develop` | 发布准备、测试及缺陷修复，不接收新功能 | `main` 和 `develop` |
 | `hotfix/<版本或主题>` | `main` | 已发布版本的线上紧急缺陷修复 | `main` 和 `develop` |
 
-原图明确表达的流程：
+当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端 arm64 构建与预发布。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
+
+旧参考图的原始 release 分支流程（历史，不再用于正常发版）：
 
 1. 多条 feature 分支可并行，未完成的功能不必进入本次发布。
 2. 从 develop 切出 release 后，develop 可以继续推进下一版本。
@@ -35,7 +38,7 @@
 - 分支命名采用上表中的斜杠前缀；标签采用 `v<版本号>`。这些是本仓库的命名约定，不是原图的逐字命名。
 - 普通未发布缺陷从 `develop` 开工作分支处理；只有线上紧急修复使用 `hotfix/*`。
 - 优先保留能够辨认分支合并关系的 merge commit；使用 PR 时选择对应的合并方式，避免把原图中的合并关系全部压平。
-- 如已有 release 分支，hotfix 必须同步给该发布分支，并确保最终也进入 develop，避免下一次发布重新带回旧缺陷。
+- 旧 release 分支若仍在维护，hotfix 也须同步其中，避免旧修复被再次带回；新版本正常发布已不创建该分支。
 - 合并前执行与变更相关的检查。应用代码通常需要 `pnpm check` 和构建；涉及窗口、preload 或启动交互时执行 `pnpm test:smoke`。纯文档修改检查内容和 diff 即可。
 - 开始工作先检查当前分支、工作区及目标基线；需要最新远端状态时先 fetch，再从正确基线开分支，不覆盖已有工作。
 - 提交、推送、合并、打标签和正式发布按用户任务授权执行。此文档本身不授予这些操作的执行权限。
@@ -50,8 +53,9 @@
 
 ## GitHub 当前保护配置（2026-10-21）
 
-- 2026-10-21：用户已在 GitHub 将 PR #3 合入 develop，远端合并提交 `7c8f1c4`。据此从最新 `origin/develop` 创建本地 `release/0.1.1`；版本已是 0.1.1，尚未合入 main、创建标签或 GitHub Release。PR #3 与 develop push 的 Apple Silicon CI 均处于 GitHub runner 排队状态，不能视为远端验证通过。
-- 2026-10-21：用户指定下一版本为 `0.1.1`；release 工作流支持手动 Artifact 和 `v*` 标签预发布，但文件进入默认分支 main 前不能手动触发。下方“仓库没有 Actions workflow”是规则配置当时的历史状态。
+- 2026-10-21：0.1.1 已由 PR #3 合入 develop、PR #4 合入 main，`v0.1.1` 标签指向 main 合并提交 `c425462`。旧工作流在多个事件上排入 macOS runner 队列；用户要求全部取消，现无运行中的任务，也未创建 GitHub Release。用户随后将正常流程改为 develop 直接 PR main，只有标签触发一次云端构建；本轮在 `feature/single-build-release` 落实。下方“仓库没有 Actions workflow”是规则配置当时的历史状态。
+- 旧 `release/0.1.1` 回合 PR #5 因新流程而关闭，未删除分支；其中缺失的 Biome/PyCharm 版本记录已纳入 `feature/single-build-release`。
+- 历史过程：PR #3 的 develop 合并提交为 `7c8f1c4`；当时从该提交创建 `release/0.1.1`，后经 PR #4 进入 main。旧工作流曾支持手动 Artifact 与 `v*` 标签预发布，现已由单次标签流程替代。
 
 - 自动删除来源分支：`delete_branch_on_merge=true`，GitHub PR 合并后执行，不主动清理历史分支；已授权的手动清理见变更记录。受删除保护的分支不会按此设置自动删除。
 - [主分支保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491765)：用户创建，目标 main/develop，Active，无 bypass。已核对禁止删除、禁止强推、必须 PR、0 人审批、只允许 Merge commit；本轮补开“合并前解决所有讨论”。今后 main/develop 更新必须通过 PR，不再直接推送本地合并结果。
