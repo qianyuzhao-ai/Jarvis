@@ -48,6 +48,15 @@
 - 本轮发布路径：feature → develop 的非快进合并，创建 `release/0.1.0`，统一工作区版本与桌面应用版本为 `0.1.0`，加入 `CHANGELOG.md`，再将 release 非快进合入 main、创建带注释标签 `v0.1.0`、回合 develop。远端推送包括 main、develop、release/0.1.0、feature/aigc-workspace 和 v0.1.0；不强推、不删除已有分支。
 - 正式状态以实际 Git 引用和远端核验为准。后续功能继续从 develop 新建 feature 分支；0.1.0 源码版本不等于已提供签名安装包。
 
+## GitHub 当前保护配置（2026-10-21）
+
+- 自动删除来源分支：`delete_branch_on_merge=true`，GitHub PR 合并后执行，不主动清理历史分支；已授权的手动清理见变更记录。受删除保护的分支不会按此设置自动删除。
+- [主分支保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491765)：用户创建，目标 main/develop，Active，无 bypass。已核对禁止删除、禁止强推、必须 PR、0 人审批、只允许 Merge commit；本轮补开“合并前解决所有讨论”。今后 main/develop 更新必须通过 PR，不再直接推送本地合并结果。
+- [发布与紧急修复分支保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491895)：本轮创建，Active，无 bypass，目标 `refs/heads/release/**/*`、`refs/heads/hotfix/**/*`，覆盖单层与嵌套命名；禁止删除、禁止强推，允许直接提交发布准备与修复。完成所有目标的合并后，如需清理，先对一个明确分支解除删除限制或加入精确排除，再按当次授权删除，不关闭整套保护以批量清理。
+- [版本标签保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491901)：本轮创建，Active，无 bypass，匹配 `refs/tags/v*`，禁止修改、禁止删除；未限制创建新版本标签。
+- 当前不强制线性历史、提交签名、审批人数或 CI 检查；仓库没有 Actions workflow，避免必需检查无结果而阻塞。仓库全局仍允许三种合并方式，但 main/develop 规则已经将实际可用方式限制为 Merge。
+- 验证：回读规则完整参数，并通过 GitHub 有效分支规则 API 核对 main、develop、release/0.1.0 和未实际创建的 hotfix/test/nested 均正确匹配；feature/aigc-workspace 无匹配规则。仅做只读校验，未通过破坏性推送/删除来测试规则。
+
 ## 初始化历史
 
 2026-10-20 用户授权初始化本地分支、提交当前基础工程，并明确暂不推送。
@@ -58,6 +67,12 @@
 - `main` 保持初始基线；尚无发布，不建立 release/hotfix 分支或版本标签，不推送。实际提交与合并结果以 `git log --graph --oneline --all` 为准。
 
 ## 变更记录
+
+- 2026-10-21：用户要求清理远端 feature/aigc-workspace。fetch 后确认其相对 origin/main 与 origin/develop 的独有提交数均为 0，且没有匹配保护规则；仅删除该远端分支，随后 ls-remote 核对已不存在。main、develop、release/0.1.0 与 v0.1.0 未改动。
+
+- 2026-10-21：用户明确要求清理可清理的本地分支。核验祖先关系和 worktree 占用后，逐个通过 `git branch -d` 删除已合并的 feature/aigc-canvas-design、feature/aigc-workspace、feature/project-foundation、release/0.1.0；发布分支同时确认已合入 main/develop。保留 main、develop 和当前含未提交规则记忆的 feature/github-repository-rules；未改远端分支、标签或现有文件。
+
+- 2026-10-21：用户要求 GitHub 合并后自动删除分支并提供保护配置说明。已通过 GitHub API 开启并回读验证 `delete_branch_on_merge=true`；没有手动删除现有分支。核对时 main、develop、feature/aigc-workspace、release/0.1.0 均未受保护，规则集为空、Actions workflow 为 0、开放 PR 为 0。分支保护尚未代设：建议 main/develop 启用删除限制、禁止强推、PR（个人开发 0 审批）及对话解决；保持 Merge commit，暂不强制不存在的 CI 或线性历史。release/hotfix 双向合并前须避免提前自动删除，可在活动期间加入防删除规则，全部合并后再明确安排单分支清理。此 GitHub 自动删除设置是用户明确授权的例外，不扩大为本地或现有分支批量删除授权。
 
 - 2026-10-20：用户确定采用提供的 Gitflow 图；核对完整图后记录分支职责、流向及 main 命名适配，并在 AGENTS.md 中加入执行入口。已核对本地分支和工作区；未改变 Git 历史。
 - 2026-10-20：用户授权本地初始化与提交；建立 develop 和 feature/project-foundation，将基础工程按功能分支提交、再合入 develop 的流程集成，不推送。
