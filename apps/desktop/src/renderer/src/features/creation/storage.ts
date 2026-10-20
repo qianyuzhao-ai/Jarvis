@@ -18,8 +18,13 @@ export async function loadWorkspace(): Promise<WorkspaceData> {
     request.onsuccess = () => {
       if (request.result === undefined) return resolve(emptyWorkspace);
       const parsed = workspaceSchema.safeParse(request.result);
-      if (parsed.success) resolve(parsed.data);
-      else reject(new Error('本地数据格式无法读取，原数据已保留。请勿清除应用数据。'));
+      if (parsed.success) {
+        for (const project of parsed.data.projects)
+          for (const node of project.nodes)
+            if (node.type === 'asset' && node.data.upload.status === 'uploading')
+              node.data.upload = { status: 'failed', error: '上传已中断，尚未保存资源 URL' };
+        resolve(parsed.data);
+      } else reject(new Error('本地数据格式无法读取，原数据已保留。请勿清除应用数据。'));
     };
     request.onerror = () => reject(new Error('读取本地数据失败，原数据已保留。'));
   });

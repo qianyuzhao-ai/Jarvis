@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Agent, fetch, FormData, type Response } from 'undici';
 import {
   generationInputSchema,
+  UPLOAD_LIMIT_MIB,
   httpUrl,
   type GenerationInput,
   type UploadRequest,
@@ -183,7 +184,7 @@ export async function generate(
 export async function upload(request: UploadRequest): Promise<{ url: string }> {
   const { file, settings } = request;
   if (!file.mime.startsWith(file.kind + '/')) throw new Error('素材类型不匹配');
-  const limit = { image: 32, video: 200, audio: 64 }[file.kind] * 1024 * 1024;
+  const limit = UPLOAD_LIMIT_MIB[file.kind] * 1024 * 1024;
   if (!file.bytes.byteLength || file.bytes.byteLength > limit)
     throw new Error('素材为空或超过大小限制');
   const url = httpUrl.parse(

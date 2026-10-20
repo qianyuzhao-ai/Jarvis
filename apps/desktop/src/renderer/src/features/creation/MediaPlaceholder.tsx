@@ -1,51 +1,18 @@
-import { useState } from 'react';
 import { Image, Video } from 'lucide-react';
 import type { NodeProps } from '@xyflow/react';
 import type { MediaNode } from './types';
-function Result({ requestId, kind }: { requestId: string; kind: 'image' | 'video' }) {
-  const [error, setError] = useState(false);
-  const [retry, setRetry] = useState(0);
-  const url = `jarvis-media://result/${requestId}?retry=${retry}`;
-  if (error)
-    return (
-      <div className="result-error">
-        <span>结果已生成，但媒体暂时无法加载</span>
-        <button
-          className="nodrag"
-          onClick={() => {
-            setRetry((n) => n + 1);
-            setError(false);
-          }}
-        >
-          重新加载媒体
-        </button>
-      </div>
-    );
-  return kind === 'image' ? (
-    <img
-      className="generated-image"
-      src={url}
-      alt="生成的图像"
-      draggable={false}
-      onError={() => setError(true)}
-    />
-  ) : (
-    <video
-      className="generated-video nodrag"
-      src={url}
-      controls
-      preload="metadata"
-      onError={() => setError(true)}
-      aria-label="生成的视频"
-    />
-  );
-}
+import { UrlMedia } from './UrlMedia';
 export function MediaPlaceholder({ data, selected }: NodeProps<MediaNode>) {
   const Icon = data.kind === 'image' ? Image : Video;
   return (
-    <div className="media-placeholder" data-selected={selected}>
+    <div className="media-placeholder" data-selected={selected} data-ready={Boolean(data.result)}>
       {data.result ? (
-        <Result key={data.result.requestId} requestId={data.result.requestId} kind={data.kind} />
+        <UrlMedia
+          key={data.result.url}
+          url={data.result.url}
+          kind={data.kind}
+          label={data.kind === 'image' ? '生成的图像' : '生成的视频'}
+        />
       ) : (
         <>
           <Icon size={24} strokeWidth={1.75} />

@@ -14,10 +14,12 @@ import { createProject, type Project, type WorkspaceData } from './features/crea
 
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
+import { useAssetUpload } from './features/creation/useAssetUpload';
 
 function Workbench({ initial }: { initial: WorkspaceData }) {
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const generate = useGeneration(data, commit, getCurrent);
+  const importAssets = useAssetUpload(commit, getCurrent);
   const [route, setRoute] = useState<'projects' | 'settings' | 'canvas'>('projects');
   const [settingsSection, setSettingsSection] = useState<'general' | 'services'>('general');
   const theme = useResolvedTheme(data.theme);
@@ -81,6 +83,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       {route === 'canvas' && project ? (
         <Canvas
           project={project}
+          onImport={(files, point, onNotice) => importAssets(project.id, files, point, onNotice)}
           onGenerate={(nodeId) => void generate(project.id, nodeId)}
           onChange={changeProject}
           onBack={() => setRoute('projects')}

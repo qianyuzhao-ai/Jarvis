@@ -1,5 +1,6 @@
 import { ipcMain, net, protocol, type WebContents, type IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import { GenerationJobs } from './jobs';
 import { upload } from './protocol';
 import {
@@ -25,17 +26,24 @@ function assertSender(event: IpcMainInvokeEvent) {
 }
 export async function registerGeneration(file: string) {
   const jobs = new GenerationJobs(file);
+  const mediaUrls = new Map<string, string>();
+  const mediaIds = new Map<string, string>();
   let storageError = false;
   try {
     await jobs.initialize();
   } catch {
     storageError = true;
   }
-  function handle<T>(channel: string, callback: (request: unknown) => Promise<T> | T) {
+  function handle<T>(
+    channel: string,
+    callback: (request: unknown) => Promise<T> | T,
+    requiresJobs = true,
+  ) {
     ipcMain.handle(channel, async (event, request): Promise<BridgeResult<T>> => {
       try {
         assertSender(event);
-        if (storageError) throw new Error('本地任务记录无法读取，原文件已保留；请先恢复记录再生成');
+        if (requiresJobs && storageError)
+          throw new Error('本地任务记录无法读取，原文件已保留；请先恢复记录再生成');
         return { ok: true, value: await callback(request) };
       } catch (error) {
         return {
@@ -50,19 +58,38 @@ export async function registerGeneration(file: string) {
       }
     });
   }
-  handle('generation:upload', (request) => upload(uploadRequestSchema.parse(request)));
+  handle('generation:upload', (request) => upload(uploadRequestSchema.parse(request)), false);
   handle('generation:start', (request) => jobs.start(startRequestSchema.parse(request)));
   handle('generation:get', (request) => jobs.get(z.uuid().parse(request)));
+  handle(
+    'generation:media-url',
+    (request) => {
+      const target = httpUrl.parse(request);
+      let id = mediaIds.get(target);
+      if (!id) {
+        id = randomUUID();
+        mediaIds.set(target, id);
+        mediaUrls.set(id, target);
+      }
+      return `jarvis-media://url/${id}`;
+    },
+    false,
+  );
   protocol.handle('jarvis-media', async (request) => {
     const url = new URL(request.url);
     const id = url.pathname.slice(1);
-    if (url.hostname !== 'result' || !z.uuid().safeParse(id).success || request.method !== 'GET')
+    if (!z.uuid().safeParse(id).success || request.method !== 'GET')
       return new Response('Not found', { status: 404 });
-    const job = jobs.get(id);
-    if (job?.status !== 'succeeded' || !job.resultUrl)
-      return new Response('Not found', { status: 404 });
+    const job = url.hostname === 'result' ? jobs.get(id) : undefined;
+    const targetUrl =
+      url.hostname === 'url'
+        ? mediaUrls.get(id)
+        : job?.status === 'succeeded'
+          ? job.resultUrl
+          : undefined;
+    if (!targetUrl) return new Response('Not found', { status: 404 });
     try {
-      const target = httpUrl.parse(job.resultUrl);
+      const target = httpUrl.parse(targetUrl);
       const headers = new Headers();
       const range = request.headers.get('range');
       if (range) headers.set('range', range);
@@ -81,7 +108,7 @@ export async function registerGeneration(file: string) {
       safeHeaders.set('X-Content-Type-Options', 'nosniff');
       return new Response(response.body, { status: response.status, headers: safeHeaders });
     } catch {
-      return new Response('无法读取生成结果', { status: 502 });
+      return new Response('无法读取媒体', { status: 502 });
     }
   });
 }

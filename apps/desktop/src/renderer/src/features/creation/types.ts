@@ -1,5 +1,22 @@
 import { z } from 'zod';
 import type { Node } from '@xyflow/react';
+import { httpUrl } from '../../../../shared/generation';
+
+export const assetSchema = z.object({
+  kind: z.enum(['image', 'video', 'audio']),
+  name: z.string(),
+  upload: z.discriminatedUnion('status', [
+    z.object({ status: z.literal('uploading') }),
+    z.object({ status: z.literal('failed'), error: z.string() }),
+    z.object({ status: z.literal('ready'), url: httpUrl }),
+  ]),
+});
+export const assetNodeSchema = z.object({
+  id: z.string(),
+  type: z.literal('asset'),
+  position: z.object({ x: z.number(), y: z.number() }),
+  data: assetSchema,
+});
 
 export const referenceSchema = z.object({
   id: z.string(),
@@ -30,12 +47,13 @@ export const mediaSchema = z.object({
     .optional(),
   result: z.object({ requestId: z.string(), url: z.string() }).optional(),
 });
-const nodeSchema = z.object({
+const mediaNodeSchema = z.object({
   id: z.string(),
   type: z.literal('media'),
   position: z.object({ x: z.number(), y: z.number() }),
   data: mediaSchema,
 });
+const nodeSchema = z.discriminatedUnion('type', [mediaNodeSchema, assetNodeSchema]);
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -61,6 +79,9 @@ export const workspaceSchema = z.object({
 });
 export type MediaData = z.infer<typeof mediaSchema>;
 export type MediaNode = Node<MediaData, 'media'>;
+export type AssetData = z.infer<typeof assetSchema>;
+export type AssetNode = Node<AssetData, 'asset'>;
+export type CanvasNode = MediaNode | AssetNode;
 export type Reference = z.infer<typeof referenceSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Settings = z.infer<typeof settingsSchema>;

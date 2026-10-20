@@ -8,10 +8,11 @@ import {
   type GenerationJob,
 } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
-import type { MediaData, WorkspaceData } from './types';
+import type { AssetData, MediaData, MediaNode, WorkspaceData } from './types';
 import type { ChangeWorkspace } from './useWorkspace';
 
-export const generationBusy = (data: MediaData) =>
+export const generationBusy = (data: MediaData | AssetData) =>
+  'generation' in data &&
   ['uploading', 'submitting', 'running'].includes(data.generation?.status ?? '');
 export function useGeneration(
   data: WorkspaceData,
@@ -28,7 +29,9 @@ export function useGeneration(
             ? {
                 ...p,
                 updatedAt: Date.now(),
-                nodes: p.nodes.map((n) => (n.id === nodeId ? { ...n, data: change(n.data) } : n)),
+                nodes: p.nodes.map((n) =>
+                  n.id === nodeId && n.type === 'media' ? { ...n, data: change(n.data) } : n,
+                ),
               }
             : p,
         ),
@@ -66,7 +69,7 @@ export function useGeneration(
         .find((p) => p.id === projectId)
         ?.nodes.find((n) => n.id === nodeId);
       const bridge = window.desktop?.generation;
-      if (!node || !bridge || generationBusy(node.data)) return;
+      if (!node || node.type !== 'media' || !bridge || generationBusy(node.data)) return;
       if (
         node.data.generation?.status === 'unknown' &&
         !window.confirm('上次任务结果未知，上游可能已生成。重新生成可能产生重复费用，确定继续吗？')
@@ -180,7 +183,7 @@ export function useGeneration(
   const pending = data.projects
     .flatMap((p) =>
       p.nodes
-        .filter((n) => generationBusy(n.data))
+        .filter((n): n is MediaNode => n.type === 'media' && generationBusy(n.data))
         .map((n) => `${p.id}:${n.id}:${n.data.generation?.requestId}`),
     )
     .join('|');
@@ -192,7 +195,12 @@ export function useGeneration(
       for (const p of state.projects)
         for (const n of p.nodes) {
           if (stopped) return;
-          if (!generationBusy(n.data) || starting.current.has(p.id + ':' + n.id)) continue;
+          if (
+            n.type !== 'media' ||
+            !generationBusy(n.data) ||
+            starting.current.has(p.id + ':' + n.id)
+          )
+            continue;
           const generation = n.data.generation!;
           try {
             const response = await window.desktop!.generation.get(generation.requestId);

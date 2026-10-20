@@ -115,6 +115,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
       .locator('.parameter-control')
       .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().top));
     expect(new Set(tops).size).toBe(1);
+    await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.0');
     await page.getByLabel('宽高比', { exact: true }).selectOption('16:9');
     await page.getByLabel('分辨率', { exact: true }).selectOption('4k');
 

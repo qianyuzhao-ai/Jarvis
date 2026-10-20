@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const REFERENCE_LIMITS = { image: 9, audio: 3, video: 3 } as const;
+export const UPLOAD_LIMIT_MIB = { image: 32, video: 200, audio: 64 } as const;
 
 export const serviceSettingsSchema = z.object({
   reqFrom: z.string().trim().min(1, '请在设置中填写 req_from').max(100),
@@ -82,6 +83,7 @@ export type GenerationJob = z.infer<typeof jobSchema>;
 export type ServiceSettings = z.infer<typeof serviceSettingsSchema>;
 export type BridgeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface GenerationBridge {
+  mediaUrl(url: string): Promise<BridgeResult<string>>;
   upload(request: UploadRequest): Promise<BridgeResult<{ url: string }>>;
   start(request: StartRequest): Promise<BridgeResult<GenerationJob>>;
   get(requestId: string): Promise<BridgeResult<GenerationJob | null>>;

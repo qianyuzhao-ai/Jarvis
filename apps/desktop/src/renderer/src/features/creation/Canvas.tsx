@@ -21,13 +21,21 @@ import {
   Minus,
   Plus,
   Video,
+  Upload,
 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
+import { AssetNode } from './AssetNode';
 import { generationBusy } from './useGeneration';
-import { createMedia, type MediaData, type MediaNode, type Project } from './types';
-const nodeTypes = { media: MediaPlaceholder };
+import {
+  createMedia,
+  type CanvasNode,
+  type MediaData,
+  type MediaNode,
+  type Project,
+} from './types';
+const nodeTypes = { media: MediaPlaceholder, asset: AssetNode };
 type Props = {
   project: Project;
   onChange: (update: (project: Project) => Project) => void;
@@ -35,13 +43,22 @@ type Props = {
   theme: 'light' | 'dark';
   status: string;
   onGenerate: (nodeId: string) => void;
+  onImport: (
+    files: File[],
+    point: { x: number; y: number },
+    onNotice: (message: string) => void,
+  ) => Promise<void>;
 };
-function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }: Props) {
+function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, onImport }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 1000, height: 700 });
   const [editorHeight, setEditorHeight] = useState(200);
   const container = useRef<HTMLDivElement>(null);
-  const flow = useReactFlow<MediaNode>();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
+  const [dragging, setDragging] = useState(false);
+  const [importNotice, setImportNotice] = useState('');
+  const flow = useReactFlow<CanvasNode>();
   const viewport = useViewport();
   useEffect(() => {
     const el = container.current;
@@ -52,19 +69,26 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const nodes = useMemo(
+  const nodes = useMemo<CanvasNode[]>(
     () =>
       project.nodes.map((n) => ({
         ...n,
         selected: n.id === selected,
-        ariaLabel: `${n.data.kind === 'image' ? '图像' : '视频'}节点`,
+        ariaLabel: `${{ image: '图像', video: '视频', audio: '音频' }[n.data.kind]}${n.type === 'asset' ? '资源' : ''}节点`,
         width: 360,
         height: 240,
         measured: { width: 360, height: 240 },
       })),
     [project.nodes, selected],
   );
-  const active = nodes.find((n) => n.id === selected);
+  const active = nodes.find((n): n is MediaNode => n.id === selected && n.type === 'media');
+  function importFiles(files: File[], screen: { x: number; y: number }) {
+    const point = flow.screenToFlowPosition(screen, { snapToGrid: project.snap });
+    setImportNotice('');
+    void onImport(files, point, setImportNotice).catch(() =>
+      setImportNotice('导入失败，请重新拖入文件'),
+    );
+  }
   const editorRef = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
     let frame = 0;
@@ -110,23 +134,23 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
     onChange((p) => ({ ...p, nodes: [...p.nodes, node] }));
     setSelected(null);
   }
-  function changes(items: NodeChange<MediaNode>[]) {
-    const persistent = items.filter(
-      (c) =>
-        c.type === 'position' ||
-        (c.type === 'remove' && !generationBusy(project.nodes.find((n) => n.id === c.id)!.data)),
-    );
+  function changes(items: NodeChange<CanvasNode>[]) {
+    const persistent = items.filter((c) => {
+      if (c.type === 'position') return true;
+      if (c.type !== 'remove') return false;
+      const node = project.nodes.find((n) => n.id === c.id);
+      return node && !generationBusy(node.data);
+    });
     const selection = items.find((c) => c.type === 'select' && c.selected);
     if (selection?.type === 'select') setSelected(selection.id);
     if (!persistent.length) return;
     onChange((p) => ({
       ...p,
-      nodes: applyNodeChanges(persistent, p.nodes).map((n) => ({
-        id: n.id,
-        type: 'media',
-        position: n.position,
-        data: n.data,
-      })),
+      nodes: applyNodeChanges(persistent, p.nodes).map(({ id, type, position, data }) =>
+        type === 'asset'
+          ? { id, type: 'asset', position, data }
+          : { id, type: 'media', position, data },
+      ),
     }));
   }
   const left = active
@@ -171,13 +195,57 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
             <Video size={18} />
             视频
           </button>
+          <IconButton label="导入素材" onClick={() => fileInput.current?.click()}>
+            <Upload size={18} />
+          </IconButton>
+          <input
+            ref={fileInput}
+            type="file"
+            hidden
+            multiple
+            accept="image/*,video/*,audio/*"
+            aria-label="导入画布素材"
+            onChange={(e) => {
+              const rect = container.current?.getBoundingClientRect();
+              if (rect)
+                importFiles(Array.from(e.target.files ?? []), {
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2,
+                });
+              e.target.value = '';
+            }}
+          />
         </div>
         <div className="canvas-status">
           <span role="status">{status}</span>
         </div>
       </header>
-      <div className="canvas-body" ref={container}>
-        <ReactFlow<MediaNode>
+      <div
+        className="canvas-body"
+        ref={container}
+        onDragEnter={(e) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault();
+          dragDepth.current++;
+          setDragging(true);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = e.dataTransfer.types.includes('Files') ? 'copy' : 'none';
+        }}
+        onDragLeave={() => {
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (!dragDepth.current) setDragging(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          dragDepth.current = 0;
+          setDragging(false);
+          if (e.dataTransfer.files.length)
+            importFiles(Array.from(e.dataTransfer.files), { x: e.clientX, y: e.clientY });
+        }}
+      >
+        <ReactFlow<CanvasNode>
           nodes={nodes}
           nodeTypes={nodeTypes}
           onNodesChange={changes}
@@ -256,6 +324,18 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
             </IconButton>
           </Panel>
         </ReactFlow>
+        {dragging && (
+          <div className="canvas-drop-hint" role="status">
+            <Upload size={24} />
+            <span>松开以上传图片、视频或音频</span>
+          </div>
+        )}
+        {importNotice && (
+          <div className="canvas-import-notice" role="alert">
+            {importNotice}
+            <button onClick={() => setImportNotice('')}>关闭</button>
+          </div>
+        )}
         {active && (
           <div ref={editorRef} className="editor-position" style={{ left, top }}>
             <MediaEditor
@@ -270,7 +350,9 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
               onChange={(data) =>
                 onChange((p) => ({
                   ...p,
-                  nodes: p.nodes.map((n) => (n.id === active.id ? { ...n, data } : n)),
+                  nodes: p.nodes.map((n) =>
+                    n.id === active.id && n.type === 'media' ? { ...n, data } : n,
+                  ),
                 }))
               }
             />
