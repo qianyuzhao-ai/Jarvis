@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## Intel macOS runner 构建 arm64 产物（2026-10-21）
+
+- `v0.1.3` 在 main 更新后的手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 排队约 15 分钟后未获 runner，零步骤执行即失败；check-run 注释明确为 “The job was not acquired by Runner of type hosted even after multiple attempts”，并提示 macOS arm64 runner 容量约束。没有 DMG/ZIP 或 GitHub Release，不能将失败归因于代码。
+- 为保留用户要求的 M 芯片专用产物，本轮将唯一标签作业的宿主改为 GitHub `macos-15-intel`，electron-builder 仍显式 `--arm64`，并在上传前核对 `lipo` arm64、Info.plist 版本、DMG 校验和 ZIP 完整性。官方说明跨架构可行但原生同架构更可靠；此方案需以实际远端运行和 Apple Silicon 本机验收为准。`v0.1.3` 标签不移动，改动经 develop→main 后再手动输入原标签重试。
+
 ## 标签打包与窗口测试分离（2026-10-21）
 
 - `v0.1.3` 唯一云端运行 [39480138082](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39480138082) 在窗口测试阶段失败，31/33 通过，打包与 GitHub Release 未执行。已下载并读取失败现场 Artifact：连线测试固定点超出 runner 视口，改成另一固定点后又被已打开的编辑面板拦截；侧栏测试在动画中强制点移动中的按钮，未实际触发展开。两者是测试交互对宿主环境的错误假设，尚无证据表明对应产品行为失败。
