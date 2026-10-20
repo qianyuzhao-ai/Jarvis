@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## v0.1.3 未签名 Apple Silicon 预发布完成（2026-10-21）
+
+- `v0.1.3` 保持指向 main 合并提交 `9c575c0`，没有修改受保护标签。用户授权的后续流程修正通过 PR #11→develop、#12→main，将云端作业聚焦检查/构建/打包；第一次手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 因 GitHub macOS arm64 runner 容量不足零步骤失败。再经 PR #13→develop、#14→main 将宿主改为 `macos-15-intel`，仍显式构建 arm64。
+- 第二次手动重试 [39484879567](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39484879567) 全部步骤成功：版本和 main 祖先校验、`pnpm check`、一次 `pnpm build`、未签名 arm64 DMG/ZIP、`lipo` 架构、Info.plist 版本、`hdiutil verify`、`unzip -tqq`、Artifact 上传和 GitHub Release 创建均通过。
+- [GitHub v0.1.3 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.3) 已回读确认非草稿、预发布，包含 `Jarvis-0.1.3-macos-arm64-unsigned.dmg`（228341137 字节）和 `.zip`（228387966 字节）。这是未签名/未公证包；尚未在 M 芯片机器上对**从 GitHub 下载的交叉构建产物**完成安装启动、Gatekeeper 或跨版本升级验证，不宣称生产可用。下方各节的“无 Release”仅代表当时试验状态，由本节当前结果取代。
+
 ## Intel macOS runner 构建 arm64 产物（2026-10-21）
 
 - `v0.1.3` 在 main 更新后的手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 排队约 15 分钟后未获 runner，零步骤执行即失败；check-run 注释明确为 “The job was not acquired by Runner of type hosted even after multiple attempts”，并提示 macOS arm64 runner 容量约束。没有 DMG/ZIP 或 GitHub Release，不能将失败归因于代码。
