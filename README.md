@@ -1,6 +1,6 @@
 # Jarvis
 
-个人工作台的桌面基础工程。当前完成开发、构建、检查和本地打包链路，尚未接入 Pi Agent。
+个人工作台桌面应用。已实现 AIGC 创作空间的界面和基础交互，尚未接入 Pi Agent。
 
 ## 启动
 
@@ -17,11 +17,16 @@ pnpm dev
 
 - Electron + electron-vite + React + TypeScript strict。
 - pnpm workspace + Turborepo，共享 TypeScript 配置。
-- Tailwind CSS v4、Lucide 图标、可收起侧栏和工程启动页。
+- Tailwind CSS v4、Lucide 图标、Noto Sans SC 字体、可收起侧栏和浅深主题。
+- React Flow 项目画布：添加/拖拽/删除图像与视频节点，独立编辑面板、参考素材、模型参数。
+- 缩放、适应视图、缩略图、点阵显示和 24px 网格吸附。
+- 项目、节点、素材与视口通过 IndexedDB 自动保存在本机；保存错误会显示提示。
 - ESLint、Prettier、桌面冒烟测试、本地应用打包。
 - 主进程、preload、renderer 分离；启用沙箱和上下文隔离，renderer 不开放 Node API。
 
-新对话、AIGC 创作空间和设置入口暂时禁用。Figma 页面尚未完整实现；没有引入 Pi Agent、模型 SDK、工具执行、数据库或 React Flow。
+新对话仍待接入。设置表单支持本地保存、取消和校验。生成按钮仅提示尚未接入，不会上传素材或调用真实服务。未实现节点连线、生成任务和结果查询；不包含 Pi Agent 或工具执行。
+
+画布操作：滚轮/触控板平移，Ctrl/⌘ + 滚轮缩放，中键或右键拖动平移；点击节点打开编辑面板，点击空白或 Escape 关闭，Delete/Backspace 删除选中节点。右下角依次是缩略图、点阵和吸附。清除应用数据会清除本地项目；开发服务器与打包应用属于不同存储来源，不自动迁移数据。
 
 ## 常用命令
 

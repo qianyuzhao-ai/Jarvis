@@ -1,0 +1,280 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  BackgroundVariant,
+  MiniMap,
+  Panel,
+  applyNodeChanges,
+  useReactFlow,
+  useViewport,
+  type NodeChange,
+} from '@xyflow/react';
+import {
+  ChevronLeft,
+  Image,
+  LayoutGrid,
+  Magnet,
+  Map,
+  Maximize,
+  Minus,
+  Moon,
+  Plus,
+  Sun,
+  Video,
+} from 'lucide-react';
+import { IconButton } from '../../components/IconButton';
+import { MediaPlaceholder } from './MediaPlaceholder';
+import { MediaEditor } from './MediaEditor';
+import { createMedia, type MediaData, type MediaNode, type Project } from './types';
+const nodeTypes = { media: MediaPlaceholder };
+type Props = {
+  project: Project;
+  onChange: (update: (project: Project) => Project) => void;
+  onBack: () => void;
+  theme: 'light' | 'dark';
+  onTheme: () => void;
+  status: string;
+};
+function CanvasContent({ project, onChange, onBack, theme, onTheme, status }: Props) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const [size, setSize] = useState({ width: 1000, height: 700 });
+  const [editorHeight, setEditorHeight] = useState(200);
+  const container = useRef<HTMLDivElement>(null);
+  const flow = useReactFlow<MediaNode>();
+  const viewport = useViewport();
+  useEffect(() => {
+    const el = container.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const nodes = useMemo(
+    () =>
+      project.nodes.map((n) => ({
+        ...n,
+        selected: n.id === selected,
+        ariaLabel: `${n.data.kind === 'image' ? '图像' : '视频'}节点`,
+        width: 360,
+        height: 240,
+      })),
+    [project.nodes, selected],
+  );
+  const active = nodes.find((n) => n.id === selected);
+  const editorRef = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setEditorHeight(entry.contentRect.height);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  const patch = useCallback(
+    (values: Partial<Project>) => onChange((p) => ({ ...p, ...values })),
+    [onChange],
+  );
+  function add(kind: MediaData['kind']) {
+    const element = container.current;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const point = flow.screenToFlowPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height * 0.38,
+    });
+    const position = { x: point.x - 180, y: point.y - 120 };
+    while (
+      project.nodes.some(
+        (n) => Math.abs(n.position.x - position.x) < 30 && Math.abs(n.position.y - position.y) < 30,
+      )
+    ) {
+      position.x += 48;
+      position.y += 48;
+    }
+    const node: MediaNode = {
+      id: crypto.randomUUID(),
+      type: 'media',
+      position,
+      data: createMedia(kind),
+    };
+    onChange((p) => ({ ...p, nodes: [...p.nodes, node] }));
+    setSelected(null);
+  }
+  function changes(items: NodeChange<MediaNode>[]) {
+    const persistent = items.filter((c) => c.type === 'position' || c.type === 'remove');
+    const selection = items.find((c) => c.type === 'select' && c.selected);
+    if (selection?.type === 'select') setSelected(selection.id);
+    if (!persistent.length) return;
+    onChange((p) => ({
+      ...p,
+      nodes: applyNodeChanges(persistent, p.nodes).map((n) => ({
+        id: n.id,
+        type: 'media',
+        position: n.position,
+        data: n.data,
+      })),
+    }));
+  }
+  const left = active
+    ? Math.max(
+        16,
+        Math.min(size.width - 776, viewport.x + (active.position.x + 180) * viewport.zoom - 380),
+      )
+    : 16;
+  const below = active ? viewport.y + (active.position.y + 240) * viewport.zoom + 24 : 16;
+  const above = active ? viewport.y + active.position.y * viewport.zoom - editorHeight - 24 : 16;
+  const top = Math.max(
+    16,
+    below + editorHeight <= size.height - 80
+      ? below
+      : above >= 16
+        ? above
+        : Math.min(below, size.height - editorHeight - 80),
+  );
+  return (
+    <main className="canvas-page" data-testid="canvas-page">
+      <header className="canvas-toolbar window-drag" data-platform={window.desktop?.platform}>
+        <div className="canvas-title">
+          <IconButton label="返回项目列表" onClick={onBack}>
+            <ChevronLeft size={18} />
+          </IconButton>
+          <input
+            aria-label="项目名称"
+            value={project.name}
+            maxLength={80}
+            onChange={(e) => patch({ name: e.target.value })}
+            onBlur={() => {
+              if (!project.name.trim()) patch({ name: '未命名项目' });
+            }}
+          />
+        </div>
+        <div className="canvas-create">
+          <button onClick={() => add('image')}>
+            <Image size={18} />
+            图像
+          </button>
+          <button onClick={() => add('video')}>
+            <Video size={18} />
+            视频
+          </button>
+        </div>
+        <div className="canvas-status">
+          <span role="status">{status}</span>
+          <IconButton label="切换主题" onClick={onTheme}>
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </IconButton>
+        </div>
+      </header>
+      <div className="canvas-body" ref={container}>
+        <ReactFlow<MediaNode>
+          nodes={nodes}
+          nodeTypes={nodeTypes}
+          onNodesChange={changes}
+          defaultViewport={project.viewport}
+          onMoveEnd={(_, v) => patch({ viewport: v })}
+          onNodeClick={(_, n) => setSelected(n.id)}
+          onPaneClick={() => setSelected(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setSelected(null);
+          }}
+          snapToGrid={project.snap}
+          snapGrid={[24, 24]}
+          minZoom={0.15}
+          maxZoom={2.5}
+          deleteKeyCode={['Backspace', 'Delete']}
+          colorMode={theme}
+          nodesConnectable={false}
+          panOnScroll
+          selectionOnDrag
+          panOnDrag={[1, 2]}
+          zoomOnDoubleClick={false}
+          attributionPosition="top-right"
+        >
+          {project.dots && (
+            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--dot)" />
+          )}
+          {project.minimap && (
+            <MiniMap
+              className="canvas-minimap"
+              pannable
+              zoomable
+              nodeColor="var(--color-secondary)"
+              maskColor="var(--minimap-mask)"
+              ariaLabel="画布缩略图"
+            />
+          )}
+          <Panel position="bottom-left" className="floating-controls">
+            <IconButton label="缩小" onClick={() => void flow.zoomOut()}>
+              <Minus size={18} />
+            </IconButton>
+            <button className="zoom-value" title="重置为 100%" onClick={() => void flow.zoomTo(1)}>
+              {Math.round(viewport.zoom * 100)}%
+            </button>
+            <IconButton label="放大" onClick={() => void flow.zoomIn()}>
+              <Plus size={18} />
+            </IconButton>
+            <span className="control-divider" />
+            <IconButton
+              label="适应视图"
+              onClick={() => void flow.fitView({ padding: 0.3, maxZoom: 1 })}
+            >
+              <Maximize size={18} />
+            </IconButton>
+          </Panel>
+          <Panel position="bottom-right" className="floating-controls">
+            <IconButton
+              label="缩略图显示"
+              aria-pressed={project.minimap}
+              onClick={() => patch({ minimap: !project.minimap })}
+            >
+              <Map size={18} />
+            </IconButton>
+            <IconButton
+              label="背景点阵显示"
+              aria-pressed={project.dots}
+              onClick={() => patch({ dots: !project.dots })}
+            >
+              <LayoutGrid size={18} />
+            </IconButton>
+            <IconButton
+              label="磁力吸附"
+              aria-pressed={project.snap}
+              onClick={() => patch({ snap: !project.snap })}
+            >
+              <Magnet size={18} />
+            </IconButton>
+          </Panel>
+        </ReactFlow>
+        {active && (
+          <div ref={editorRef} className="editor-position" style={{ left, top }}>
+            <MediaEditor
+              key={active.id}
+              data={active.data}
+              onClose={() => setSelected(null)}
+              onDelete={() => {
+                onChange((p) => ({ ...p, nodes: p.nodes.filter((n) => n.id !== active.id) }));
+                setSelected(null);
+              }}
+              onChange={(data) =>
+                onChange((p) => ({
+                  ...p,
+                  nodes: p.nodes.map((n) => (n.id === active.id ? { ...n, data } : n)),
+                }))
+              }
+            />
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+export function Canvas(props: Props) {
+  return (
+    <ReactFlowProvider key={props.project.id}>
+      <CanvasContent {...props} />
+    </ReactFlowProvider>
+  );
+}
