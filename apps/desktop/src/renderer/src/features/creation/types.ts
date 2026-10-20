@@ -44,7 +44,7 @@ export const projectSchema = z.object({
   viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number().positive() }),
   minimap: z.boolean(),
   dots: z.boolean(),
-  snap: z.boolean(),
+  snap: z.boolean().default(true),
 });
 export const settingsSchema = z.object({
   reqFrom: z.string().max(100),
@@ -81,7 +81,7 @@ export function createProject(): Project {
     viewport: { x: 0, y: 0, zoom: 1 },
     minimap: false,
     dots: true,
-    snap: false,
+    snap: true,
   };
 }
 export function createMedia(kind: MediaData['kind']): MediaData {

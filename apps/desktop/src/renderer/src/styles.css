@@ -764,7 +764,7 @@ svg {
   height: 96px;
   flex: 1;
   min-width: 0;
-  resize: vertical;
+  resize: none;
   background: transparent;
   border: 0;
   padding: 0;
@@ -1013,4 +1013,45 @@ svg {
 .theme-choices button[aria-pressed='true'] {
   border-color: var(--color-accent);
   background: var(--color-selected);
+}
+
+.editor-window-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.editor-window-actions .icon-button {
+  width: 24px;
+  height: 24px;
+}
+.editor-focus-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 24%);
+  z-index: 7;
+}
+.media-editor.is-expanded {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(960px, calc(100vw - 64px));
+  height: min(600px, calc(100dvh - 120px));
+  max-height: none;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+}
+.media-editor.is-expanded .editor-top {
+  flex: 1;
+  min-height: 136px;
+}
+.media-editor.is-expanded textarea {
+  align-self: stretch;
+  height: auto;
+}
+.media-editor.is-expanded .editor-bottom,
+.media-editor.is-expanded .parameter-panel,
+.media-editor.is-expanded .editor-notice {
+  flex-shrink: 0;
 }

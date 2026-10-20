@@ -199,7 +199,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }:
           selectionOnDrag
           panOnDrag={[1, 2]}
           zoomOnDoubleClick={false}
-          attributionPosition="top-right"
+          proOptions={{ hideAttribution: true }}
         >
           {project.dots && (
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--dot)" />

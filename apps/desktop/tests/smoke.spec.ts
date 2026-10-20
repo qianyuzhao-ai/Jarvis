@@ -53,12 +53,24 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     });
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('画布交互测试');
+    await expect(page.locator('.react-flow__attribution')).toHaveCount(0);
     await page.getByRole('button', { name: '图像', exact: true }).click();
     const nodes = page.locator('.react-flow__node-media');
     await expect(nodes).toHaveCount(1);
     await nodes.first().click();
     await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeVisible();
     await page.getByLabel('图像提示词').fill('窗边的橘猫，温暖自然光');
+    await expect(page.getByLabel('图像提示词')).toHaveCSS('resize', 'none');
+    await page.getByRole('button', { name: '放大编辑', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '图像编辑面板' })).toBeVisible();
+    const expandedBounds = await page.getByRole('dialog', { name: '图像编辑面板' }).boundingBox();
+    expect(expandedBounds?.width).toBe(960);
+    expect(expandedBounds?.height).toBe(600);
+    await expect(page.getByLabel('图像提示词')).toBeFocused();
+    await page.screenshot({ path: test.info().outputPath('image-editor-expanded.png') });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeVisible();
+    await expect(page.getByLabel('图像提示词')).toHaveValue('窗边的橘猫，温暖自然光');
     await page.getByLabel('选择模型', { exact: true }).selectOption('nano-banana-pro');
     await page.getByRole('button', { name: /1:1.*2K/ }).click();
     await page.getByLabel('尺寸 / 比例').selectOption('16:9');
@@ -95,12 +107,21 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await expect(page.getByRole('region', { name: '视频编辑面板' })).toBeVisible();
     await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeHidden();
     await page.getByLabel('视频提示词').fill('镜头缓慢推进');
+    await page.getByRole('button', { name: '放大编辑', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '视频编辑面板' })).toBeVisible();
+    await page.getByRole('button', { name: '还原面板', exact: true }).click();
+    await expect(page.getByLabel('视频提示词')).toHaveValue('镜头缓慢推进');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.5');
     await page.getByLabel('视频时长').selectOption('30');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.0');
     await expect(page.getByLabel('视频时长')).toHaveValue('15');
     await page.getByRole('button', { name: '关闭编辑面板' }).click();
     await expect(nodes).toHaveCount(2);
+    await expect(page.getByRole('button', { name: '磁力吸附', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.getByRole('button', { name: '磁力吸附', exact: true }).click();
     await page.getByRole('button', { name: '磁力吸附', exact: true }).click();
     await expect(page.getByRole('button', { name: '磁力吸附', exact: true })).toHaveAttribute(
       'aria-pressed',
