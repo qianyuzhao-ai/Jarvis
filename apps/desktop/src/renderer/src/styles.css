@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-canvas: #fdfdfc;
+  --color-sidebar: #f0f1f2;
+  --color-surface: #ffffff;
+  --color-ink: #25282d;
+  --color-secondary: #666b73;
+  --color-border: #e2e4e7;
+  --color-accent: #1769e0;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root {
+  color: var(--color-ink);
+  background: var(--color-sidebar);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  color-scheme: light;
+  --sidebar-min-width: 230px;
+  --sidebar-max-width: 320px;
+  --sidebar-width: var(--sidebar-min-width);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  -webkit-app-region: no-drag;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-shell[data-collapsed='true'] {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.sidebar {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: var(--sidebar-min-width);
+  max-width: var(--sidebar-max-width);
+  padding: 0 16px 16px;
+}
+
+.sidebar[hidden] {
+  display: none;
+}
+
+.window-drag {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.sidebar-chrome {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+button:disabled {
+  cursor: default;
+  color: var(--color-secondary);
+}
+
+.brand {
+  display: grid;
+  gap: 4px;
+  padding: 16px 0 24px;
+}
+
+.brand strong {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.brand span,
+.sidebar-footer,
+.pending-label {
+  font-size: 11px;
+  color: var(--color-secondary);
+}
+
+.navigation {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.nav-button + .nav-button {
+  border-color: transparent;
+  background: transparent;
+}
+
+.pending-label {
+  margin-left: auto;
+}
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.workspace {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: auto;
+  border-radius: 16px 0 0 16px;
+  background: var(--color-canvas);
+}
+
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  flex-shrink: 0;
+  padding: 0 24px;
+  font-size: 13px;
+}
+
+.workspace-toolbar[data-platform='darwin'][data-collapsed='true'] {
+  padding-left: 96px;
+}
+
+.welcome {
+  display: grid;
+  place-content: center;
+  flex: 1;
+  padding: 48px;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  color: var(--color-secondary);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.welcome-description {
+  margin: 12px 0 32px;
+  color: var(--color-secondary);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.runtime-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 36px;
+  margin: 0;
+  padding: 20px 0;
+  border-block: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+.runtime-info dt {
+  color: var(--color-secondary);
+}
+
+.runtime-info dd {
+  margin: 6px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.scope-note {
+  margin-top: 20px;
+  color: var(--color-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.launch-message {
+  padding: 48px;
+}

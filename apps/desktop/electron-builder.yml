@@ -1,0 +1,11 @@
+appId: ai.qianyuzhao.jarvis
+productName: Jarvis
+asar: true
+files:
+  - out/**/*
+  - package.json
+mac:
+  category: public.app-category.productivity
+  minimumSystemVersion: '26.0'
+  identity: null
+publish: null
