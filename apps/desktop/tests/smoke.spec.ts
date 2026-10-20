@@ -64,8 +64,9 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '放大编辑', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '图像编辑面板' })).toBeVisible();
     const expandedBounds = await page.getByRole('dialog', { name: '图像编辑面板' }).boundingBox();
-    expect(expandedBounds?.width).toBe(960);
-    expect(expandedBounds?.height).toBe(600);
+    const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    expect(expandedBounds?.width).toBe(Math.min(960, viewport.width - 64));
+    expect(expandedBounds?.height).toBe(Math.min(600, viewport.height - 120));
     await expect(page.getByLabel('图像提示词')).toBeFocused();
     await page.screenshot({ path: test.info().outputPath('image-editor-expanded.png') });
     await page.keyboard.press('Escape');
