@@ -50,7 +50,8 @@
 
 ## GitHub 当前保护配置（2026-10-21）
 
-- 2026-10-21 新增状态：用户指定下一版本为 `0.1.1`；画布功能、Prompt 引用及 macOS arm64 CI/打包配置在 `feature/canvas-multi-select`，已提交、推送并以 PR #3 提议合入 develop。release 工作流支持手动 Artifact 和 `v*` 标签预发布，但只有文件进入默认分支 main 后才能手动触发。PR CI 当前排队中；尚未合并、打 `v0.1.1` 标签或实际创建 GitHub Release。下方“仓库没有 Actions workflow”是规则配置当时的历史状态，不代表当前功能分支。
+- 2026-10-21：用户已在 GitHub 将 PR #3 合入 develop，远端合并提交 `7c8f1c4`。据此从最新 `origin/develop` 创建本地 `release/0.1.1`；版本已是 0.1.1，尚未合入 main、创建标签或 GitHub Release。PR #3 与 develop push 的 Apple Silicon CI 均处于 GitHub runner 排队状态，不能视为远端验证通过。
+- 2026-10-21：用户指定下一版本为 `0.1.1`；release 工作流支持手动 Artifact 和 `v*` 标签预发布，但文件进入默认分支 main 前不能手动触发。下方“仓库没有 Actions workflow”是规则配置当时的历史状态。
 
 - 自动删除来源分支：`delete_branch_on_merge=true`，GitHub PR 合并后执行，不主动清理历史分支；已授权的手动清理见变更记录。受删除保护的分支不会按此设置自动删除。
 - [主分支保护](https://github.com/qianyuzhao-ai/Jarvis/rules/25491765)：用户创建，目标 main/develop，Active，无 bypass。已核对禁止删除、禁止强推、必须 PR、0 人审批、只允许 Merge commit；本轮补开“合并前解决所有讨论”。今后 main/develop 更新必须通过 PR，不再直接推送本地合并结果。
