@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Moon, PanelLeftOpen, Sun, Workflow } from 'lucide-react';
+import { MotionConfig } from 'motion/react';
+import { SidebarLayout } from './components/SidebarLayout';
 import { Sidebar } from './components/Sidebar';
 import { IconButton } from './components/IconButton';
 import { Canvas } from './features/creation/Canvas';
@@ -17,6 +19,16 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   const [route, setRoute] = useState<'projects' | 'settings' | 'canvas'>('projects');
   const [projectId, setProjectId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const expandButton = useRef<HTMLButtonElement>(null);
+  const collapseButton = useRef<HTMLButtonElement>(null);
+  function collapseSidebar() {
+    setSidebarOpen(false);
+    requestAnimationFrame(() => expandButton.current?.focus());
+  }
+  function expandSidebar() {
+    setSidebarOpen(true);
+    requestAnimationFrame(() => collapseButton.current?.focus());
+  }
   const [settingsDirty, setSettingsDirty] = useState(false);
   const changeProject = useCallback(
     (change: (project: Project) => Project) =>
@@ -64,51 +76,60 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           status={status}
         />
       ) : (
-        <div className="app-shell" data-collapsed={!sidebarOpen && route !== 'settings'}>
-          {(sidebarOpen || route === 'settings') && (
+        <SidebarLayout
+          open={sidebarOpen}
+          initialWidth={data.sidebarWidth}
+          onWidthChange={(sidebarWidth) => update((previous) => ({ ...previous, sidebarWidth }))}
+          sidebar={
             <Sidebar
               settings={route === 'settings'}
               onProjects={returnToProjects}
               onSettings={() => setRoute('settings')}
-              onCollapse={() => setSidebarOpen(false)}
+              onCollapse={collapseSidebar}
+              collapseRef={collapseButton}
               onAppearance={toggleTheme}
             />
-          )}
-          <main className="workspace">
-            <header
-              className="workspace-toolbar window-drag"
-              data-platform={window.desktop?.platform}
-              data-collapsed={!sidebarOpen && route !== 'settings'}
-            >
-              {!sidebarOpen && route !== 'settings' && (
-                <IconButton label="展开侧栏" onClick={() => setSidebarOpen(true)}>
-                  <PanelLeftOpen size={18} />
-                </IconButton>
-              )}
-              <span>{route === 'settings' ? '内网地址' : 'AIGC 创作空间'}</span>
-              <div className="toolbar-end">
-                <span className="save-status" role="status">
-                  {status}
-                </span>
-                <IconButton label="切换主题" onClick={toggleTheme}>
-                  {data.theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                </IconButton>
-                <Workflow size={16} />
-              </div>
-            </header>
-            {route === 'settings' ? (
-              <ServiceSettings
-                key="settings"
-                value={data.settings}
-                onSave={(settings) => update((p) => ({ ...p, settings }))}
-                onDirtyChange={setSettingsDirty}
-                status={status}
-              />
-            ) : (
-              <ProjectList projects={data.projects} onCreate={create} onOpen={openProject} />
+          }
+        >
+          <header
+            className="workspace-toolbar window-drag"
+            data-platform={window.desktop?.platform}
+            data-collapsed={!sidebarOpen}
+          >
+            {!sidebarOpen && (
+              <IconButton
+                ref={expandButton}
+                label="展开侧栏"
+                aria-controls="sidebar"
+                aria-expanded={false}
+                onClick={expandSidebar}
+              >
+                <PanelLeftOpen size={18} />
+              </IconButton>
             )}
-          </main>
-        </div>
+            <span>{route === 'settings' ? '内网地址' : 'AIGC 创作空间'}</span>
+            <div className="toolbar-end">
+              <span className="save-status" role="status">
+                {status}
+              </span>
+              <IconButton label="切换主题" onClick={toggleTheme}>
+                {data.theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </IconButton>
+              <Workflow size={16} />
+            </div>
+          </header>
+          {route === 'settings' ? (
+            <ServiceSettings
+              key="settings"
+              value={data.settings}
+              onSave={(settings) => update((p) => ({ ...p, settings }))}
+              onDirtyChange={setSettingsDirty}
+              status={status}
+            />
+          ) : (
+            <ProjectList projects={data.projects} onCreate={create} onOpen={openProject} />
+          )}
+        </SidebarLayout>
       )}
     </div>
   );
@@ -150,5 +171,9 @@ export function App() {
         正在打开工作台…
       </main>
     );
-  return <Workbench initial={initial} />;
+  return (
+    <MotionConfig reducedMotion="user">
+      <Workbench initial={initial} />
+    </MotionConfig>
+  );
 }

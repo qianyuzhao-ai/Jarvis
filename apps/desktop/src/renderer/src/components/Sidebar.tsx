@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import {
   ArrowLeft,
   BookmarkCheck,
@@ -19,21 +20,27 @@ export function Sidebar({
   onSettings,
   onCollapse,
   onAppearance,
+  collapseRef,
 }: {
   settings: boolean;
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
   onAppearance: () => void;
+  collapseRef: Ref<HTMLButtonElement>;
 }) {
   return (
     <aside id="sidebar" className="sidebar" aria-label="主导航">
       <div className="sidebar-chrome window-drag">
-        {!settings && (
-          <IconButton label="收起侧栏" onClick={onCollapse}>
-            <PanelLeftClose size={18} />
-          </IconButton>
-        )}
+        <IconButton
+          ref={collapseRef}
+          label="收起侧栏"
+          aria-controls="sidebar"
+          aria-expanded={true}
+          onClick={onCollapse}
+        >
+          <PanelLeftClose size={18} />
+        </IconButton>
       </div>
       <div className="brand">
         <strong>{settings ? '设置' : 'Jarvis'}</strong>

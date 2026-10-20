@@ -11,7 +11,7 @@
 - Electron 44.9.1、electron-vite 6.0.0、React 19.3.1、Vite 8.3.4、Tailwind 4.3.3、TypeScript 5.9.3。具体版本以 package.json 和 lockfile 为准。
 - 主进程为 ESM，沙箱 preload 为 CommonJS；renderer 禁止直接引入 Electron/Node。
 - 开启 sandbox、contextIsolation，关闭 nodeIntegration；preload 只暴露运行时版本信息。拒绝权限请求、新窗口和外部导航。
-- UI 已进入创作空间阶段：项目列表和 React Flow 画布可操作，侧栏可收起，默认 230px；尚未实现拖拽调宽。新对话仍待接入。
+- UI 已进入创作空间阶段：项目列表和 React Flow 画布可操作，侧栏可收起并支持 230–320px 拖拽调宽、宽度保存和 Motion 动画，默认 230px。新对话仍待接入。
 - 使用 @xyflow/react 和浏览器内置 IndexedDB 保存项目；不包含 Pi Agent、模型 SDK、MCP 或 Skill 执行。上传与生成尚未接入。
 
 ## 使用与维护

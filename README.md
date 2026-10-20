@@ -17,7 +17,8 @@ pnpm dev
 
 - Electron + electron-vite + React + TypeScript strict。
 - pnpm workspace + Turborepo，共享 TypeScript 配置。
-- Tailwind CSS v4、Lucide 图标、Noto Sans SC 字体、可收起侧栏和浅深主题。
+- Tailwind CSS v4、Lucide 图标、Noto Sans SC 字体、可调宽侧栏和浅深主题。
+- Motion 侧栏展开/收起动画；拖动边缘可调整到 230–320px，双击恢复默认，宽度自动保存，支持减少动态效果。
 - React Flow 项目画布：添加/拖拽/删除图像与视频节点，独立编辑面板、参考素材、模型参数。
 - 缩放、适应视图、缩略图、点阵显示和 24px 网格吸附。
 - 项目、节点、素材与视口通过 IndexedDB 自动保存在本机；保存错误会显示提示。
