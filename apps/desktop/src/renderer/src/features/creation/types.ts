@@ -56,7 +56,7 @@ export const workspaceSchema = z.object({
   version: z.literal(1),
   projects: z.array(projectSchema),
   settings: settingsSchema,
-  theme: z.enum(['light', 'dark']),
+  theme: z.enum(['system', 'light', 'dark']).default('system'),
   sidebarWidth: z.number().min(230).max(320).default(230),
 });
 export type MediaData = z.infer<typeof mediaSchema>;
@@ -68,7 +68,7 @@ export type WorkspaceData = z.infer<typeof workspaceSchema>;
 export const emptyWorkspace: WorkspaceData = {
   version: 1,
   projects: [],
-  theme: 'light',
+  theme: 'system',
   sidebarWidth: 230,
   settings: { reqFrom: '', generateUrl: '', imageUploadUrl: '', audioUploadUrl: '' },
 };

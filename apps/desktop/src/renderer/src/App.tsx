@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { Moon, PanelLeftOpen, Sun, Workflow } from 'lucide-react';
+import { PanelLeftOpen, Workflow } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
 import { SidebarLayout } from './components/SidebarLayout';
 import { Sidebar } from './components/Sidebar';
 import { IconButton } from './components/IconButton';
+import { GeneralSettings } from './features/settings/GeneralSettings';
+import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ProjectList } from './features/creation/ProjectList';
 import { ServiceSettings } from './features/creation/ServiceSettings';
@@ -17,6 +19,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const generate = useGeneration(data, commit, getCurrent);
   const [route, setRoute] = useState<'projects' | 'settings' | 'canvas'>('projects');
+  const [settingsSection, setSettingsSection] = useState<'general' | 'services'>('general');
+  const theme = useResolvedTheme(data.theme);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const expandButton = useRef<HTMLButtonElement>(null);
@@ -40,8 +44,17 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       })),
     [projectId, update],
   );
-  const toggleTheme = () =>
-    update((previous) => ({ ...previous, theme: previous.theme === 'light' ? 'dark' : 'light' }));
+  function openSettings(section: 'general' | 'services') {
+    if (
+      settingsDirty &&
+      section !== settingsSection &&
+      !window.confirm('更改尚未保存，确定放弃这些更改吗？')
+    )
+      return;
+    if (section !== settingsSection) setSettingsDirty(false);
+    setSettingsSection(section);
+    setRoute('settings');
+  }
   const openProject = (id: string) => {
     setProjectId(id);
     setRoute('canvas');
@@ -58,7 +71,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     openProject(next.id);
   }
   return (
-    <div className="theme-root" data-theme={data.theme}>
+    <div className="theme-root" data-theme={theme}>
       {saveError && (
         <div role="alert" className="save-error">
           {saveError}
@@ -71,8 +84,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           onGenerate={(nodeId) => void generate(project.id, nodeId)}
           onChange={changeProject}
           onBack={() => setRoute('projects')}
-          theme={data.theme}
-          onTheme={toggleTheme}
+          theme={theme}
           status={status}
         />
       ) : (
@@ -84,10 +96,12 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             <Sidebar
               settings={route === 'settings'}
               onProjects={returnToProjects}
-              onSettings={() => setRoute('settings')}
+              onSettings={() => openSettings('general')}
               onCollapse={collapseSidebar}
               collapseRef={collapseButton}
-              onAppearance={toggleTheme}
+              section={settingsSection}
+              onGeneral={() => openSettings('general')}
+              onServices={() => openSettings('services')}
             />
           }
         >
@@ -107,18 +121,26 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 <PanelLeftOpen size={18} />
               </IconButton>
             )}
-            <span>{route === 'settings' ? '内网地址' : 'AIGC 创作空间'}</span>
+            <span>
+              {route === 'settings'
+                ? settingsSection === 'general'
+                  ? '通用'
+                  : '内网地址'
+                : 'AIGC 创作空间'}
+            </span>
             <div className="toolbar-end">
               <span className="save-status" role="status">
                 {status}
               </span>
-              <IconButton label="切换主题" onClick={toggleTheme}>
-                {data.theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              </IconButton>
               <Workflow size={16} />
             </div>
           </header>
-          {route === 'settings' ? (
+          {route === 'settings' && settingsSection === 'general' ? (
+            <GeneralSettings
+              value={data.theme}
+              onChange={(theme) => update((p) => ({ ...p, theme }))}
+            />
+          ) : route === 'settings' ? (
             <ServiceSettings
               key="settings"
               value={data.settings}

@@ -19,9 +19,7 @@ import {
   Map,
   Maximize,
   Minus,
-  Moon,
   Plus,
-  Sun,
   Video,
 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
@@ -35,11 +33,10 @@ type Props = {
   onChange: (update: (project: Project) => Project) => void;
   onBack: () => void;
   theme: 'light' | 'dark';
-  onTheme: () => void;
   status: string;
   onGenerate: (nodeId: string) => void;
 };
-function CanvasContent({ project, onChange, onBack, theme, onTheme, status, onGenerate }: Props) {
+function CanvasContent({ project, onChange, onBack, theme, status, onGenerate }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 1000, height: 700 });
   const [editorHeight, setEditorHeight] = useState(200);
@@ -177,9 +174,6 @@ function CanvasContent({ project, onChange, onBack, theme, onTheme, status, onGe
         </div>
         <div className="canvas-status">
           <span role="status">{status}</span>
-          <IconButton label="切换主题" onClick={onTheme}>
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </IconButton>
         </div>
       </header>
       <div className="canvas-body" ref={container}>

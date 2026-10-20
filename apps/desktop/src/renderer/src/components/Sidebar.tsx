@@ -2,7 +2,6 @@ import type { Ref } from 'react';
 import {
   ArrowLeft,
   BookmarkCheck,
-  Contrast,
   Cpu,
   Database,
   Folder,
@@ -19,14 +18,18 @@ export function Sidebar({
   onProjects,
   onSettings,
   onCollapse,
-  onAppearance,
+  section,
+  onGeneral,
+  onServices,
   collapseRef,
 }: {
   settings: boolean;
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
-  onAppearance: () => void;
+  section: 'general' | 'services';
+  onGeneral: () => void;
+  onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
 }) {
   return (
@@ -49,7 +52,11 @@ export function Sidebar({
       <nav className="navigation" aria-label={settings ? '设置分类' : '工作台功能'}>
         {settings ? (
           <>
-            <button className="side-link" disabled>
+            <button
+              className={`side-link ${section === 'general' ? 'selected' : ''}`}
+              onClick={onGeneral}
+              aria-current={section === 'general' ? 'page' : undefined}
+            >
               <Settings2 />
               通用
             </button>
@@ -57,13 +64,13 @@ export function Sidebar({
               <Cpu />
               模型服务
             </button>
-            <button className="side-link selected" onClick={onSettings} aria-current="page">
+            <button
+              className={`side-link ${section === 'services' ? 'selected' : ''}`}
+              onClick={onServices}
+              aria-current={section === 'services' ? 'page' : undefined}
+            >
               <Plug />
               内网地址
-            </button>
-            <button className="side-link" onClick={onAppearance}>
-              <Contrast />
-              外观 · 切换主题
             </button>
             <button className="side-link" disabled>
               <Folder />

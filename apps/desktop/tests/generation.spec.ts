@@ -251,6 +251,7 @@ test('Electron uploads references, generates image and video, and restores resul
     });
     mock.setVideo(Buffer.from(bytes));
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('test-client');
     await page.getByLabel('aigc 地址', { exact: true }).fill(mock.base + '/generate');
     await page.getByLabel('upload 地址', { exact: true }).fill(mock.base + '/upload');

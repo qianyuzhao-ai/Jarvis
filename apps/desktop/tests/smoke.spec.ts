@@ -125,7 +125,12 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '适应视图' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
-    await page.getByRole('button', { name: '切换主题' }).click();
+    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: /画布交互测试/ }).click();
+    await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
     await expect(page.locator('.canvas-status')).toContainText('已保存到本机');
     await page.reload();
@@ -162,6 +167,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
       if (/^https?:/.test(r.url())) requests.push(r.url());
     });
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '返回工作台' }).click();
@@ -181,6 +187,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await expect(page.locator('.form-actions')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
     await expect(page.getByLabel('aigc 地址', { exact: true })).toHaveValue(
       'https://example.invalid/generate',
