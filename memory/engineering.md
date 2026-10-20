@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## GitHub Apple Silicon 打包流程（2026-10-21）
+
+- 新增 PR/主线 CI 和 macOS arm64 打包工作流。CI 在 `macos-15` Apple Silicon runner 上执行 `pnpm check`、真实 Electron 窗口测试；打包工作流支持 Actions 手动触发（仅上传运行 Artifact）及 `v*` 标签触发（先校验标签版本与 main 祖先关系，再创建 GitHub 预发布）。仅产出 DMG/ZIP，不生成 Intel 或 universal 版本。
+- 按用户最新要求，签名和公证留待后续；当前 release 配置显式关闭签名、公证和 Hardened Runtime，文件名包含 `unsigned`，标签发布标记为预发布。未配置正式图标，也未实现自动更新；现有 `mac.minimumSystemVersion` 仍为 26.0。
+- 本地已执行与工作流相同的 arm64 electron-builder 打包命令，得到 `Jarvis-0.1.0-macos-arm64-unsigned.dmg` 和 `.zip`；`lipo` 确认主程序 arm64，`hdiutil verify` 与 `unzip -t` 通过，`pnpm check` 与构建通过。第一次沙箱运行因无法解析 github.com 失败，允许联网后下载 Electron 并成功打包。GitHub Actions 尚未在远端实际运行，不能将本地结果称为远端 CI/发布通过。
+
 ## Prompt 素材引用（2026-10-21）
 
 - 上轮画布多选已按用户要求单独提交为 `f44b5e2`。本轮在同一画布功能分支增加 Prompt `@` 候选和高亮标签，候选来自面板参考素材及连线素材。按图片、视频、音频各自的数组顺序编号；生成前将 `@kind_N` 转为 `<<<kind_N>>>`，缺少对应素材时明确失败，不发送生成请求。面板参考素材变化时按素材 ID 重算已有标签位置，移除素材的标签同步移除。

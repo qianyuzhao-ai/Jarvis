@@ -47,6 +47,13 @@ pnpm dev
 
 当前本地验证平台为 macOS arm64。应用未配置正式图标、Developer ID 签名、公证或自动更新，仅用于本地开发验证；Windows 尚未验证。
 
+## GitHub 打包与发布
+
+- PR 合入 `develop` 或 `main` 前，`.github/workflows/ci.yml` 在 macOS Apple Silicon runner 上执行 `pnpm check` 和真实 Electron 窗口测试。
+- 合入工作流后，可在 GitHub Actions 手动运行 **Package macOS Apple Silicon**，下载本次运行的 DMG/ZIP Artifact；手动运行不会创建 Release。
+- 按 `memory/git-workflow.md` 完成 release/hotfix 与 `main` 的合并，确保根目录和桌面包版本相同，再在 `main` 的发布提交上推送对应的 `v<版本号>` 标签。标签工作流会核对版本和 `main` 祖先关系，测试、打包并创建 GitHub **预发布**，上传 arm64 DMG/ZIP。
+- 产物文件名带 `unsigned`。当前没有 Developer ID 签名和 Apple 公证，macOS Gatekeeper 可能阻止直接打开；这些包用于先验证打包和发布链路，不能视为正式可信安装包。当前打包配置最低系统版本为 macOS 26.0。
+
 ## 目录
 
 ```text
