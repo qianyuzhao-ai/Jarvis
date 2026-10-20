@@ -51,7 +51,7 @@ pnpm dev
 
 - 新功能从 `develop` 创建功能分支，以 PR 合回 `develop`。发版前在 `develop` 更新根包和桌面包版本、版本记录，并在本地完成 `pnpm check` 与 `pnpm test:smoke`。
 - 直接由 `develop` 向 `main` 提发布 PR。合并后在 `main` 的合并提交上推送 `v<版本号>` 标签；这是唯一自动触发 GitHub 云端构建的事件。PR、`develop` 和 `main` 推送不会运行构建。
-- 标签工作流核对版本和 `main` 祖先关系，运行检查与窗口测试，生成 arm64 DMG/ZIP，并创建 GitHub **预发布**。已存在标签的任务若失败或取消，可在 Actions 手动输入该标签重试同一个流程；已存在 GitHub Release 时会在构建前停止，避免重复发布。
+- 标签工作流核对版本和 `main` 祖先关系，运行 `pnpm check` 与一次 `pnpm build`，生成 arm64 DMG/ZIP，并创建 GitHub **预发布**。真实 Electron 窗口测试在发版前本地运行，避免云端 GUI 环境差异阻止打包。已存在标签的任务若失败或取消，可在 Actions 手动输入该标签重试同一个流程；已存在 GitHub Release 时会在构建前停止，避免重复发布。
 - 产物文件名带 `unsigned`。当前没有 Developer ID 签名和 Apple 公证，macOS Gatekeeper 可能阻止直接打开；这些包用于先验证打包和发布链路，不能视为正式可信安装包。当前打包配置最低系统版本为 macOS 26.0。
 
 ## 目录

@@ -53,15 +53,7 @@ jobs:
           fi
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm test:smoke
-      - name: Upload failed Electron test evidence
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-test-failure-${{ github.run_id }}
-          path: apps/desktop/test-results/**
-          if-no-files-found: ignore
-          retention-days: 7
+      - run: pnpm build
       - name: Build unsigned DMG and ZIP
         working-directory: apps/desktop
         run: pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
