@@ -31,7 +31,7 @@ export function AssetNode({ id, data, selected, isConnectable }: NodeProps<Asset
         </>
       )}
       <div className="asset-actions nodrag nopan">
-        {data.upload.status === 'ready' && data.kind !== 'audio' && (
+        {data.upload.status === 'ready' && (
           <NodeDownload
             key={data.upload.url}
             url={data.upload.url}

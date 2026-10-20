@@ -712,6 +712,41 @@ svg {
   position: relative;
   min-height: 0;
 }
+.canvas-selection-actions {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--node-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 8px 24px #0002;
+  white-space: nowrap;
+}
+.canvas-selection-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--node-border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  background: var(--flow-control);
+  color: inherit;
+  cursor: pointer;
+}
+.canvas-selection-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.canvas-selection-actions button:focus-visible {
+  outline: 2px solid var(--color-accent);
+}
 .react-flow {
   background: var(--flow-bg);
 }

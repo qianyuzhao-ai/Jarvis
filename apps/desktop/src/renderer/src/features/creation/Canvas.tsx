@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import type { DownloadMedia } from '../../../../shared/generation';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -17,6 +19,7 @@ import {
 } from '@xyflow/react';
 import {
   ChevronLeft,
+  Download,
   Image,
   LayoutGrid,
   Magnet,
@@ -26,6 +29,7 @@ import {
   Plus,
   Video,
   Upload,
+  Link2,
 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
@@ -33,7 +37,7 @@ import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
 import { CanvasExport } from './CanvasExport';
 import { generationBusy } from './useGeneration';
-import { connectionIssue, relatedWorkflow } from './connections';
+import { connectSelected, connectionIssue, relatedWorkflow } from './connections';
 import {
   createMedia,
   type CanvasNode,
@@ -57,7 +61,11 @@ type Props = {
   ) => Promise<void>;
 };
 function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, onImport }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [editorId, setEditorId] = useState<string | null>(null);
+  const [connectingIds, setConnectingIds] = useState<string[] | null>(null);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const batchPending = useRef(false);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [connectionNotice, setConnectionNotice] = useState('');
   const [size, setSize] = useState({ width: 1000, height: 700 });
@@ -68,7 +76,9 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   const [dragging, setDragging] = useState(false);
   const [importNotice, setImportNotice] = useState('');
   const flow = useReactFlow<CanvasNode>();
+  const reducedMotion = useReducedMotion();
   const viewport = useViewport();
+  const selected = selectedIds.length === 1 ? selectedIds[0]! : null;
   const related = useMemo(
     () => relatedWorkflow(project.edges, selected),
     [project.edges, selected],
@@ -108,7 +118,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
     () =>
       project.nodes.map((n) => ({
         ...n,
-        selected: n.id === selected,
+        selected: selectedIds.includes(n.id),
         className: related.nodes.has(n.id) ? 'workflow-node-related' : '',
         zIndex: 10,
         sourcePosition: Position.Right,
@@ -118,9 +128,47 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
         height: 240,
         measured: { width: 360, height: 240 },
       })),
-    [project.nodes, selected, related],
+    [project.nodes, selectedIds, related],
   );
-  const active = nodes.find((n): n is MediaNode => n.id === selected && n.type === 'media');
+  const active = nodes.find((n): n is MediaNode => n.id === editorId && n.type === 'media');
+  const downloadable: DownloadMedia[] = project.nodes.flatMap((node): DownloadMedia[] => {
+    if (!selectedIds.includes(node.id)) return [];
+    if (node.type === 'asset')
+      return node.data.upload.status === 'ready'
+        ? [{ url: node.data.upload.url, kind: node.data.kind, fileName: node.data.name }]
+        : [];
+    return node.data.result ? [{ url: node.data.result.url, kind: node.data.kind }] : [];
+  });
+  async function downloadSelected() {
+    if (batchPending.current) return;
+    batchPending.current = true;
+    setBatchBusy(true);
+    let completed = 0;
+    let failed = 0;
+    let canceled = false;
+    const skipped = selectedIds.length - downloadable.length;
+    try {
+      for (const request of downloadable) {
+        try {
+          const response = await window.desktop!.generation.downloadMedia(request);
+          if (!response.ok) throw new Error(response.error);
+          if (response.value.canceled) {
+            canceled = true;
+            break;
+          }
+          completed++;
+        } catch {
+          failed++;
+        }
+      }
+      setConnectionNotice(
+        `批量下载：已下载 ${completed} 个，跳过 ${skipped} 个，失败 ${failed} 个${canceled ? '；已取消后续下载' : ''}`,
+      );
+    } finally {
+      batchPending.current = false;
+      setBatchBusy(false);
+    }
+  }
   function importFiles(files: File[], screen: { x: number; y: number }) {
     const point = flow.screenToFlowPosition(screen, { snapToGrid: project.snap });
     setImportNotice('');
@@ -171,7 +219,8 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       data: createMedia(kind),
     };
     onChange((p) => ({ ...p, nodes: [...p.nodes, node] }));
-    setSelected(null);
+    setSelectedIds([]);
+    setEditorId(null);
   }
   function changes(items: NodeChange<CanvasNode>[]) {
     const persistent = items.filter((c) => {
@@ -180,12 +229,29 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       const node = project.nodes.find((n) => n.id === c.id);
       return node && !generationBusy(node.data);
     });
-    const selection = items.find((c) => c.type === 'select' && c.selected);
-    if (selection?.type === 'select') {
-      setSelected(selection.id);
-      setSelectedEdge(null);
+    const selections = items.filter((c) => c.type === 'select');
+    if (selections.length && !connectingIds) {
+      setSelectedIds((previous) => {
+        const next = new Set(previous);
+        for (const change of selections)
+          if (change.type === 'select') {
+            if (change.selected) next.add(change.id);
+            else next.delete(change.id);
+          }
+        return [...next];
+      });
+      setEditorId(null);
+      if (selections.some((change) => change.type === 'select' && change.selected))
+        setSelectedEdge(null);
     }
     if (!persistent.length) return;
+    if (persistent.some((change) => change.type === 'remove')) {
+      const removed = new Set(
+        persistent.flatMap((change) => (change.type === 'remove' ? [change.id] : [])),
+      );
+      setSelectedIds((previous) => previous.filter((id) => !removed.has(id)));
+      if (editorId && removed.has(editorId)) setEditorId(null);
+    }
     onChange((p) => {
       const next = applyNodeChanges(persistent, p.nodes).map(({ id, type, position, data }) =>
         type === 'asset'
@@ -203,7 +269,10 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   function edgeChanges(items: EdgeChange<CanvasEdge>[]) {
     for (const change of items)
       if (change.type === 'select') {
-        if (change.selected) setSelected(null);
+        if (change.selected) {
+          setSelectedIds([]);
+          setEditorId(null);
+        }
         setSelectedEdge((previous) =>
           change.selected ? change.id : previous === change.id ? null : previous,
         );
@@ -223,6 +292,18 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
     setConnectionNotice('');
     const edge = { id: crypto.randomUUID(), source: connection.source, target: connection.target };
     onChange((p) => (connectionIssue(p, connection) ? p : { ...p, edges: [...p.edges, edge] }));
+  }
+  function connectTo(target: string) {
+    if (!connectingIds) return;
+    const result = connectSelected(project, connectingIds, target);
+    if (result.issue) {
+      setConnectionNotice(`无法连接全部 ${connectingIds.length} 个节点：${result.issue}`);
+      return;
+    }
+    onChange((current) => connectSelected(current, connectingIds, target).project);
+    setConnectionNotice(`已连接 ${connectingIds.length} 个节点`);
+    setSelectedIds(connectingIds);
+    setConnectingIds(null);
   }
   const left = active
     ? Math.max(
@@ -338,21 +419,33 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           }}
           defaultViewport={project.viewport}
           onMoveEnd={(_, v) => patch({ viewport: v })}
-          onNodeClick={(_, n) => {
-            setSelected(n.id);
+          onNodeClick={(event, n) => {
+            if (connectingIds) {
+              connectTo(n.id);
+              return;
+            }
+            if (event.shiftKey || event.metaKey || event.ctrlKey) return;
+            setSelectedIds([n.id]);
+            setEditorId(n.type === 'media' ? n.id : null);
             setSelectedEdge(null);
           }}
           onEdgeClick={(_, edge) => {
-            setSelected(null);
+            setSelectedIds([]);
+            setEditorId(null);
+            setConnectingIds(null);
             setSelectedEdge(edge.id);
           }}
           onPaneClick={() => {
-            setSelected(null);
+            setSelectedIds([]);
+            setEditorId(null);
+            setConnectingIds(null);
             setSelectedEdge(null);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
-              setSelected(null);
+              setSelectedIds([]);
+              setEditorId(null);
+              setConnectingIds(null);
               setSelectedEdge(null);
             }
           }}
@@ -369,6 +462,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           connectionRadius={24}
           panOnScroll
           selectionOnDrag
+          multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
           panOnDrag={[1, 2]}
           zoomOnDoubleClick={false}
           proOptions={{ hideAttribution: true }}
@@ -428,6 +522,32 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             </IconButton>
           </Panel>
         </ReactFlow>
+        {selectedIds.length > 1 && (
+          <div className="canvas-selection-actions" role="toolbar" aria-label="多选节点操作">
+            <span>已选择 {selectedIds.length} 个节点</span>
+            <button
+              type="button"
+              aria-pressed={Boolean(connectingIds)}
+              onClick={() => {
+                setEditorId(null);
+                setConnectingIds(connectingIds ? null : selectedIds);
+                setConnectionNotice('');
+              }}
+            >
+              <Link2 size={16} />
+              {connectingIds ? '取消连接' : '连接到节点'}
+            </button>
+            <button
+              type="button"
+              disabled={batchBusy || !downloadable.length}
+              onClick={() => void downloadSelected()}
+            >
+              <Download size={16} />
+              {batchBusy ? '下载中…' : `下载可用文件 (${downloadable.length})`}
+            </button>
+            {connectingIds && <span>点击目标图像或视频节点</span>}
+          </div>
+        )}
         {connectionNotice && (
           <div className="canvas-import-notice" role="alert">
             {connectionNotice}
@@ -447,13 +567,22 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           </div>
         )}
         {active && (
-          <div ref={editorRef} className="editor-position" style={{ left, top }}>
+          <motion.div
+            ref={editorRef}
+            className="editor-position"
+            style={{ left, top }}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={
+              reducedMotion ? { duration: 0 } : { duration: 0.18, ease: [0.32, 0.72, 0, 1] }
+            }
+          >
             <MediaEditor
               key={active.id}
               data={active.data}
               connectedCount={project.edges.filter((edge) => edge.target === active.id).length}
               onGenerate={() => onGenerate(active.id)}
-              onClose={() => setSelected(null)}
+              onClose={() => setEditorId(null)}
               onDelete={() => {
                 onChange((p) => ({
                   ...p,
@@ -462,7 +591,8 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
                     (edge) => edge.source !== active.id && edge.target !== active.id,
                   ),
                 }));
-                setSelected(null);
+                setSelectedIds([]);
+                setEditorId(null);
               }}
               onChange={(data) =>
                 onChange((p) => ({
@@ -473,7 +603,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
                 }))
               }
             />
-          </div>
+          </motion.div>
         )}
       </div>
     </main>

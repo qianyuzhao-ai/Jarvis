@@ -27,7 +27,7 @@ test('download requests accept HTTP media URLs and reject file URLs and unsuppor
   expect(
     downloadMediaSchema.safeParse({ url: 'https://example.invalid/voice.wav', kind: 'audio' })
       .success,
-  ).toBe(false);
+  ).toBe(true);
 });
 
 test('general settings persist download directory and only skip dialogs when dont-ask is checked', async () => {

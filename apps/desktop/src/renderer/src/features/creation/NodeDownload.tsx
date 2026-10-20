@@ -30,7 +30,7 @@ export function NodeDownload({ url, kind, fileName }: DownloadMedia) {
     <>
       <IconButton
         className="node-download-button"
-        label={kind === 'image' ? '下载图像' : '下载视频'}
+        label={`下载${{ image: '图像', video: '视频', audio: '音频' }[kind]}`}
         disabled={busy}
         aria-busy={busy}
         onClick={(event) => {
