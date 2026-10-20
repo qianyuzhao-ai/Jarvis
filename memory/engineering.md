@@ -2,6 +2,15 @@
 
 最后更新：2026-10-21
 
+## Biome 代码检查迁移（2026-10-21）
+
+- 用户要求 ESLint 改用 Biome。当前使用 `@biomejs/biome@2.5.15`，根目录 `biome.json` 管理规则；`pnpm lint` 直接检查整个工作区，桌面包的 lint 也使用 Biome。保留 Prettier 负责格式化（包括 Markdown/YAML），Biome formatter 与 assist 关闭。
+- 已移除 ESLint 配置、直接依赖、锁文件依赖和 TypeScript ESLint 的安装年龄例外；README/CLAUDE 工程约定同步更新。没有改动业务源码。
+- 使用官方 `biome migrate eslint --include-inspired --write` 迁移后整理重复覆盖；显式补回 renderer 的 `electron`、`fs`、`path`、`child_process` 及 `node:*` 禁止导入规则。保留 Hook 顶层调用、依赖检查及 React Refresh 导出检查，警告仍使 lint 失败。
+- 规则差异：迁移工具报告原 109 条规则中 22 条尚无实现，包含 React Compiler 相关 Hooks 规则（purity、refs、set-state-in-effect/render 等），不能宣称与旧 ESLint 完全等价。Biome 的 noEmptyBlockStatements 也禁止空函数回调，noShadowRestrictedNames 也禁止 Map 等普通全局名称遮蔽；为保持原有代码行为关闭这两条。useErrorCause 不强制无参数 catch 添加参数；Hook 依赖检查不报告额外依赖，允许已有 retry 触发重跑。
+- 验证：`pnpm check`、`pnpm build`、桌面包独立 lint、`git diff --check` 通过。单个临时 TSX 反例验证 renderer 的 Node/Electron 导入、条件 Hook、遗漏依赖均触发对应诊断，随后逐文件删除该反例。仅工具链变更，未运行 Electron 窗口回归。
+- 本轮工作分支 `feature/biome-lint`；用户随后授权本地提交本轮迁移，未授权推送或合并。
+
 ## 0.1.0 源码版本准备（2026-10-21）
 
 - 用户要求以当前修改确立 0.1 版本并按 Gitflow 推送。使用 `0.1.0`，桌面包版本保持原有 `0.1.0`，工作区根包同步为 `0.1.0`；内部配置包独立版本保持不变。
