@@ -6,6 +6,8 @@ export const referenceSchema = z.object({
   name: z.string(),
   type: z.enum(['image', 'video', 'audio']),
   blob: z.instanceof(Blob),
+  uploadedUrl: z.string().optional(),
+  uploadedFor: z.string().optional(),
 });
 export const mediaSchema = z.object({
   kind: z.enum(['image', 'video']),
@@ -17,6 +19,16 @@ export const mediaSchema = z.object({
   duration: z.number().int(),
   generateAudio: z.boolean(),
   references: z.array(referenceSchema),
+  generation: z
+    .object({
+      requestId: z.string(),
+      status: z.enum(['uploading', 'submitting', 'running', 'succeeded', 'failed', 'unknown']),
+      startedAt: z.number(),
+      error: z.string().optional(),
+      warning: z.string().optional(),
+    })
+    .optional(),
+  result: z.object({ requestId: z.string(), url: z.string() }).optional(),
 });
 const nodeSchema = z.object({
   id: z.string(),

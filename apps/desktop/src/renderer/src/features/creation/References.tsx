@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Music, Plus, X } from 'lucide-react';
 import type { MediaData, Reference } from './types';
-function ReferencePreview({ item, onRemove }: { item: Reference; onRemove: () => void }) {
+function ReferencePreview({
+  item,
+  onRemove,
+  disabled,
+}: {
+  item: Reference;
+  onRemove: () => void;
+  disabled: boolean;
+}) {
   const [url, setUrl] = useState('');
   useEffect(() => {
     const value = URL.createObjectURL(item.blob);
@@ -17,7 +25,7 @@ function ReferencePreview({ item, onRemove }: { item: Reference; onRemove: () =>
       ) : (
         <Music size={24} />
       )}
-      <button type="button" aria-label={`移除 ${item.name}`} onClick={onRemove}>
+      <button type="button" disabled={disabled} aria-label={`移除 ${item.name}`} onClick={onRemove}>
         <X size={12} />
       </button>
       <small>{item.name}</small>
@@ -25,9 +33,11 @@ function ReferencePreview({ item, onRemove }: { item: Reference; onRemove: () =>
   );
 }
 export function References({
+  disabled = false,
   data,
   onChange,
 }: {
+  disabled?: boolean;
   data: MediaData;
   onChange: (references: Reference[]) => void;
 }) {
@@ -65,6 +75,7 @@ export function References({
   return (
     <div className="references">
       <input
+        disabled={disabled}
         ref={input}
         type="file"
         hidden
@@ -75,8 +86,9 @@ export function References({
       />
       <button
         type="button"
+        disabled={disabled}
         className="reference-add"
-        title="添加参考素材（仅保存在本机）"
+        title="添加参考素材，生成前上传"
         aria-label="添加参考素材"
         onClick={() => input.current?.click()}
       >
@@ -86,6 +98,7 @@ export function References({
         <ReferencePreview
           key={item.id}
           item={item}
+          disabled={disabled}
           onRemove={() => onChange(data.references.filter((r) => r.id !== item.id))}
         />
       ))}

@@ -1,7 +1,15 @@
-import { app, BrowserWindow, Menu, session } from 'electron';
+import { app, BrowserWindow, Menu, session, protocol } from 'electron';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { registerGeneration, trustGenerationWindow } from './generation/bridge';
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'jarvis-media',
+    privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true },
+  },
+]);
 app.setName('Jarvis');
 
 function reportStartupError(error: unknown): void {
@@ -36,6 +44,7 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  trustGenerationWindow(window.webContents, trustedUrl);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => {
     if (url !== trustedUrl) event.preventDefault();
@@ -68,6 +77,7 @@ void app
       ]),
     );
 
+    await registerGeneration(join(app.getPath('userData'), 'generation-jobs.json'));
     await createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

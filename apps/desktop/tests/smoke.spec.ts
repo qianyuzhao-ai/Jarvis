@@ -48,6 +48,9 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     const page = await app.firstWindow();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (message) => {
+      if (message.text().includes('[React Flow]')) errors.push(message.text());
+    });
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('画布交互测试');
     await page.getByRole('button', { name: '图像', exact: true }).click();
@@ -85,7 +88,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
       .toBe(true);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(page.getByText('生成服务尚未接入，提示词与参数已保存在本机。')).toBeVisible();
+    await expect(page.getByText('生成失败')).toBeVisible();
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await expect(nodes).toHaveCount(2);
     await nodes.last().click();

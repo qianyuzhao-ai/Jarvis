@@ -27,6 +27,7 @@ import {
 import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
+import { generationBusy } from './useGeneration';
 import { createMedia, type MediaData, type MediaNode, type Project } from './types';
 const nodeTypes = { media: MediaPlaceholder };
 type Props = {
@@ -36,8 +37,9 @@ type Props = {
   theme: 'light' | 'dark';
   onTheme: () => void;
   status: string;
+  onGenerate: (nodeId: string) => void;
 };
-function CanvasContent({ project, onChange, onBack, theme, onTheme, status }: Props) {
+function CanvasContent({ project, onChange, onBack, theme, onTheme, status, onGenerate }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 1000, height: 700 });
   const [editorHeight, setEditorHeight] = useState(200);
@@ -61,17 +63,25 @@ function CanvasContent({ project, onChange, onBack, theme, onTheme, status }: Pr
         ariaLabel: `${n.data.kind === 'image' ? '图像' : '视频'}节点`,
         width: 360,
         height: 240,
+        measured: { width: 360, height: 240 },
       })),
     [project.nodes, selected],
   );
   const active = nodes.find((n) => n.id === selected);
   const editorRef = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
+    let frame = 0;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) setEditorHeight(entry.contentRect.height);
+      if (entry) {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => setEditorHeight(entry.contentRect.height));
+      }
     });
     observer.observe(element);
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
   }, []);
   const patch = useCallback(
     (values: Partial<Project>) => onChange((p) => ({ ...p, ...values })),
@@ -104,7 +114,11 @@ function CanvasContent({ project, onChange, onBack, theme, onTheme, status }: Pr
     setSelected(null);
   }
   function changes(items: NodeChange<MediaNode>[]) {
-    const persistent = items.filter((c) => c.type === 'position' || c.type === 'remove');
+    const persistent = items.filter(
+      (c) =>
+        c.type === 'position' ||
+        (c.type === 'remove' && !generationBusy(project.nodes.find((n) => n.id === c.id)!.data)),
+    );
     const selection = items.find((c) => c.type === 'select' && c.selected);
     if (selection?.type === 'select') setSelected(selection.id);
     if (!persistent.length) return;
@@ -253,6 +267,7 @@ function CanvasContent({ project, onChange, onBack, theme, onTheme, status }: Pr
             <MediaEditor
               key={active.id}
               data={active.data}
+              onGenerate={() => onGenerate(active.id)}
               onClose={() => setSelected(null)}
               onDelete={() => {
                 onChange((p) => ({ ...p, nodes: p.nodes.filter((n) => n.id !== active.id) }));

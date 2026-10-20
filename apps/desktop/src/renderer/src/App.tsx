@@ -5,40 +5,19 @@ import { IconButton } from './components/IconButton';
 import { Canvas } from './features/creation/Canvas';
 import { ProjectList } from './features/creation/ProjectList';
 import { ServiceSettings } from './features/creation/ServiceSettings';
-import { loadWorkspace, saveWorkspace } from './features/creation/storage';
+import { loadWorkspace } from './features/creation/storage';
 import { createProject, type Project, type WorkspaceData } from './features/creation/types';
 
+import { useWorkspace } from './features/creation/useWorkspace';
+import { useGeneration } from './features/creation/useGeneration';
+
 function Workbench({ initial }: { initial: WorkspaceData }) {
-  const [data, setData] = useState(initial);
+  const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
+  const generate = useGeneration(data, commit, getCurrent);
   const [route, setRoute] = useState<'projects' | 'settings' | 'canvas'>('projects');
   const [projectId, setProjectId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [status, setStatus] = useState('已保存到本机');
-  const [saveError, setSaveError] = useState('');
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const update = useCallback((change: (previous: WorkspaceData) => WorkspaceData) => {
-    setData(change);
-    setStatus('正在保存…');
-  }, []);
-  useEffect(() => {
-    let current = true;
-    void saveWorkspace(data)
-      .then(() => {
-        if (current) {
-          setStatus('已保存到本机');
-          setSaveError('');
-        }
-      })
-      .catch((e: unknown) => {
-        if (current) {
-          setStatus('保存失败');
-          setSaveError(e instanceof Error ? e.message : '保存失败');
-        }
-      });
-    return () => {
-      current = false;
-    };
-  }, [data]);
   const changeProject = useCallback(
     (change: (project: Project) => Project) =>
       update((previous) => ({
@@ -77,6 +56,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       {route === 'canvas' && project ? (
         <Canvas
           project={project}
+          onGenerate={(nodeId) => void generate(project.id, nodeId)}
           onChange={changeProject}
           onBack={() => setRoute('projects')}
           theme={data.theme}

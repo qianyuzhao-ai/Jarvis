@@ -11,26 +11,37 @@ import {
   videoRatios,
 } from './models';
 import { References } from './References';
+import { generationBusy } from './useGeneration';
 import type { MediaData } from './types';
 export function MediaEditor({
   data,
   onChange,
   onClose,
   onDelete,
+  onGenerate,
 }: {
   data: MediaData;
   onChange: (data: MediaData) => void;
   onClose: () => void;
   onDelete: () => void;
+  onGenerate: () => void;
 }) {
   const [options, setOptions] = useState(false);
-  const [notice, setNotice] = useState('');
+  const busy = generationBusy(data);
+  const task = data.generation;
+  const taskLabel = {
+    uploading: '正在上传素材…',
+    submitting: '正在提交生成…',
+    running: '正在生成，可能需要较长时间…',
+    succeeded: '生成完成',
+    failed: '生成失败',
+    unknown: '结果未知，请先核实任务是否已执行',
+  };
   const video = data.kind === 'video',
     nano = isNano(data.model);
   const label = video ? '视频' : '图像';
   const update = (patch: Partial<MediaData>) => {
     onChange(normalizeMedia({ ...data, ...patch }));
-    setNotice('');
   };
   const models = video ? videoModels : imageModels;
   const ratios = video ? videoRatios : nano ? nanoRatios : gptSizes;
@@ -46,8 +57,9 @@ export function MediaEditor({
       }}
     >
       <div className="editor-top">
-        <References data={data} onChange={(references) => update({ references })} />
+        <References disabled={busy} data={data} onChange={(references) => update({ references })} />
         <textarea
+          disabled={busy}
           aria-label={`${label}提示词`}
           placeholder={
             video
@@ -63,6 +75,7 @@ export function MediaEditor({
       </div>
       <div className="editor-bottom">
         <select
+          disabled={busy}
           aria-label="选择模型"
           value={data.model}
           onChange={(e) => update({ model: e.target.value })}
@@ -89,6 +102,7 @@ export function MediaEditor({
           <label className="duration-control">
             <span className="sr-only">视频时长</span>
             <select
+              disabled={busy}
               aria-label="视频时长"
               value={data.duration}
               onChange={(e) => update({ duration: Number(e.target.value) })}
@@ -105,20 +119,20 @@ export function MediaEditor({
           </label>
         )}
         <span className="editor-spacer" />
-        <IconButton label="删除节点" onClick={onDelete}>
+        <IconButton label="删除节点" disabled={busy} onClick={onDelete}>
           <Trash2 size={16} />
         </IconButton>
         <IconButton
           label={`生成${label}`}
           className="generate-button"
-          disabled={!data.model || !data.prompt.trim()}
-          onClick={() => setNotice('生成服务尚未接入，提示词与参数已保存在本机。')}
+          disabled={busy || !data.model || !data.prompt.trim()}
+          onClick={onGenerate}
         >
           <ArrowUp size={20} />
         </IconButton>
       </div>
       {options && (
-        <div className="parameter-panel">
+        <fieldset className="parameter-panel" disabled={busy}>
           <label>
             尺寸 / 比例
             <select
@@ -182,12 +196,17 @@ export function MediaEditor({
           ) : (
             <span>单次生成 1 张</span>
           )}
-        </div>
+        </fieldset>
       )}
-      {notice && (
-        <p className="editor-notice" role="status">
-          {notice}
-        </p>
+      {task && (
+        <div className="editor-notice" role="status">
+          <p>{taskLabel[task.status]}</p>
+          {task.error && <p className="error-text">{task.error}</p>}
+          {task.warning && <p className="error-text">{task.warning}</p>}
+          {task.status === 'unknown' && (
+            <p>不会自动重发。再次点击生成会创建新任务，可能产生重复费用。</p>
+          )}
+        </div>
       )}
     </section>
   );
