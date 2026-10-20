@@ -453,6 +453,18 @@ async function fixture(page: Page) {
 function node(page: Page, id: string) {
   return page.locator(`.react-flow__node[data-id="${id}"]`);
 }
+async function clickBlankPane(page: Page) {
+  const pane = page.locator('.react-flow__pane');
+  const point = await pane.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    for (let y = rect.bottom - 90; y > rect.top + 20; y -= 40)
+      for (let x = rect.right - 20; x > rect.left + 20; x -= 40)
+        if (document.elementFromPoint(x, y) === element)
+          return { x: x - rect.left, y: y - rect.top };
+    throw new Error('No visible blank canvas point');
+  });
+  await pane.click({ position: point });
+}
 async function connect(page: Page, source: string, target: string) {
   const output = await node(page, source)
     .getByRole('button', { name: '输出连接', exact: true })
@@ -492,7 +504,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
       await expect(page.locator('.react-flow__edge')).toHaveCount(index + 1);
     }
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
-    await page.locator('.react-flow__pane').click({ position: { x: 1200, y: 650 } });
+    await clickBlankPane(page);
     await expect(page.locator('.workflow-edge-active')).toHaveCount(0);
     await expect(page.locator('.workflow-edge .react-flow__edge-path').first()).toHaveCSS(
       'stroke',
@@ -518,7 +530,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
     await expect(active).toHaveCSS('animation-name', 'none');
     await page.screenshot({ path: test.info().outputPath('workflow-dark.png') });
-    await page.locator('.react-flow__pane').click({ position: { x: 1200, y: 650 } });
+    await clickBlankPane(page);
     await connect(page, ids.audio, ids.imageA);
     await expect(page.locator('.canvas-import-notice')).toContainText('仅接收图像');
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
