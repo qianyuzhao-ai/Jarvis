@@ -18,6 +18,11 @@ import {
   type CanvasNode,
   type WorkspaceData,
 } from '../src/renderer/src/features/creation/types';
+import {
+  promptMentions,
+  rebaseLocalMentions,
+  submittedPrompt,
+} from '../src/renderer/src/features/creation/prompt-mentions';
 
 const image: CanvasNode = {
   id: 'image',
@@ -87,6 +92,49 @@ test('batch connections commit together and reject mixed invalid sources', () =>
   expect(invalid.issue).toContain('仅接收图像');
   expect(invalid.project).toBe(project);
   expect(project.edges).toHaveLength(0);
+});
+
+test('prompt mentions follow per-kind upload array order and reject missing positions', () => {
+  const target = {
+    ...video,
+    data: {
+      ...video.data,
+      references: [
+        { id: 'r-image', name: 'first.png', type: 'image' as const, blob: new Blob() },
+        { id: 'r-audio', name: 'first.wav', type: 'audio' as const, blob: new Blob() },
+      ],
+    },
+  };
+  const project = {
+    ...createProject(),
+    nodes: [target, image, ...assets],
+    edges: [
+      { id: 'a', source: 'asset-video', target: 'video' },
+      { id: 'b', source: 'asset-audio', target: 'video' },
+      { id: 'c', source: 'image', target: 'video' },
+    ],
+  };
+  expect(promptMentions(project, target).map(({ token }) => token)).toEqual([
+    '@image_1',
+    '@audio_1',
+    '@video_1',
+    '@audio_2',
+    '@image_2',
+  ]);
+  expect(
+    submittedPrompt('use @image_2 with @audio_1 and @video_1', { image: 2, audio: 2, video: 1 }),
+  ).toBe('use <<<image_2>>> with <<<audio_1>>> and <<<video_1>>>');
+  expect(() => submittedPrompt('@audio_3', { image: 2, audio: 2, video: 1 })).toThrow('不存在');
+  expect(
+    rebaseLocalMentions(
+      '@image_1 then @image_2 and linked @image_3',
+      [
+        { id: 'a', name: 'a', type: 'image', blob: new Blob() },
+        { id: 'b', name: 'b', type: 'image', blob: new Blob() },
+      ],
+      [{ id: 'b', name: 'b', type: 'image', blob: new Blob() }],
+    ),
+  ).toBe(' then @image_1 and linked @image_2');
 });
 
 test('marquee selection keeps the editor closed and connects selected images to one target', async () => {

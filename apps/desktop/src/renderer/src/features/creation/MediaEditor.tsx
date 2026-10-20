@@ -5,10 +5,13 @@ import { normalizeMedia } from './models';
 import { ImageControls } from './ImageControls';
 import { VideoControls } from './VideoControls';
 import { References } from './References';
+import { PromptEditor } from './PromptEditor';
+import { rebaseLocalMentions, type PromptMention } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
 import type { MediaData } from './types';
 export function MediaEditor({
   data,
+  mentions,
   onChange,
   onClose,
   onDelete,
@@ -16,6 +19,7 @@ export function MediaEditor({
   connectedCount = 0,
 }: {
   data: MediaData;
+  mentions: PromptMention[];
   onChange: (data: MediaData) => void;
   onClose: () => void;
   onDelete: () => void;
@@ -86,19 +90,25 @@ export function MediaEditor({
             onError={setReferenceError}
             disabled={busy}
             data={data}
-            onChange={(references) => update({ references })}
+            onChange={(references) =>
+              update({
+                references,
+                prompt: rebaseLocalMentions(data.prompt, data.references, references),
+              })
+            }
           />
-          <textarea
-            ref={promptRef}
+          <PromptEditor
+            inputRef={promptRef}
             disabled={busy}
-            aria-label={`${label}提示词`}
+            label={`${label}提示词`}
             placeholder={
               video
                 ? '描述视频内容、主体动作、镜头运动与节奏…'
                 : '描述你想生成的图片，包括主体、构图、光线与风格…'
             }
             value={data.prompt}
-            onChange={(e) => update({ prompt: e.target.value })}
+            mentions={mentions}
+            onChange={(prompt) => update({ prompt })}
           />
           <div className="editor-window-actions">
             <IconButton label="关闭编辑面板" onClick={onClose}>

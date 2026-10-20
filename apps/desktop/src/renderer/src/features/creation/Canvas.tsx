@@ -36,6 +36,7 @@ import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
 import { CanvasExport } from './CanvasExport';
+import { promptMentions } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
 import { connectSelected, connectionIssue, relatedWorkflow } from './connections';
 import {
@@ -580,6 +581,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             <MediaEditor
               key={active.id}
               data={active.data}
+              mentions={promptMentions(project, active)}
               connectedCount={project.edges.filter((edge) => edge.target === active.id).length}
               onGenerate={() => onGenerate(active.id)}
               onClose={() => setEditorId(null)}

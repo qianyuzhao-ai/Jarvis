@@ -7,6 +7,7 @@ import {
   type GenerationJob,
 } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
+import { submittedPrompt } from './prompt-mentions';
 import { linkedReferences, validateReferences } from './connections';
 import type { AssetData, MediaData, MediaNode, WorkspaceData } from './types';
 import type { ChangeWorkspace } from './useWorkspace';
@@ -147,6 +148,11 @@ export function useGeneration(
             ];
           if (!urls.includes(reference.url)) urls.push(reference.url);
         }
+        input.prompt = submittedPrompt(input.prompt, {
+          image: input.imageList.length,
+          video: input.videoList.length,
+          audio: input.audioList.length,
+        });
         generationInputSchema.parse(input);
         await patch(projectId, nodeId, (d) => ({
           ...d,
