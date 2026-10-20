@@ -1,0 +1,44 @@
+{
+  "name": "@jarvis/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Jarvis desktop workbench",
+  "author": "Hugo",
+  "license": "MIT",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev --watch",
+    "start": "electron-vite preview",
+    "build": "electron-vite build",
+    "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json && tsc -p tsconfig.test.json",
+    "lint": "eslint . --max-warnings=0",
+    "test:smoke": "playwright test",
+    "package:dir": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-sc": "5.3.1",
+    "@xyflow/react": "12.12.0",
+    "exceljs": "4.4.0",
+    "lucide-react": "1.60.0",
+    "motion": "14.4.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "undici": "8.12.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@jarvis/config": "workspace:*",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "22.19.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "44.9.1",
+    "electron-builder": "26.15.3",
+    "electron-vite": "6.0.0",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4"
+  }
+}

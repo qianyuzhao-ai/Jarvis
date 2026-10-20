@@ -1,0 +1,10 @@
+node_modules/
+**/out/
+**/.turbo/
+release/
+**/test-results/
+**/playwright-report/
+pnpm-lock.yaml
+memory/
+AGENTS.md
+LICENSE

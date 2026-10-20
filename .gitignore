@@ -34,3 +34,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# workspace and Electron outputs
+**/node_modules/
+**/out/
+**/.turbo/
+/release/
+**/test-results/
+**/playwright-report/
+.pnpm-store/
+
+/.idea
