@@ -1,11 +1,17 @@
 appId: ai.qianyuzhao.jarvis
 productName: Jarvis
 asar: true
+extraResources:
+  - from: resources/icon.png
+    to: icon.png
 files:
   - out/**/*
   - package.json
 mac:
+  icon: resources/icon.icns
   category: public.app-category.productivity
   minimumSystemVersion: '26.0'
   identity: null
+win:
+  icon: resources/icon.ico
 publish: null

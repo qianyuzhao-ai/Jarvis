@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedDB 本地保存。尚未接入 Pi Agent 或真实生成服务；不要因为旧方案存在规划而自动扩展实现。
+Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedDB 本地保存、Markdown 写作及 Pi 首页文字 Chat。Agent 首期只使用中转站 API，不提供文件/Shell/画布/生成工具，不读取个人 Pi 目录；写作和创作空间尚未接入 Agent。生成协议与 Agent 均有模拟验证，真实服务仍需联调；不要因为旧方案存在规划而自动扩展实现。
 
 ## 命令
 

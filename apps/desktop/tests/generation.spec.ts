@@ -247,6 +247,7 @@ test('Electron uploads references, generates image and video, and restores resul
   });
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const bytes = await page.evaluate(async () => {
@@ -312,6 +313,7 @@ test('Electron uploads references, generates image and video, and restores resul
     expect(upload.body.toString()).toContain('name="files"');
     expect(upload.body.toString()).toContain('test-client');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
     await expect(page.locator('.node-generating')).toHaveText('正在生成…');
     await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
@@ -413,6 +415,7 @@ test('Electron uploads references, generates image and video, and restores resul
     const submitted = mock.calls.filter((c) => c.path === '/generate').length;
     expect(submitted).toBe(4);
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
     await page.locator('.react-flow__node-media').last().click();
     await expect(page.locator('.editor-notice')).toContainText('结果未知');

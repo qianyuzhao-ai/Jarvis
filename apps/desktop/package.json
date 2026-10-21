@@ -1,6 +1,6 @@
 {
   "name": "@jarvis/desktop",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Jarvis desktop workbench",
   "author": "Hugo",
@@ -22,6 +22,8 @@
     "@codemirror/language": "6.13.1",
     "@codemirror/state": "6.7.6",
     "@codemirror/view": "6.43.15",
+    "@earendil-works/pi-ai": "1.3.0",
+    "@earendil-works/pi-coding-agent": "1.3.0",
     "@fontsource/noto-sans-sc": "5.3.1",
     "@lezer/common": "1.5.3",
     "@xyflow/react": "12.12.0",

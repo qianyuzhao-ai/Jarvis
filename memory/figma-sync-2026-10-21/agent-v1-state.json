@@ -1,0 +1,275 @@
+{
+  "runId": "jarvis-agent-v1-20261021",
+  "scope": "用户确认：V1 仅首页 Chat，左右气泡，SSE；仅中转站 API。设计完成，应用未实施。",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "components": {
+    "messages": "177:7847",
+    "messageVariants": [
+      {
+        "id": "177:7819",
+        "role": "User",
+        "state": "Complete",
+        "w": 420,
+        "h": 82
+      },
+      {
+        "id": "177:7824",
+        "role": "Assistant",
+        "state": "Complete",
+        "w": 620,
+        "h": 82
+      },
+      {
+        "id": "177:7829",
+        "role": "Assistant",
+        "state": "Waiting",
+        "w": 620,
+        "h": 82
+      },
+      {
+        "id": "177:7834",
+        "role": "Assistant",
+        "state": "Streaming",
+        "w": 620,
+        "h": 82
+      },
+      {
+        "id": "177:7840",
+        "role": "Assistant",
+        "state": "Stopped",
+        "w": 620,
+        "h": 115
+      },
+      {
+        "id": "177:7846",
+        "role": "Assistant",
+        "state": "Error",
+        "w": 620,
+        "h": 115
+      }
+    ],
+    "composer": "121:4438",
+    "composerVariants": [
+      {
+        "id": "121:4335",
+        "name": "State=Empty"
+      },
+      {
+        "id": "121:4370",
+        "name": "State=Ready"
+      },
+      {
+        "id": "121:4405",
+        "name": "State=Running"
+      }
+    ],
+    "status": "177:8015",
+    "statusVariants": [
+      {
+        "id": "177:7994",
+        "name": "State=Untested"
+      },
+      {
+        "id": "177:8000",
+        "name": "State=Testing"
+      },
+      {
+        "id": "177:8006",
+        "name": "State=Success"
+      },
+      {
+        "id": "177:8014",
+        "name": "State=Error"
+      }
+    ]
+  },
+  "screens": [
+    {
+      "id": "5:35",
+      "name": "Jarvis / 首页 / 新对话"
+    },
+    {
+      "id": "179:11487",
+      "name": "Jarvis / Chat V1 / Complete / Light",
+      "x": 30400,
+      "y": -2482
+    },
+    {
+      "id": "179:11572",
+      "name": "Jarvis / Chat V1 / Complete / Dark",
+      "x": 31880,
+      "y": -2482
+    },
+    {
+      "id": "179:11657",
+      "name": "Jarvis / Chat V1 / Streaming / Light",
+      "x": 30400,
+      "y": -1482
+    },
+    {
+      "id": "179:11740",
+      "name": "Jarvis / Chat V1 / Streaming / Dark",
+      "x": 31880,
+      "y": -1482
+    },
+    {
+      "id": "179:11823",
+      "name": "Jarvis / Chat V1 / Waiting / Light",
+      "x": 30400,
+      "y": -482
+    },
+    {
+      "id": "179:11906",
+      "name": "Jarvis / Chat V1 / Stopped / Light",
+      "x": 31880,
+      "y": -482
+    },
+    {
+      "id": "179:11992",
+      "name": "Jarvis / Chat V1 / Error / Light",
+      "x": 30400,
+      "y": 518
+    },
+    {
+      "id": "179:12078",
+      "name": "Jarvis / Chat V1 / Unconfigured / Light",
+      "x": 31880,
+      "y": 518
+    },
+    {
+      "id": "179:12172",
+      "name": "Jarvis / Chat V1 / New conversation / Dark",
+      "x": 30400,
+      "y": 1518
+    },
+    {
+      "id": "8:53",
+      "name": "Jarvis / 设置 / 模型服务 / 中转站 V1",
+      "x": -1690,
+      "y": -1171
+    },
+    {
+      "id": "179:12290",
+      "name": "Jarvis / Relay V1 / Default / Dark",
+      "x": 33500,
+      "y": -2482
+    },
+    {
+      "id": "179:12564",
+      "name": "Jarvis / Relay V1 / Untested / Light",
+      "x": 34900,
+      "y": -2482
+    },
+    {
+      "id": "179:12838",
+      "name": "Jarvis / Relay V1 / Testing / Light",
+      "x": 33500,
+      "y": -1482
+    },
+    {
+      "id": "179:13112",
+      "name": "Jarvis / Relay V1 / Success / Light",
+      "x": 34900,
+      "y": -1482
+    },
+    {
+      "id": "179:13386",
+      "name": "Jarvis / Relay V1 / Error / Light",
+      "x": 33500,
+      "y": -482
+    },
+    {
+      "id": "179:13660",
+      "name": "Jarvis / Relay V1 / Models / Light",
+      "x": 34900,
+      "y": -482
+    },
+    {
+      "id": "181:12092",
+      "name": "Jarvis / Chat V1 / Ready / Light",
+      "x": 31880,
+      "y": 1518
+    },
+    {
+      "id": "181:12289",
+      "name": "Jarvis / Chat V1 / Stopped / Dark",
+      "x": 30400,
+      "y": 2518
+    },
+    {
+      "id": "181:12390",
+      "name": "Jarvis / Relay V1 / Saved / Light",
+      "x": 34900,
+      "y": 518
+    },
+    {
+      "id": "181:12673",
+      "name": "Jarvis / Relay V1 / Protocol menu / Light",
+      "x": 33500,
+      "y": 518
+    },
+    {
+      "id": "181:12776",
+      "name": "Jarvis / Chat V1 / Streaming / 900 × 640",
+      "x": 31880,
+      "y": 2518
+    }
+  ],
+  "prototype": {
+    "ready": "181:12092",
+    "saved": "181:12390",
+    "compact": "181:12776",
+    "modelMenu": "181:12659",
+    "protocolMenu": "181:12768",
+    "spec": "181:12996",
+    "compactSidebar": "184:11083"
+  },
+  "verified": [
+    "所有页面可编辑、0 IMAGE 填充、Noto Sans SC",
+    "浅深气泡与中转表单截图检查",
+    "停止、中断、未配置、模型菜单、协议菜单、测试成功/失败截图检查",
+    "900x640 输入不裁切、侧栏设置入口可见；消息/历史滚动区域有意裁切",
+    "原型导航和状态变体API读取；未在Present实际点击",
+    "Google文档19段范围修订全文匹配回读",
+    "用户纠正后完整 Composer 与深色聊天记录截图检查通过；发送/停止导航重新绑定"
+  ],
+  "pending": [
+    "用户真实中转站联调",
+    "用户验收并授权后推送/集成",
+    "Windows实机与签名升级验证"
+  ],
+  "composerCorrection": {
+    "date": "2026-10-21",
+    "userRequirement": "使用截图指定的完整 Jarvis / Agent Composer；移除简化版；修复深色聊天记录黑字",
+    "swappedInstances": 13,
+    "removedComponentSet": "177:7986",
+    "removalVerified": "旧组件不在 Components 页中，无父节点；页面及组件页无其引用",
+    "historyRegionsFixed": 15,
+    "verifiedScreens": [
+      "179:11740",
+      "181:12776"
+    ],
+    "visualScope": "附件/权限/思考强度/语音保留设计，不扩大首期首页Chat的功能范围"
+  },
+  "implementation": {
+    "status": "V1基础实现完成，未发布",
+    "date": "2026-10-21",
+    "checks": [
+      "pnpm check",
+      "pnpm build",
+      "git diff --check",
+      "完整44/44回归",
+      "最后命名与状态栏收尾后的目录包Chat 1/1"
+    ],
+    "package": "release/a94f56ae-c028-4531-9a9b-85caad4b52b6/mac-arm64/Jarvis.app",
+    "limitations": [
+      "真实中转站未联调",
+      "Windows本轮未运行",
+      "附件/语音/思考不接入",
+      "Agent无业务工具"
+    ],
+    "scopeNote": "用户授权本地commit；Agent分支快进到独立图标提交95e132f后提交本轮Agent变更，不推送/发布。",
+    "branch": "feature/pi-agent-chat",
+    "localCommitAuthorized": true
+  }
+}
