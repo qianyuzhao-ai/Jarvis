@@ -4,6 +4,7 @@
 
 ## macOS Developer ID 签名与公证（2026-10-21）
 
+- 0.1.8 首次云端运行 `39613181833` 的 Windows 已构建校验成功，macOS 在选用 Developer ID 身份后长时间无新日志。为区分签名阶段和 Apple 队列，新增独立手动 `notarization-status.yml`，仅运行 `notarytool history` 读取团队公证历史，不构建应用、不上传、不重提公证。按 feature → develop → main 集成后手动查询，不移动 v0.1.8 标签或重复打包。
 - 后续用户授权提交、推送、Gitflow 合并并发布 0.1.8；已核验远端五项 Secrets 名称齐全及新标签不存在。版本统一 0.1.8；发布前 `pnpm check`、构建、完整 Electron + 模拟服务 **57/57（1.7m）** 通过；版本校验、合并配置 schema、Secrets 作用域、工作流 Bash 语法、plist 和 diff 检查通过。云端结果待回读，不将配置通过等同公证成功。
 - 用户报告已创建并导入带私钥的 Developer ID Application 证书、导出加密 `.p12`，配置了 `CSC_LINK`、`CSC_KEY_PASSWORD`、`APPLE_ID`、`APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID` 五项 GitHub Repository secrets；本轮不读取秘密值，也没有验证凭据有效性。
 - `feature/macos-signing-notarization` 从刷新后的 `origin/develop` 创建。基础配置移除 `identity: null`，本地 `scripts/package.mjs` 显式关闭正式签名、公证及 Hardened Runtime；发布配置使用 distribution、macOS 专属 forceCodeSigning、Hardened Runtime、公证，以及应用/Helper 共用的最小 JIT 与可执行内存 entitlements。Windows 继续未签名，不注入 Apple 凭据。
