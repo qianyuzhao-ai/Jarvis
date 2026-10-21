@@ -573,29 +573,31 @@ svg {
   padding: 24px 40px 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  width: min(100%, 700px);
+  gap: 0;
 }
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.settings-form > div:first-child {
+  margin-bottom: 24px;
 }
 .form-field > span {
-  font-weight: 500;
+  padding-top: 8px;
+  font-weight: 400;
+}
+.form-field > small {
+  grid-column: 2;
 }
 .form-field input {
   height: 36px;
   width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0 10px;
 }
 .form-field input[aria-invalid='true'] {
   border-color: #c64a4a;
 }
 .form-actions {
+  margin-top: 24px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -1379,12 +1381,26 @@ input.node-name:focus-visible {
   min-height: 100%;
   width: 100%;
 }
+.settings-page {
+  width: 100%;
+  max-width: 700px;
+  min-width: 0;
+  margin-inline: auto;
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px 16px;
+  min-height: 64px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
 .general-settings {
   padding: 24px 40px 40px;
   display: flex;
   flex-direction: column;
   gap: 32px;
-  max-width: 700px;
 }
 .download-settings {
   display: flex;

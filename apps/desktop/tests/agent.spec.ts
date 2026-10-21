@@ -71,6 +71,10 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     page.on('pageerror', (e) => errors.push(e.message));
     await expect(page.getByRole('heading', { name: '先连接你的中转站' })).toBeVisible();
     await page.getByRole('button', { name: '配置模型服务' }).click();
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
+    );
+    await expect(page.locator('.relay-settings')).toHaveCSS('width', '700px');
     await page.getByLabel('API 地址', { exact: true }).fill(`http://127.0.0.1:${address.port}/v1`);
     await page.getByLabel('API Key', { exact: true }).fill('local-test-key');
     await page.getByRole('button', { name: '获取模型', exact: true }).click();
@@ -90,6 +94,12 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     const stored = await readFile(join(userData, 'agent', 'connection.json'), 'utf8');
     expect(stored).not.toContain('local-test-key');
     await page.screenshot({ path: test.info().outputPath('relay-light.png') });
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
+    await expect
+      .poll(() => page.locator('.relay-content').evaluate((n) => n.scrollWidth - n.clientWidth))
+      .toBe(0);
+    await page.screenshot({ path: test.info().outputPath('relay-compact.png') });
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     const messageInput = page.getByLabel('消息', { exact: true });

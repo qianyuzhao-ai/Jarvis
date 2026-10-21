@@ -14,7 +14,7 @@ export function GeneralSettings({
   onChange: (value: ThemePreference) => void;
 }) {
   return (
-    <section className="general-settings" aria-labelledby="general-heading">
+    <section className="settings-page general-settings" aria-labelledby="general-heading">
       <div>
         <h1 id="general-heading">通用设置</h1>
         <p>管理工作台的基本偏好。</p>

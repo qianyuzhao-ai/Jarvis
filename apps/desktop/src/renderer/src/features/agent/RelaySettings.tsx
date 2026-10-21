@@ -98,7 +98,7 @@ export function RelaySettings({
   }
   return (
     <form
-      className="relay-settings"
+      className="settings-page relay-settings"
       onSubmit={(event) => {
         event.preventDefault();
         void perform('save');
@@ -108,7 +108,7 @@ export function RelaySettings({
         <h1>连接中转站</h1>
         <p>使用你的中转站 API，在首页与模型对话。</p>
         <fieldset disabled={!!busy}>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-name">连接名称</label>
             <input
               id="relay-name"
@@ -118,7 +118,7 @@ export function RelaySettings({
               required
             />
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-url">API 地址</label>
             <div>
               <input
@@ -133,7 +133,7 @@ export function RelaySettings({
               <small>填写中转站提供的基础地址，无需追加 /chat/completions。</small>
             </div>
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-key">API Key</label>
             <div>
               <div className="relay-secret">
@@ -174,7 +174,7 @@ export function RelaySettings({
               )}
             </div>
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-api">接口协议</label>
             <div>
               <select
@@ -188,7 +188,7 @@ export function RelaySettings({
               <small>按中转站文档选择；这里只配置中转站连接。</small>
             </div>
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-model">默认模型</label>
             <div>
               <div className="relay-model">
@@ -215,7 +215,7 @@ export function RelaySettings({
           </div>
           <details className="relay-advanced">
             <summary>上下文与输出限制</summary>
-            <div className="relay-row">
+            <div className="settings-row relay-row">
               <label htmlFor="relay-context">上下文容量</label>
               <input
                 id="relay-context"
@@ -229,7 +229,7 @@ export function RelaySettings({
                 }
               />
             </div>
-            <div className="relay-row">
+            <div className="settings-row relay-row">
               <label htmlFor="relay-output">输出上限</label>
               <input
                 id="relay-output"
