@@ -1747,7 +1747,7 @@
         "undo history across restart",
         "advanced conflict merge"
       ],
-      "committed": false,
+      "committed": true,
       "pushed": false
     }
   },
@@ -1772,5 +1772,26 @@
     ],
     "status": "passed",
     "applicationImplementation": false
+  },
+  "release015": {
+    "version": "0.1.5",
+    "date": "2026-10-21",
+    "scope": [
+      "writing workspace foundation",
+      "all three canvas repair commits",
+      "design and engineering records",
+      "Figma scripts"
+    ],
+    "sourceBranch": "feature/writing-space",
+    "writingCommit": "9d8f8c8",
+    "canvasMerge": "a39051c",
+    "validation": {
+      "check": "passed",
+      "build": "passed",
+      "releaseVersionCheck": "passed",
+      "electronPassed": 39,
+      "electronFailed": 0
+    },
+    "status": "ready for develop PR"
   }
 }

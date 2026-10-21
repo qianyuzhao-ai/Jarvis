@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## 0.1.5 发布集成（2026-10-21）
+
+- 用户明确授权 0.1.5 并要求所有改动纳入本版，覆盖写作空间、此前独立的三项画布修复、设计/工程记忆及 Figma 续传脚本；对话参考图片保留本地并加入 .gitignore，不作为应用源码发布。
+- 写作空间提交 `9d8f8c8`；本轮已将 `feature/reference-preview-fix` 的 65c33e2 / ed13812 / 8814a0e 非快进合入当前功能分支。合并仅在设计/工程记忆冲突，保留已包含修复记录及较新 Figma 状态的完整文件；代码无冲突。
+- 根包、桌面包和 README 升至 0.1.5，CHANGELOG 汇总实际功能与未签名/基础编辑边界。后续按 feature → develop PR、develop → main PR、main 合并提交上打 v0.1.5 标签进行单次双平台构建；版本校验、检查、构建、git diff --check 与最终集成 39/39 项真实 Electron 回归同轮通过，约 1.2 分钟；远端集成与构建结果待完成后更新。
+
 ## 写作空间基础版（2026-10-21）
 
 - 用户授权先将实现方案写入指定 Google 文档，再开始基础功能开发。方案与基础版完成记录均已通过 Google Docs 连接器原位写入并回读确认：[写作空间实现方案](https://docs.google.com/document/d/1w5ipoZlR4-9uYy8kAjLkDB46kuU_2VJYmbIfefZ-FS4)。
