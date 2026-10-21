@@ -2,7 +2,68 @@
 
 最后更新：2026-10-21
 
-## 0.1.6 发布准备（2026-10-21）
+## 0.1.7 发布验证（2026-10-21）
+
+- 用户授权将全部最新改动发布为 0.1.7；根包、桌面包、README 和 CHANGELOG 已统一版本。包含 Chat V2、画布 Agent/视觉资产、Skills、生成详情和原子 Prompt 引用 5 个功能提交。
+- 本轮重新执行 pnpm check、pnpm test:smoke（包含构建），完整 **57/57** 在 1.7m 通过；版本校验脚本 v0.1.7 和 git diff --check 通过。受限沙箱不能启动 Electron/模拟端口，切换原生权限后同一完整回归通过，没有更改实现或放宽断言。
+- 真实服务联调和 Windows 功能验收边界不变；云端双平台构建与发布结果待回读，不将本地通过等同于已发布。
+
+## Prompt 引用原子编辑与光标菜单（2026-10-21）
+
+- 用户要求 @ 候选随当前输入位置弹出，带缩略图及上下/Enter选择，引用作为整体删除。PromptEditor 从textarea叠层迁到项目已用的 CodeMirror state/view/commands，复用依赖；MediaEditor焦点引用改HTMLElement，放大态焦点循环包含contenteditable。旧textarea值断言随新控件改为文档文本断言，并显式校验多行/剪贴板内容。
+- prompt-editor-state 使用 replace Widget + atomicRanges、选区/事务过滤器扩大部分引用编辑范围，阻止光标落入tag内部；isolateHistory 将tag插入/删除/替换隔离为完整撤销步骤，避免快删合并掉插入历史。纯文本格式和原生成解析器不变。Widget只用textContent，粘贴走纯文本，不执行HTML。
+- 原生selection坐标使用view.coordsAtPos(@起点)，requestMeasure分离测量与写入，处理文本/滚动/窗口变化；靠边时避让。Portal位于theme-root直属层，保留主题并避开编辑面板overflow；ARIA候选索引随键盘选中同步，候选保持输入焦点。ReferenceMedia导出供候选复用，Blob URL撤销、URL走现有mediaUrl桥接、视频静音、失败图标回退；没有新增网络/文件/原生能力。
+- IME期间不执行选项快捷键，捕获 composing/229 按键仅停止传播到编辑器keymap，不阻止原生默认确认；compositionend恢复候选。测试曾发现合成确认被下一层keymap误当普通Enter，导致额外换行；已修复并通过合成事件回归，未宣称穷尽物理输入法/Windows实机。
+- 最终 pnpm check、pnpm build、git diff --check、完整 **57/57**（1.7m）通过。新增状态事务单测及完整窗口用例，覆盖部分选区/双向删除、原子撤销、真实系统剪切粘贴、普通/放大与浅深菜单、mini媒体预览和菜单光标坐标，现有生成/引用协议与持久化用例继续通过。官方CodeMirror网页本轮403，API依据实际已装6.43.15类型/源码核对；没有为此新增包。
+- Figma 更新旧菜单/tag主组件与4个内容槽，新增候选/内容族和7页示例，节点、截图、校验见design.md与figma-sync-2026-10-21/prompt-reference-tags-state.json。分支feature/prompt-reference-tags基于074890f继续；用户随后授权本地 commit，包含代码、测试及 Figma 同步记录，不推送、不合并、不发布。
+
+## 生成节点折叠详情与 URL 复制（2026-10-21）
+
+- 根据用户截图调整图像/视频共用 MediaEditor，新增 GenerationDetails 原生 details/summary 默认关闭，显示进度、错误、警告、未知状态，以及当前成功任务匹配 requestId 的 result.url；不展示失败/重跑时旧任务 URL。引用校验提示继续及时显示。长 URL 换行、详情限高180px滚动；放大面板焦点循环包含摘要及URL。
+- 新增最小 generation:copy-result-url / desktop.generation.copyResultUrl(requestId)。主进程 UUID 校验，从 GenerationJobs 取 succeeded + resultUrl，再按 httpUrl 校验并写 clipboard；继承可信窗口校验，不接受 renderer 文本/URL，不暴露读剪贴板或通用剪贴板写入接口。前端复制锁避免重复，显示已复制/错误反馈。
+- pnpm check、pnpm build、完整 Playwright **55/55**（1.6m）和 git diff --check 通过。增强现有生成用例验证图像与视频默认收起、键盘Enter展开、显示真实结果URL、系统剪贴板读回相同URL、收起和非法请求ID拒绝；原连接/失败可见性用例按新默认折叠更新操作，仍验证实际生成调用。未新增依赖，未修改协议或宣称修复截图中的上游HTTP402。
+- Figma 更新4个原面板主组件和6状态共用详情，新增7页可编辑示例；设计校验与ID见 design.md 和 figma-sync-2026-10-21/generation-details-state.json。分支 `feature/node-generation-details` 基于已提交 `5ae71ae` 继续，用户随后授权本地 commit；不推送、不合并、不发布。
+
+## Agent Skills 与 / 输入（2026-10-21）
+
+- 用户要求输入框用 `/` 主动选择技能，也由 Agent 按技能规则主动调用；明确选择“Jarvis 独立管理，手动导入技能包”。已在 `feature/agent-skills` 实现，依赖上一轮 `e74a460` 画布 Agent；用户随后授权本地 commit，提交范围包含本轮代码、测试和设计记录；不推送、不合并、不发布。
+- `SkillStore` 从原生文件夹选择器导入根目录含 SKILL.md 的包，复用 Pi 1.3.0 的 parseFrontmatter；校验 name/description/非空正文和 disable-model-invocation 布尔标记。将正文和包内文件字节复制到 userData/agent/skills.json，更新同名包保留 ID/启停，写成功后再发布元数据。最多100技能、每包100文件/2MB、单文件256KB，正文128k字符；拒绝符号链接，忽略隐藏目录和 node_modules，不递归扫描用户其他 Agent/Pi 目录。
+- 新桥接只有 listSkills/importSkill/setSkillEnabled；文件夹路径来自主进程原生选择，不接受 renderer 提供任意路径，沿用 senderFrame/URL 校验。snapshot 仅给名称/描述/启停等元数据，不把包文件字节发送给 renderer。修改时要求无运行中请求。
+- `skillRuntime` 向模型提供已启用且可自动调用技能的名称/触发描述，再通过 `load_skill` 加载正文；显式 `/skill:name 参数` 或 `/name 参数` 由服务端解析并注入完整说明。手动专用技能不进自动目录，模型直接调用也拒绝。`read_skill_resource` 仅允许本轮已加载技能包清单中的 UTF-8 文本（64k字符），拒绝路径穿越/外部文件/二进制，不运行脚本。每轮快照冻结，记录实际主动选择/自动匹配与参考读取活动。停用不擦除已有历史中的技能正文。
+- Pi 的默认资源扫描仍 noSkills/noExtensions/noContextFiles；Jarvis 自管导入与指令注入，避免引入内置 read/bash 权限。openAgent 合并明确的技能工具和当前画布工具并核对 allowlist；有技能时允许8次模型请求与最多12次技能读取，首页无技能仍保持原来单请求/零工具行为。canvas 操作和视觉输入边界不变，skills allowed-tools 不扩权。
+- 首页和画布共用 ChatComposer：开头输入 `/` 按名称/描述筛选启用技能，方向键循环，Enter/Tab 补全为 `/skill:name `，不立即发送；Esc/点击外部关闭，IME 确认与 Shift+Enter 保留。输入框下方书本图标打开原生 dialog 技能管理，支持导入/更新、启停和错误状态；保存前复选框即时反馈、失败恢复，弹窗内 Enter 不发送底层草稿。输入框继续固定底部。
+- **最终验证**：pnpm check、pnpm build、git diff --check；完整 Electron + 本地模拟服务 **55/55**（1.6分钟）通过。新增导入存储2项、权限/真实Pi工具循环2项、真实窗口完整流程1项。覆盖手动专用拒绝自动读取、未加载参考/路径穿越拒绝、实际模型请求含完整技能/参考、未知/停用命令、同名更新、重启恢复、首页/画布与浅深色、弹窗防误发。没有新增依赖，真实中转站未验证。Figma 12状态页与组件、最后视觉检查见 design.md 及 agent-skills-state.json。
+- 核对 [Agent Skills 格式](https://agentskills.io/specification) 和 [渐进加载规范](https://agentskills.io/client-implementation/adding-skills-support)，并读取仓库实际 Pi 1.3.0 的 skills.d.ts、frontmatter 和命令展开代码；实现采用独立导入快照与专用工具，不声称脚本执行/全文件访问已支持。
+
+## 画布 Agent V1、项目会话与视觉输入（2026-10-21）
+
+- 用户授权代码 + Figma 同步及本地 commit，追加会话新建/历史/重命名/删除，多选图片和视频抽帧。`feature/canvas-agent` 从已完成 Chat V2 `d60eece` 继续（依赖该提交，未直接改 main/develop），保留原工作；本轮不推送/合并/打标签/发布。
+- `shared/canvas-agent.ts` 定义严格快照/操作/回执；快照不含 Blob/资源 URL。主进程只注册 get_canvas_summary/get_node_details/edit_canvas/focus_nodes 四项工具，无内置文件/Shell/扩展/Skills/MCP。先读概况与目标详情再编辑，每轮最多 20 次工具调用、8 次模型请求。首页仍无工具、仅文字输入，不读取个人 Pi 目录。
+- `CanvasBroker` 按窗口 owner、项目、run 和一次性 claim 关联命令；15 秒回执超时。`use-canvas-host` 常驻当前 Canvas，与侧栏显隐解耦；校验项目/版本/过期/并发对象，严格批量验证后保存 IndexedDB，再回传成功。保存失败可恢复 UI；已 claim 的保存完成后停止，不把已保存变更假装回滚。回执超时后的已保存修改仍可通过画布最近修改记录撤销。
+- `canvas-commands` 复用真实模型预设、连接类型/循环/数量限制和生成忙碌保护；仅创建图像/视频节点，编辑允许的提示词/参数/名称、移动、连接/断开、定位。没有节点删除、结果覆盖、自动生成。`canvas-transactions` 按 run 合并最多 20 轮撤销历史；只撤销最后且图未变化的一轮，冲突明确报错。变更详情来自真实前后图比较。
+- `useAgent(projectId)` 隔离首页和项目历史，按项目记住会话选择；首次发送创建会话，新建空对话不立即写入。会话重命名复用现有端点；删除新增明确 UUID 端点，主进程先重命名该会话的一个 SDK JSONL、原子移除索引，失败恢复；完成后只 unlink 一个明确临时文件，不触及画布资产。沿用可信 senderFrame/URL 校验，不暴露通用文件/IPC。
+- `canvas-vision` 通过已有媒体协议加载所选资产，匿名跨源图片/视频 Canvas 取像素；媒体协议启用 CORS 并返回允许头。图片编码 JPEG（长边 1536px）及128px历史预览；视频在10%/50%/90%取三帧并附来源/时间。失败/未知时长不发送，音频不支持。每次最多6资产/12图块/16000000 base64字符，每会话最多60图块。发送前核对节点仍存在且资源URL未变化；主进程核对附件与本次选中快照一致、格式头及总量。无任意文件读接口。
+- Pi canvas runtime 声明 text+image，SDK prompt receives `{type:'image',data,mimeType}` 与 JSON 来源清单；会话索引只保存预览/来源，原图片由 SDK history 保存。请求幂等 hash 包含画布与图像内容，避免同 requestId 改附件。模型视觉能力需配置支持的中转模型，不能从模型名称自动保证。
+- **验证通过**：`pnpm check`、`pnpm build`、`git diff --check`；完整 Playwright **50/50**（1.6分钟）。新增 pure commands/broker 3 项、Pi 工具运行 1 项、完整窗口画布交互 1 项、视觉窗口 1 项，Responses 原用例增加 image body 验证。图片/视频 fixture 为两个小文件，无新增依赖或运行时 ffmpeg。窗口覆盖读写/原子拒绝/撤销/冲突/停止/收起继续/项目隔离/重启、重命名/取消删除/实际删除单个 SDK JSONL、两图三帧实际请求/失败移除/历史预览。真实中转站、Windows 与打包运行未新增验证。
+- 首次整套测试被沙箱 localhost listen EPERM / Electron 启动限制阻止，已在获准的沙箱外同命令重跑全通过，不是待修代码错误。截图证据：`apps/desktop/test-results/0e8c7409-f125-4c19-a466-b816b0576c7f/`。Figma 组件/23页面/原型与浅深截图验证详见 design.md 和 `figma-sync-2026-10-21/canvas-agent-v1-state.json`。
+
+## Chat V2 对话与 Composer 实现（2026-10-21）
+
+- 用户随后授权本地 commit，范围为本轮 Chat UI、受限复制接口、回归测试及同轮 Figma 设计记录；不推送、不合并、不发布。验证沿用本轮已通过的检查、构建和 44/44 回归，提交前再次检查 diff。
+- 用户在 Figma 确认后授权改代码。fetch origin/develop 后确认本地 develop 无差异，创建 `feature/chat-ui-v2`，保留已有未提交设计记录；未提交、推送、打标签或发布。
+- 展示拆为 ChatMessageItem、ChatActivity、ChatComposer、ContextUsage、ModelPicker；新聊天与历史对话共用底部固定 dock。消息无姓名，用户气泡 Hug/限宽，Agent 正文无气泡，底部复制/完成时间/Logo，运行时 1.2 秒透明度呼吸，减少动画时静止。
+- Composer 14px/24px，默认一行，最多 384px（16 行），同时受 45vh 限制；ResizeObserver 处理宽度变化，文本内部滚动。移除底部提示，欢迎/建议在消息区。上下文仅真实聚合值，模型显示真实配置；附件/Auto 保留禁用语义，不接未授权工具。
+- ChatMessage 增加可选 completedAt 与 activities（工具标签、文件路径/动作/增删数/统一 diff）。已完成回复在 finally 记录时间；旧消息无时间仍兼容。activities 为展示契约，当前 SDK 仍 tools: []，没有生产工具事件写入，也不会在普通 Chat 显示示例活动。Diff 按文本渲染、可折叠、滚动并解析 hunk 行号；不会读取文件或执行 HTML。
+- 新增明确最小原生接口 `agent:copy-reply` / `desktop.agent.copyReply`。仅接受严格校验的会话/消息 UUID，主进程从现有记录复制非运行中 Assistant 正文；无通用写入文本/读取剪贴板接口，沿用 senderFrame 与 URL 信任校验。首次真实测试定位旧 navigator.clipboard 权限拒绝，未放宽 Electron permission handler，而是用上述接口修复。
+- 验证：`pnpm check`、`pnpm build`、完整 Playwright **44/44**（约 1.4 分钟）和 `git diff --check` 通过。增强现有 Chat 用例覆盖底部位置、16 行与缩回单行、Shift+Enter/IME、真实剪贴板与拒绝复制用户消息、106.6k/1M/11% 格式、Esc、完成时间、历史持久化、活动记录 fixture/HTML 不执行/diff 行号、上滚时 SSE 不抢滚动、停止与 reduced-motion。未安装新依赖。
+- 最终真实窗口截图：`apps/desktop/test-results/8e7f4cfb-0a2d-43af-9dd5-c7d7bb8d0201/agent-homepage-Chat-relay--0b3e4-secrets-theme-and-isolation/`，new-chat-bottom、composer-max-lines、chat-dark、chat-compact、chat-diff-dark 等已生成；新聊天、深色/紧凑及最终带行号 diff 已查看。没有打新安装包，未验证 Windows 实机或真实中转站。
+
+## 0.1.6 双平台预发布完成（2026-10-21）
+
+- 集成已通过 [PR #28](https://github.com/qianyuzhao-ai/Jarvis/pull/28) 合入 develop（`5c6b840`），再通过 [PR #29](https://github.com/qianyuzhao-ai/Jarvis/pull/29) 合入 main（`9526901`）。`v0.1.6` peeled SHA 已核对为 `9526901bf61c1af0f201f455aa4517fb26e2f0d3`，包含 Agent `83e053e` 和图标 `95e132f`。唯一标签运行 [39560464413](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39560464413) 的 macOS、Windows 和统一发布三个作业全部成功，未重试、重复触发或移动旧标签。
+- 已回读 [v0.1.6 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.6)：非草稿、prerelease=true，发布时间 2026-10-21 07:20:13 UTC，三个安装文件均 uploaded。发布说明补入 Agent、图标和能力边界，保留 GitHub 自动生成的提交记录。
+- GitHub API 资产摘要：macOS DMG 246202412 字节，SHA-256 `16688fcff07c2a84593a34e226e3a47ddef140727f69de4baa6eace22803895d`；macOS ZIP 245462424 字节，`62ebfa5845b7bbd7acec39128c8a448a8f5da2f62ecf982f754b29322fc33438`；Windows EXE 217234741 字节，`b51ed6f9b31d3be73055795162e18bac163c0aac4c891ea96805f91affbcd8c4`。未重复下载大文件；云端执行版本、架构、DMG/ZIP 完整性及 Windows 未签名校验，不代表 Windows 功能实机验收。
+- GitHub 连接器创建 PR 返回 403，CLI 核对没有重复 PR 后完成创建和合并。发布结果在独立 `feature/release-0.1.6-notes` 文档分支记录，不改已发布代码、不重打标签或重新构建。
 
 - 用户授权打包发布 0.1.6，明确包含 Agent、App Icon 和其余待发布改动；授权本次版本准备、提交/推送、PR 合并、版本标签和发布。起点为干净的 `feature/pi-agent-chat` `83e053e`，包含独立图标提交 `95e132f`；已 fetch 核对远端，v0.1.6 标签与 Release 不存在，没有开放 PR。
 - 根包、桌面包及 README 统一为 0.1.6，CHANGELOG 汇总 Pi Chat/中转配置、密钥保护、图标及设计/测试记录。沿用 develop → main PR → main 合并提交标签的发布规则，不移动旧标签，不删除历史分支；目标是唯一标签工作流双平台全部成功后统一未签名预发布。

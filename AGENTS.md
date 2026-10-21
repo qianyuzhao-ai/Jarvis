@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedDB 本地保存、Markdown 写作及 Pi 首页文字 Chat。Agent 首期只使用中转站 API，不提供文件/Shell/画布/生成工具，不读取个人 Pi 目录；写作和创作空间尚未接入 Agent。生成协议与 Agent 均有模拟验证，真实服务仍需联调；不要因为旧方案存在规划而自动扩展实现。
+Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedDB 本地保存、Markdown 写作、Pi 首页文字 Chat 和画布右侧 Agent。画布 Agent 使用项目独立会话，只能读取当前项目节点、创建/修改/移动/连接/定位节点，保存后回执并支持同轮撤销；支持所选图片与视频代表帧输入，不包含完整音视频理解。Agent 支持 Jarvis 独立导入的 SKILL.md 技能包，首页/画布共用 / 选择与按规则自动加载；仅能读取已启用技能包的说明和文本参考，不执行包内脚本。不提供通用文件/Shell/生成执行工具，不扫描个人 Pi 或其他 Agent 技能目录；写作助手仍未接入。生成协议与 Agent 已有模拟服务和真实窗口验证，真实服务仍需联调；不要因旧方案规划而扩展实现。
 
 ## 命令
 
@@ -35,8 +35,15 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。
 - [memory/design.md](memory/design.md)：设计要求、Figma 页面和组件位置、设计变更、验证结果、环境限制及未决事项。
 - [memory/figma-sync-2026-10-21/state.json](memory/figma-sync-2026-10-21/state.json)：本轮 Figma 同步的已返回节点 ID、验证结果与中断续传状态；页面脚本位于同目录。
+- [memory/figma-sync-2026-10-21/canvas-agent-v1-state.json](memory/figma-sync-2026-10-21/canvas-agent-v1-state.json)：画布 Agent、会话管理和视觉资产的组件/页面节点、原型链接与验证结果。
+
+- [memory/figma-sync-2026-10-21/agent-skills-state.json](memory/figma-sync-2026-10-21/agent-skills-state.json)：Skills 导入、斜杠选择、自动加载的组件/页面与验证记录。
 
 ### 开始任务前
+
+生成节点详情最近同步记录：[memory/figma-sync-2026-10-21/generation-details-state.json](memory/figma-sync-2026-10-21/generation-details-state.json)。
+
+Prompt 引用交互最近同步记录：[memory/figma-sync-2026-10-21/prompt-reference-tags-state.json](memory/figma-sync-2026-10-21/prompt-reference-tags-state.json)。
 
 1. 涉及 UI、Figma、组件、样式或设计实现的任务，先读取 `memory/design.md`。
 2. 根据记忆定位相关文件和 Figma 节点，再检查实际状态。节点位置、组件数量、字体和连接权限可能变化，不能只凭历史记录操作。

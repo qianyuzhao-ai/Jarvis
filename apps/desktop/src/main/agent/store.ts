@@ -14,6 +14,7 @@ const requestSchema = z.object({
   sessionId: z.string().uuid(),
   runId: z.string().uuid(),
   text: z.string(),
+  inputHash: z.string().optional(),
 });
 const indexSchema = z.object({
   version: z.literal(1),
@@ -53,7 +54,21 @@ export class AgentStore {
     if (!record) throw new Error('对话不存在');
     return record;
   }
-  async create(config: RelayConfig) {
+  async remove(id: string) {
+    this.record(id);
+    const before = this.records,
+      requests = this.requests;
+    this.records = before.filter((r) => r.view.id !== id);
+    this.requests = requests.filter((r) => r.sessionId !== id);
+    try {
+      await this.save();
+    } catch (error) {
+      this.records = before;
+      this.requests = requests;
+      throw error;
+    }
+  }
+  async create(config: RelayConfig, projectId?: string) {
     const view: ChatSession = {
       id: randomUUID(),
       title: '新对话',
@@ -64,6 +79,7 @@ export class AgentStore {
       runId: null,
       contextTokens: null,
       contextWindow: config.contextWindow,
+      ...(projectId ? { projectId } : {}),
     };
     this.records.push({ view, config });
     try {

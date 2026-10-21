@@ -5,14 +5,21 @@ import { numberReferences } from './reference-order';
 import type { MediaData, Reference } from './types';
 import type { PromptMention } from './prompt-mentions';
 
-function ReferenceMedia({
+export function ReferenceMedia({
   item,
 }: {
   item: { type: Reference['type']; name: string; blob?: Blob; url?: string };
 }) {
   const [url, setUrl] = useState('');
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
+    queueMicrotask(() => {
+      if (active) {
+        setFailed(false);
+        setUrl('');
+      }
+    });
     if (item.blob) {
       const value = URL.createObjectURL(item.blob);
       queueMicrotask(() => {
@@ -38,12 +45,19 @@ function ReferenceMedia({
     };
   }, [item.blob, item.url]);
   const src = url;
-  if (!src && item.type !== 'audio')
+  if ((!src || failed) && item.type !== 'audio')
     return item.type === 'image' ? <ImageIcon size={24} /> : <Video size={24} />;
   return item.type === 'image' ? (
-    <img src={src || undefined} alt={item.name} />
+    <img src={src || undefined} alt={item.name} onError={() => setFailed(true)} />
   ) : item.type === 'video' ? (
-    <video src={src || undefined} muted preload="metadata" aria-label={item.name} />
+    <video
+      src={src || undefined}
+      muted
+      playsInline
+      preload="metadata"
+      aria-label={item.name}
+      onError={() => setFailed(true)}
+    />
   ) : (
     <Music size={24} />
   );

@@ -1,0 +1,2049 @@
+{
+  "screens": {
+    "page": "Page",
+    "roots": [
+      {
+        "id": "5:35",
+        "name": "Jarvis / 首页 / 新对话",
+        "type": "FRAME",
+        "x": -1690,
+        "y": -2482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "8:53",
+        "name": "Jarvis / 设置 / 模型服务 / 中转站 V1",
+        "type": "FRAME",
+        "x": -1690,
+        "y": -1171,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "42:625",
+        "name": "Jarvis / AIGC 创作空间 / 项目列表",
+        "type": "FRAME",
+        "x": 3708,
+        "y": -2482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "67:918",
+        "name": "Jarvis / AIGC 创作空间 / 无限画布 / Dark",
+        "type": "FRAME",
+        "x": 5228,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "70:952",
+        "name": "Jarvis / AIGC 创作空间 / 无限画布 / Light",
+        "type": "FRAME",
+        "x": 6818,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "72:1270",
+        "name": "Jarvis / AIGC 创作空间 / 节点设计 / Dark",
+        "type": "FRAME",
+        "x": 5228,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "72:1507",
+        "name": "Jarvis / AIGC 创作空间 / 节点设计 / Light",
+        "type": "FRAME",
+        "x": 6818,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "84:1221",
+        "name": "Jarvis / 设置 / 内网地址",
+        "type": "FRAME",
+        "x": -445,
+        "y": -1171,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "87:1353",
+        "name": "Jarvis / 设置 / 通用",
+        "type": "FRAME",
+        "x": 800,
+        "y": -1171,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "99:1645",
+        "name": "Jarvis / 节点设计规范 / Image · Nano · Video",
+        "type": "FRAME",
+        "x": 8500,
+        "y": -2511,
+        "w": 1704,
+        "h": 946
+      },
+      {
+        "id": "99:1860",
+        "name": "Jarvis / Image / 放大编辑 / Light",
+        "type": "FRAME",
+        "x": 8500,
+        "y": -1371,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "99:2219",
+        "name": "Jarvis / Nano / 放大编辑 / Light",
+        "type": "FRAME",
+        "x": 8500,
+        "y": -651,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "99:2575",
+        "name": "Jarvis / Video / 放大编辑 / Light",
+        "type": "FRAME",
+        "x": 8500,
+        "y": 69,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "99:2997",
+        "name": "Jarvis / Image / 放大编辑 / Dark",
+        "type": "FRAME",
+        "x": 9580,
+        "y": -1371,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "99:3218",
+        "name": "Jarvis / Nano / 放大编辑 / Dark",
+        "type": "FRAME",
+        "x": 9580,
+        "y": -651,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "99:3477",
+        "name": "Jarvis / Video / 放大编辑 / Dark",
+        "type": "FRAME",
+        "x": 9580,
+        "y": 69,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "114:4022",
+        "name": "Jarvis / 设置 / 下载偏好 / Light",
+        "type": "FRAME",
+        "x": -1690,
+        "y": -104,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "114:4247",
+        "name": "Jarvis / 设置 / 下载偏好 / Dark",
+        "type": "FRAME",
+        "x": -445,
+        "y": -104,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "122:4208",
+        "name": "Jarvis / Agent Composer / 尺寸与状态",
+        "type": "FRAME",
+        "x": 12000,
+        "y": -2482,
+        "w": 1200,
+        "h": 1165
+      },
+      {
+        "id": "122:4390",
+        "name": "Jarvis / 首页 / Pi Agent / 宽屏",
+        "type": "FRAME",
+        "x": 13400,
+        "y": -2482,
+        "w": 1600,
+        "h": 820
+      },
+      {
+        "id": "139:4545",
+        "name": "Jarvis / Canvas UI / Light / 2026-10-21",
+        "type": "FRAME",
+        "x": 15200,
+        "y": -2482,
+        "w": 1280,
+        "h": 1366
+      },
+      {
+        "id": "139:4965",
+        "name": "Jarvis / Canvas UI / Dark / 2026-10-21",
+        "type": "FRAME",
+        "x": 16600,
+        "y": -2482,
+        "w": 1280,
+        "h": 1366
+      },
+      {
+        "id": "149:5790",
+        "name": "Jarvis / 写作空间 / Editing / Light",
+        "type": "FRAME",
+        "x": 19875,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "149:5992",
+        "name": "Jarvis / 写作空间 / Editing / Dark",
+        "type": "FRAME",
+        "x": 21515,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "149:6194",
+        "name": "Jarvis / 写作空间 / NoFolder / Light",
+        "type": "FRAME",
+        "x": 19875,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "149:6378",
+        "name": "Jarvis / 写作空间 / NoDocument / Light",
+        "type": "FRAME",
+        "x": 21515,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "158:6135",
+        "name": "Jarvis / 写作空间 / 写作助手 Tab / Light",
+        "type": "FRAME",
+        "x": 23155,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "158:6340",
+        "name": "Jarvis / 写作空间 / 写作助手 Tab / Dark",
+        "type": "FRAME",
+        "x": 24795,
+        "y": -2482,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "163:6323",
+        "name": "Jarvis / 写作空间 / 搜索展开 / Light",
+        "type": "FRAME",
+        "x": 19875,
+        "y": -282,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "163:6564",
+        "name": "Jarvis / 写作空间 / 搜索展开 / Dark",
+        "type": "FRAME",
+        "x": 21515,
+        "y": -282,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "163:6805",
+        "name": "Jarvis / 写作空间 / 目录切换菜单 / Light",
+        "type": "FRAME",
+        "x": 23155,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "163:7078",
+        "name": "Jarvis / 写作空间 / 目录切换菜单 / Dark",
+        "type": "FRAME",
+        "x": 24795,
+        "y": -1382,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:6796",
+        "name": "写作空间 · 左右侧栏展开与收起",
+        "type": "TEXT",
+        "x": 19875,
+        "y": 1338,
+        "w": 405,
+        "h": 42
+      },
+      {
+        "id": "171:6797",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 左右展开 / Light",
+        "type": "FRAME",
+        "x": 19875,
+        "y": 1428,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:7041",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 仅左展开 / Light",
+        "type": "FRAME",
+        "x": 21515,
+        "y": 1428,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:7285",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 仅右展开 / Light",
+        "type": "FRAME",
+        "x": 19875,
+        "y": 2528,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:7542",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 左右收起 / Light",
+        "type": "FRAME",
+        "x": 21515,
+        "y": 2528,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:7799",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 左右展开 / Dark",
+        "type": "FRAME",
+        "x": 19875,
+        "y": 3628,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:8043",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 仅左展开 / Dark",
+        "type": "FRAME",
+        "x": 21515,
+        "y": 3628,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:8287",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 仅右展开 / Dark",
+        "type": "FRAME",
+        "x": 19875,
+        "y": 4728,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "171:8544",
+        "name": "Jarvis / 写作空间 / 侧栏状态 / 左右收起 / Dark",
+        "type": "FRAME",
+        "x": 21515,
+        "y": 4728,
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "179:11487",
+        "name": "Jarvis / Chat V1 / Complete / Light",
+        "type": "FRAME",
+        "x": 30400,
+        "y": -2482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11572",
+        "name": "Jarvis / Chat V1 / Complete / Dark",
+        "type": "FRAME",
+        "x": 31880,
+        "y": -2482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11657",
+        "name": "Jarvis / Chat V1 / Streaming / Light",
+        "type": "FRAME",
+        "x": 30400,
+        "y": -1482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11740",
+        "name": "Jarvis / Chat V1 / Streaming / Dark",
+        "type": "FRAME",
+        "x": 31880,
+        "y": -1482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11823",
+        "name": "Jarvis / Chat V1 / Waiting / Light",
+        "type": "FRAME",
+        "x": 30400,
+        "y": -482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11906",
+        "name": "Jarvis / Chat V1 / Stopped / Light",
+        "type": "FRAME",
+        "x": 31880,
+        "y": -482,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:11992",
+        "name": "Jarvis / Chat V1 / Error / Light",
+        "type": "FRAME",
+        "x": 30400,
+        "y": 518,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:12078",
+        "name": "Jarvis / Chat V1 / Unconfigured / Light",
+        "type": "FRAME",
+        "x": 31880,
+        "y": 518,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:12172",
+        "name": "Jarvis / Chat V1 / New conversation / Dark",
+        "type": "FRAME",
+        "x": 30400,
+        "y": 1518,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "179:12290",
+        "name": "Jarvis / Relay V1 / Default / Dark",
+        "type": "FRAME",
+        "x": 33500,
+        "y": -2482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:12564",
+        "name": "Jarvis / Relay V1 / Untested / Light",
+        "type": "FRAME",
+        "x": 34900,
+        "y": -2482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:12838",
+        "name": "Jarvis / Relay V1 / Testing / Light",
+        "type": "FRAME",
+        "x": 33500,
+        "y": -1482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:13112",
+        "name": "Jarvis / Relay V1 / Success / Light",
+        "type": "FRAME",
+        "x": 34900,
+        "y": -1482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:13386",
+        "name": "Jarvis / Relay V1 / Error / Light",
+        "type": "FRAME",
+        "x": 33500,
+        "y": -482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:13660",
+        "name": "Jarvis / Relay V1 / Models / Light",
+        "type": "FRAME",
+        "x": 34900,
+        "y": -482,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "179:13934",
+        "name": "V1 review title",
+        "type": "TEXT",
+        "x": 30400,
+        "y": -2590,
+        "w": 1100,
+        "h": 32
+      },
+      {
+        "id": "181:12092",
+        "name": "Jarvis / Chat V1 / Ready / Light",
+        "type": "FRAME",
+        "x": 31880,
+        "y": 1518,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "181:12289",
+        "name": "Jarvis / Chat V1 / Stopped / Dark",
+        "type": "FRAME",
+        "x": 30400,
+        "y": 2518,
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "181:12390",
+        "name": "Jarvis / Relay V1 / Saved / Light",
+        "type": "FRAME",
+        "x": 34900,
+        "y": 518,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "181:12673",
+        "name": "Jarvis / Relay V1 / Protocol menu / Light",
+        "type": "FRAME",
+        "x": 33500,
+        "y": 518,
+        "w": 1180,
+        "h": 820
+      },
+      {
+        "id": "181:12776",
+        "name": "Jarvis / Chat V1 / Streaming / 900 × 640",
+        "type": "FRAME",
+        "x": 31880,
+        "y": 2518,
+        "w": 900,
+        "h": 640
+      },
+      {
+        "id": "181:12996",
+        "name": "V1 / Interaction specification",
+        "type": "FRAME",
+        "x": 36400,
+        "y": -2482,
+        "w": 1000,
+        "h": 582
+      }
+    ],
+    "components": []
+  },
+  "components": {
+    "page": "Components",
+    "roots": [
+      {
+        "id": "5:36",
+        "name": "Jarvis / 首页组件",
+        "type": "FRAME",
+        "x": 80,
+        "y": 100,
+        "w": 672,
+        "h": 268
+      },
+      {
+        "id": "8:54",
+        "name": "Jarvis / 设置组件",
+        "type": "FRAME",
+        "x": 872,
+        "y": 100,
+        "w": 600,
+        "h": 664
+      },
+      {
+        "id": "17:104",
+        "name": "Jarvis / 控件样本与适配",
+        "type": "FRAME",
+        "x": 1572,
+        "y": 100,
+        "w": 582,
+        "h": 770
+      },
+      {
+        "id": "25:326",
+        "name": "Jarvis / 本地控件",
+        "type": "FRAME",
+        "x": 2254,
+        "y": 100,
+        "w": 318,
+        "h": 696
+      },
+      {
+        "id": "26:330",
+        "name": "Lucide / Icons",
+        "type": "FRAME",
+        "x": 2254,
+        "y": 1100,
+        "w": 864,
+        "h": 24
+      },
+      {
+        "id": "38:508",
+        "name": "Jarvis / Context usage / 交互状态",
+        "type": "FRAME",
+        "x": 3218,
+        "y": 100,
+        "w": 1008,
+        "h": 496
+      },
+      {
+        "id": "41:518",
+        "name": "Jarvis / 创作空间组件",
+        "type": "FRAME",
+        "x": 4326,
+        "y": 100,
+        "w": 988,
+        "h": 436
+      },
+      {
+        "id": "46:737",
+        "name": "Jarvis / Sidebar components",
+        "type": "FRAME",
+        "x": 5434,
+        "y": 100,
+        "w": 572,
+        "h": 2176
+      },
+      {
+        "id": "66:1026",
+        "name": "Jarvis / 无限画布控件",
+        "type": "FRAME",
+        "x": 6206,
+        "y": 100,
+        "w": 292,
+        "h": 202
+      },
+      {
+        "id": "72:1092",
+        "name": "Jarvis / Media nodes",
+        "type": "FRAME",
+        "x": 6206,
+        "y": 500,
+        "w": 832,
+        "h": 304
+      },
+      {
+        "id": "75:1358",
+        "name": "Jarvis / Image editor / Floating panel",
+        "type": "COMPONENT",
+        "x": 7200,
+        "y": 500,
+        "w": 760,
+        "h": 210
+      },
+      {
+        "id": "77:1373",
+        "name": "Jarvis / Video editor / Floating panel",
+        "type": "COMPONENT",
+        "x": 7200,
+        "y": 820,
+        "w": 760,
+        "h": 210
+      },
+      {
+        "id": "86:1517",
+        "name": "Jarvis / Theme preference",
+        "type": "COMPONENT",
+        "x": 7200,
+        "y": 1120,
+        "w": 620,
+        "h": 44
+      },
+      {
+        "id": "94:1627",
+        "name": "Jarvis / 节点参数 / macOS",
+        "type": "FRAME",
+        "x": 8080,
+        "y": 100,
+        "w": 272,
+        "h": 136
+      },
+      {
+        "id": "95:1842",
+        "name": "Jarvis / Nano editor / Floating panel",
+        "type": "COMPONENT",
+        "x": 7200,
+        "y": 1390,
+        "w": 760,
+        "h": 210
+      },
+      {
+        "id": "95:1929",
+        "name": "Jarvis / Image editor / Expanded",
+        "type": "COMPONENT",
+        "x": 8080,
+        "y": 500,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "95:2086",
+        "name": "Jarvis / Nano editor / Expanded",
+        "type": "COMPONENT",
+        "x": 8080,
+        "y": 1180,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "95:2224",
+        "name": "Jarvis / Video editor / Expanded",
+        "type": "COMPONENT",
+        "x": 8080,
+        "y": 1860,
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "107:3856",
+        "name": "Jarvis / 下载与流程控件 / 2026-10-21",
+        "type": "FRAME",
+        "x": 9240,
+        "y": 100,
+        "w": 2200,
+        "h": 1526
+      },
+      {
+        "id": "121:4327",
+        "name": "Lucide / mic",
+        "type": "COMPONENT",
+        "x": 11640,
+        "y": 100,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "121:4332",
+        "name": "Lucide / shield",
+        "type": "COMPONENT",
+        "x": 11680,
+        "y": 100,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "121:4438",
+        "name": "Jarvis / Agent Composer",
+        "type": "COMPONENT_SET",
+        "x": 11640,
+        "y": 180,
+        "w": 836,
+        "h": 568
+      },
+      {
+        "id": "127:4725",
+        "name": "Jarvis / Settings / Display username",
+        "type": "COMPONENT",
+        "x": 11640,
+        "y": 1000,
+        "w": 620,
+        "h": 116
+      },
+      {
+        "id": "136:4750",
+        "name": "Jarvis / Canvas UI sync / 2026-10-21",
+        "type": "FRAME",
+        "x": 12680,
+        "y": 100,
+        "w": 816,
+        "h": 627
+      },
+      {
+        "id": "146:5036",
+        "name": "Jarvis / 写作空间组件",
+        "type": "FRAME",
+        "x": 13700,
+        "y": 100,
+        "w": 288,
+        "h": 914
+      },
+      {
+        "id": "155:5696",
+        "name": "Jarvis / 返回工作台 / 顶部",
+        "type": "COMPONENT",
+        "x": 14500,
+        "y": 100,
+        "w": 198,
+        "h": 24
+      },
+      {
+        "id": "158:5864",
+        "name": "Lucide / list-tree",
+        "type": "COMPONENT",
+        "x": 14500,
+        "y": 160,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "158:5871",
+        "name": "Jarvis / Writing / Right sidebar tabs",
+        "type": "FRAME",
+        "x": 14900,
+        "y": 100,
+        "w": 1272,
+        "h": 1100
+      },
+      {
+        "id": "162:6165",
+        "name": "Lucide / file-plus",
+        "type": "COMPONENT",
+        "x": 14500,
+        "y": 220,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "162:6171",
+        "name": "Lucide / folder-plus",
+        "type": "COMPONENT",
+        "x": 14540,
+        "y": 220,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "170:6979",
+        "name": "Lucide / panel-right",
+        "type": "COMPONENT",
+        "x": 14580,
+        "y": 280,
+        "w": 24,
+        "h": 24
+      },
+      {
+        "id": "177:7847",
+        "name": "Jarvis / Chat V1 / Message",
+        "type": "COMPONENT_SET",
+        "x": 30000,
+        "y": 0,
+        "w": 1400,
+        "h": 750
+      },
+      {
+        "id": "177:8015",
+        "name": "Jarvis / Relay V1 / Connection status",
+        "type": "COMPONENT_SET",
+        "x": 31500,
+        "y": 900,
+        "w": 680,
+        "h": 330
+      }
+    ],
+    "components": [
+      {
+        "id": "6:2",
+        "name": "Sidebar / Conversation",
+        "type": "COMPONENT",
+        "parent": "5:36"
+      },
+      {
+        "id": "6:6",
+        "name": "Sidebar / Selected",
+        "type": "COMPONENT",
+        "parent": "5:36"
+      },
+      {
+        "id": "6:12",
+        "name": "Starter / Row",
+        "type": "COMPONENT",
+        "parent": "5:36"
+      },
+      {
+        "id": "6:21",
+        "name": "Button / Icon",
+        "type": "COMPONENT",
+        "parent": "5:36"
+      },
+      {
+        "id": "9:229",
+        "name": "Settings / Navigation row",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:230",
+        "name": "Lucide / sliders-horizontal",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:241",
+        "name": "Lucide / cpu",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:245",
+        "name": "Lucide / contrast",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:249",
+        "name": "Lucide / folder",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:252",
+        "name": "Lucide / plug",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:255",
+        "name": "Lucide / bookmark-check",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:259",
+        "name": "Lucide / database",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:263",
+        "name": "Lucide / info",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:267",
+        "name": "Settings / Text field",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:269",
+        "name": "Button / Secondary",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:271",
+        "name": "Button / Primary",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "9:378",
+        "name": "Settings / Provider",
+        "type": "COMPONENT",
+        "parent": "8:54"
+      },
+      {
+        "id": "17:214",
+        "name": "Lucide / message-square",
+        "type": "COMPONENT",
+        "parent": "17:211"
+      },
+      {
+        "id": "17:217",
+        "name": "Lucide / plus",
+        "type": "COMPONENT",
+        "parent": "17:211"
+      },
+      {
+        "id": "17:218",
+        "name": "Jarvis / Sidebar row",
+        "type": "COMPONENT",
+        "parent": "17:104"
+      },
+      {
+        "id": "22:313",
+        "name": "Jarvis / Add file",
+        "type": "COMPONENT",
+        "parent": "22:312"
+      },
+      {
+        "id": "25:327",
+        "name": "Jarvis / Search field",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:330",
+        "name": "Jarvis / Window controls",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:334",
+        "name": "Jarvis / Sidebar / Default",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:340",
+        "name": "Jarvis / Sidebar / Selected",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:361",
+        "name": "Jarvis / Button / Secondary",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:367",
+        "name": "Jarvis / Button / Primary",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:373",
+        "name": "Jarvis / Text field",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:381",
+        "name": "Jarvis / Model selector",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:392",
+        "name": "Jarvis / Provider switch",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:411",
+        "name": "Jarvis / Icon button / More",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:425",
+        "name": "Jarvis / Icon button / Send disabled",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:438",
+        "name": "Jarvis / Icon button / Add file",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "28:451",
+        "name": "Jarvis / Button / Text",
+        "type": "COMPONENT",
+        "parent": "25:326"
+      },
+      {
+        "id": "26:331",
+        "name": "Lucide / message-square",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:334",
+        "name": "Lucide / plus",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:338",
+        "name": "Lucide / search",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:342",
+        "name": "Lucide / panel-left",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:346",
+        "name": "Lucide / sliders-horizontal",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:357",
+        "name": "Lucide / cpu",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:373",
+        "name": "Lucide / contrast",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:377",
+        "name": "Lucide / folder",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:380",
+        "name": "Lucide / plug",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:386",
+        "name": "Lucide / bookmark-check",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:390",
+        "name": "Lucide / database",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:395",
+        "name": "Lucide / info",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:400",
+        "name": "Lucide / file-text",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:407",
+        "name": "Lucide / arrow-right",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:411",
+        "name": "Lucide / ellipsis",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:416",
+        "name": "Lucide / chevrons-up-down",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:420",
+        "name": "Lucide / chevron-down",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:423",
+        "name": "Lucide / arrow-up",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:427",
+        "name": "Lucide / eye",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:431",
+        "name": "Lucide / external-link",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:436",
+        "name": "Lucide / chevron-left",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "26:439",
+        "name": "Lucide / x",
+        "type": "COMPONENT",
+        "parent": "26:330"
+      },
+      {
+        "id": "22:335",
+        "name": "Jarvis / Context usage",
+        "type": "COMPONENT_SET",
+        "parent": "38:508"
+      },
+      {
+        "id": "22:322",
+        "name": "Usage=Empty, State=Default",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "22:326",
+        "name": "Usage=Used, State=Default",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "22:331",
+        "name": "Usage=Unknown, State=Default",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "38:514",
+        "name": "Usage=Empty, State=Hover",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "38:546",
+        "name": "Usage=Used, State=Hover",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "38:580",
+        "name": "Usage=Unknown, State=Hover",
+        "type": "COMPONENT",
+        "parent": "22:335"
+      },
+      {
+        "id": "41:520",
+        "name": "Lucide / square-pen",
+        "type": "COMPONENT",
+        "parent": "41:519"
+      },
+      {
+        "id": "41:524",
+        "name": "Lucide / layout-grid",
+        "type": "COMPONENT",
+        "parent": "41:519"
+      },
+      {
+        "id": "41:530",
+        "name": "Lucide / workflow",
+        "type": "COMPONENT",
+        "parent": "41:519"
+      },
+      {
+        "id": "41:535",
+        "name": "Jarvis / New conversation button",
+        "type": "COMPONENT",
+        "parent": "41:518"
+      },
+      {
+        "id": "41:559",
+        "name": "Jarvis / Creation space entry",
+        "type": "COMPONENT_SET",
+        "parent": "41:518"
+      },
+      {
+        "id": "41:543",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "41:559"
+      },
+      {
+        "id": "41:551",
+        "name": "State=Selected",
+        "type": "COMPONENT",
+        "parent": "41:559"
+      },
+      {
+        "id": "41:560",
+        "name": "Jarvis / New project button",
+        "type": "COMPONENT",
+        "parent": "41:518"
+      },
+      {
+        "id": "41:566",
+        "name": "Jarvis / Project list row",
+        "type": "COMPONENT",
+        "parent": "41:518"
+      },
+      {
+        "id": "46:762",
+        "name": "Jarvis / Settings action",
+        "type": "COMPONENT_SET",
+        "parent": "46:737"
+      },
+      {
+        "id": "46:738",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "46:762"
+      },
+      {
+        "id": "46:750",
+        "name": "State=Selected",
+        "type": "COMPONENT",
+        "parent": "46:762"
+      },
+      {
+        "id": "48:1001",
+        "name": "Jarvis / Sidebar",
+        "type": "COMPONENT_SET",
+        "parent": "46:737"
+      },
+      {
+        "id": "46:897",
+        "name": "Mode=Main",
+        "type": "COMPONENT",
+        "parent": "48:1001"
+      },
+      {
+        "id": "48:874",
+        "name": "Mode=Settings",
+        "type": "COMPONENT",
+        "parent": "48:1001"
+      },
+      {
+        "id": "146:5073",
+        "name": "Mode=Writing",
+        "type": "COMPONENT",
+        "parent": "48:1001"
+      },
+      {
+        "id": "53:1024",
+        "name": "Jarvis / Sidebar toggle",
+        "type": "COMPONENT_SET",
+        "parent": "46:737"
+      },
+      {
+        "id": "53:1014",
+        "name": "Action=Collapse",
+        "type": "COMPONENT",
+        "parent": "53:1024"
+      },
+      {
+        "id": "53:1019",
+        "name": "Action=Expand",
+        "type": "COMPONENT",
+        "parent": "53:1024"
+      },
+      {
+        "id": "66:1029",
+        "name": "Lucide / image",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "66:1034",
+        "name": "Lucide / video",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "66:1038",
+        "name": "Lucide / minus",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "66:1041",
+        "name": "Lucide / maximize",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "66:1044",
+        "name": "Lucide / map",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "80:1313",
+        "name": "Lucide / magnet",
+        "type": "COMPONENT",
+        "parent": "66:1028"
+      },
+      {
+        "id": "66:1061",
+        "name": "Jarvis / Canvas action",
+        "type": "COMPONENT_SET",
+        "parent": "66:1026"
+      },
+      {
+        "id": "66:1047",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "66:1061"
+      },
+      {
+        "id": "66:1054",
+        "name": "State=Hover",
+        "type": "COMPONENT",
+        "parent": "66:1061"
+      },
+      {
+        "id": "72:1093",
+        "name": "Jarvis / Image node / Borderless placeholder",
+        "type": "COMPONENT",
+        "parent": "72:1092"
+      },
+      {
+        "id": "72:1138",
+        "name": "Jarvis / Video node / Borderless placeholder",
+        "type": "COMPONENT",
+        "parent": "72:1092"
+      },
+      {
+        "id": "75:1358",
+        "name": "Jarvis / Image editor / Floating panel",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "77:1373",
+        "name": "Jarvis / Video editor / Floating panel",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "86:1517",
+        "name": "Jarvis / Theme preference",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "94:1629",
+        "name": "Lucide / brain",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1639",
+        "name": "Lucide / diamond",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1642",
+        "name": "Lucide / clock-3",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1646",
+        "name": "Lucide / rectangle-horizontal",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1649",
+        "name": "Lucide / volume-2",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1654",
+        "name": "Lucide / trash",
+        "type": "COMPONENT",
+        "parent": "94:1628"
+      },
+      {
+        "id": "94:1657",
+        "name": "Jarvis / Node parameter",
+        "type": "COMPONENT",
+        "parent": "94:1627"
+      },
+      {
+        "id": "95:1842",
+        "name": "Jarvis / Nano editor / Floating panel",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "95:1929",
+        "name": "Jarvis / Image editor / Expanded",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "95:2086",
+        "name": "Jarvis / Nano editor / Expanded",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "95:2224",
+        "name": "Jarvis / Video editor / Expanded",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "107:3860",
+        "name": "Lucide / download",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3865",
+        "name": "Lucide / upload",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3870",
+        "name": "Lucide / panel-right-open",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3875",
+        "name": "Lucide / folder-open",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3878",
+        "name": "Lucide / music",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3883",
+        "name": "Lucide / loader-circle",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3886",
+        "name": "Lucide / check",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3889",
+        "name": "Lucide / circle-alert",
+        "type": "COMPONENT",
+        "parent": "107:3859"
+      },
+      {
+        "id": "107:3899",
+        "name": "Jarvis / Media icon action",
+        "type": "COMPONENT_SET",
+        "parent": "107:3894"
+      },
+      {
+        "id": "107:3896",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "107:3899"
+      },
+      {
+        "id": "107:3897",
+        "name": "State=Busy",
+        "type": "COMPONENT",
+        "parent": "107:3899"
+      },
+      {
+        "id": "107:3898",
+        "name": "State=Disabled",
+        "type": "COMPONENT",
+        "parent": "107:3899"
+      },
+      {
+        "id": "107:3917",
+        "name": "Jarvis / Canvas export",
+        "type": "COMPONENT_SET",
+        "parent": "107:3913"
+      },
+      {
+        "id": "107:3915",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "107:3917"
+      },
+      {
+        "id": "107:3916",
+        "name": "State=Busy",
+        "type": "COMPONENT",
+        "parent": "107:3917"
+      },
+      {
+        "id": "107:3932",
+        "name": "Jarvis / Node port",
+        "type": "COMPONENT_SET",
+        "parent": "107:3928"
+      },
+      {
+        "id": "107:3930",
+        "name": "State=Default",
+        "type": "COMPONENT",
+        "parent": "107:3932"
+      },
+      {
+        "id": "107:3931",
+        "name": "State=Highlighted",
+        "type": "COMPONENT",
+        "parent": "107:3932"
+      },
+      {
+        "id": "107:3940",
+        "name": "Jarvis / Download checkbox",
+        "type": "COMPONENT_SET",
+        "parent": "107:3935"
+      },
+      {
+        "id": "107:3937",
+        "name": "State=Disabled",
+        "type": "COMPONENT",
+        "parent": "107:3940"
+      },
+      {
+        "id": "107:3938",
+        "name": "State=Unchecked",
+        "type": "COMPONENT",
+        "parent": "107:3940"
+      },
+      {
+        "id": "107:3939",
+        "name": "State=Checked",
+        "type": "COMPONENT",
+        "parent": "107:3940"
+      },
+      {
+        "id": "107:3955",
+        "name": "Jarvis / Download settings",
+        "type": "COMPONENT_SET",
+        "parent": "107:3950"
+      },
+      {
+        "id": "107:3952",
+        "name": "State=Unconfigured",
+        "type": "COMPONENT",
+        "parent": "107:3955"
+      },
+      {
+        "id": "107:3953",
+        "name": "State=Configured",
+        "type": "COMPONENT",
+        "parent": "107:3955"
+      },
+      {
+        "id": "107:3954",
+        "name": "State=Direct",
+        "type": "COMPONENT",
+        "parent": "107:3955"
+      },
+      {
+        "id": "107:4013",
+        "name": "Jarvis / Download feedback",
+        "type": "COMPONENT_SET",
+        "parent": "107:4007"
+      },
+      {
+        "id": "107:4009",
+        "name": "State=Downloading",
+        "type": "COMPONENT",
+        "parent": "107:4013"
+      },
+      {
+        "id": "107:4010",
+        "name": "State=Downloaded",
+        "type": "COMPONENT",
+        "parent": "107:4013"
+      },
+      {
+        "id": "107:4011",
+        "name": "State=Cancelled",
+        "type": "COMPONENT",
+        "parent": "107:4013"
+      },
+      {
+        "id": "107:4012",
+        "name": "State=Failed",
+        "type": "COMPONENT",
+        "parent": "107:4013"
+      },
+      {
+        "id": "107:4050",
+        "name": "Jarvis / Uploaded resource",
+        "type": "COMPONENT_SET",
+        "parent": "107:4045"
+      },
+      {
+        "id": "107:4047",
+        "name": "State=Image",
+        "type": "COMPONENT",
+        "parent": "107:4050"
+      },
+      {
+        "id": "107:4048",
+        "name": "State=Video",
+        "type": "COMPONENT",
+        "parent": "107:4050"
+      },
+      {
+        "id": "107:4049",
+        "name": "State=Audio",
+        "type": "COMPONENT",
+        "parent": "107:4050"
+      },
+      {
+        "id": "121:4327",
+        "name": "Lucide / mic",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "121:4332",
+        "name": "Lucide / shield",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "121:4438",
+        "name": "Jarvis / Agent Composer",
+        "type": "COMPONENT_SET",
+        "parent": "2:104"
+      },
+      {
+        "id": "121:4335",
+        "name": "State=Empty",
+        "type": "COMPONENT",
+        "parent": "121:4438"
+      },
+      {
+        "id": "121:4370",
+        "name": "State=Ready",
+        "type": "COMPONENT",
+        "parent": "121:4438"
+      },
+      {
+        "id": "121:4405",
+        "name": "State=Running",
+        "type": "COMPONENT",
+        "parent": "121:4438"
+      },
+      {
+        "id": "127:4725",
+        "name": "Jarvis / Settings / Display username",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "136:4752",
+        "name": "Jarvis / Prompt reference tag",
+        "type": "COMPONENT",
+        "parent": "136:4750"
+      },
+      {
+        "id": "136:4754",
+        "name": "Jarvis / Prompt mention menu",
+        "type": "COMPONENT",
+        "parent": "136:4750"
+      },
+      {
+        "id": "136:4767",
+        "name": "Jarvis / Canvas multi-selection toolbar",
+        "type": "COMPONENT",
+        "parent": "136:4750"
+      },
+      {
+        "id": "136:4786",
+        "name": "Jarvis / Editable node name",
+        "type": "COMPONENT_SET",
+        "parent": "136:4750"
+      },
+      {
+        "id": "136:4782",
+        "name": "State=Display",
+        "type": "COMPONENT",
+        "parent": "136:4786"
+      },
+      {
+        "id": "136:4784",
+        "name": "State=Editing",
+        "type": "COMPONENT",
+        "parent": "136:4786"
+      },
+      {
+        "id": "140:4998",
+        "name": "Jarvis / Reference preview",
+        "type": "COMPONENT_SET",
+        "parent": "136:4750"
+      },
+      {
+        "id": "140:4979",
+        "name": "State=Empty",
+        "type": "COMPONENT",
+        "parent": "140:4998"
+      },
+      {
+        "id": "140:4997",
+        "name": "State=Connected",
+        "type": "COMPONENT",
+        "parent": "140:4998"
+      },
+      {
+        "id": "146:5064",
+        "name": "Jarvis / Writing / File row",
+        "type": "COMPONENT_SET",
+        "parent": "146:5036"
+      },
+      {
+        "id": "146:5038",
+        "name": "State=File",
+        "type": "COMPONENT",
+        "parent": "146:5064"
+      },
+      {
+        "id": "146:5047",
+        "name": "State=Selected",
+        "type": "COMPONENT",
+        "parent": "146:5064"
+      },
+      {
+        "id": "146:5056",
+        "name": "State=Folder",
+        "type": "COMPONENT",
+        "parent": "146:5064"
+      },
+      {
+        "id": "146:5065",
+        "name": "Jarvis / Writing / Outline row",
+        "type": "COMPONENT",
+        "parent": "146:5036"
+      },
+      {
+        "id": "146:5067",
+        "name": "Jarvis / Writing / AI placeholder",
+        "type": "COMPONENT",
+        "parent": "146:5036"
+      },
+      {
+        "id": "153:5705",
+        "name": "Jarvis / Writing / Search",
+        "type": "COMPONENT",
+        "parent": "146:5036"
+      },
+      {
+        "id": "159:6163",
+        "name": "Jarvis / Writing / Document tab",
+        "type": "COMPONENT_SET",
+        "parent": "146:5036"
+      },
+      {
+        "id": "151:5684",
+        "name": "State=Active",
+        "type": "COMPONENT",
+        "parent": "159:6163"
+      },
+      {
+        "id": "159:6158",
+        "name": "State=Inactive",
+        "type": "COMPONENT",
+        "parent": "159:6163"
+      },
+      {
+        "id": "162:6176",
+        "name": "Jarvis / Writing / Sidebar icon action",
+        "type": "COMPONENT",
+        "parent": "146:5036"
+      },
+      {
+        "id": "162:6217",
+        "name": "Jarvis / Writing / Folder switcher menu",
+        "type": "COMPONENT",
+        "parent": "146:5036"
+      },
+      {
+        "id": "155:5696",
+        "name": "Jarvis / 返回工作台 / 顶部",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "158:5864",
+        "name": "Lucide / list-tree",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "158:5888",
+        "name": "Jarvis / Writing / Icon tab",
+        "type": "COMPONENT_SET",
+        "parent": "158:5871"
+      },
+      {
+        "id": "158:5872",
+        "name": "Active=false",
+        "type": "COMPONENT",
+        "parent": "158:5888"
+      },
+      {
+        "id": "158:5880",
+        "name": "Active=true",
+        "type": "COMPONENT",
+        "parent": "158:5888"
+      },
+      {
+        "id": "158:6036",
+        "name": "Jarvis / Writing / Right sidebar",
+        "type": "COMPONENT_SET",
+        "parent": "158:5871"
+      },
+      {
+        "id": "158:5889",
+        "name": "Tab=Outline, Document=Open",
+        "type": "COMPONENT",
+        "parent": "158:6036"
+      },
+      {
+        "id": "158:5928",
+        "name": "Tab=Assistant, Document=Open",
+        "type": "COMPONENT",
+        "parent": "158:6036"
+      },
+      {
+        "id": "158:5966",
+        "name": "Tab=Outline, Document=Empty",
+        "type": "COMPONENT",
+        "parent": "158:6036"
+      },
+      {
+        "id": "158:5998",
+        "name": "Tab=Assistant, Document=Empty",
+        "type": "COMPONENT",
+        "parent": "158:6036"
+      },
+      {
+        "id": "162:6165",
+        "name": "Lucide / file-plus",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "162:6171",
+        "name": "Lucide / folder-plus",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "170:6979",
+        "name": "Lucide / panel-right",
+        "type": "COMPONENT",
+        "parent": "2:104"
+      },
+      {
+        "id": "177:7847",
+        "name": "Jarvis / Chat V1 / Message",
+        "type": "COMPONENT_SET",
+        "parent": "2:104"
+      },
+      {
+        "id": "177:7819",
+        "name": "Role=User, State=Complete",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:7824",
+        "name": "Role=Assistant, State=Complete",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:7829",
+        "name": "Role=Assistant, State=Waiting",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:7834",
+        "name": "Role=Assistant, State=Streaming",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:7840",
+        "name": "Role=Assistant, State=Stopped",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:7846",
+        "name": "Role=Assistant, State=Error",
+        "type": "COMPONENT",
+        "parent": "177:7847"
+      },
+      {
+        "id": "177:8015",
+        "name": "Jarvis / Relay V1 / Connection status",
+        "type": "COMPONENT_SET",
+        "parent": "2:104"
+      },
+      {
+        "id": "177:7994",
+        "name": "State=Untested",
+        "type": "COMPONENT",
+        "parent": "177:8015"
+      },
+      {
+        "id": "177:8000",
+        "name": "State=Testing",
+        "type": "COMPONENT",
+        "parent": "177:8015"
+      },
+      {
+        "id": "177:8006",
+        "name": "State=Success",
+        "type": "COMPONENT",
+        "parent": "177:8015"
+      },
+      {
+        "id": "177:8014",
+        "name": "State=Error",
+        "type": "COMPONENT",
+        "parent": "177:8015"
+      }
+    ]
+  }
+}

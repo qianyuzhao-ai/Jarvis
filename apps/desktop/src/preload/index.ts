@@ -1,20 +1,35 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
 import type { AgentEvent } from '../shared/agent';
+import type { CanvasCommand } from '../shared/canvas-agent';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
   agent: {
+    listSkills: () => ipcRenderer.invoke('agent:skills'),
+    importSkill: () => ipcRenderer.invoke('agent:import-skill'),
+    setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getConfiguration: () => ipcRenderer.invoke('agent:configuration'),
     saveConfiguration: (input) => ipcRenderer.invoke('agent:save', input),
     testConnection: (input) => ipcRenderer.invoke('agent:test', input),
     listModels: (input) => ipcRenderer.invoke('agent:models', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
     createSession: () => ipcRenderer.invoke('agent:create'),
+    createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
+    claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
+    completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),
+    onCanvasCommand: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, command: CanvasCommand) =>
+        listener(command);
+      ipcRenderer.on('agent:canvas-command', handle);
+      return () => ipcRenderer.removeListener('agent:canvas-command', handle);
+    },
     renameSession: (input) => ipcRenderer.invoke('agent:rename', input),
+    deleteSession: (id) => ipcRenderer.invoke('agent:delete', id),
     setModel: (input) => ipcRenderer.invoke('agent:model', input),
     send: (input) => ipcRenderer.invoke('agent:send', input),
     cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
+    copyReply: (input) => ipcRenderer.invoke('agent:copy-reply', input),
     onEvent: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, value: AgentEvent) => listener(value);
       ipcRenderer.on('agent:event', handle);
@@ -33,6 +48,7 @@ const desktop: DesktopInfo = {
     createEntry: (request) => ipcRenderer.invoke('writing:create', request),
   },
   generation: {
+    copyResultUrl: (requestId) => ipcRenderer.invoke('generation:copy-result-url', requestId),
     getDownloadPreferences: () => ipcRenderer.invoke('downloads:get-preferences'),
     chooseDownloadDirectory: () => ipcRenderer.invoke('downloads:choose-directory'),
     setDownloadDontAsk: (value) => ipcRenderer.invoke('downloads:set-dont-ask', value),

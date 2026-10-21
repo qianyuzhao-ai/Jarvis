@@ -5,24 +5,28 @@ import {
   type AgentEvent,
   type RelayView,
 } from '../../../../shared/agent';
+import type { VisionAsset } from '../../../../shared/canvas-vision';
+import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
 
-export function useAgent() {
+export function useAgent(projectId?: string) {
+  const storageKey = projectId ? `jarvis:canvas-chat:${projectId}` : 'jarvis:chat-session';
   const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
   const [configuration, setConfiguration] = useState<RelayView>({ config: null, hasKey: false });
-  const [selected, setSelected] = useState<string | null>(() =>
-    localStorage.getItem('jarvis:chat-session'),
-  );
+  const [selected, setSelected] = useState<string | null>(() => localStorage.getItem(storageKey));
   const [draftKey, setDraftKey] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const seq = useRef(-1);
-  const select = useCallback((id: string | null) => {
-    setSelected(id);
-    if (id) localStorage.setItem('jarvis:chat-session', id);
-    else localStorage.removeItem('jarvis:chat-session');
-  }, []);
+  const select = useCallback(
+    (id: string | null) => {
+      setSelected(id);
+      if (id) localStorage.setItem(storageKey, id);
+      else localStorage.removeItem(storageKey);
+    },
+    [storageKey],
+  );
   useEffect(() => {
     const bridge = window.desktop?.agent;
     if (!bridge) {
@@ -56,18 +60,37 @@ export function useAgent() {
       stop();
     };
   }, []);
-  const session = snapshot.sessions.find((s) => s.id === selected) ?? null;
-  async function send(text: string, model?: string) {
+  const sessions = snapshot.sessions.filter((s) => s.projectId === projectId);
+  const session = sessions.find((s) => s.id === selected) ?? null;
+  async function send(
+    text: string,
+    model?: string,
+    canvas?: CanvasSnapshot,
+    images?: VisionAsset[],
+  ) {
     const bridge = window.desktop?.agent;
     if (!bridge || sendingRef.current || snapshot.busySessionId) return false;
     sendingRef.current = true;
     setSending(true);
     setError('');
     try {
-      const id = session?.id ?? agentValue(await bridge.createSession());
+      if (projectId && canvas?.projectId !== projectId) throw new Error('请选择当前画布上下文');
+      const id =
+        session?.id ??
+        agentValue(
+          await (projectId ? bridge.createCanvasSession(projectId) : bridge.createSession()),
+        );
       if (!session && model && model !== configuration.config?.model)
         agentValue(await bridge.setModel({ sessionId: id, model }));
-      agentValue(await bridge.send({ sessionId: id, requestId: crypto.randomUUID(), text }));
+      agentValue(
+        await bridge.send({
+          sessionId: id,
+          requestId: crypto.randomUUID(),
+          text,
+          ...(canvas ? { canvas } : {}),
+          ...(images?.length ? { images } : {}),
+        }),
+      );
       select(id);
       return true;
     } catch (e) {
@@ -104,8 +127,35 @@ export function useAgent() {
       return false;
     }
   }
+  async function renameConversation(id: string, title: string) {
+    if (!window.desktop?.agent || !sessions.some((s) => s.id === id)) return false;
+    try {
+      agentValue(await window.desktop.agent.renameSession({ sessionId: id, title }));
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '重命名失败');
+      return false;
+    }
+  }
+  async function deleteConversation(id: string) {
+    if (!window.desktop?.agent || !sessions.some((s) => s.id === id)) return false;
+    try {
+      agentValue(await window.desktop.agent.deleteSession(id));
+      setSelected((current) => {
+        if (current !== id) return current;
+        localStorage.removeItem(storageKey);
+        return null;
+      });
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '删除会话失败');
+      return false;
+    }
+  }
   return {
-    snapshot,
+    snapshot: { ...snapshot, sessions },
+    projectId,
+    busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
     configuration,
     setConfiguration,
     session,
@@ -119,6 +169,8 @@ export function useAgent() {
     cancel,
     model,
     rename,
+    renameConversation,
+    deleteConversation,
     newChat: () => {
       select(null);
       setDraftKey((v) => v + 1);

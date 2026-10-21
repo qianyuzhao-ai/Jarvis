@@ -677,12 +677,14 @@ test('connected asset and generated URLs enter the request without reuploading s
     await connect(page, ids.videoAsset, ids.video);
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
+    await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
     await expect(node(page, ids.imageA).locator('.node-task-status')).toHaveCount(0);
     expect(mock.calls[0]).toMatchObject({ image_list: [base + '/image.png?asset=1'] });
     await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
+    await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
     await expect(node(page, ids.video).locator('.node-task-status')).toHaveCount(0);
     expect(mock.calls[1]).toMatchObject({
@@ -695,6 +697,7 @@ test('connected asset and generated URLs enter the request without reuploading s
     await connect(page, ids.sibling, ids.imageA);
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
+    await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.locator('.editor-notice').filter({ hasText: '尚无可用 URL' })).toBeVisible();
     expect(mock.calls).toHaveLength(2);
   } finally {
@@ -734,7 +737,7 @@ test('connected references preview upstream media and keep long mention rows on 
     const longOption = options.filter({ hasText: longName });
     await expect(longOption).toHaveAttribute('title', `图片 3 · ${longName}`);
     const layout = await longOption.evaluate((row) => {
-      const label = row.querySelector('span')!;
+      const label = row.querySelector('.prompt-mention-label')!;
       const name = row.querySelector('small')!;
       return {
         labelHeight: label.getBoundingClientRect().height,
@@ -753,7 +756,7 @@ test('connected references preview upstream media and keep long mention rows on 
     expect(layout.fits).toBe(true);
     await page.screenshot({ path: test.info().outputPath('connected-mentions-light.png') });
     await longOption.click();
-    await expect(page.getByLabel('视频提示词')).toHaveValue('@image_3 ');
+    await expect(page.getByLabel('视频提示词')).toHaveText('@image_3 ');
     await preview.click();
     await expect(page.locator('.reference-item')).toHaveCount(4);
     await expect(page.locator('.reference-item .reference-index')).toHaveText([

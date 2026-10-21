@@ -1,0 +1,293 @@
+{
+  "date": "2026-10-21",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "branch": "feature/node-generation-details",
+  "baseCommit": "5ae71ae",
+  "status": "implemented and verified; local commit authorized; no push",
+  "userRequirements": [
+    "Image and video editors share collapsed generation information by default",
+    "Disclosure arrow beside reference summary",
+    "Failed requests show actual errors; successful requests show returned URL with copy"
+  ],
+  "components": {
+    "createdNodeIds": [
+      "292:23592",
+      "292:23593",
+      "292:23594",
+      "292:23595",
+      "292:23596",
+      "292:23599",
+      "292:23602",
+      "292:23603",
+      "292:23605",
+      "292:23606",
+      "292:23607",
+      "292:23608",
+      "292:23611",
+      "292:23614",
+      "292:23615",
+      "292:23616",
+      "292:23617",
+      "292:23618",
+      "292:23619",
+      "292:23624",
+      "292:23625",
+      "292:23626",
+      "292:23627",
+      "292:23630",
+      "292:23633",
+      "292:23634",
+      "292:23635",
+      "292:23637",
+      "292:23638",
+      "292:23639",
+      "292:23640",
+      "292:23643",
+      "292:23646",
+      "292:23647",
+      "292:23648",
+      "292:23650",
+      "292:23651",
+      "292:23652",
+      "292:23653",
+      "292:23656",
+      "292:23659",
+      "292:23660",
+      "292:23662",
+      "292:23663",
+      "292:23664",
+      "292:23665",
+      "292:23668",
+      "292:23671",
+      "292:23672",
+      "292:23673",
+      "292:23674",
+      "292:23675",
+      "292:23676",
+      "292:23681",
+      "292:23682",
+      "292:23683",
+      "292:23691",
+      "292:23692",
+      "292:23700",
+      "292:23701",
+      "292:23709",
+      "292:23710"
+    ],
+    "mutatedNodeIds": [
+      "111:3938",
+      "75:1358",
+      "111:3941",
+      "77:1373",
+      "111:3944",
+      "95:1929",
+      "111:3948",
+      "95:2224"
+    ],
+    "section": "292:23592",
+    "set": "292:23681",
+    "variants": [
+      {
+        "id": "292:23593",
+        "name": "Status=Empty"
+      },
+      {
+        "id": "292:23605",
+        "name": "Status=Success"
+      },
+      {
+        "id": "292:23624",
+        "name": "Status=Failed"
+      },
+      {
+        "id": "292:23637",
+        "name": "Status=Unknown"
+      },
+      {
+        "id": "292:23650",
+        "name": "Status=Running"
+      },
+      {
+        "id": "292:23662",
+        "name": "Status=Copied"
+      }
+    ],
+    "collection": "VariableCollectionId:292:23589",
+    "collapsed": "292:0",
+    "expanded": "292:1",
+    "open": "VariableID:292:23590",
+    "closed": "VariableID:292:23591",
+    "panels": [
+      {
+        "id": "75:1358",
+        "footer": "292:23683",
+        "w": 760,
+        "h": 250
+      },
+      {
+        "id": "77:1373",
+        "footer": "292:23692",
+        "w": 760,
+        "h": 250
+      },
+      {
+        "id": "95:1929",
+        "footer": "292:23701",
+        "w": 960,
+        "h": 600
+      },
+      {
+        "id": "95:2224",
+        "footer": "292:23710",
+        "w": 960,
+        "h": 600
+      }
+    ]
+  },
+  "pages": {
+    "mutatedNodeIds": [
+      "294:23345",
+      "294:23347",
+      "294:23302",
+      "294:23346",
+      "I294:23346;292:23683",
+      "294:23343",
+      "294:23344",
+      "294:23356",
+      "294:23400",
+      "294:23402",
+      "294:23357",
+      "294:23403",
+      "I294:23403;292:23692",
+      "294:23398",
+      "294:23399",
+      "294:23411",
+      "294:23455",
+      "294:23457",
+      "294:23412",
+      "294:23456",
+      "I294:23456;292:23683",
+      "294:23453",
+      "294:23454",
+      "294:23466",
+      "294:23510",
+      "294:23512",
+      "294:23467",
+      "294:23513",
+      "I294:23513;292:23692",
+      "294:23508",
+      "294:23509",
+      "294:23521",
+      "294:23565",
+      "294:23567",
+      "294:23522",
+      "294:23566",
+      "I294:23566;292:23683",
+      "294:23563",
+      "294:23564",
+      "294:23576",
+      "294:23620",
+      "294:23622",
+      "294:23577",
+      "294:23623",
+      "I294:23623;292:23692",
+      "294:23618",
+      "294:23619",
+      "294:23631",
+      "294:23675",
+      "294:23677",
+      "294:23632",
+      "294:23678",
+      "I294:23678;292:23692",
+      "294:23673",
+      "294:23674",
+      "294:23686"
+    ],
+    "pages": [
+      {
+        "id": "294:23302",
+        "kind": "Image",
+        "state": "Collapsed",
+        "theme": "Light",
+        "panel": "294:23346",
+        "detail": "I294:23346;292:23683"
+      },
+      {
+        "id": "294:23357",
+        "kind": "Video",
+        "state": "Collapsed",
+        "theme": "Light",
+        "panel": "294:23403",
+        "detail": "I294:23403;292:23692"
+      },
+      {
+        "id": "294:23412",
+        "kind": "Image",
+        "state": "Success",
+        "theme": "Light",
+        "panel": "294:23456",
+        "detail": "I294:23456;292:23683"
+      },
+      {
+        "id": "294:23467",
+        "kind": "Video",
+        "state": "Success",
+        "theme": "Light",
+        "panel": "294:23513",
+        "detail": "I294:23513;292:23692"
+      },
+      {
+        "id": "294:23522",
+        "kind": "Image",
+        "state": "Failed",
+        "theme": "Dark",
+        "panel": "294:23566",
+        "detail": "I294:23566;292:23683"
+      },
+      {
+        "id": "294:23577",
+        "kind": "Video",
+        "state": "Failed",
+        "theme": "Dark",
+        "panel": "294:23623",
+        "detail": "I294:23623;292:23692"
+      },
+      {
+        "id": "294:23632",
+        "kind": "Video",
+        "state": "Copied",
+        "theme": "Light",
+        "panel": "294:23678",
+        "detail": "I294:23678;292:23692"
+      }
+    ],
+    "section": "294:23301"
+  },
+  "properties": {
+    "summary": "Summary text#294:0",
+    "resultUrl": "Result URL#294:7"
+  },
+  "audit": {
+    "descendants": 1853,
+    "fonts": "Noto Sans SC",
+    "fontMismatches": 0,
+    "imageFilledNodes": 0,
+    "defaultCollapsed": true,
+    "expandedMode": "292:1",
+    "copyPrototype": "I294:23513;292:23692;292:23619",
+    "note": "Prototype copy feedback is a design state; actual OS clipboard verified in Electron tests."
+  },
+  "validation": {
+    "check": "passed",
+    "build": "passed",
+    "fullTests": "55/55 (1.6m)",
+    "clipboard": "Image and video real generated mock result URL read back from Electron clipboard; invalid request ID rejected",
+    "screenshots": "apps/desktop/test-results/f69f5f2d-880a-4755-931d-43e427d022a3/generation-Electron-upload-fac85--video-and-restores-results/",
+    "figmaVisuals": [
+      "Image success Light",
+      "Video failure Dark",
+      "Video collapsed Light"
+    ],
+    "provider": "Existing mock service, no real endpoint changes"
+  }
+}

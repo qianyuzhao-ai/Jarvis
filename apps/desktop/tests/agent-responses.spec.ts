@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
@@ -6,12 +8,19 @@ import { relaySchema } from '../src/shared/agent';
 
 test('Responses SSE validates terminal events and rejects redirects without leaking credentials', async () => {
   const hits: string[] = [];
+  const visionImage = (
+    await readFile(resolve(import.meta.dirname, 'fixtures/vision-sample.jpg'))
+  ).toString('base64');
   const server = createServer(async (req, res) => {
     hits.push(req.url ?? '');
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const body = JSON.parse(Buffer.concat(chunks).toString());
     expect(req.headers.authorization).toBeUndefined();
+    if (body.model === 'vision') {
+      expect(JSON.stringify(body.input)).toContain('input_image');
+      expect(JSON.stringify(body.input)).toContain('data:image/jpeg;base64,');
+    }
     if (body.model === 'redirect') {
       res.writeHead(302, { Location: '/leak' });
       res.end();
@@ -69,7 +78,7 @@ test('Responses SSE validates terminal events and rejects redirects without leak
   const a = server.address();
   if (!a || typeof a === 'string') throw Error('server');
   try {
-    for (const model of ['complete', 'incomplete', 'redirect']) {
+    for (const model of ['complete', 'incomplete', 'redirect', 'vision']) {
       const config = relaySchema.parse({
         name: 'Mock',
         baseUrl: `http://127.0.0.1:${a.port}/v1`,
@@ -82,6 +91,7 @@ test('Responses SSE validates terminal events and rejects redirects without leak
         config,
         '',
         true,
+        model === 'vision' ? { tools: [], context: 'Vision input test.' } : undefined,
       );
       try {
         let text = '';
@@ -89,16 +99,29 @@ test('Responses SSE validates terminal events and rejects redirects without leak
           if (e.type === 'message_update' && e.assistantMessageEvent.type === 'text_delta')
             text += e.assistantMessageEvent.delta;
         });
-        await session.prompt('仅测试', { expandPromptTemplates: false });
+        await session.prompt('仅测试', {
+          expandPromptTemplates: false,
+          ...(model === 'vision'
+            ? {
+                images: [
+                  {
+                    type: 'image' as const,
+                    mimeType: 'image/jpeg',
+                    data: visionImage,
+                  },
+                ],
+              }
+            : {}),
+        });
         expect(session.messages.filter((m) => m.role === 'assistant').at(-1)?.stopReason).toBe(
-          model === 'complete' ? 'stop' : 'error',
+          ['complete', 'vision'].includes(model) ? 'stop' : 'error',
         );
-        if (model === 'complete') expect(text).toBe('Responses 中文🙂');
+        if (['complete', 'vision'].includes(model)) expect(text).toBe('Responses 中文🙂');
       } finally {
         session.dispose();
       }
     }
-    expect(hits).toEqual(['/v1/responses', '/v1/responses', '/v1/responses']);
+    expect(hits).toEqual(Array(4).fill('/v1/responses'));
   } finally {
     server.closeAllConnections();
     await new Promise<void>((r) => server.close(() => r()));

@@ -1,0 +1,413 @@
+{
+  "date": "2026-10-21",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "policy": "Prefer local copies of macOS 26 UI Kit, reusing existing official-derived local components first.",
+  "nativeFinal": [
+    {
+      "mutatedNodeIds": [
+        "201:12968",
+        "204:11451",
+        "204:11452",
+        "204:11453",
+        "204:11454",
+        "204:11455",
+        "107:3940"
+      ],
+      "remainingRemoteBindings": [],
+      "components": [
+        {
+          "id": "201:12964",
+          "name": "Jarvis / macOS Menu item"
+        },
+        {
+          "id": "205:11381",
+          "name": "Jarvis / macOS 26 / Checkbox"
+        },
+        {
+          "id": "201:12912",
+          "name": "State=Disabled"
+        },
+        {
+          "id": "201:12917",
+          "name": "State=Unchecked"
+        },
+        {
+          "id": "201:12922",
+          "name": "State=Checked"
+        },
+        {
+          "id": "205:11382",
+          "name": "Jarvis / macOS 26 / Theme segmented control"
+        },
+        {
+          "id": "201:12928",
+          "name": "Selected=System"
+        },
+        {
+          "id": "201:12941",
+          "name": "Selected=Light"
+        },
+        {
+          "id": "201:12952",
+          "name": "Selected=Dark"
+        },
+        {
+          "id": "207:11748",
+          "name": "Jarvis / macOS 26 / Toolbar icon action"
+        }
+      ]
+    }
+  ],
+  "pageVerification": [
+    {
+      "legacyInputCount": 0,
+      "username": [
+        {
+          "id": "I127:4730;127:4727",
+          "main": "28:373",
+          "value": {
+            "Value#28:9": {
+              "type": "TEXT",
+              "value": "Hugo"
+            }
+          }
+        },
+        {
+          "id": "I127:4735;127:4727",
+          "main": "28:373",
+          "value": {
+            "Value#28:9": {
+              "type": "TEXT",
+              "value": "Hugo"
+            }
+          }
+        },
+        {
+          "id": "I127:4740;127:4727",
+          "main": "28:373",
+          "value": {
+            "Value#28:9": {
+              "type": "TEXT",
+              "value": "Hugo"
+            }
+          }
+        }
+      ],
+      "toolbarCount": 24,
+      "toolbarActions": 12,
+      "oldCheckboxRefs": 0
+    }
+  ],
+  "componentVerificationBeforeFinalFontCleanup": [
+    {
+      "remoteInstances": [],
+      "foreignFontNodes": [],
+      "bindingsContainingRemoteIds": 6,
+      "themeVisibility": [
+        {
+          "id": "206:11406",
+          "main": "201:12928",
+          "bound": {
+            "visible": {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:86:1518"
+            },
+            "fills": [
+              {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:5:5"
+              }
+            ]
+          }
+        },
+        {
+          "id": "207:11754",
+          "main": "201:12941",
+          "bound": {
+            "visible": {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:86:1523"
+            },
+            "fills": [
+              {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:5:5"
+              }
+            ]
+          }
+        },
+        {
+          "id": "207:11765",
+          "main": "201:12952",
+          "bound": {
+            "visible": {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:86:1528"
+            },
+            "fills": [
+              {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:5:5"
+              }
+            ]
+          }
+        }
+      ],
+      "nativeComponentCount": 8
+    }
+  ],
+  "toolbarMigration": [
+    {
+      "createdNodeIds": [
+        "207:11783",
+        "207:11791",
+        "207:11800",
+        "207:11808",
+        "207:11817",
+        "207:11829",
+        "207:11838",
+        "207:11846",
+        "207:11855",
+        "207:11863",
+        "207:11872",
+        "207:11884",
+        "207:11893",
+        "207:11901",
+        "207:11910",
+        "207:11918",
+        "207:11927",
+        "207:11939",
+        "207:11948",
+        "207:11956",
+        "207:11965",
+        "207:11973",
+        "207:11982",
+        "207:11994"
+      ],
+      "mutatedNodeIds": [
+        "67:955",
+        "67:961",
+        "67:967",
+        "67:972",
+        "67:976",
+        "81:1187",
+        "70:965",
+        "70:969",
+        "70:972",
+        "70:975",
+        "70:977",
+        "81:1205",
+        "72:1283",
+        "72:1287",
+        "72:1290",
+        "72:1293",
+        "72:1295",
+        "81:1223",
+        "72:1520",
+        "72:1524",
+        "72:1527",
+        "72:1530",
+        "72:1532",
+        "81:1241"
+      ],
+      "changes": [
+        {
+          "old": "67:955",
+          "new": "207:11783",
+          "name": "缩小",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "67:961",
+          "new": "207:11791",
+          "name": "放大",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "67:967",
+          "new": "207:11800",
+          "name": "适应视图",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "67:972",
+          "new": "207:11808",
+          "name": "缩略图显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "67:976",
+          "new": "207:11817",
+          "name": "背景点阵显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "81:1187",
+          "new": "207:11829",
+          "name": "磁力吸附",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "70:965",
+          "new": "207:11838",
+          "name": "缩小",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "70:969",
+          "new": "207:11846",
+          "name": "放大",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "70:972",
+          "new": "207:11855",
+          "name": "适应视图",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "70:975",
+          "new": "207:11863",
+          "name": "缩略图显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "70:977",
+          "new": "207:11872",
+          "name": "背景点阵显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "81:1205",
+          "new": "207:11884",
+          "name": "磁力吸附",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1283",
+          "new": "207:11893",
+          "name": "缩小",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1287",
+          "new": "207:11901",
+          "name": "放大",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1290",
+          "new": "207:11910",
+          "name": "适应视图",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1293",
+          "new": "207:11918",
+          "name": "缩略图显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1295",
+          "new": "207:11927",
+          "name": "背景点阵显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "81:1223",
+          "new": "207:11939",
+          "name": "磁力吸附",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1520",
+          "new": "207:11948",
+          "name": "缩小",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1524",
+          "new": "207:11956",
+          "name": "放大",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1527",
+          "new": "207:11965",
+          "name": "适应视图",
+          "actions": 0,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1530",
+          "new": "207:11973",
+          "name": "缩略图显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "72:1532",
+          "new": "207:11982",
+          "name": "背景点阵显示",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "old": "81:1241",
+          "new": "207:11994",
+          "name": "磁力吸附",
+          "actions": 1,
+          "w": 36,
+          "h": 36
+        }
+      ]
+    }
+  ],
+  "reviewFrame": "207:12003",
+  "librarySection": "201:12911",
+  "inputMaster": "28:373",
+  "appCodeChanged": false
+}

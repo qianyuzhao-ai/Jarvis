@@ -6,6 +6,7 @@ import { ImageControls } from './ImageControls';
 import { VideoControls } from './VideoControls';
 import { References } from './References';
 import { PromptEditor } from './PromptEditor';
+import { GenerationDetails } from './GenerationDetails';
 import { rebaseLocalMentions, type PromptMention } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
 import type { MediaData } from './types';
@@ -27,7 +28,7 @@ export function MediaEditor({
   connectedCount?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const promptRef = useRef<HTMLElement>(null);
   const expandedButton = useRef<HTMLButtonElement>(null);
   function toggleExpanded(next: boolean) {
     setExpanded(next);
@@ -37,15 +38,6 @@ export function MediaEditor({
   }
   const [referenceError, setReferenceError] = useState('');
   const busy = generationBusy(data);
-  const task = data.generation;
-  const taskLabel = {
-    uploading: '正在上传素材…',
-    submitting: '正在提交生成…',
-    running: '正在生成，可能需要较长时间…',
-    succeeded: '生成完成',
-    failed: '生成失败',
-    unknown: '结果未知，请先核实任务是否已执行',
-  };
   const video = data.kind === 'video';
   const label = video ? '视频' : '图像';
   const update = (patch: Partial<MediaData>) => {
@@ -68,7 +60,7 @@ export function MediaEditor({
           if (expanded && e.key === 'Tab') {
             const controls = Array.from(
               e.currentTarget.querySelectorAll<HTMLElement>(
-                'button:not(:disabled), textarea:not(:disabled), select:not(:disabled), input:not(:disabled):not([type="hidden"])',
+                'button:not(:disabled), textarea:not(:disabled), select:not(:disabled), input:not(:disabled):not([type="hidden"]), summary, code[tabindex], [contenteditable="true"]',
               ),
             ).filter((n) => n.offsetParent !== null);
             const first = controls[0],
@@ -159,21 +151,7 @@ export function MediaEditor({
             {referenceError}
           </p>
         )}
-        {connectedCount > 0 && (
-          <p className="editor-notice" role="status">
-            已连入 {connectedCount} 个参考节点，生成时使用上游已完成的 URL。
-          </p>
-        )}
-        {task && (
-          <div className="editor-notice" role="status">
-            <p>{taskLabel[task.status]}</p>
-            {task.error && <p className="error-text">{task.error}</p>}
-            {task.warning && <p className="error-text">{task.warning}</p>}
-            {task.status === 'unknown' && (
-              <p>不会自动重发。再次点击生成会创建新任务，可能产生重复费用。</p>
-            )}
-          </div>
-        )}
+        <GenerationDetails data={data} connectedCount={connectedCount} />
       </section>
     </>
   );

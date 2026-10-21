@@ -9,8 +9,9 @@ export function useWorkspace(initial: WorkspaceData) {
   const [status, setStatus] = useState('已保存到本机');
   const [saveError, setSaveError] = useState('');
   const getCurrent = useCallback(() => current.current, []);
-  const commit = useCallback(async (change: ChangeWorkspace) => {
-    const next = change(current.current);
+  const commit = useCallback(async (change: ChangeWorkspace, rollbackOnFailure = false) => {
+    const before = current.current;
+    const next = change(before);
     current.current = next;
     setData(next);
     setStatus('正在保存…');
@@ -23,6 +24,10 @@ export function useWorkspace(initial: WorkspaceData) {
       }
     } catch (error) {
       if (version === revision.current) {
+        if (rollbackOnFailure) {
+          current.current = before;
+          setData(before);
+        }
         setStatus('保存失败');
         setSaveError(error instanceof Error ? error.message : '保存失败');
       }
