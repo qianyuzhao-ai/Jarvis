@@ -9,8 +9,14 @@
 - `apple-network-retry.sh` 仅对明确 NSURLErrorDomain/CFNetwork 临时网络代码最多 3 次，间隔 5/10 秒；拒绝/撤销/签名错误、无网络代码的 Error 68 不重试，最后失败保留原退出码。应用于 stapler validate 和 spctl，codesign 与所有签名/票据检查保留。
 - 手动重试仍检出 v0.1.8 应用源码及原打包配置，但 macOS 验证工具从 github.sha 对应的工作流提交独立稀疏检出；避免移动保护标签，也避免直接重跑旧工作流仍调用旧脚本。工具不打包进应用，原 Tag SHA 与来源须在重试后回读核对。
 - 7 项本地 Bash 回归已通过：首次成功、网络后恢复、3 次耗尽、无网络标识的票据失败、拒绝伴随网络日志、签名错误、未知错误。`pnpm check`、`pnpm build`、工作流 YAML/所有 Bash 步骤语法及源码/工具来源隔离检查、`git diff --check` 通过。应用运行代码未改，沿用 v0.1.8 已通过的 57 项窗口回归；云端运行同一重试回归后校验真实产物，最终发布结果待回读。
+- `f3f2015` 经 PR #39 → develop `35813f7`、PR #40 → main `10490dc`，从 main 手动 dispatch 原 v0.1.8，运行 [39621901772](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39621901772)。应用源码仍来自原标签 `caa4256`，校验工具来自触发提交 `10490dc`；远端标签对象和剥离后提交均回读未变。原工作区 UI 改动未触碰。
+- 本次云端公证再次成功，独立检出校验工具与 7 项重试回归通过。目录包、ZIP 解压应用、DMG 内应用各实际遇到一次 Apple -1005/退出 68，均在等待 5 秒后的第 2 次校验成功，随后 Gatekeeper 全部 accepted、source=Notarized Developer ID；codesign、版本/架构/团队及归档完整性校验保留并通过。三次真实恢复证明修复生效，没有绕过签名或公证门槛。
+- **最终结果**：手动重试运行 `39621901772` 的 macOS、Windows、统一发布三个作业全绿；[v0.1.8 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.8) 于北京时间 23:21:18 发布，非草稿预发布。三个 uploaded 资产：DMG `247445636` 字节、ZIP `246139146` 字节、Windows EXE `217792676` 字节。日志核对源码 checkout 为 `caa4256`、校验工具 checkout 为 `10490dc`；受保护标签保持原值。本轮只有一次发布重试，没有移动标签、覆盖旧 Release 或触碰原 UI 工作。
+- 当前 0.1.8 已验证正式签名、公证、票据和 Gatekeeper，以及三次真实网络重试恢复；替代前述等待/失败快照。未执行新签名安装包的实机启动或跨版本自动升级；自动更新器未接入，Windows 仍未签名。发布说明与 README 已同步真实结果。
 
-## 0.1.8 云端签名公证验证（2026-10-21）
+## 0.1.8 首次云端运行与早期查询（历史，2026-10-21）
+
+以下为首次运行及等待过程的快照；公证成功、网络校验失败、修复后的最终发布结果见顶部“Apple 票据校验网络错误有限重试”。
 
 - 发布前 `pnpm check`、构建、完整 Electron + 本地模拟服务 **57/57（1.7m）** 通过，版本一致性、electron-builder 合并配置/schema、工作流 shell、Secrets 作用域、entitlements plist 和 diff 检查通过。
 - 实现由 PR #34 → develop、PR #35 → main；标签 v0.1.8 指向 main 合并提交 `caa4256`。唯一发布运行 [39613181833](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39613181833) 的 Windows 作业已全绿（4m44s）；macOS 实时日志确认选用 Developer ID Application 签名，尚未返回公证结果。
