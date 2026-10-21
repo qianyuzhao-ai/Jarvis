@@ -1748,7 +1748,7 @@
         "advanced conflict merge"
       ],
       "committed": true,
-      "pushed": false
+      "pushed": true
     }
   },
   "settingsBackAtTop": {
@@ -1792,6 +1792,34 @@
       "electronPassed": 39,
       "electronFailed": 0
     },
-    "status": "ready for develop PR"
+    "status": "published",
+    "developPR": 25,
+    "mainPR": 26,
+    "developCommit": "7506c2b0be67f18bbd7683712be72083b9326004",
+    "mainCommit": "1f3be230fd2c147868d9501ca763d3c1d006b9af",
+    "tag": "v0.1.5",
+    "runId": 39548892511,
+    "runUrl": "https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39548892511",
+    "releaseUrl": "https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.5",
+    "prerelease": true,
+    "draft": false,
+    "allJobs": "success",
+    "assets": [
+      {
+        "name": "Jarvis-0.1.5-macos-arm64-unsigned.dmg",
+        "size": 229488251,
+        "sha256": "02ff0bd5264cdb2efbead064eafd3ed983179819c342692b59b440e57c0b0f1e"
+      },
+      {
+        "name": "Jarvis-0.1.5-macos-arm64-unsigned.zip",
+        "size": 229535150,
+        "sha256": "209a7c70dbc3d0de9f74507ddcf9144d7e1e7cccf6f8650f37480f8b42612dd2"
+      },
+      {
+        "name": "Jarvis-0.1.5-windows-x64-unsigned-setup.exe",
+        "size": 205496351,
+        "sha256": "4a0bbc836932416710e85f71dba988cbe282cc87b278c7126631399275352f4f"
+      }
+    ]
   }
 }

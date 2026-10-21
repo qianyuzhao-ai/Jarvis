@@ -13,6 +13,8 @@
 
 ## 当前分支职责和流向（2026-10-21 用户更新）
 
+`v0.1.5` 已由 PR #25 进入 develop (`7506c2b`)、PR #26 进入 main (`1f3be23`)，标签指向 main 的该合并提交。唯一运行 [39548892511](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39548892511) 的 macOS arm64、Windows x64 和统一发布作业全部成功，三个未签名安装文件已发布到 [v0.1.5](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.5)。此前独立的三项画布修复和写作空间均已纳入，旧标签未改动；本地最终集成回归 39/39 通过。
+
 - 2026-10-21 用户授权 0.1.5，要求全部改动纳入：写作空间与独立画布修复集成后通过 PR 进入 develop，再由 develop PR main，标签仅触发一次 macOS arm64 + Windows x64 未签名预发布流程。此次授权包含提交、推送、PR 合并、版本标签与发布；不删除历史分支或移动旧版本标签。
 
 `v0.1.4` 已由 PR #17→develop、#18→main 集成并打标签，指向 main 合并提交 `2aed851`。后续 CI 修复均走 develop→main PR，不移动标签；同一次成功双平台构建的三个文件已发布到 [v0.1.4 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.4)。Windows 功能由用户验收，具体构建重试及发布路径问题见工程记忆。

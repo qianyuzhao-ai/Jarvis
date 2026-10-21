@@ -6,7 +6,11 @@
 
 - 用户明确授权 0.1.5 并要求所有改动纳入本版，覆盖写作空间、此前独立的三项画布修复、设计/工程记忆及 Figma 续传脚本；对话参考图片保留本地并加入 .gitignore，不作为应用源码发布。
 - 写作空间提交 `9d8f8c8`；本轮已将 `feature/reference-preview-fix` 的 65c33e2 / ed13812 / 8814a0e 非快进合入当前功能分支。合并仅在设计/工程记忆冲突，保留已包含修复记录及较新 Figma 状态的完整文件；代码无冲突。
-- 根包、桌面包和 README 升至 0.1.5，CHANGELOG 汇总实际功能与未签名/基础编辑边界。后续按 feature → develop PR、develop → main PR、main 合并提交上打 v0.1.5 标签进行单次双平台构建；版本校验、检查、构建、git diff --check 与最终集成 39/39 项真实 Electron 回归同轮通过，约 1.2 分钟；远端集成与构建结果待完成后更新。
+- 根包、桌面包和 README 升至 0.1.5，CHANGELOG 汇总实际功能与未签名/基础编辑边界。版本校验、检查、构建、git diff --check 与最终集成 39/39 项真实 Electron 回归同轮通过，约 1.2 分钟。
+- 已经 [PR #25](https://github.com/qianyuzhao-ai/Jarvis/pull/25) 合入 develop (`7506c2b`)、[PR #26](https://github.com/qianyuzhao-ai/Jarvis/pull/26) 合入 main (`1f3be23`)；`v0.1.5` 已创建并核对远端 peeled SHA 为 `1f3be230fd2c147868d9501ca763d3c1d006b9af`。未移动旧标签。
+- 唯一发布运行：[39548892511](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39548892511)，由标签 push 触发。macOS、Windows 和统一发布三个作业均成功，未重试或重建；已回读 [v0.1.5 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.5)，非草稿、prerelease=true，三个文件状态均 uploaded。GitHub 连接器创建 PR 返回 403，先用 CLI 核对无同名 PR 后改用已登录的 CLI 完成；没有重复创建或重复触发构建。
+- Release 三个文件：DMG 229488251 字节（SHA-256 02ff0bd5264cdb2efbead064eafd3ed983179819c342692b59b440e57c0b0f1e）、ZIP 229535150 字节（209a7c70dbc3d0de9f74507ddcf9144d7e1e7cccf6f8650f37480f8b42612dd2）、Windows EXE 205496351 字节（4a0bbc836932416710e85f71dba988cbe282cc87b278c7126631399275352f4f）。摘要来自 GitHub Release API，未重复下载大文件。仍为未签名/未公证包；Windows 运行功能由用户验收。
+- 已核对发布标签包含此前独立修复分支的全部提交，发布代码与 develop 无差异。本地 main/develop 均已快进到对应远端；发布结果记录另走文档 PR 更新 develop，不改已发布标签或重复发包。
 
 ## 写作空间基础版（2026-10-21）
 
