@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## 0.1.7 发布验证（2026-10-21）
+
+- 用户授权将全部最新改动发布为 0.1.7；根包、桌面包、README 和 CHANGELOG 已统一版本。包含 Chat V2、画布 Agent/视觉资产、Skills、生成详情和原子 Prompt 引用 5 个功能提交。
+- 本轮重新执行 pnpm check、pnpm test:smoke（包含构建），完整 **57/57** 在 1.7m 通过；版本校验脚本 v0.1.7 和 git diff --check 通过。受限沙箱不能启动 Electron/模拟端口，切换原生权限后同一完整回归通过，没有更改实现或放宽断言。
+- 真实服务联调和 Windows 功能验收边界不变；云端双平台构建与发布结果待回读，不将本地通过等同于已发布。
+
 ## Prompt 引用原子编辑与光标菜单（2026-10-21）
 
 - 用户要求 @ 候选随当前输入位置弹出，带缩略图及上下/Enter选择，引用作为整体删除。PromptEditor 从textarea叠层迁到项目已用的 CodeMirror state/view/commands，复用依赖；MediaEditor焦点引用改HTMLElement，放大态焦点循环包含contenteditable。旧textarea值断言随新控件改为文档文本断言，并显式校验多行/剪贴板内容。

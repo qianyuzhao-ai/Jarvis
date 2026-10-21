@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 Pi 首页 Chat、带画布 Agent 的 AIGC 创作空间和本地 Markdown 写作空间。
 
-当前源码版本：`0.1.6`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.1.7`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
@@ -57,7 +57,7 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-当前本地验证平台为 macOS arm64。应用未配置正式图标、Developer ID 签名、公证或自动更新，仅用于本地开发验证；Windows 尚未验证。
+当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；未配置 Developer ID 签名、公证或自动更新。GitHub 提供 macOS arm64 和 Windows x64 未签名预发布安装包；Windows 功能仍需实机验收。
 
 ## GitHub 打包与发布
 
