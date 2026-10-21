@@ -48,6 +48,7 @@ const desktop: DesktopInfo = {
     createEntry: (request) => ipcRenderer.invoke('writing:create', request),
   },
   generation: {
+    copyResultUrl: (requestId) => ipcRenderer.invoke('generation:copy-result-url', requestId),
     getDownloadPreferences: () => ipcRenderer.invoke('downloads:get-preferences'),
     chooseDownloadDirectory: () => ipcRenderer.invoke('downloads:choose-directory'),
     setDownloadDontAsk: (value) => ipcRenderer.invoke('downloads:set-dont-ask', value),

@@ -41,6 +41,8 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 
 ### 开始任务前
 
+生成节点详情最近同步记录：[memory/figma-sync-2026-10-21/generation-details-state.json](memory/figma-sync-2026-10-21/generation-details-state.json)。
+
 1. 涉及 UI、Figma、组件、样式或设计实现的任务，先读取 `memory/design.md`。
 2. 根据记忆定位相关文件和 Figma 节点，再检查实际状态。节点位置、组件数量、字体和连接权限可能变化，不能只凭历史记录操作。
 3. 用户最新明确要求优先于旧记忆。遇到冲突时，记录变化；只有影响任务且无法从现有信息确定的取舍才询问用户。

@@ -102,6 +102,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
       .toBe(true);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
+    await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.getByText('生成失败')).toBeVisible();
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await expect(nodes).toHaveCount(2);

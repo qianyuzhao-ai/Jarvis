@@ -121,6 +121,7 @@ export type GenerationJob = z.infer<typeof jobSchema>;
 export type ServiceSettings = z.infer<typeof serviceSettingsSchema>;
 export type BridgeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface GenerationBridge {
+  copyResultUrl(requestId: string): Promise<BridgeResult<void>>;
   getDownloadPreferences(): Promise<BridgeResult<DownloadPreferences>>;
   chooseDownloadDirectory(): Promise<
     BridgeResult<{ canceled: boolean; preferences: DownloadPreferences }>

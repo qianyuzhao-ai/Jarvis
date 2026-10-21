@@ -2,6 +2,17 @@
 
 最后更新：2026-10-21
 
+### 图像/视频生成详情折叠与结果复制（2026-10-21）
+
+- 用户截图要求两类生成节点统一：在引用数量说明旁放小箭头，下面信息默认不展开；失败显示错误，成功显示返回 URL + copy URL。代码和 Figma 同轮更新。此为显示/交互变更，不改变生成请求协议。
+- 两类 MediaEditor 共用 GenerationDetails，原生 details/summary 默认关闭；有连线时保留引用数量说明，无连线时写“生成信息”。展开显示任务进度、失败错误/警告、未知结果警示，成功时显示本轮匹配 requestId 的返回 URL 和“复制 URL / 已复制”。失败或新一轮任务不误展示前一轮 URL；文字安全渲染、长 URL 换行，详情区最多180px并内部滚动。
+- 复制使用明确的 generation.copyResultUrl(requestId)：主进程从成功任务记录取真实 URL，校验 HTTP(S) 后写系统剪贴板，不接受任意文本或 renderer 自报 URL，失败显示可重试信息。普通/放大面板共用交互，放大态焦点循环包含摘要和 URL。引用文件校验错误仍及时显示，生成结果默认收起。
+- Figma 主组件集 `292:23681` 位于 Components 区 `292:23592`（16200,100），6状态 Empty/Success/Failed/Unknown/Running/Copied；共享 Summary text#294:0 / Result URL#294:7，复用本地 macOS 26 衍生 Secondary `28:361`、Lucide 箭头、主题及间距变量。折叠布尔集合 `VariableCollectionId:292:23589`，默认模式 `292:0` open=false，展开模式 `292:1` open=true；摘要点击切换且箭头变化。
+- 更新原图像/视频浮动面板 `75:1358` / `77:1373` 与放大面板 `95:1929` / `95:2224`，旧引用说明层保留隐藏，新增共用详情 Footer。浮动面板默认高250px（原210px），放大面板保持960×600并让 Prompt 收缩。
+- [生成详情对照](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=294-23301) `294:23301`，Page (22600,0)：图像/视频折叠 `294:23302` / `294:23357`，成功 `294:23412` / `294:23467`，深色失败 `294:23522` / `294:23577`，视频已复制 `294:23632`。示例域名并非实际服务结果；视频复制导航仅展示反馈，真实剪贴板由代码测试验证。
+- 验证：7页1853子节点，0 IMAGE 填充，字体无不匹配；全部可编辑文字/矢量/组件。浅色成功、深色失败和折叠截图校对通过，修正示例层级避免节点/多选工具条盖住编辑器。pnpm check、pnpm build、完整55/55回归及diff检查通过；真实 Electron 校验两类生成成功返回 URL 的实际剪贴板读回、默认关闭、Enter展开/点击收起和非法ID拒绝。窗口截图 `apps/desktop/test-results/f69f5f2d-880a-4755-931d-43e427d022a3/generation-Electron-upload-fac85--video-and-restores-results/`，节点与状态见 generation-details-state.json。
+- 代码位于 `feature/node-generation-details`，依赖 Skills 提交 `5ae71ae`；用户随后授权本地 commit，范围包括代码、测试与本轮设计记录；不推送、不合并、不发布。
+
 ### Skills：斜杠选择与自动加载（2026-10-21）
 
 - **用户确认**：首页/画布 Agent 输入框支持 `/` 主动调用技能，Agent 也按适用规则自动调用；技能来源选“Jarvis 独立管理，手动导入”。未授权读取已有个人技能目录或执行技能脚本。最新要求替代旧节“Skills 禁用 / 暂无斜杠命令”，工具权限仍受当前会话限制。

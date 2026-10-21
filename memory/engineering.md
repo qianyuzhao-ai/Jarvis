@@ -2,6 +2,13 @@
 
 最后更新：2026-10-21
 
+## 生成节点折叠详情与 URL 复制（2026-10-21）
+
+- 根据用户截图调整图像/视频共用 MediaEditor，新增 GenerationDetails 原生 details/summary 默认关闭，显示进度、错误、警告、未知状态，以及当前成功任务匹配 requestId 的 result.url；不展示失败/重跑时旧任务 URL。引用校验提示继续及时显示。长 URL 换行、详情限高180px滚动；放大面板焦点循环包含摘要及URL。
+- 新增最小 generation:copy-result-url / desktop.generation.copyResultUrl(requestId)。主进程 UUID 校验，从 GenerationJobs 取 succeeded + resultUrl，再按 httpUrl 校验并写 clipboard；继承可信窗口校验，不接受 renderer 文本/URL，不暴露读剪贴板或通用剪贴板写入接口。前端复制锁避免重复，显示已复制/错误反馈。
+- pnpm check、pnpm build、完整 Playwright **55/55**（1.6m）和 git diff --check 通过。增强现有生成用例验证图像与视频默认收起、键盘Enter展开、显示真实结果URL、系统剪贴板读回相同URL、收起和非法请求ID拒绝；原连接/失败可见性用例按新默认折叠更新操作，仍验证实际生成调用。未新增依赖，未修改协议或宣称修复截图中的上游HTTP402。
+- Figma 更新4个原面板主组件和6状态共用详情，新增7页可编辑示例；设计校验与ID见 design.md 和 figma-sync-2026-10-21/generation-details-state.json。分支 `feature/node-generation-details` 基于已提交 `5ae71ae` 继续，用户随后授权本地 commit；不推送、不合并、不发布。
+
 ## Agent Skills 与 / 输入（2026-10-21）
 
 - 用户要求输入框用 `/` 主动选择技能，也由 Agent 按技能规则主动调用；明确选择“Jarvis 独立管理，手动导入技能包”。已在 `feature/agent-skills` 实现，依赖上一轮 `e74a460` 画布 Agent；用户随后授权本地 commit，提交范围包含本轮代码、测试和设计记录；不推送、不合并、不发布。

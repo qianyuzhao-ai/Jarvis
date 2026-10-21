@@ -247,6 +247,26 @@ test('Electron uploads references, generates image and video, and restores resul
   });
   try {
     const page = await app.firstWindow();
+    async function checkResult(kind: string) {
+      const details = page.locator('.generation-details');
+      await expect(details).not.toHaveAttribute('open');
+      await expect(page.getByRole('button', { name: '复制返回 URL' })).not.toBeVisible();
+      await page.getByLabel('生成信息', { exact: true }).focus();
+      await page.keyboard.press('Enter');
+      await expect(details).toHaveAttribute('open');
+      const url = await details.locator('code').innerText();
+      expect(url).toMatch(/^https?:/);
+      await page.getByRole('button', { name: '复制返回 URL' }).click();
+      await expect(page.getByRole('button', { name: '复制返回 URL' })).toHaveText('已复制');
+      expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(url);
+      await page.screenshot({ path: test.info().outputPath(`generation-details-${kind}.png`) });
+      await page.getByLabel('生成信息', { exact: true }).click();
+      await expect(details).not.toHaveAttribute('open');
+    }
+    const deniedCopy = await page.evaluate(() =>
+      window.desktop?.generation.copyResultUrl(crypto.randomUUID()),
+    );
+    expect(deniedCopy?.ok).toBe(false);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -331,6 +351,11 @@ test('Electron uploads references, generates image and video, and restores resul
       )
       .toBe(1);
     await expect(page.locator('.node-task-status')).toHaveCount(0);
+    await page
+      .locator('.react-flow__node-media')
+      .first()
+      .click({ position: { x: 30, y: 30 } });
+    await checkResult('image');
     mock.setMode('success');
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
@@ -363,6 +388,7 @@ test('Electron uploads references, generates image and video, and restores resul
           .evaluate((n) => (n as HTMLVideoElement).currentTime),
       )
       .toBeGreaterThan(0);
+    await checkResult('video');
     expect(mock.calls.some((c) => c.path === '/upload-audio')).toBe(true);
     const requests = mock.calls
       .filter((c) => c.path === '/generate')
