@@ -1,0 +1,543 @@
+{
+  "date": "2026-10-21",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "branch": "feature/prompt-reference-tags",
+  "baseCommit": "074890f",
+  "status": "implemented and verified; local commit authorized; no push",
+  "requirements": [
+    "Caret anchored @ reference picker with mini previews",
+    "Arrow keys and Enter selection",
+    "Reference tags edit/delete as atomic units"
+  ],
+  "components": {
+    "createdNodeIds": [
+      "302:25355",
+      "302:25356",
+      "302:25367",
+      "302:25372",
+      "302:25383",
+      "302:25394",
+      "302:25405",
+      "302:25416",
+      "302:25421"
+    ],
+    "mutatedNodeIds": [
+      "302:25361",
+      "302:25362",
+      "136:4754",
+      "302:25417",
+      "302:25418",
+      "302:25419",
+      "302:25420",
+      "302:25421",
+      "136:4752"
+    ],
+    "section": "302:25355",
+    "row": "302:25356",
+    "rowProps": {
+      "label": "Label#205:16",
+      "caption": "Description#271:0",
+      "selected": "Selected#205:17",
+      "preview": "Preview icon#302:0"
+    },
+    "imageMenu": "136:4754",
+    "mixedMenu": "302:25416",
+    "tag": "136:4752",
+    "items": [
+      [
+        "刘飞三视图.png",
+        "图片 1",
+        "66:1029"
+      ],
+      [
+        "休眠舱.png",
+        "图片 2",
+        "66:1029"
+      ],
+      [
+        "镜头参考.mp4",
+        "视频 1",
+        "66:1034"
+      ],
+      [
+        "萧磊音色参考-短.mp3",
+        "音频 1",
+        "107:3878"
+      ],
+      [
+        "刘飞音色参考-短.mp3",
+        "音频 2",
+        "107:3878"
+      ]
+    ]
+  },
+  "document": {
+    "createdNodeIds": [
+      "306:25544",
+      "306:25545",
+      "306:25546",
+      "306:25547",
+      "306:25548",
+      "306:25549",
+      "306:25550",
+      "306:25551",
+      "306:25552",
+      "306:25553",
+      "306:25554",
+      "306:25556",
+      "306:25557",
+      "306:25558",
+      "306:25559",
+      "306:25560",
+      "306:25561",
+      "306:25563",
+      "306:25564",
+      "306:25565",
+      "306:25566",
+      "306:25567",
+      "306:25568",
+      "306:25569",
+      "306:25570",
+      "306:25577",
+      "306:25584",
+      "306:25591"
+    ],
+    "mutatedNodeIds": [
+      "137:4755",
+      "137:4764",
+      "137:4789",
+      "137:4798",
+      "137:4868",
+      "137:4877",
+      "137:4936",
+      "137:4945"
+    ],
+    "set": "306:25569",
+    "states": [
+      {
+        "state": "Typing",
+        "id": "306:25544",
+        "anchor": "306:25548",
+        "caret": "306:25549"
+      },
+      {
+        "state": "ImageSelected",
+        "id": "306:25550",
+        "caret": "306:25556"
+      },
+      {
+        "state": "AudioSelected",
+        "id": "306:25557",
+        "caret": "306:25563"
+      },
+      {
+        "state": "Deleted",
+        "id": "306:25564",
+        "caret": "306:25568"
+      }
+    ],
+    "slots": [
+      {
+        "panel": "75:1358",
+        "slot": "137:4754",
+        "content": "306:25570"
+      },
+      {
+        "panel": "77:1373",
+        "slot": "137:4788",
+        "content": "306:25577"
+      },
+      {
+        "panel": "95:1929",
+        "slot": "137:4867",
+        "content": "306:25584"
+      },
+      {
+        "panel": "95:2224",
+        "slot": "137:4935",
+        "content": "306:25591"
+      }
+    ]
+  },
+  "prototype": {
+    "mutatedNodeIds": [
+      "I307:25111;306:25570",
+      "I308:26418;302:25372",
+      "307:25057",
+      "I307:25166;306:25577",
+      "I308:26470;302:25420",
+      "307:25112",
+      "I307:25221;306:25591",
+      "I308:26982;302:25420",
+      "307:25167",
+      "I307:25276;306:25570",
+      "307:25222",
+      "I307:25331;306:25577",
+      "307:25277",
+      "I307:25386;306:25577",
+      "307:25332",
+      "I309:27176;306:25570",
+      "309:27122"
+    ],
+    "links": [
+      {
+        "from": "I308:26418;302:25372",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25057",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "I308:26470;302:25420",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25112",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "I308:26982;302:25420",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25167",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "307:25222",
+        "to": "309:27122",
+        "keys": [
+          8,
+          46
+        ]
+      },
+      {
+        "from": "307:25277",
+        "to": "307:25332",
+        "keys": [
+          8,
+          46
+        ]
+      },
+      {
+        "from": "307:25332",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            91,
+            90
+          ]
+        }
+      },
+      {
+        "from": "309:27122",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            91,
+            90
+          ]
+        }
+      }
+    ],
+    "pages": [
+      {
+        "id": "307:25057",
+        "kind": "Image",
+        "state": "Menu",
+        "theme": "Light",
+        "panel": "307:25111",
+        "content": "I307:25111;306:25570",
+        "menu": "308:26418"
+      },
+      {
+        "id": "307:25112",
+        "kind": "Video",
+        "state": "Menu",
+        "theme": "Dark",
+        "panel": "307:25166",
+        "content": "I307:25166;306:25577",
+        "menu": "308:26470"
+      },
+      {
+        "id": "307:25167",
+        "kind": "Video",
+        "state": "ExpandedMenu",
+        "theme": "Dark",
+        "panel": "307:25221",
+        "content": "I307:25221;306:25591",
+        "menu": "308:26982",
+        "shade": "308:26581"
+      },
+      {
+        "id": "307:25222",
+        "kind": "Image",
+        "state": "Selected",
+        "theme": "Light",
+        "panel": "307:25276",
+        "content": "I307:25276;306:25570"
+      },
+      {
+        "id": "307:25277",
+        "kind": "Video",
+        "state": "Selected",
+        "theme": "Dark",
+        "panel": "307:25331",
+        "content": "I307:25331;306:25577"
+      },
+      {
+        "id": "307:25332",
+        "kind": "Video",
+        "state": "Deleted",
+        "theme": "Dark",
+        "panel": "307:25386",
+        "content": "I307:25386;306:25577"
+      },
+      {
+        "id": "309:27122",
+        "kind": "Image",
+        "state": "Deleted",
+        "theme": "Light",
+        "content": "I309:27176;306:25570"
+      }
+    ]
+  },
+  "audit": {
+    "section": "307:25056",
+    "total": 2037,
+    "counts": {
+      "FRAME": 631,
+      "VECTOR": 582,
+      "INSTANCE": 516,
+      "TEXT": 188,
+      "RECTANGLE": 78,
+      "ELLIPSE": 42
+    },
+    "wrongFonts": [],
+    "imageNodes": [],
+    "links": [
+      {
+        "from": "307:25057",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "I308:26418;302:25372",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25112",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "I308:26470;302:25420",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25167",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            13
+          ]
+        }
+      },
+      {
+        "from": "I308:26982;302:25420",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_CLICK"
+        }
+      },
+      {
+        "from": "307:25222",
+        "to": "309:27122",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            8
+          ]
+        }
+      },
+      {
+        "from": "307:25222",
+        "to": "309:27122",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            46
+          ]
+        }
+      },
+      {
+        "from": "307:25277",
+        "to": "307:25332",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            8
+          ]
+        }
+      },
+      {
+        "from": "307:25277",
+        "to": "307:25332",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            46
+          ]
+        }
+      },
+      {
+        "from": "307:25332",
+        "to": "307:25277",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            91,
+            90
+          ]
+        }
+      },
+      {
+        "from": "309:27122",
+        "to": "307:25222",
+        "trigger": {
+          "type": "ON_KEY_DOWN",
+          "device": "KEYBOARD",
+          "keyCodes": [
+            91,
+            90
+          ]
+        }
+      }
+    ],
+    "frames": [
+      {
+        "id": "307:25057",
+        "name": "Jarvis / Prompt reference / Image / Menu / Light",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "307:25112",
+        "name": "Jarvis / Prompt reference / Video / Menu / Dark",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "307:25167",
+        "name": "Jarvis / Prompt reference / Video / ExpandedMenu / Dark",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "307:25222",
+        "name": "Jarvis / Prompt reference / Image / Selected / Light",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "307:25277",
+        "name": "Jarvis / Prompt reference / Video / Selected / Dark",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "307:25332",
+        "name": "Jarvis / Prompt reference / Video / Deleted / Dark",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "309:27122",
+        "name": "Jarvis / Prompt reference / Image / Deleted / Light",
+        "w": 1440,
+        "h": 900
+      }
+    ]
+  },
+  "validation": {
+    "check": "passed",
+    "build": "passed",
+    "fullTests": "57/57 (1.7m)",
+    "targeted": "19 related regressions + atomic state and full Electron mention flow",
+    "screenshots": "apps/desktop/test-results/161c19ca-5918-4579-bc77-b68fd7bd402f/prompt-reference-caret-men-11906-do-cut-and-paste-atomically/",
+    "figmaScreenshots": [
+      "Video caret menu Dark, gray highlight",
+      "Expanded caret menu Dark",
+      "Tag deleted Dark"
+    ],
+    "ime": "Synthetic composition/229 boundaries verified; physical input methods not exhaustively tested"
+  },
+  "behavior": {
+    "editor": "Existing CodeMirror state/view/commands packages, no new dependencies",
+    "protocol": "Raw @image_N/@video_N/@audio_N persisted and submitted as before",
+    "menu": "Prefer below @, clamp/flip at window edges, max240px scroll, themed portal outside clipped editor",
+    "previews": "Local blob and linked URLs reuse ReferenceMedia; muted video and audio icon; failed media falls back to icon",
+    "atomic": "Replacement widgets, atomic ranges, selection/edit filters and isolated history for tags; clipboard retains protocol text and newlines"
+  },
+  "notes": "Figma mini previews are editable media-type icons, not real user image pixels. Real thumbnails and clipboard verified in Electron. Figma keyboard paths illustrate fixed states, not a live input/editor."
+}

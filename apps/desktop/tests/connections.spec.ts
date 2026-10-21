@@ -737,7 +737,7 @@ test('connected references preview upstream media and keep long mention rows on 
     const longOption = options.filter({ hasText: longName });
     await expect(longOption).toHaveAttribute('title', `图片 3 · ${longName}`);
     const layout = await longOption.evaluate((row) => {
-      const label = row.querySelector('span')!;
+      const label = row.querySelector('.prompt-mention-label')!;
       const name = row.querySelector('small')!;
       return {
         labelHeight: label.getBoundingClientRect().height,
@@ -756,7 +756,7 @@ test('connected references preview upstream media and keep long mention rows on 
     expect(layout.fits).toBe(true);
     await page.screenshot({ path: test.info().outputPath('connected-mentions-light.png') });
     await longOption.click();
-    await expect(page.getByLabel('视频提示词')).toHaveValue('@image_3 ');
+    await expect(page.getByLabel('视频提示词')).toHaveText('@image_3 ');
     await preview.click();
     await expect(page.locator('.reference-item')).toHaveCount(4);
     await expect(page.locator('.reference-item .reference-index')).toHaveText([

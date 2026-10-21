@@ -73,7 +73,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.screenshot({ path: test.info().outputPath('image-editor-expanded.png') });
     await page.keyboard.press('Escape');
     await expect(page.getByRole('region', { name: '图像编辑面板' })).toBeVisible();
-    await expect(page.getByLabel('图像提示词')).toHaveValue('窗边的橘猫，温暖自然光');
+    await expect(page.getByLabel('图像提示词')).toHaveText('窗边的橘猫，温暖自然光');
     await page.getByLabel('选择模型', { exact: true }).selectOption('nano-banana-pro');
     await page.getByLabel('宽高比', { exact: true }).selectOption('16:9');
     await page.getByLabel('分辨率', { exact: true }).selectOption('4K');
@@ -128,7 +128,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '放大编辑', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '视频编辑面板' })).toBeVisible();
     await page.getByRole('button', { name: '还原面板', exact: true }).click();
-    await expect(page.getByLabel('视频提示词')).toHaveValue('镜头缓慢推进');
+    await expect(page.getByLabel('视频提示词')).toHaveText('镜头缓慢推进');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.5');
     await expect(page.getByLabel('分辨率', { exact: true })).toHaveValue('1080p');
     await page.screenshot({ path: test.info().outputPath('video-parameter-cards.png') });
@@ -183,7 +183,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
       'true',
     );
     await nodes.first().click();
-    await expect(page.getByLabel('图像提示词')).toHaveValue('窗边的橘猫，温暖自然光');
+    await expect(page.getByLabel('图像提示词')).toHaveText('窗边的橘猫，温暖自然光');
     await expect(page.getByAltText('reference.png')).toBeVisible();
     await page.getByRole('button', { name: '关闭编辑面板' }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();
@@ -306,7 +306,7 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
     ]);
     const layout = await page.getByRole('dialog', { name: '视频编辑面板' }).evaluate((panel) => {
       const refs = panel.querySelector('.references')!,
-        prompt = panel.querySelector('textarea')!;
+        prompt = panel.querySelector('.prompt-code-editor .cm-content')!;
       return {
         promptY: prompt.getBoundingClientRect().top,
         refsBottom: refs.getBoundingClientRect().bottom,

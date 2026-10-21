@@ -2,6 +2,15 @@
 
 最后更新：2026-10-21
 
+## Prompt 引用原子编辑与光标菜单（2026-10-21）
+
+- 用户要求 @ 候选随当前输入位置弹出，带缩略图及上下/Enter选择，引用作为整体删除。PromptEditor 从textarea叠层迁到项目已用的 CodeMirror state/view/commands，复用依赖；MediaEditor焦点引用改HTMLElement，放大态焦点循环包含contenteditable。旧textarea值断言随新控件改为文档文本断言，并显式校验多行/剪贴板内容。
+- prompt-editor-state 使用 replace Widget + atomicRanges、选区/事务过滤器扩大部分引用编辑范围，阻止光标落入tag内部；isolateHistory 将tag插入/删除/替换隔离为完整撤销步骤，避免快删合并掉插入历史。纯文本格式和原生成解析器不变。Widget只用textContent，粘贴走纯文本，不执行HTML。
+- 原生selection坐标使用view.coordsAtPos(@起点)，requestMeasure分离测量与写入，处理文本/滚动/窗口变化；靠边时避让。Portal位于theme-root直属层，保留主题并避开编辑面板overflow；ARIA候选索引随键盘选中同步，候选保持输入焦点。ReferenceMedia导出供候选复用，Blob URL撤销、URL走现有mediaUrl桥接、视频静音、失败图标回退；没有新增网络/文件/原生能力。
+- IME期间不执行选项快捷键，捕获 composing/229 按键仅停止传播到编辑器keymap，不阻止原生默认确认；compositionend恢复候选。测试曾发现合成确认被下一层keymap误当普通Enter，导致额外换行；已修复并通过合成事件回归，未宣称穷尽物理输入法/Windows实机。
+- 最终 pnpm check、pnpm build、git diff --check、完整 **57/57**（1.7m）通过。新增状态事务单测及完整窗口用例，覆盖部分选区/双向删除、原子撤销、真实系统剪切粘贴、普通/放大与浅深菜单、mini媒体预览和菜单光标坐标，现有生成/引用协议与持久化用例继续通过。官方CodeMirror网页本轮403，API依据实际已装6.43.15类型/源码核对；没有为此新增包。
+- Figma 更新旧菜单/tag主组件与4个内容槽，新增候选/内容族和7页示例，节点、截图、校验见design.md与figma-sync-2026-10-21/prompt-reference-tags-state.json。分支feature/prompt-reference-tags基于074890f继续；用户随后授权本地 commit，包含代码、测试及 Figma 同步记录，不推送、不合并、不发布。
+
 ## 生成节点折叠详情与 URL 复制（2026-10-21）
 
 - 根据用户截图调整图像/视频共用 MediaEditor，新增 GenerationDetails 原生 details/summary 默认关闭，显示进度、错误、警告、未知状态，以及当前成功任务匹配 requestId 的 result.url；不展示失败/重跑时旧任务 URL。引用校验提示继续及时显示。长 URL 换行、详情限高180px滚动；放大面板焦点循环包含摘要及URL。

@@ -4,6 +4,8 @@
 
 ## 当前未发布功能分支（2026-10-21）
 
+- `feature/prompt-reference-tags` 依赖生成详情提交 `074890f`，实现光标引用菜单和整体tag编辑；用户随后授权本地 commit，包含代码、测试及 Figma 同步记录；不推送、不合并、不发布。
+
 - `feature/node-generation-details` 依赖已完成 Skills 提交 `5ae71ae`，实现图像/视频节点的折叠详情与结果 URL 复制。用户随后授权本地 commit，范围包含代码、测试与 Figma 同步记录；不推送、不合并、不发布。
 
 - Skills 后续开发位于 `feature/agent-skills`，依赖已本地提交的画布 Agent `e74a460`（及 Chat V2 `d60eece`）。用户随后要求 commit，授权本地提交 Skills 代码、测试与同轮 Figma 记忆；不推送、不合并、不发布，不表示已集成 develop/main。

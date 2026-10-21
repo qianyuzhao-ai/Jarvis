@@ -28,7 +28,7 @@ export function MediaEditor({
   connectedCount?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const promptRef = useRef<HTMLElement>(null);
   const expandedButton = useRef<HTMLButtonElement>(null);
   function toggleExpanded(next: boolean) {
     setExpanded(next);
@@ -60,7 +60,7 @@ export function MediaEditor({
           if (expanded && e.key === 'Tab') {
             const controls = Array.from(
               e.currentTarget.querySelectorAll<HTMLElement>(
-                'button:not(:disabled), textarea:not(:disabled), select:not(:disabled), input:not(:disabled):not([type="hidden"]), summary, code[tabindex]',
+                'button:not(:disabled), textarea:not(:disabled), select:not(:disabled), input:not(:disabled):not([type="hidden"]), summary, code[tabindex], [contenteditable="true"]',
               ),
             ).filter((n) => n.offsetParent !== null);
             const first = controls[0],
