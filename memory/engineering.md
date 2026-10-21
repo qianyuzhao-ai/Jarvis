@@ -2,7 +2,12 @@
 
 最后更新：2026-10-21
 
-## 0.1.6 发布准备（2026-10-21）
+## 0.1.6 双平台预发布完成（2026-10-21）
+
+- 集成已通过 [PR #28](https://github.com/qianyuzhao-ai/Jarvis/pull/28) 合入 develop（`5c6b840`），再通过 [PR #29](https://github.com/qianyuzhao-ai/Jarvis/pull/29) 合入 main（`9526901`）。`v0.1.6` peeled SHA 已核对为 `9526901bf61c1af0f201f455aa4517fb26e2f0d3`，包含 Agent `83e053e` 和图标 `95e132f`。唯一标签运行 [39560464413](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39560464413) 的 macOS、Windows 和统一发布三个作业全部成功，未重试、重复触发或移动旧标签。
+- 已回读 [v0.1.6 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.6)：非草稿、prerelease=true，发布时间 2026-10-21 07:20:13 UTC，三个安装文件均 uploaded。发布说明补入 Agent、图标和能力边界，保留 GitHub 自动生成的提交记录。
+- GitHub API 资产摘要：macOS DMG 246202412 字节，SHA-256 `16688fcff07c2a84593a34e226e3a47ddef140727f69de4baa6eace22803895d`；macOS ZIP 245462424 字节，`62ebfa5845b7bbd7acec39128c8a448a8f5da2f62ecf982f754b29322fc33438`；Windows EXE 217234741 字节，`b51ed6f9b31d3be73055795162e18bac163c0aac4c891ea96805f91affbcd8c4`。未重复下载大文件；云端执行版本、架构、DMG/ZIP 完整性及 Windows 未签名校验，不代表 Windows 功能实机验收。
+- GitHub 连接器创建 PR 返回 403，CLI 核对没有重复 PR 后完成创建和合并。发布结果在独立 `feature/release-0.1.6-notes` 文档分支记录，不改已发布代码、不重打标签或重新构建。
 
 - 用户授权打包发布 0.1.6，明确包含 Agent、App Icon 和其余待发布改动；授权本次版本准备、提交/推送、PR 合并、版本标签和发布。起点为干净的 `feature/pi-agent-chat` `83e053e`，包含独立图标提交 `95e132f`；已 fetch 核对远端，v0.1.6 标签与 Release 不存在，没有开放 PR。
 - 根包、桌面包及 README 统一为 0.1.6，CHANGELOG 汇总 Pi Chat/中转配置、密钥保护、图标及设计/测试记录。沿用 develop → main PR → main 合并提交标签的发布规则，不移动旧标签，不删除历史分支；目标是唯一标签工作流双平台全部成功后统一未签名预发布。
