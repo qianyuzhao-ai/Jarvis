@@ -146,6 +146,10 @@
 
 ## 应用图标（2026-10-21）
 
+- **最新要求与修正**：用户提供 Windows 安装包/快捷方式与 macOS Dock 截图，明确只保留圆角矩形，移除外部方形底色。旧 PNG 四角为不透明 `(245,245,245,255)`，该底色随格式转换进入 ICO/ICNS；本轮从原节点 `192:12530` 导出透明 SVG，保存为 `apps/desktop/resources/icon.svg`，用 Electron Chromium 渲染后生成三种图标资源。保留原 100px 透明留白、圆角底与紫蓝主体，未修改 Figma。
+- **导出边界**：本轮 Figma `get_screenshot` 虽返回透明 PNG，但丢失 mask 内的紫蓝主体，因此未用于应用资源；改用 `exportAsync({format:'SVG_STRING'})` 保留完整路径、渐变和滤镜，经本地渲染视觉确认主体完整。PNG 与全部 ICO/ICNS 尺寸四角透明检查通过；检查、构建通过。用户随后授权本轮本地提交；不推送或发布，Windows 安装及双平台系统图标显示待新包实机验收。
+- 本轮本地 macOS arm64 未签名目录打包通过：`release/0f51fe49-d1d3-42bb-bbf6-5cdc6de91f4f/mac-arm64/Jarvis.app`；包内 PNG/ICNS 与源码字节一致，Info.plist 引用正确。系统 Dock/Windows 桌面的实际显示仍待新包验收。
+- 下列为首次接入历史，最新透明背景要求优先。
 - 用户指定采用 [jarvis-icon-white 1](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=192-12530)，节点 `192:12530`。已通过 Figma MCP 读取设计和原始导出，保留原有浅色背景、圆角底与紫蓝环形图形，没有修改 Figma。
 - 原始 1024 × 1024 PNG 保存为 `apps/desktop/resources/icon.png`，从同一原图生成 macOS `icon.icns` 与 Windows 多尺寸 `icon.ico`；只做格式和尺寸转换，未重绘或裁切。本地预览与 Figma 截图核对通过。
 - 基础 electron-builder 配置指定两平台图标并将 PNG 复制到 Resources；主进程为窗口设置图标，macOS 开发运行设置 Dock 图标，正式包采用应用 bundle 图标。

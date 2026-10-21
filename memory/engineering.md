@@ -109,7 +109,9 @@
 
 ## 应用图标接入（2026-10-21）
 
-- 从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
+- **透明背景修复（同日追加）**：按用户截图移除旧图标的方形灰白外底。新增原 Figma `192:12530` 导出的 `resources/icon.svg`，保留圆角形状与紫蓝图案；通过 Electron Chromium 透明渲染并转换为 `icon.png`、`icon.ico`、`icon.icns`。PNG 1024px、ICO 16/24/32/48/64/128/256px 和 ICNS 全部表示的四角 alpha=0；现有 mac/win/运行时配置继续引用同名资源。`pnpm check`、构建与 diff 检查通过；用户随后授权本轮本地提交，不推送或发布，Windows 实机未验证。
+- 透明背景修复的 macOS arm64 未签名目录包验证通过：`release/0f51fe49-d1d3-42bb-bbf6-5cdc6de91f4f/mac-arm64/Jarvis.app`，Info.plist 引用 `icon.icns`，包内 PNG/ICNS 与源码字节相同。首轮因沙箱 DNS 无法下载 Electron 失败，联网重试成功；没有签名、公证或发布，不代表 Windows 或系统 Dock/桌面显示已验收。
+- 首次接入历史：从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
 - `electron-builder.yml` 配置 mac/win 图标及 PNG extraResources，发布配置继承基础配置。主进程窗口使用开发资源或 `process.resourcesPath/icon.png`，开发 macOS Dock 单独设置，正式 macOS bundle 使用 ICNS。
 - 从 develop 建立 `feature/app-icon`，保留原有 Agent 未提交改动；用户授权本轮仅提交图标相关改动；未推送或发布。`pnpm check`、构建与本地 macOS arm64 目录打包通过。产物 `release/218937ad-9c02-4af8-b96a-9e165f38dd9a/mac-arm64/Jarvis.app` 的 Info.plist 图标引用和两份图标资源字节验证通过，仍为未签名包。
 - 首次沙箱打包因下载 Electron DNS 受限失败，沙箱外重试成功；窗口测试沙箱内无法启动，沙箱外首轮超时，独立重跑窗口导航与隔离回归 1/1 通过（1.4 秒）。打包发现既有 Agent 依赖收集警告，未扩展到依赖修复，不声称完成打包后 Agent 验收。
