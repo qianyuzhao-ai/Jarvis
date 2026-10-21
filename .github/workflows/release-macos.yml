@@ -106,8 +106,11 @@ jobs:
               [BitConverter]::ToUInt16($bytes, $peOffset + 4) -ne 0x8664) {
             throw 'Application is not a Windows x64 PE executable'
           }
-          if ([version](Get-Item $app).VersionInfo.FileVersion -ne [version]"$version.0") {
-            throw 'Application version does not match the release'
+          $info = (Get-Item $app).VersionInfo
+          $actualVersion = "$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)"
+          Write-Host "File version: $($info.FileVersion); product version: $($info.ProductVersion)"
+          if ($actualVersion -ne $version) {
+            throw "Application version $actualVersion does not match release $version"
           }
           foreach ($file in @($app, $installer)) {
             if ((Get-Item $file).Length -eq 0) { throw "Empty package: $file" }
