@@ -26,6 +26,16 @@
 
 首次发布仍需回读 Actions 成功状态与 Release 资产，并在 Apple Silicon Mac 上通过实际下载的 DMG 安装、启动并检查核心功能。静态配置通过不等于 Apple 接受了本次公证，也不等于真实签名包可正常运行。
 
+## 查询公证进度
+
+长时间无新日志时，可在 Actions 中手动运行 `Apple notarization status`（`notarization-status.yml`，选择 main）。它使用现有三项 Apple Secrets，只调用 `notarytool history`，不会构建应用、上传文件或重新提交公证。
+
+- `In Progress`：Apple 已收到提交，尚在处理；保留原运行，不因等待而重复上传。
+- `Accepted`：Apple 已接受公证，仍需原工作流附加票据并完成包内签名、Gatekeeper 校验和统一发布。
+- `Invalid`：公证未通过，读取原发布作业的 Apple 诊断日志后定位原因。
+
+0.1.8 的首次提交 ID 为 `71055590-e096-4ee7-974c-6e75244c9610`，Apple 接收时间为北京时间 2026-10-21 22:09:14。实时结果见 Actions，阶段性验证记录见 `memory/engineering.md`。
+
 ## 本地打包与自动更新边界
 
 `pnpm package:dir` 使用 `scripts/package.mjs` 的本地覆盖配置：关闭正式签名、公证和 Hardened Runtime，不需要云端凭据。它用于结构和运行验证，不作为已公证的正式产物。
