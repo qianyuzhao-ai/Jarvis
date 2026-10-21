@@ -5,6 +5,7 @@ import {
   Cpu,
   Database,
   Folder,
+  FileText,
   Info,
   LayoutGrid,
   PanelLeftClose,
@@ -22,6 +23,7 @@ export function Sidebar({
   onGeneral,
   onServices,
   collapseRef,
+  onWriting,
 }: {
   settings: boolean;
   onProjects: () => void;
@@ -31,6 +33,7 @@ export function Sidebar({
   onGeneral: () => void;
   onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
+  onWriting: () => void;
 }) {
   return (
     <aside id="sidebar" className="sidebar" aria-label="主导航">
@@ -103,6 +106,10 @@ export function Sidebar({
             <button className="side-link selected" onClick={onProjects} aria-current="page">
               <LayoutGrid />
               AIGC 创作空间
+            </button>
+            <button className="side-link" onClick={onWriting}>
+              <FileText />
+              写作空间
             </button>
           </>
         )}

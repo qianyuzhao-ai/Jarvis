@@ -45,3 +45,4 @@ next-env.d.ts
 .pnpm-store/
 
 /.idea
+/.codex-attachments/
