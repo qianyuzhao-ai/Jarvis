@@ -21,6 +21,7 @@ test('desktop navigation and isolation', async () => {
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await expect(page.getByRole('heading', { name: '我的项目' })).toBeVisible();
     const renderer = await page.evaluate(() => ({
       bridge: window.desktop,
@@ -46,6 +47,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (message) => {
@@ -172,6 +174,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
     await expect(page.locator('.canvas-status')).toContainText('已保存到本机');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /画布交互测试/ }).click();
     await expect(nodes).toHaveCount(2);
     await expect(page.getByRole('button', { name: '磁力吸附' })).toHaveAttribute(
@@ -200,6 +203,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const requests: string[] = [];
     page.on('request', (r) => {
       if (/^https?:/.test(r.url())) requests.push(r.url());
@@ -224,6 +228,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.locator('.form-actions')).toContainText('已保存到本机');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
@@ -241,6 +246,7 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page.locator('.react-flow__node-media').first().click();

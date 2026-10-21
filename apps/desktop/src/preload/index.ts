@@ -1,8 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
+import type { AgentEvent } from '../shared/agent';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
+  agent: {
+    getConfiguration: () => ipcRenderer.invoke('agent:configuration'),
+    saveConfiguration: (input) => ipcRenderer.invoke('agent:save', input),
+    testConnection: (input) => ipcRenderer.invoke('agent:test', input),
+    listModels: (input) => ipcRenderer.invoke('agent:models', input),
+    getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
+    createSession: () => ipcRenderer.invoke('agent:create'),
+    renameSession: (input) => ipcRenderer.invoke('agent:rename', input),
+    setModel: (input) => ipcRenderer.invoke('agent:model', input),
+    send: (input) => ipcRenderer.invoke('agent:send', input),
+    cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
+    onEvent: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: AgentEvent) => listener(value);
+      ipcRenderer.on('agent:event', handle);
+      return () => {
+        ipcRenderer.removeListener('agent:event', handle);
+      };
+    },
+  },
   writing: {
     getRoots: () => ipcRenderer.invoke('writing:roots'),
     chooseDirectory: () => ipcRenderer.invoke('writing:choose'),

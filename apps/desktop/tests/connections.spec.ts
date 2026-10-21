@@ -140,6 +140,7 @@ test('prompt mentions follow per-kind upload array order and reject missing posi
 test('marquee selection keeps the editor closed and connects selected images to one target', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const mock = await fixture(page);
   try {
     const first = await node(page, mock.ids.imageAsset).boundingBox();
@@ -166,6 +167,7 @@ test('marquee selection keeps the editor closed and connects selected images to 
 test('marquee selects half-covered nodes and ignores connected edges in both directions', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const mock = await fixture(page);
   try {
     await connect(page, mock.ids.imageAsset, mock.ids.imageA);
@@ -216,6 +218,7 @@ test('marquee selects half-covered nodes and ignores connected edges in both dir
 test('mixed media selection connects to video and downloads image, audio and video', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const mock = await fixture(page);
   try {
     for (const [id, name] of [
@@ -512,6 +515,7 @@ async function fixture(page: Page, imageName = 'source.png') {
     db.close();
   }, workspace);
   await page.reload();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   await page.getByRole('button', { name: /连线验证/ }).click();
   return {
     ids,
@@ -557,6 +561,7 @@ async function connect(page: Page, source: string, target: string) {
 test('left-to-right ports persist edges, highlight only selected paths and keep every edge below nodes', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const mock = await fixture(page);
   try {
     const errors: string[] = [];
@@ -619,6 +624,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await connect(page, ids.imageAsset, ids.imageA);
     await expect(page.locator('.canvas-import-notice')).toContainText('已连接');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /连线验证/ }).click();
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await expect(page.locator('.workflow-edge-active')).toHaveCount(0);
@@ -661,6 +667,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
 test('connected asset and generated URLs enter the request without reuploading sources', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const mock = await fixture(page);
   try {
     const { ids, base } = mock;
@@ -699,6 +706,7 @@ test('connected asset and generated URLs enter the request without reuploading s
 test('connected references preview upstream media and keep long mention rows on one line', async () => {
   const app = await launch();
   const page = await app.firstWindow();
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const longName = 'Apple风格飞船驾驶舱 v2（全息影像·面部虚化·超长文件名称参考图）.png';
   const mock = await fixture(page, longName);
   try {

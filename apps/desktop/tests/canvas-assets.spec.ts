@@ -104,6 +104,7 @@ test('URL media bridge validates URLs and preserves streaming ranges', async () 
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const response = await page.evaluate(async (base) => {
       const bridge = window.desktop!.generation;
       const source = await bridge.mediaUrl(base + '/files/image.png');
@@ -212,6 +213,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
   let app = await launch();
   try {
     let page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     const video = await page.evaluate(async () => {
@@ -298,6 +300,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     await app.close();
     app = await launch();
     page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /资源画布测试/ }).click();
     await expect(page.locator('.asset-node[data-ready="true"]')).toHaveCount(3);
     await expect
@@ -320,6 +323,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await configure(page, mock.base);
     await page.getByRole('button', { name: '缩小', exact: true }).click();
     await expect(page.locator('.zoom-value')).not.toHaveText('100%');
@@ -360,6 +364,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       .toBe(1);
     mock.files.delete('background.png');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /资源画布测试/ }).click();
     await expect(page.locator('.result-error')).toContainText('媒体暂时无法加载');
     mock.files.set('background.png', { bytes: png, mime: 'image/png' });
@@ -381,6 +386,7 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
   const app = await launch();
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await drop(page, [{ name: 'image.png', mime: 'image/png', bytes: Array.from(png) }]);
     await expect(page.locator('.canvas-import-notice')).toContainText('req_from');
@@ -405,6 +411,7 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await expect.poll(() => mock.calls.length).toBe(3);
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /资源画布测试/ }).click();
     await expect(page.locator('.asset-node')).toContainText(['files[0].url', '上传已中断']);
     mock.release();

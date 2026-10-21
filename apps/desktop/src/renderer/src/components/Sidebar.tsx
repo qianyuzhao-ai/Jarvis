@@ -12,8 +12,10 @@ import {
   Plug,
   Settings2,
   SquarePen,
+  MessageSquare,
 } from 'lucide-react';
 import { IconButton } from './IconButton';
+import type { ChatSession } from '../../../shared/agent';
 export function Sidebar({
   settings,
   onProjects,
@@ -24,16 +26,28 @@ export function Sidebar({
   onServices,
   collapseRef,
   onWriting,
+  onModels,
+  onNewChat,
+  onSelectChat,
+  chatSessions,
+  currentChatId,
+  currentRoute,
 }: {
   settings: boolean;
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
-  section: 'general' | 'services';
+  section: 'general' | 'services' | 'models';
   onGeneral: () => void;
   onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
   onWriting: () => void;
+  onModels: () => void;
+  onNewChat: () => void;
+  onSelectChat: (id: string) => void;
+  chatSessions: ChatSession[];
+  currentChatId: string | null;
+  currentRoute: string;
 }) {
   return (
     <aside id="sidebar" className="sidebar" aria-label="主导航">
@@ -63,7 +77,11 @@ export function Sidebar({
               <Settings2 />
               通用
             </button>
-            <button className="side-link" disabled>
+            <button
+              className={`side-link ${section === 'models' ? 'selected' : ''}`}
+              onClick={onModels}
+              aria-current={section === 'models' ? 'page' : undefined}
+            >
               <Cpu />
               模型服务
             </button>
@@ -98,12 +116,15 @@ export function Sidebar({
           </>
         ) : (
           <>
-            <button className="nav-button" disabled>
+            <button className="nav-button" onClick={onNewChat}>
               <SquarePen size={18} />
               <span>新对话</span>
-              <span className="pending-label">待接入</span>
             </button>
-            <button className="side-link selected" onClick={onProjects} aria-current="page">
+            <button
+              className={`side-link ${currentRoute === 'projects' ? 'selected' : ''}`}
+              onClick={onProjects}
+              aria-current={currentRoute === 'projects' ? 'page' : undefined}
+            >
               <LayoutGrid />
               AIGC 创作空间
             </button>
@@ -114,6 +135,36 @@ export function Sidebar({
           </>
         )}
       </nav>
+      {!settings && (
+        <div className="chat-history" aria-label="聊天记录">
+          <small>最近对话</small>
+          {chatSessions.length ? (
+            [...chatSessions]
+              .sort((a, b) => b.updatedAt - a.updatedAt)
+              .map((s) => (
+                <button
+                  key={s.id}
+                  className={`side-link ${currentRoute === 'chat' && currentChatId === s.id ? 'selected' : ''}`}
+                  onClick={() => onSelectChat(s.id)}
+                  aria-label={`打开对话：${s.title}`}
+                  aria-current={
+                    currentRoute === 'chat' && currentChatId === s.id ? 'page' : undefined
+                  }
+                >
+                  <MessageSquare size={16} />
+                  <span>{s.title}</span>
+                  {s.runId && (
+                    <span className="history-running" aria-label="回复中">
+                      •
+                    </span>
+                  )}
+                </button>
+              ))
+          ) : (
+            <p>还没有对话</p>
+          )}
+        </div>
+      )}
       <div className="sidebar-footer">
         {settings ? (
           <button className="text-button" onClick={onProjects}>

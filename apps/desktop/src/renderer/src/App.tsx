@@ -15,6 +15,10 @@ import { createProject, type Project, type WorkspaceData } from './features/crea
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
 import { useAssetUpload } from './features/creation/useAssetUpload';
+import { useAgent } from './features/agent/use-agent';
+import { ChatPage } from './features/agent/ChatPage';
+import { RelaySettings } from './features/agent/RelaySettings';
+import './features/agent/agent.css';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
 );
@@ -23,8 +27,13 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const generate = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
-  const [route, setRoute] = useState<'projects' | 'settings' | 'canvas' | 'writing'>('projects');
-  const [settingsSection, setSettingsSection] = useState<'general' | 'services'>('general');
+  const [route, setRoute] = useState<'chat' | 'projects' | 'settings' | 'canvas' | 'writing'>(
+    'chat',
+  );
+  const [settingsSection, setSettingsSection] = useState<'general' | 'services' | 'models'>(
+    'general',
+  );
+  const agent = useAgent();
   const theme = useResolvedTheme(data.theme);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -49,7 +58,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       })),
     [projectId, update],
   );
-  function openSettings(section: 'general' | 'services') {
+  function openSettings(section: 'general' | 'services' | 'models') {
     if (
       settingsDirty &&
       section !== settingsSection &&
@@ -69,6 +78,13 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改并返回工作台吗？')) return;
     setSettingsDirty(false);
     setRoute('projects');
+  }
+  function navigateChat(id: string | null) {
+    if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改吗？')) return;
+    setSettingsDirty(false);
+    if (id) agent.select(id);
+    else agent.newChat();
+    setRoute('chat');
   }
   function create() {
     const next = createProject();
@@ -118,7 +134,17 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               section={settingsSection}
               onGeneral={() => openSettings('general')}
               onServices={() => openSettings('services')}
-              onWriting={() => setRoute('writing')}
+              onModels={() => openSettings('models')}
+              onNewChat={() => navigateChat(null)}
+              onSelectChat={(id) => navigateChat(id)}
+              chatSessions={agent.snapshot.sessions}
+              currentChatId={agent.session?.id ?? null}
+              currentRoute={route}
+              onWriting={() => {
+                if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改吗？')) return;
+                setSettingsDirty(false);
+                setRoute('writing');
+              }}
             />
           }
         >
@@ -142,14 +168,22 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               {route === 'settings'
                 ? settingsSection === 'general'
                   ? '通用'
-                  : '内网地址'
-                : 'AIGC 创作空间'}
+                  : settingsSection === 'models'
+                    ? '模型服务'
+                    : '内网地址'
+                : route === 'chat'
+                  ? '新对话'
+                  : 'AIGC 创作空间'}
             </span>
             <div className="toolbar-end">
-              <span className="save-status" role="status">
+              <span
+                className="save-status"
+                role="status"
+                hidden={route === 'chat' || (route === 'settings' && settingsSection === 'models')}
+              >
                 {status}
               </span>
-              <Workflow size={16} />
+              {route !== 'chat' && <Workflow size={16} />}
             </div>
           </header>
           {route === 'settings' && settingsSection === 'general' ? (
@@ -157,6 +191,16 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />
+          ) : route === 'settings' && settingsSection === 'models' ? (
+            agent.loading ? (
+              <p className="launch-message">正在读取模型配置…</p>
+            ) : (
+              <RelaySettings
+                value={agent.configuration}
+                onSaved={agent.setConfiguration}
+                onDirtyChange={setSettingsDirty}
+              />
+            )
           ) : route === 'settings' ? (
             <ServiceSettings
               key="settings"
@@ -164,6 +208,12 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               onSave={(settings) => update((p) => ({ ...p, settings }))}
               onDirtyChange={setSettingsDirty}
               status={status}
+            />
+          ) : route === 'chat' ? (
+            <ChatPage
+              key={`${agent.session?.id ?? 'draft'}-${agent.draftKey}`}
+              agent={agent}
+              onConfigure={() => openSettings('models')}
             />
           ) : (
             <ProjectList projects={data.projects} onCreate={create} onOpen={openProject} />
