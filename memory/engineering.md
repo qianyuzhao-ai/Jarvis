@@ -109,6 +109,7 @@
 
 ## 应用图标接入（2026-10-21）
 
+- 挂载图标验证追加：基础配置显式指定 `dmg.icon: resources/icon.icns`，沿用已有透明 ICNS；用户明确 `.dmg` 文件保持系统默认图标，没有加入文件图标后处理。使用前轮未签名目录包创建 `/tmp/jarvis-dmg-icon-check/Jarvis-0.1.8-arm64.dmg`，只读挂载 `Jarvis Icon Check` 后确认 `.VolumeIcon.icns` 与源码字节一致，并已卸载测试卷；本轮首试因沙箱 hdiutil 设备权限失败，沙箱外通过。用户随后授权本地提交；不涉及正式签名、公证、推送或发布。
 - **透明背景修复（同日追加）**：按用户截图移除旧图标的方形灰白外底。新增原 Figma `192:12530` 导出的 `resources/icon.svg`，保留圆角形状与紫蓝图案；通过 Electron Chromium 透明渲染并转换为 `icon.png`、`icon.ico`、`icon.icns`。PNG 1024px、ICO 16/24/32/48/64/128/256px 和 ICNS 全部表示的四角 alpha=0；现有 mac/win/运行时配置继续引用同名资源。`pnpm check`、构建与 diff 检查通过；用户随后授权本轮本地提交，不推送或发布，Windows 实机未验证。
 - 透明背景修复的 macOS arm64 未签名目录包验证通过：`release/0f51fe49-d1d3-42bb-bbf6-5cdc6de91f4f/mac-arm64/Jarvis.app`，Info.plist 引用 `icon.icns`，包内 PNG/ICNS 与源码字节相同。首轮因沙箱 DNS 无法下载 Electron 失败，联网重试成功；没有签名、公证或发布，不代表 Windows 或系统 Dock/桌面显示已验收。
 - 首次接入历史：从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
