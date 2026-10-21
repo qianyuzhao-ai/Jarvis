@@ -36,7 +36,9 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     await expect.poll(offset).toBe(0);
     await expect(sidebar).not.toHaveAttribute('inert');
     const exit = await sidebar.evaluate(async (n) => {
-      (n.querySelector('[aria-label="收起画布助手"]') as HTMLButtonElement).click();
+      (
+        document.querySelector('.canvas-toolbar [aria-label="收起画布助手"]') as HTMLButtonElement
+      ).click();
       await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
       return {
         offset: new DOMMatrixReadOnly(getComputedStyle(n).transform).m41,
@@ -50,7 +52,7 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     await page.keyboard.press('Enter');
     await expect.poll(offset).toBe(0);
     await expect(sidebar).toBeVisible();
-    await sidebar.getByRole('button', { name: '收起画布助手', exact: true }).click();
+    await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
     await expect(page.locator('.canvas-agent-shell')).toHaveCSS('width', '0px');
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -62,7 +64,7 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
       ).m41;
     });
     expect(reduced).toBe(0);
-    await sidebar.getByRole('button', { name: '收起画布助手', exact: true }).click();
+    await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
     await page.screenshot({ path: test.info().outputPath('canvas-assistant-closed.png') });
   } finally {

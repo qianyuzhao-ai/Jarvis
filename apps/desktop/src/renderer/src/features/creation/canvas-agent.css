@@ -73,9 +73,31 @@
   flex-shrink: 0;
 }
 .canvas-agent-header strong {
+  flex: 1;
+  min-width: 0;
   margin-right: auto;
   font-size: 22px;
   font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.canvas-agent-new-chat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+.canvas-agent-new-chat:hover:not(:disabled) {
+  background: var(--color-border);
 }
 .canvas-agent-project {
   padding: 0 16px 24px;
@@ -153,10 +175,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 180px;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 8px 16px;
-  border-block: 1px solid var(--color-border);
 }
 .canvas-agent-history > p {
   padding: 4px 10px;
@@ -272,11 +294,21 @@
   color: var(--color-ink);
   font-size: 12px;
 }
-.canvas-conversation-title > span:first-of-type {
+.canvas-conversation-summary {
+  display: grid;
+  gap: 4px;
   min-width: 0;
+  text-align: left;
+}
+.canvas-conversation-summary > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.canvas-conversation-summary time {
+  color: var(--color-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 .canvas-conversation-row > .icon-button {
   flex: 0 0 auto;

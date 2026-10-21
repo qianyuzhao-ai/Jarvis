@@ -2,6 +2,17 @@ import { useRef, useState } from 'react';
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
 import type { ChatSession } from '../../../../shared/agent';
+
+const conversationTime = (session: ChatSession) =>
+  session.messages.at(-1)?.completedAt ?? session.updatedAt;
+const dateTime = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
 export function CanvasConversations({
   sessions,
   currentId,
@@ -49,73 +60,83 @@ export function CanvasConversations({
       {sessions.length === 0 ? (
         <p>还没有对话</p>
       ) : (
-        sessions.map((s) => (
-          <div className="canvas-conversation-row" key={s.id}>
-            {editing === s.id ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void save(s.id);
-                }}
-              >
-                <label className="sr-only" htmlFor="canvas-conversation-title">
-                  画布对话名称
-                </label>
-                <input
-                  id="canvas-conversation-title"
-                  value={title}
-                  maxLength={100}
-                  required
-                  onChange={(e) => setTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setEditing('');
+        [...sessions]
+          .sort((a, b) => conversationTime(b) - conversationTime(a))
+          .map((s) => (
+            <div className="canvas-conversation-row" key={s.id}>
+              {editing === s.id ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void save(s.id);
                   }}
-                />
-                <button type="submit" disabled={pending || !title.trim()}>
-                  保存
-                </button>
-                <button type="button" disabled={pending} onClick={() => setEditing('')}>
-                  取消
-                </button>
-              </form>
-            ) : (
-              <>
-                <button
-                  className={`side-link canvas-conversation-title ${currentId === s.id ? 'selected' : ''}`}
-                  type="button"
-                  disabled={pending}
-                  aria-current={currentId === s.id ? 'true' : undefined}
-                  onClick={() => select(s.id)}
                 >
-                  <MessageSquare size={18} />
-                  <span>{s.title}</span>
-                  {s.runId && (
-                    <span className="history-running" aria-label="回复中">
-                      •
+                  <label className="sr-only" htmlFor="canvas-conversation-title">
+                    画布对话名称
+                  </label>
+                  <input
+                    id="canvas-conversation-title"
+                    value={title}
+                    maxLength={100}
+                    required
+                    onChange={(e) => setTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setEditing('');
+                    }}
+                  />
+                  <button type="submit" disabled={pending || !title.trim()}>
+                    保存
+                  </button>
+                  <button type="button" disabled={pending} onClick={() => setEditing('')}>
+                    取消
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <button
+                    className={`side-link canvas-conversation-title ${currentId === s.id ? 'selected' : ''}`}
+                    type="button"
+                    disabled={pending}
+                    aria-current={currentId === s.id ? 'true' : undefined}
+                    onClick={() => select(s.id)}
+                  >
+                    <MessageSquare size={18} />
+                    <span className="canvas-conversation-summary">
+                      <span title={s.title}>{s.title}</span>
+                      <time
+                        dateTime={new Date(conversationTime(s)).toISOString()}
+                        aria-label="上次对话时间"
+                      >
+                        {dateTime.format(conversationTime(s))}
+                      </time>
                     </span>
-                  )}
-                </button>
-                <IconButton
-                  disabled={pending}
-                  label={`重命名画布对话：${s.title}`}
-                  onClick={() => {
-                    setEditing(s.id);
-                    setTitle(s.title);
-                  }}
-                >
-                  <Pencil size={18} />
-                </IconButton>
-                <IconButton
-                  disabled={busy || pending}
-                  label={`删除画布对话：${s.title}`}
-                  onClick={() => void deleteChat(s)}
-                >
-                  <Trash2 size={18} />
-                </IconButton>
-              </>
-            )}
-          </div>
-        ))
+                    {s.runId && (
+                      <span className="history-running" aria-label="回复中">
+                        •
+                      </span>
+                    )}
+                  </button>
+                  <IconButton
+                    disabled={pending}
+                    label={`重命名画布对话：${s.title}`}
+                    onClick={() => {
+                      setEditing(s.id);
+                      setTitle(s.title);
+                    }}
+                  >
+                    <Pencil size={18} />
+                  </IconButton>
+                  <IconButton
+                    disabled={busy || pending}
+                    label={`删除画布对话：${s.title}`}
+                    onClick={() => void deleteChat(s)}
+                  >
+                    <Trash2 size={18} />
+                  </IconButton>
+                </>
+              )}
+            </div>
+          ))
       )}
     </nav>
   );

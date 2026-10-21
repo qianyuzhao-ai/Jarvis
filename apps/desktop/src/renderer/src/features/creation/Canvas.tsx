@@ -724,7 +724,6 @@ function CanvasContent({
           project={project}
           selectedIds={selectedIds}
           open={agentOpen}
-          onClose={toggleAgent}
           focus={focusNodes}
           commit={onCommit}
           configure={onConfigureAgent}

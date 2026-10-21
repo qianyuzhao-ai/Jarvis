@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, History, Plus, X } from 'lucide-react';
+import { ArrowDown, ChevronLeft, History, Plus } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
 import { visualSource } from './canvas-vision';
 import { CanvasAttachments } from './CanvasAttachments';
@@ -17,7 +17,6 @@ export function CanvasAgentSidebar({
   project,
   selectedIds,
   open,
-  onClose,
   focus,
   commit,
   configure,
@@ -25,7 +24,6 @@ export function CanvasAgentSidebar({
   project: Project;
   selectedIds: string[];
   open: boolean;
-  onClose: () => void;
   focus: (ids: string[]) => void;
   commit: (change: (p: Project) => Project) => Promise<void>;
   configure: () => void;
@@ -193,33 +191,42 @@ export function CanvasAgentSidebar({
           }}
         />
         <header className="canvas-agent-header">
-          <strong>画布助手</strong>
-          <IconButton
-            label="画布对话历史"
-            disabled={attachments.preparing}
-            aria-expanded={history}
-            aria-pressed={history}
-            onClick={() => setHistory(!history)}
-          >
-            <History size={18} />
-          </IconButton>
-          <IconButton
-            label="新建画布对话"
+          {history && (
+            <IconButton label="返回当前聊天" onClick={() => setHistory(false)}>
+              <ChevronLeft size={18} />
+            </IconButton>
+          )}
+          <strong title={history ? '历史对话' : (session?.title ?? '新聊天')}>
+            {history ? '历史对话' : (session?.title ?? '新聊天')}
+          </strong>
+          {!history && (
+            <IconButton
+              label="画布对话历史"
+              disabled={attachments.preparing}
+              onClick={() => setHistory(true)}
+            >
+              <History size={18} />
+            </IconButton>
+          )}
+          <button
+            type="button"
+            className="canvas-agent-new-chat"
+            aria-label="新建画布对话"
             disabled={attachments.preparing}
             onClick={() => {
               agent.newChat();
               setText('');
               attachments.clear();
+              setHistory(false);
             }}
           >
             <Plus size={18} />
-          </IconButton>
-          <IconButton label="收起画布助手" onClick={onClose}>
-            <X size={18} />
-          </IconButton>
+            <span>新聊天</span>
+          </button>
         </header>
         <div className="canvas-agent-project">{project.name}</div>
-        {!!project.agentEdits.length &&
+        {!history &&
+          !!project.agentEdits.length &&
           !session?.messages.some((m) =>
             m.activities?.some((a) => a.transactionId === project.agentEdits.at(-1)?.id),
           ) && (
@@ -263,6 +270,7 @@ export function CanvasAgentSidebar({
         )}
         <div
           className="canvas-agent-scroll"
+          hidden={history}
           ref={viewport}
           onScroll={() => {
             const n = viewport.current;
@@ -312,7 +320,7 @@ export function CanvasAgentSidebar({
             </div>
           )}
         </div>
-        <div className="canvas-agent-dock">
+        <div className="canvas-agent-dock" hidden={history}>
           {!atBottom && (
             <button
               className="canvas-agent-latest"
