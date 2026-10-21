@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { ChevronDown, FolderOpen } from 'lucide-react';
 import type { DownloadPreferences } from '../../../../shared/generation';
 
 export function DownloadSettings() {
@@ -74,20 +74,13 @@ export function DownloadSettings() {
   }
   return (
     <section className="download-settings" aria-labelledby="download-heading">
-      <div>
-        <h2 id="download-heading">下载</h2>
-        <p>设置图像和视频的默认保存位置。</p>
-      </div>
       <div className="download-directory-row">
-        <div>
-          <span>默认下载位置</span>
-          <p className="download-directory" title={preferences?.directory || undefined}>
-            {preferences?.directory || '尚未选择文件夹'}
-          </p>
-        </div>
+        <h2 id="download-heading">默认下载位置</h2>
         <button
           type="button"
-          className="secondary-button"
+          className="download-location"
+          aria-label={preferences?.directory ? '更改文件夹' : '选择文件夹'}
+          title={preferences?.directory || '选择文件夹'}
           disabled={busy || !preferences}
           onClick={() =>
             void update(async () => {
@@ -98,7 +91,8 @@ export function DownloadSettings() {
           }
         >
           <FolderOpen size={16} />
-          {preferences?.directory ? '更改文件夹' : '选择文件夹'}
+          <span className="download-directory">{preferences?.directory || '选择文件夹'}</span>
+          <ChevronDown size={14} />
         </button>
       </div>
       <label className="download-dont-ask">
@@ -118,9 +112,8 @@ export function DownloadSettings() {
             );
           }}
         />
-        不再提醒，直接保存到默认位置
+        下载时不再询问
       </label>
-      <p>未勾选时，每次下载仍会弹出保存位置选择框。设置即时保存。</p>
       {message && <p role={error ? 'alert' : 'status'}>{message}</p>}
       {!preferences && error && (
         <button type="button" className="secondary-button" onClick={() => setRetry((n) => n + 1)}>

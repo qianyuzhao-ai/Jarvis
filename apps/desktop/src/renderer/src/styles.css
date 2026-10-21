@@ -1389,11 +1389,11 @@ input.node-name:focus-visible {
 .download-settings {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 .download-settings h2 {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   margin: 0;
 }
 .download-directory-row {
@@ -1401,25 +1401,43 @@ input.node-name:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-border);
 }
-.download-directory-row > div {
-  min-width: 0;
-}
-.download-directory-row > button {
-  flex-shrink: 0;
+.download-location {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  max-width: 60%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.download-location:hover:not(:disabled) {
+  background: var(--color-sidebar);
+  color: var(--color-ink);
 }
 .download-directory {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .download-dont-ask {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
   min-height: 36px;
   cursor: pointer;
+  color: var(--color-secondary);
+  font-size: 12px;
 }
 .download-dont-ask input {
   width: 16px;
