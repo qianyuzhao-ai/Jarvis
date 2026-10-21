@@ -1,4 +1,4 @@
-import type { Project, MediaNode, Reference } from './types';
+import { mediaName, type Project, type MediaNode, type Reference } from './types';
 
 const names = { image: '图片', video: '视频', audio: '音频' };
 export type PromptMention = {
@@ -50,7 +50,7 @@ export function promptMentions(project: Project, node: MediaNode): PromptMention
         : source.data.result?.url;
     if (url && urls[kind].has(url)) continue;
     if (url) urls[kind].add(url);
-    add(kind, source.data.name ?? `连线${names[kind]}节点`, url);
+    add(kind, source.type === 'asset' ? source.data.name : mediaName(source.data), url);
   }
   return mentions;
 }

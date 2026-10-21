@@ -44,6 +44,7 @@ import { generationBusy } from './useGeneration';
 import { connectSelected, connectionIssue, relatedWorkflow } from './connections';
 import {
   createMedia,
+  mediaName,
   type CanvasNode,
   type CanvasEdge,
   type MediaData,
@@ -179,7 +180,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
         ? [{ url: node.data.upload.url, kind: node.data.kind, fileName: node.data.name }]
         : [];
     return node.data.result
-      ? [{ url: node.data.result.url, kind: node.data.kind, fileName: node.data.name }]
+      ? [{ url: node.data.result.url, kind: node.data.kind, fileName: mediaName(node.data) }]
       : [];
   });
   async function downloadSelected() {

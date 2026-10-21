@@ -1,16 +1,28 @@
-import { Image, Video } from 'lucide-react';
+import { Image, LoaderCircle, Video } from 'lucide-react';
 import type { NodeProps } from '@xyflow/react';
-import type { MediaNode } from './types';
+import { mediaName, type MediaNode } from './types';
+import { generationBusy } from './useGeneration';
 import { UrlMedia } from './UrlMedia';
 import { NodePorts } from './NodePorts';
 import { NodeDownload } from './NodeDownload';
 import { NodeName } from './NodeName';
 export function MediaPlaceholder({ id, data, selected, isConnectable }: NodeProps<MediaNode>) {
+  const busy = generationBusy(data);
+  const name = mediaName(data);
   const Icon = data.kind === 'image' ? Image : Video;
   return (
-    <div className="media-placeholder" data-selected={selected} data-ready={Boolean(data.result)}>
+    <div
+      className="media-placeholder"
+      data-selected={selected}
+      data-ready={Boolean(data.result) && !busy}
+    >
       <NodePorts input enabled={isConnectable} />
-      {data.result ? (
+      {busy ? (
+        <div className="node-generating" role="status" aria-live="polite">
+          <LoaderCircle size={32} strokeWidth={1.75} aria-hidden="true" />
+          <span>正在生成…</span>
+        </div>
+      ) : data.result ? (
         <UrlMedia
           key={data.result.url}
           url={data.result.url}
@@ -23,31 +35,22 @@ export function MediaPlaceholder({ id, data, selected, isConnectable }: NodeProp
           <span>点击编辑{data.kind === 'image' ? '图像' : '视频'}</span>
         </>
       )}
-      {data.result && (
+      {data.result && !busy && (
         <div className="asset-actions nodrag nopan">
           <NodeDownload
             key={data.result.url}
             url={data.result.url}
             kind={data.kind}
-            fileName={data.name}
+            fileName={name}
           />
         </div>
       )}
-      {data.generation && (
+      {data.generation && ['failed', 'unknown'].includes(data.generation.status) && (
         <span className="node-task-status" role="status">
-          {
-            {
-              uploading: '上传中',
-              submitting: '提交中',
-              running: '生成中',
-              succeeded: '已完成',
-              failed: '失败',
-              unknown: '结果未知',
-            }[data.generation.status]
-          }
+          {data.generation.status === 'failed' ? '失败' : '结果未知'}
         </span>
       )}
-      <NodeName id={id} name={data.name ?? (data.kind === 'image' ? '图像' : '视频')} />
+      <NodeName id={id} name={name} />
     </div>
   );
 }

@@ -268,6 +268,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
         position: { x: 420, y: 320 },
         data: {
           ...createMedia('video'),
+          name: undefined,
           result: { requestId: randomUUID(), url: base + '/generated.webm' },
         },
       },
@@ -296,6 +297,32 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     }, workspace);
     await page.reload();
     await page.getByRole('button', { name: /节点下载测试/ }).click();
+    for (const index of [2, 3]) {
+      const generated = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);
+      const name = index === 2 ? '图像生成' : '视频生成';
+      await expect(
+        generated.getByRole('button', { name: `重命名 ${name}`, exact: true }),
+      ).toBeVisible();
+      await app.evaluate(
+        ({ dialog }, expected) => {
+          dialog.showSaveDialog = async (
+            ...args:
+              | [Electron.BaseWindow, Electron.SaveDialogOptions]
+              | [Electron.SaveDialogOptions]
+          ) => {
+            const options = args.length === 2 ? args[1] : args[0];
+            if (options.defaultPath !== expected)
+              throw new Error(`默认下载名不一致：${options.defaultPath}`);
+            return { canceled: true, filePath: '' };
+          };
+        },
+        name + (index === 2 ? '.png' : '.webm'),
+      );
+      await generated
+        .getByRole('button', { name: index === 2 ? '下载图像' : '下载视频', exact: true })
+        .click();
+      await expect(generated.locator('.node-download-notice')).toContainText('已取消下载');
+    }
     const renamed = ['休眠舱%20.v2.png', '驾驶舱 v2', '生成全景.v2', '全息影像.mp4'];
     for (let index = 0; index < 4; index++) {
       const current = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);

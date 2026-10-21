@@ -665,12 +665,14 @@ test('connected asset and generated URLs enter the request without reuploading s
     await connect(page, ids.videoAsset, ids.video);
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(node(page, ids.imageA).locator('.node-task-status')).toHaveText('已完成');
+    await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
+    await expect(node(page, ids.imageA).locator('.node-task-status')).toHaveCount(0);
     expect(mock.calls[0]).toMatchObject({ image_list: [base + '/image.png?asset=1'] });
     await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
-    await expect(node(page, ids.video).locator('.node-task-status')).toHaveText('已完成');
+    await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
+    await expect(node(page, ids.video).locator('.node-task-status')).toHaveCount(0);
     expect(mock.calls[1]).toMatchObject({
       image_list: [base + '/image.png?generated=B'],
       video_list: [base + '/reference.webm'],
