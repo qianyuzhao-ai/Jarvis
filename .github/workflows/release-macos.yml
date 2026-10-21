@@ -152,9 +152,9 @@ jobs:
         run: |
           version="$(node -p 'require("./apps/desktop/package.json").version')"
           assets=(
-            "release-assets/Jarvis-${version}-macos-arm64-unsigned.dmg"
-            "release-assets/Jarvis-${version}-macos-arm64-unsigned.zip"
-            "release-assets/Jarvis-${version}-windows-x64-unsigned-setup.exe"
+            "release-assets/github-${version}/Jarvis-${version}-macos-arm64-unsigned.dmg"
+            "release-assets/github-${version}/Jarvis-${version}-macos-arm64-unsigned.zip"
+            "release-assets/github-${version}/Jarvis-${version}-windows-x64-unsigned-setup.exe"
           )
           for asset in "${assets[@]}"; do
             test -s "$asset"

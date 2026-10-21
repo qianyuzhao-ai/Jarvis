@@ -2,6 +2,18 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 双平台预发布完成（2026-10-21）
+
+- 用户授权发布且确认包含画布三项修复。PR #17→develop、#18→main 完成集成，受保护标签 `v0.1.4` 始终指向 `2aed851`；后续仅工作流与记录修复经 PR #19/#20、#21/#22 集成，没有移动标签或修改该版本应用源码。
+- 首轮 `39526365544` 因 Windows CRLF 检出失败，随后取消剩余作业；首次重试 `39526651851` 的 Windows NSIS 已生成，但版本字符串比较失败。第二次重试 [39527698231](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39527698231) 的两个打包作业、架构/版本/签名状态校验及 Artifact 上传全部成功，唯一发布作业因 Artifact 子目录路径错误失败。以上为新增流程适配问题，不归因于用户功能代码。
+- 下载同次成功构建的两个 Artifact，核对真实版本子目录，额外运行 DMG 与 ZIP 完整性检查，通过后使用原始三个文件创建 [v0.1.4 GitHub 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.4)。已回读确认非草稿、预发布、三个文件状态均 uploaded：DMG 228342295 字节、ZIP 228388327 字节、Windows EXE 204859637 字节。Windows EXE SHA-256：`f72e94e9677b3af768081cad3ecad232eeadebc3f7f1497342c2d9a6663ab50d`。
+- 全部为未签名测试包，Mac 未公证；Windows 功能仍由用户验收。完整本地窗口回归 34/34 通过。后续自动发布路径修复在 PR #23，不能把本次手动完成上传称为自动发布作业成功。
+
+## v0.1.4 发布产物路径修复（2026-10-21）
+
+- 第二次重试 `39527698231` 的 macOS arm64、Windows x64 两个作业全部成功，包括产物校验和上传；统一发布作业因预期产物在顶层而失败。实际 Artifact 保留 `github-0.1.4/` 子目录，已下载并核对。
+- 工作流发布文件路径改为 `release-assets/github-${version}/...`。本轮直接使用同次成功构建的三个 Artifact 完成 v0.1.4 预发布，不再次构建，不移动标签；最终结果见顶部完成记录。
+
 ## v0.1.4 Windows 版本校验修复（2026-10-21）
 
 - 第一次重试 `39526651851` 的 Windows 检查、构建与 NSIS 打包成功，但后续版本校验将 FileVersion 与固定的四段 `$version.0` 比较而失败。当前 electron-builder 的 fileVersion 使用 appInfo.buildVersion（本项目为三段 0.1.4），不是固定四段字符串。
