@@ -2,6 +2,15 @@
 
 最后更新：2026-10-21
 
+## macOS Developer ID 签名与公证（2026-10-21）
+
+- 后续用户授权提交、推送、Gitflow 合并并发布 0.1.8；已核验远端五项 Secrets 名称齐全及新标签不存在。版本统一 0.1.8；发布前 `pnpm check`、构建、完整 Electron + 模拟服务 **57/57（1.7m）** 通过；版本校验、合并配置 schema、Secrets 作用域、工作流 Bash 语法、plist 和 diff 检查通过。云端结果待回读，不将配置通过等同公证成功。
+- 用户报告已创建并导入带私钥的 Developer ID Application 证书、导出加密 `.p12`，配置了 `CSC_LINK`、`CSC_KEY_PASSWORD`、`APPLE_ID`、`APPLE_APP_SPECIFIC_PASSWORD`、`APPLE_TEAM_ID` 五项 GitHub Repository secrets；本轮不读取秘密值，也没有验证凭据有效性。
+- `feature/macos-signing-notarization` 从刷新后的 `origin/develop` 创建。基础配置移除 `identity: null`，本地 `scripts/package.mjs` 显式关闭正式签名、公证及 Hardened Runtime；发布配置使用 distribution、macOS 专属 forceCodeSigning、Hardened Runtime、公证，以及应用/Helper 共用的最小 JIT 与可执行内存 entitlements。Windows 继续未签名，不注入 Apple 凭据。
+- macOS 打包步骤检查五项 Secrets 非空及 Team ID 格式，覆盖全局 `CSC_IDENTITY_AUTO_DISCOVERY=false`。`verify-macos-release.sh` 验证目录包、ZIP 解压包、DMG 只读挂载包的 arm64、版本、Bundle ID、Developer ID 身份、Team ID、runtime 标志、codesign 完整性、公证票据与 Gatekeeper；校验失败不进入统一发布。macOS 文件移除 unsigned 后缀，Windows 保留；Release 仍为预发布。
+- 已验证：electron-builder 26.15.3 的实际合并配置和 schema、entitlements plist、工作流 YAML/Secrets 作用域、Bash 语法、`pnpm check`、`pnpm build`。应用运行代码未修改，本轮不重复窗口测试。
+- 尚未提交、推送、触发 CI 或发布。真实凭据、Apple 公证、签名包启动及升级均未验证；0.1.7 及旧 Release 保持未签名。自动更新器及更新元数据未接入，`publish: null` 保留。后续操作见 `apps/desktop/RELEASING.md`。
+
 ## 0.1.7 发布验证（2026-10-21）
 
 - 用户授权将全部最新改动发布为 0.1.7；根包、桌面包、README 和 CHANGELOG 已统一版本。包含 Chat V2、画布 Agent/视觉资产、Skills、生成详情和原子 Prompt 引用 5 个功能提交。

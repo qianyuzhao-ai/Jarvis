@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 Pi 首页 Chat、带画布 Agent 的 AIGC 创作空间和本地 Markdown 写作空间。
 
-当前源码版本：`0.1.7`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.1.8`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
@@ -57,7 +57,7 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；未配置 Developer ID 签名、公证或自动更新。GitHub 提供 macOS arm64 和 Windows x64 未签名预发布安装包；Windows 功能仍需实机验收。
+当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；发布配置已启用 macOS Developer ID 签名和 Apple 公证，尚待首次云端发布验证。已发布的 0.1.7 及之前版本仍为未签名包。自动更新尚未接入，Windows 功能仍需实机验收。
 
 ## GitHub 打包与发布
 
@@ -66,8 +66,8 @@ pnpm dev
 - 标签工作流（`.github/workflows/release-macos.yml`）核对版本和 `main` 祖先关系，然后分别运行检查与一次构建：Intel macOS runner 交叉生成 **macOS arm64 DMG/ZIP**，Windows runner 生成 **Windows x64 NSIS EXE 安装包**。Windows 安装器支持选择安装目录，默认按当前用户安装。
 - 两个平台分别上传 Artifact，全部成功后由一个发布任务核对三个文件齐全，再创建同一个 **预发布 Release**。任一平台失败则不创建 Release，已成功平台的 Artifact 仍可下载。PR 和普通分支推送不触发构建。
 - 已存在标签的任务失败或取消时，可重新运行失败作业，或在 Actions 手动输入该标签重试；已存在 Release 则停止，避免覆盖。首次双平台发布必须使用包含新配置的新版本标签，旧标签不会自动获得 Windows 配置，也不会补改现有 Release。
-- 产物命名为 `Jarvis-<版本>-macos-arm64-unsigned.dmg`、同名 `.zip` 和 `Jarvis-<版本>-windows-x64-unsigned-setup.exe`。Windows 构建核对程序 x64 架构、版本与程序/安装器未签名状态；macOS 核对架构、版本、DMG/ZIP 完整性。
-- 当前均为未签名测试包；Mac 也未公证，最低系统版本仍为 macOS 26.0。Windows 功能由用户自行验收，构建成功不代表功能验证完成。真实 Electron 窗口回归继续在发版前的本机运行。
+- 新配置的产物命名为 `Jarvis-<版本>-macos-arm64.dmg`、同名 `.zip` 和 `Jarvis-<版本>-windows-x64-unsigned-setup.exe`。Windows 构建核对程序 x64 架构、版本与程序/安装器未签名状态；macOS 校验目录包、ZIP 解压后的应用及 DMG 中应用的架构、版本、Developer ID 签名、Team ID、Hardened Runtime、公证票据和 Gatekeeper，并检查归档完整性。
+- 签名、公证凭据仅注入 macOS 打包步骤；缺失凭据或验证失败会阻止发布。配置与凭据维护见 [macOS 发布说明](apps/desktop/RELEASING.md)。最低系统版本仍为 macOS 26.0，Windows 仍为未签名测试包。真实 Electron 窗口回归继续在发版前的本机运行。
 
 ## 目录
 

@@ -2,6 +2,13 @@
 
 最后更新：2026-10-21
 
+## macOS 签名公证发布配置（2026-10-21）
+
+- 后续用户授权本轮按 Gitflow 提交、推送、PR 合并并发布 0.1.8，验证云端 macOS 签名和公证。已 fetch 核对 develop 基线 `351ed83`，远端无 v0.1.8 标签、无打开的 PR，五项 Secrets 名称存在；不读取秘密值。根包、桌面包和版本记录统一 0.1.8，发布结果待回读。
+- 用户完成 Developer ID Application 证书创建与带私钥 `.p12` 导出，并报告五项 Repository secrets 已配置；本轮授权修改工作流启用 macOS 签名、公证，不包含提交、推送、合并、标签或发布。
+- 从已 fetch 的 `origin/develop` 创建 `feature/macos-signing-notarization`。新配置将 macOS arm64 包改为正式签名、公证并验证后发布；Windows x64 保持未签名，仍需双平台全部成功后统一预发布。首次使用须有包含新配置的新标签；0.1.7 及历史产物不改动。
+- 本地检查与构建已通过；真实 Apple 签名、公证和 Gatekeeper 结果待首次授权的云端发布验证。凭据操作说明见 `apps/desktop/RELEASING.md`。
+
 ## 0.1.7 发布（2026-10-21）
 
 - 用户要求“把最新的改动都一起发新版本，0.1.7”，授权本轮提交、推送、PR 合并、标签及发布。已 fetch 核对：当前分支包含 develop 和全部 5 个待发布功能提交（d60eece、e74a460、5ae71ae、074890f、f11244c）；其他本地功能没有遗漏的独有实现提交。保留历史分支、stash 和已有标签。已由 [PR #31](https://github.com/qianyuzhao-ai/Jarvis/pull/31) 合入 develop（69756c5），再由 [PR #32](https://github.com/qianyuzhao-ai/Jarvis/pull/32) 合入 main（2f7ef56），标签 v0.1.7 指向 main 合并提交。唯一云端运行 [39605956426](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39605956426) 双平台构建、校验及统一发布全部成功；[v0.1.7 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.7) 已回读为非草稿的未签名预发布，DMG/ZIP/EXE 三个文件均已上传。没有移动旧标签或重试构建；发布说明与结果记录通过独立文档 PR 回到 develop。
@@ -49,7 +56,7 @@
 | `feature/<主题>` | `develop` | 独立功能开发，可跨越多个发布周期 | `develop` |
 | `hotfix/<版本或主题>` | `main` | 已发布版本的线上紧急缺陷修复 | `main` 和 `develop` |
 
-当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端流程，分别构建 macOS arm64 和 Windows x64 未签名包，全部成功后统一预发布。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
+当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端流程，分别构建 macOS arm64 签名公证包和 Windows x64 未签名包，全部成功后统一预发布。签名公证配置本轮待集成及首次云端验证；0.1.7 及之前版本均未签名。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
 
 旧参考图的原始 release 分支流程（历史，不再用于正常发版）：
 
