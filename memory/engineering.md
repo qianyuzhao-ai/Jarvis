@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 发布产物路径修复（2026-10-21）
+
+- 第二次重试 `39527698231` 的 macOS arm64、Windows x64 两个作业全部成功，包括产物校验和上传；统一发布作业因预期产物在顶层而失败。实际 Artifact 保留 `github-0.1.4/` 子目录，已下载并核对。
+- 工作流发布文件路径改为 `release-assets/github-${version}/...`。本轮直接使用同次成功构建的三个 Artifact 完成 v0.1.4 预发布，不再次构建，不移动标签；最终发布结果另记。
+
 ## v0.1.4 Windows 版本校验修复（2026-10-21）
 
 - 第一次重试 `39526651851` 的 Windows 检查、构建与 NSIS 打包成功，但后续版本校验将 FileVersion 与固定的四段 `$version.0` 比较而失败。当前 electron-builder 的 fileVersion 使用 appInfo.buildVersion（本项目为三段 0.1.4），不是固定四段字符串。
