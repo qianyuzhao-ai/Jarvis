@@ -37,12 +37,14 @@ import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
+import { NodeRenameContext } from './node-rename-context';
 import { CanvasExport } from './CanvasExport';
 import { promptMentions } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
 import { connectSelected, connectionIssue, relatedWorkflow } from './connections';
 import {
   createMedia,
+  mediaName,
   type CanvasNode,
   type CanvasEdge,
   type MediaData,
@@ -177,7 +179,9 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       return node.data.upload.status === 'ready'
         ? [{ url: node.data.upload.url, kind: node.data.kind, fileName: node.data.name }]
         : [];
-    return node.data.result ? [{ url: node.data.result.url, kind: node.data.kind }] : [];
+    return node.data.result
+      ? [{ url: node.data.result.url, kind: node.data.kind, fileName: mediaName(node.data) }]
+      : [];
   });
   async function downloadSelected() {
     if (batchPending.current) return;
@@ -581,10 +585,15 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             <button
               type="button"
               disabled={batchBusy || !downloadable.length}
+              aria-label={batchBusy ? '正在下载' : `下载可用文件 (${downloadable.length})`}
+              title={batchBusy ? '正在下载' : `下载 ${downloadable.length} 个可用文件`}
+              aria-busy={batchBusy}
               onClick={() => void downloadSelected()}
             >
-              <Download size={16} />
-              {batchBusy ? '下载中…' : `下载可用文件 (${downloadable.length})`}
+              <Download size={16} aria-hidden="true" />
+              <span className="selection-download-count" aria-hidden="true">
+                {downloadable.length}
+              </span>
             </button>
             {connectingIds && <span>点击目标图像或视频节点</span>}
           </div>
@@ -652,9 +661,26 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   );
 }
 export function Canvas(props: Props) {
+  const rename = useCallback(
+    (id: string, name: string) => {
+      props.onChange((project) => ({
+        ...project,
+        nodes: project.nodes.map((node) =>
+          node.id !== id
+            ? node
+            : node.type === 'asset'
+              ? { ...node, data: { ...node.data, name } }
+              : { ...node, data: { ...node.data, name } },
+        ),
+      }));
+    },
+    [props.onChange],
+  );
   return (
-    <ReactFlowProvider key={props.project.id}>
-      <CanvasContent {...props} />
-    </ReactFlowProvider>
+    <NodeRenameContext value={rename}>
+      <ReactFlowProvider key={props.project.id}>
+        <CanvasContent {...props} />
+      </ReactFlowProvider>
+    </NodeRenameContext>
   );
 }

@@ -1,25 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
-import { Music, Plus, X } from 'lucide-react';
+import { ImageIcon, Music, Plus, Video, X } from 'lucide-react';
 import { REFERENCE_LIMITS } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
 import type { MediaData, Reference } from './types';
+import type { PromptMention } from './prompt-mentions';
 
-function ReferenceMedia({ item }: { item: Reference }) {
+function ReferenceMedia({
+  item,
+}: {
+  item: { type: Reference['type']; name: string; blob?: Blob; url?: string };
+}) {
   const [url, setUrl] = useState('');
   useEffect(() => {
-    const value = URL.createObjectURL(item.blob);
-    queueMicrotask(() => setUrl(value));
-    return () => URL.revokeObjectURL(value);
-  }, [item.blob]);
+    let active = true;
+    if (item.blob) {
+      const value = URL.createObjectURL(item.blob);
+      queueMicrotask(() => {
+        if (active) setUrl(value);
+      });
+      return () => {
+        active = false;
+        URL.revokeObjectURL(value);
+      };
+    }
+    if (item.url) {
+      void window.desktop!.generation.mediaUrl(item.url).then(
+        (response) => {
+          if (active) setUrl(response.ok ? response.value : '');
+        },
+        () => {
+          if (active) setUrl('');
+        },
+      );
+    }
+    return () => {
+      active = false;
+    };
+  }, [item.blob, item.url]);
+  const src = url;
+  if (!src && item.type !== 'audio')
+    return item.type === 'image' ? <ImageIcon size={24} /> : <Video size={24} />;
   return item.type === 'image' ? (
-    <img src={url || undefined} alt={item.name} />
+    <img src={src || undefined} alt={item.name} />
   ) : item.type === 'video' ? (
-    <video src={url || undefined} muted preload="metadata" aria-label={item.name} />
+    <video src={src || undefined} muted preload="metadata" aria-label={item.name} />
   ) : (
     <Music size={24} />
   );
 }
 export function References({
+  items,
   disabled = false,
   expanded,
   onExpand,
@@ -27,6 +57,7 @@ export function References({
   onChange,
   onError,
 }: {
+  items: PromptMention[];
   disabled?: boolean;
   expanded: boolean;
   onExpand: () => void;
@@ -85,40 +116,51 @@ export function References({
         aria-label="选择参考素材"
         onChange={(e) => add(e.target.files)}
       />
-      {!expanded && data.references.length > 0 && (
+      {!expanded && items.length > 0 && (
         <button
           type="button"
           className="reference-stack"
-          aria-label={`查看 ${data.references.length} 个参考素材`}
-          title="放大管理参考素材"
+          aria-label={`查看 ${items.length} 个参考素材`}
+          title="放大查看参考素材"
           onClick={onExpand}
         >
-          {numbered.slice(-3).map(({ item, label }, index, items) => (
+          {items.slice(-3).map((item, index, items) => (
             <span
               className="reference-stack-card"
-              key={item.id}
+              key={item.token}
               style={{
                 transform: `translate(${(items.length - index - 1) * 4}px, ${(items.length - index - 1) * 4}px)`,
                 zIndex: index,
               }}
             >
-              <ReferenceMedia item={item} />
-              <span className="reference-index">{label}</span>
+              <ReferenceMedia key={item.url ?? item.token} item={{ ...item, type: item.kind }} />
+              <span className="reference-index">{item.label}</span>
             </span>
           ))}
-          <span className="reference-count">共 {data.references.length}</span>
+          <span className="reference-count">共 {items.length}</span>
         </button>
       )}
-      <button
-        type="button"
-        disabled={disabled}
-        className={`reference-add ${!expanded && data.references.length ? 'reference-add-overlay' : ''}`}
-        title="添加参考素材，生成前上传"
-        aria-label="添加参考素材"
-        onClick={() => input.current?.click()}
-      >
-        <Plus size={!expanded && data.references.length ? 16 : 24} strokeWidth={1.75} />
-      </button>
+      {!expanded && items.length === 0 && (
+        <div
+          className="reference-empty"
+          title="连接上游节点以添加参考素材"
+          aria-label="暂无参考素材"
+        >
+          <ImageIcon size={24} strokeWidth={1.75} />
+        </div>
+      )}
+      {expanded && (
+        <button
+          type="button"
+          disabled={disabled}
+          className="reference-add"
+          title="添加参考素材，生成前上传"
+          aria-label="添加参考素材"
+          onClick={() => input.current?.click()}
+        >
+          <Plus size={24} strokeWidth={1.75} />
+        </button>
+      )}
       {expanded &&
         numbered.map(({ item, number, label }) => (
           <div
@@ -141,6 +183,14 @@ export function References({
             >
               <X size={12} />
             </button>
+            <small>{item.name}</small>
+          </div>
+        ))}
+      {expanded &&
+        items.slice(data.references.length).map((item) => (
+          <div className="reference-item" key={item.token} title={`${item.label} · ${item.name}`}>
+            <ReferenceMedia key={item.url ?? item.token} item={{ ...item, type: item.kind }} />
+            <span className="reference-index">{item.label}</span>
             <small>{item.name}</small>
           </div>
         ))}

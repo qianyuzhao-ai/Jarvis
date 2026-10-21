@@ -1,20 +1,31 @@
-import type { Project, MediaNode, Reference } from './types';
+import { mediaName, type Project, type MediaNode, type Reference } from './types';
 
 const names = { image: '图片', video: '视频', audio: '音频' };
 export type PromptMention = {
   token: string;
   label: string;
   name: string;
+  kind: Reference['type'];
+  url?: string;
+  blob?: Blob;
 };
 
 export function promptMentions(project: Project, node: MediaNode): PromptMention[] {
   const counts = { image: 0, video: 0, audio: 0 };
   const mentions: PromptMention[] = [];
-  function add(kind: keyof typeof counts, name: string) {
+  function add(kind: keyof typeof counts, name: string, url?: string, blob?: Blob) {
     const index = ++counts[kind];
-    mentions.push({ token: `@${kind}_${index}`, label: `${names[kind]} ${index}`, name });
+    mentions.push({
+      token: `@${kind}_${index}`,
+      label: `${names[kind]} ${index}`,
+      name,
+      kind,
+      url,
+      blob,
+    });
   }
-  for (const reference of node.data.references) add(reference.type, reference.name);
+  for (const reference of node.data.references)
+    add(reference.type, reference.name, reference.uploadedUrl, reference.blob);
   const urls = {
     image: new Set(
       node.data.references.filter((r) => r.type === 'image').map((r) => r.uploadedUrl),
@@ -39,7 +50,7 @@ export function promptMentions(project: Project, node: MediaNode): PromptMention
         : source.data.result?.url;
     if (url && urls[kind].has(url)) continue;
     if (url) urls[kind].add(url);
-    add(kind, source.type === 'asset' ? source.data.name : `连线${names[kind]}节点`);
+    add(kind, source.type === 'asset' ? source.data.name : mediaName(source.data), url);
   }
   return mentions;
 }

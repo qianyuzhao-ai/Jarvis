@@ -97,6 +97,7 @@ export function PromptEditor({
               role="option"
               aria-selected={false}
               key={item.token}
+              title={`${item.label} · ${item.name}`}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => insert(item.token)}
             >

@@ -3,6 +3,15 @@ import type { DesktopInfo } from '../shared/desktop-info';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
+  writing: {
+    getRoots: () => ipcRenderer.invoke('writing:roots'),
+    chooseDirectory: () => ipcRenderer.invoke('writing:choose'),
+    listDirectory: (request) => ipcRenderer.invoke('writing:list', request),
+    searchFiles: (request) => ipcRenderer.invoke('writing:search', request),
+    readFile: (request) => ipcRenderer.invoke('writing:read', request),
+    saveFile: (request) => ipcRenderer.invoke('writing:save', request),
+    createEntry: (request) => ipcRenderer.invoke('writing:create', request),
+  },
   generation: {
     getDownloadPreferences: () => ipcRenderer.invoke('downloads:get-preferences'),
     chooseDownloadDirectory: () => ipcRenderer.invoke('downloads:choose-directory'),

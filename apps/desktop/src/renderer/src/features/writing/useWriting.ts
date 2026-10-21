@@ -1,0 +1,430 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { z } from 'zod';
+import type {
+  WritingEntry,
+  WritingFile,
+  WritingResult,
+  WritingRoot,
+} from '../../../../shared/writing';
+
+export interface DocumentSession {
+  id: string;
+  rootId: string;
+  path: string;
+  content: string;
+  savedContent: string;
+  revision: string;
+  status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
+  error: string;
+}
+export function unwrap<T>(result: WritingResult<T>): T {
+  if (!result.ok) throw new Error(result.error);
+  return result.value;
+}
+const bridge = () => {
+  if (!window.desktop?.writing) throw new Error('写作接口尚未加载，请完全退出并重新启动应用');
+  return window.desktop.writing;
+};
+const idFor = (rootId: string, path: string) => rootId + ':' + path;
+const tabsSchema = z.object({ paths: z.array(z.string()).max(30), active: z.string() });
+export const parentPath = (path: string) => path.split('/').slice(0, -1).join('/');
+
+export function useWriting() {
+  const [roots, setRoots] = useState<WritingRoot[]>([]);
+  const [root, setRoot] = useState<WritingRoot | null>(null);
+  const rootRef = useRef(root);
+  rootRef.current = root;
+  const [directories, setDirectories] = useState<Record<string, WritingEntry[]>>({});
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedDirectory, setSelectedDirectory] = useState('');
+  const [documents, setDocuments] = useState<DocumentSession[]>([]);
+  const documentsRef = useRef(documents);
+  const [activeId, setActiveId] = useState('');
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(false);
+  const saves = useRef(new Map<string, Promise<boolean>>());
+  const restoring = useRef(false);
+  const lastTabSettings = useRef('');
+  const updateDocuments = useCallback(
+    (change: (documents: DocumentSession[]) => DocumentSession[]) => {
+      documentsRef.current = change(documentsRef.current);
+      setDocuments(documentsRef.current);
+    },
+    [],
+  );
+  const update = useCallback(
+    (id: string, change: Partial<DocumentSession>) => {
+      updateDocuments((docs) => docs.map((d) => (d.id === id ? { ...d, ...change } : d)));
+    },
+    [updateDocuments],
+  );
+  const save = useCallback(
+    (id: string): Promise<boolean> => {
+      const pending = saves.current.get(id);
+      if (pending) return pending;
+      const doc = documentsRef.current.find((d) => d.id === id);
+      if (!doc || doc.content === doc.savedContent) return Promise.resolve(true);
+      if (doc.status === 'conflict') return Promise.resolve(false);
+      update(id, { status: 'saving', error: '' });
+      const task = (async () => {
+        try {
+          const result = await bridge().saveFile({
+            rootId: doc.rootId,
+            path: doc.path,
+            content: doc.content,
+            revision: doc.revision,
+          });
+          if (!result.ok) {
+            update(id, {
+              status: result.code === 'CONFLICT' ? 'conflict' : 'error',
+              error: result.error,
+            });
+            return false;
+          }
+          const current = documentsRef.current.find((d) => d.id === id);
+          update(id, {
+            revision: result.value.revision,
+            savedContent: doc.content,
+            status: current?.content === doc.content ? 'saved' : 'dirty',
+            error: '',
+          });
+          return true;
+        } catch (error) {
+          update(id, {
+            status: 'error',
+            error: error instanceof Error ? error.message : '保存失败',
+          });
+          return false;
+        } finally {
+          saves.current.delete(id);
+        }
+      })();
+      saves.current.set(id, task);
+      return task;
+    },
+    [update],
+  );
+  const flush = useCallback(async () => {
+    for (const d of documentsRef.current) {
+      if (d.content !== d.savedContent && !(await save(d.id))) return false;
+      const current = documentsRef.current.find((item) => item.id === d.id);
+      if (current && current.content !== current.savedContent && !(await save(d.id))) return false;
+    }
+    return documentsRef.current.every((d) => d.content === d.savedContent);
+  }, [save]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      for (const d of documentsRef.current) if (d.status === 'dirty') void save(d.id);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [documents, save]);
+  useEffect(() => {
+    const prevent = (event: BeforeUnloadEvent) => {
+      if (documentsRef.current.some((d) => d.content !== d.savedContent)) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', prevent);
+    return () => window.removeEventListener('beforeunload', prevent);
+  }, []);
+  const refresh = useCallback(async (path = '') => {
+    const current = rootRef.current;
+    if (!current) return;
+    try {
+      const entries = unwrap(await bridge().listDirectory({ rootId: current.id, path }));
+      if (rootRef.current?.id === current.id)
+        setDirectories((dirs) => ({ ...dirs, [path]: entries }));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '目录读取失败');
+    }
+  }, []);
+  const switchRoot = useCallback(
+    async (next: WritingRoot) => {
+      if (!(await flush())) {
+        setNotice('请先处理未保存文档，再切换文件夹');
+        return;
+      }
+      setLoading(true);
+      restoring.current = true;
+      try {
+        const entries = unwrap(await bridge().listDirectory({ rootId: next.id, path: '' }));
+        rootRef.current = next;
+        setRoot(next);
+        setDirectories({ '': entries });
+        setExpanded(new Set());
+        setSelectedDirectory('');
+        setNotice('');
+        try {
+          localStorage.setItem('jarvis:writing-root', next.id);
+        } catch {
+          setNotice('无法记录最近目录，下次启动需要重新选择');
+        }
+        let remembered = documentsRef.current.find((d) => d.rootId === next.id);
+        let preferred = remembered?.id ?? '';
+        if (!remembered) {
+          const raw = localStorage.getItem('jarvis:writing-tabs:' + next.id);
+          if (raw) {
+            const saved = tabsSchema.parse(JSON.parse(raw));
+            for (const path of [...new Set(saved.paths)]) {
+              const file = await bridge().readFile({ rootId: next.id, path });
+              if (!file.ok) {
+                setNotice('部分上次打开的文档已失效，其他文档已恢复');
+                continue;
+              }
+              const id = idFor(next.id, path);
+              updateDocuments((docs) => [
+                ...docs,
+                {
+                  id,
+                  rootId: next.id,
+                  path,
+                  ...file.value,
+                  savedContent: file.value.content,
+                  status: 'saved',
+                  error: '',
+                },
+              ]);
+            }
+            preferred = saved.active;
+          }
+          remembered = documentsRef.current.find((d) => d.rootId === next.id);
+        }
+        setActiveId(
+          documentsRef.current.some((d) => d.id === preferred) ? preferred : (remembered?.id ?? ''),
+        );
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : '目录无法打开');
+      } finally {
+        restoring.current = false;
+        setLoading(false);
+      }
+    },
+    [flush, updateDocuments],
+  );
+  useEffect(() => {
+    if (!root || restoring.current) return;
+    const current = documents.filter((d) => d.rootId === root.id);
+    const value = JSON.stringify({
+      paths: current.map((d) => d.path).slice(0, 30),
+      active: activeId,
+    });
+    if (lastTabSettings.current === root.id + value) return;
+    try {
+      localStorage.setItem('jarvis:writing-tabs:' + root.id, value);
+      lastTabSettings.current = root.id + value;
+    } catch {
+      setNotice('无法保存文档标签，下次启动需要重新打开文档');
+    }
+  }, [root, documents, activeId]);
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const recent = unwrap(await bridge().getRoots());
+        if (!active) return;
+        setRoots(recent);
+        const last = localStorage.getItem('jarvis:writing-root');
+        const next = recent.find((r) => r.id === last);
+        if (next) await switchRoot(next);
+      } catch (error) {
+        if (active) setNotice(error instanceof Error ? error.message : '读取目录记录失败');
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [switchRoot]);
+  const chooseDirectory = async () => {
+    if (!(await flush())) {
+      setNotice('请先处理未保存文档，再切换文件夹');
+      return;
+    }
+    try {
+      const chosen = unwrap(await bridge().chooseDirectory());
+      if (!chosen) return;
+      setRoots((recent) => [chosen, ...recent.filter((r) => r.id !== chosen.id)]);
+      await switchRoot(chosen);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '打开目录失败');
+    }
+  };
+  const openDocument = async (entry: WritingEntry) => {
+    const current = rootRef.current;
+    if (!current || entry.kind !== 'file') return;
+    const id = idFor(current.id, entry.path);
+    if (documentsRef.current.some((d) => d.id === id)) {
+      setActiveId(id);
+      return;
+    }
+    try {
+      const file = unwrap(await bridge().readFile({ rootId: current.id, path: entry.path }));
+      if (rootRef.current?.id !== current.id) return;
+      updateDocuments((docs) =>
+        docs.some((d) => d.id === id)
+          ? docs
+          : [
+              ...docs,
+              {
+                id,
+                rootId: current.id,
+                path: entry.path,
+                ...file,
+                savedContent: file.content,
+                status: 'saved',
+                error: '',
+              },
+            ],
+      );
+      setActiveId(id);
+      setSelectedDirectory(parentPath(entry.path));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '文档无法打开');
+    }
+  };
+  const toggleDirectory = async (path: string) => {
+    setSelectedDirectory(path);
+    if (!expanded.has(path)) await refresh(path);
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+  const create = async (name: string, kind: 'file' | 'directory') => {
+    const current = rootRef.current;
+    if (!current) return false;
+    try {
+      const entry = unwrap(
+        await bridge().createEntry({ rootId: current.id, path: selectedDirectory, name, kind }),
+      );
+      await refresh(selectedDirectory);
+      if (selectedDirectory) setExpanded((prev) => new Set([...prev, selectedDirectory]));
+      if (entry.kind === 'file') await openDocument(entry);
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '新建失败');
+      return false;
+    }
+  };
+  const closeDocument = async (id: string) => {
+    if (!(await save(id))) return;
+    const current = documentsRef.current.find((d) => d.id === id);
+    if (current && current.content !== current.savedContent) return;
+    const remaining = documentsRef.current.filter((d) => d.id !== id);
+    updateDocuments(() => remaining);
+    if (activeId === id)
+      setActiveId(remaining.filter((d) => d.rootId === rootRef.current?.id).at(-1)?.id ?? '');
+  };
+  const reload = async (id: string) => {
+    const doc = documentsRef.current.find((d) => d.id === id);
+    if (!doc || !window.confirm('重新读取将放弃当前尚未保存的更改，是否继续？')) return;
+    try {
+      const file = unwrap(await bridge().readFile({ rootId: doc.rootId, path: doc.path }));
+      update(id, { ...file, savedContent: file.content, status: 'saved', error: '' });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '重新读取失败');
+    }
+  };
+  const saveCopy = async (id: string) => {
+    const doc = documentsRef.current.find((d) => d.id === id);
+    if (!doc) return;
+    try {
+      const name =
+        doc.path.split('/').at(-1)?.replace(/\.md$/i, '') + '-副本-' + Date.now() + '.md';
+      const entry = unwrap(
+        await bridge().createEntry({
+          rootId: doc.rootId,
+          path: parentPath(doc.path),
+          name,
+          kind: 'file',
+        }),
+      );
+      const empty = unwrap(await bridge().readFile({ rootId: doc.rootId, path: entry.path }));
+      unwrap(
+        await bridge().saveFile({
+          rootId: doc.rootId,
+          path: entry.path,
+          content: doc.content,
+          revision: empty.revision,
+        }),
+      );
+      updateDocuments((docs) => docs.filter((d) => d.id !== id));
+      await openDocument(entry);
+      await refresh(parentPath(doc.path));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '副本保存失败');
+    }
+  };
+  useEffect(() => {
+    if (!activeId) return;
+    let reading = false;
+    const check = async () => {
+      const doc = documentsRef.current.find((d) => d.id === activeId);
+      if (!doc || reading || saves.current.has(activeId) || doc.status === 'conflict') return;
+      reading = true;
+      try {
+        const file: WritingFile = unwrap(
+          await bridge().readFile({ rootId: doc.rootId, path: doc.path }),
+        );
+        const current = documentsRef.current.find((d) => d.id === activeId);
+        if (!current || saves.current.has(activeId) || current.revision === file.revision) return;
+        if (current.content !== current.savedContent)
+          update(activeId, { status: 'conflict', error: '文件已在外部修改，当前编辑内容已保留' });
+        else update(activeId, { ...file, savedContent: file.content, status: 'saved', error: '' });
+      } catch (error) {
+        update(activeId, {
+          status: 'error',
+          error: error instanceof Error ? error.message : '无法读取磁盘文档',
+        });
+      } finally {
+        reading = false;
+      }
+    };
+    const timer = window.setInterval(() => void check(), 2500);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', check);
+    };
+  }, [activeId, update]);
+  return {
+    roots,
+    root,
+    directories,
+    expanded,
+    selectedDirectory,
+    setSelectedDirectory,
+    documents,
+    activeId,
+    setActiveId,
+    notice,
+    setNotice,
+    loading,
+    refresh,
+    chooseDirectory,
+    switchRoot,
+    openDocument,
+    toggleDirectory,
+    create,
+    closeDocument,
+    save,
+    flush,
+    reload,
+    saveCopy,
+    change: (id: string, content: string) => {
+      const current = documentsRef.current.find((d) => d.id === id);
+      if (current)
+        update(id, {
+          content,
+          status:
+            current.status === 'conflict'
+              ? 'conflict'
+              : content === current.savedContent
+                ? 'saved'
+                : 'dirty',
+        });
+    },
+  };
+}

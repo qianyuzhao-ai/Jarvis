@@ -313,7 +313,14 @@ test('Electron uploads references, generates image and video, and restores resul
     expect(upload.body.toString()).toContain('test-client');
     await page.reload();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
-    await expect(page.locator('.node-task-status')).toContainText('生成中');
+    await expect(page.locator('.node-generating')).toHaveText('正在生成…');
+    await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '重命名 图像生成', exact: true })).toBeVisible();
+    await page.screenshot({ path: test.info().outputPath('generating-center-light.png') });
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
+    await expect(page.locator('.node-generating svg')).toHaveCSS('animation-name', 'none');
+    await page.screenshot({ path: test.info().outputPath('generating-center-dark.png') });
+    await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'light' });
     mock.release();
     await expect(page.getByAltText('生成的图像')).toBeVisible();
     await expect
@@ -321,6 +328,7 @@ test('Electron uploads references, generates image and video, and restores resul
         page.getByAltText('生成的图像').evaluate((n) => (n as HTMLImageElement).naturalWidth),
       )
       .toBe(1);
+    await expect(page.locator('.node-task-status')).toHaveCount(0);
     mock.setMode('success');
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
@@ -380,12 +388,30 @@ test('Electron uploads references, generates image and video, and restores resul
       await expect(page.locator('.node-download-notice').last()).toContainText('已下载');
       expect(await readFile(filePath)).toEqual(kind === '图像' ? png : Buffer.from(bytes));
     }
+    await page
+      .locator('.react-flow__node-media')
+      .first()
+      .click({ position: { x: 30, y: 30 } });
+    mock.setMode('hold');
+    await page.getByRole('button', { name: '生成图像', exact: true }).click();
+    await expect(page.locator('.node-generating')).toHaveText('正在生成…');
+    await expect(page.getByAltText('生成的图像')).toHaveCount(0);
+    await expect(
+      page.locator('.react-flow__node-media').first().getByRole('button', { name: '下载图像' }),
+    ).toHaveCount(0);
+    await expect.poll(() => mock.calls.filter((c) => c.path === '/generate').length).toBe(3);
+    mock.release();
+    await expect(page.getByAltText('生成的图像')).toBeVisible();
+    await expect(
+      page.locator('.react-flow__node-media').first().locator('.node-task-status'),
+    ).toHaveCount(0);
+    await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
     mock.setMode('disconnect');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.locator('.editor-notice')).toContainText('结果未知');
     const submitted = mock.calls.filter((c) => c.path === '/generate').length;
-    expect(submitted).toBe(3);
+    expect(submitted).toBe(4);
     await page.reload();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
     await page.locator('.react-flow__node-media').last().click();
