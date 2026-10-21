@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## 节点半面积框选修复（2026-10-21）
+
+- 从干净 develop 创建 `feature/node-marquee-selection`。`Canvas.tsx` 订阅 React Flow 的框选矩形，转换为画布坐标后，以节点实测面积覆盖率至少 50% 判定选中；框选期间忽略库默认的节点/边选择变化，避免关联连线选择清空节点。库会先原地修改候选节点的 selected，因此每次矩形更新都重应用受控选择，即使命中 ID 不变。
+- 保留普通点击、Shift/Cmd/Ctrl 加选、单独选线删除、批量连线及下载。新窗口回归覆盖 49% 不选、50%/100% 选中、正反向、有连线节点和只框线；测试先将画布平移离开边缘，避免自动平移使固定测试坐标失效。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；`connections.spec.ts` 相关 10 项回归同轮通过。首次沙箱内 Electron 无法启动，获准在沙箱外运行后验证成功。本轮未运行全量窗口套件；用户随后授权在该修复分支本地提交，未推送。
+
 ## v0.1.3 未签名 Apple Silicon 预发布完成（2026-10-21）
 
 - `v0.1.3` 保持指向 main 合并提交 `9c575c0`，没有修改受保护标签。用户授权的后续流程修正通过 PR #11→develop、#12→main，将云端作业聚焦检查/构建/打包；第一次手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 因 GitHub macOS arm64 runner 容量不足零步骤失败。再经 PR #13→develop、#14→main 将宿主改为 `macos-15-intel`，仍显式构建 arm64。

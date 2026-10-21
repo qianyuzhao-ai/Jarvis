@@ -163,6 +163,56 @@ test('marquee selection keeps the editor closed and connects selected images to 
   }
 });
 
+test('marquee selects half-covered nodes and ignores connected edges in both directions', async () => {
+  const app = await launch();
+  const page = await app.firstWindow();
+  const mock = await fixture(page);
+  try {
+    await connect(page, mock.ids.imageAsset, mock.ids.imageA);
+    await clickBlankPane(page);
+    await page.mouse.move(500, 400);
+    await page.mouse.down({ button: 'middle' });
+    await page.mouse.move(560, 460, { steps: 6 });
+    await page.mouse.up({ button: 'middle' });
+    const first = await node(page, mock.ids.imageAsset).boundingBox();
+    const last = await node(page, mock.ids.imageB).boundingBox();
+    if (!first || !last) throw new Error('节点未显示');
+    for (const reverse of [false, true]) {
+      for (const fraction of [0.49, 0.5, 1]) {
+        const start = { x: first.x - 12, y: first.y - 12 };
+        const end = { x: last.x + last.width + 12, y: first.y + first.height * fraction };
+        await page.mouse.move(reverse ? end.x : start.x, reverse ? end.y : start.y);
+        await page.mouse.down();
+        await page.mouse.move(reverse ? start.x : end.x, reverse ? start.y : end.y, {
+          steps: 12,
+        });
+        await expect(
+          page.locator('.react-flow__node.selected'),
+          `reverse=${reverse}, fraction=${fraction}`,
+        ).toHaveCount(fraction < 0.5 ? 0 : 3);
+        await page.mouse.up();
+        await expect(
+          page.locator('.react-flow__node.selected'),
+          `reverse=${reverse}, fraction=${fraction}`,
+        ).toHaveCount(fraction < 0.5 ? 0 : 3);
+        await expect(page.locator('.react-flow__edge.selected')).toHaveCount(0);
+        await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
+        await clickBlankPane(page);
+      }
+    }
+    // Only the line between the first two nodes intersects this rectangle.
+    await page.mouse.move(first.x + first.width + 20, first.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(first.x + first.width + 80, first.y + first.height - 20, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator('.react-flow__node.selected')).toHaveCount(0);
+    await expect(page.locator('.react-flow__edge.selected')).toHaveCount(0);
+  } finally {
+    await app.close();
+    await mock.close();
+  }
+});
+
 test('mixed media selection connects to video and downloads image, audio and video', async () => {
   const app = await launch();
   const page = await app.firstWindow();
