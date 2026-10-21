@@ -27,6 +27,7 @@ export function Sidebar({
   collapseRef,
   onWriting,
   onModels,
+  onSkills,
   onNewChat,
   onSelectChat,
   chatSessions,
@@ -37,12 +38,13 @@ export function Sidebar({
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
-  section: 'general' | 'services' | 'models';
+  section: 'general' | 'services' | 'models' | 'skills';
   onGeneral: () => void;
   onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
   onWriting: () => void;
   onModels: () => void;
+  onSkills: () => void;
   onNewChat: () => void;
   onSelectChat: (id: string) => void;
   chatSessions: ChatSession[];
@@ -107,7 +109,11 @@ export function Sidebar({
               <Plug />
               MCP 连接
             </button>
-            <button className="side-link" disabled>
+            <button
+              className={`side-link ${section === 'skills' ? 'selected' : ''}`}
+              onClick={onSkills}
+              aria-current={section === 'skills' ? 'page' : undefined}
+            >
               <BookmarkCheck />
               Skill
             </button>

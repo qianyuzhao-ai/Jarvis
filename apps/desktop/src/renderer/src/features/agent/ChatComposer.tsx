@@ -1,10 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { BookOpen, CornerDownLeft, Plus, Square } from 'lucide-react';
+import { CornerDownLeft, Plus, Square } from 'lucide-react';
 import type { useAgent } from './use-agent';
 import { ContextUsage } from './ContextUsage';
 import { ModelPicker } from './ModelPicker';
 import { SkillPicker } from './SkillPicker';
-import { SkillsDialog } from './SkillsDialog';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 
 export function ChatComposer({
@@ -30,7 +29,6 @@ export function ChatComposer({
   preparing?: boolean;
   hasAttachments?: boolean;
 }) {
-  const [manageSkills, setManageSkills] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const form = useRef<HTMLFormElement>(null);
@@ -46,7 +44,7 @@ export function ChatComposer({
         s.name.includes(query ?? '') ||
         s.description.toLowerCase().includes(query ?? '')),
   );
-  const menuOpen = query !== undefined && dismissed !== text && !manageSkills;
+  const menuOpen = query !== undefined && dismissed !== text;
   const activeIndex = Math.min(active, Math.max(0, options.length - 1));
   function choose(skill: SkillInfo) {
     setText(`/skill:${skill.name} `);
@@ -94,28 +92,11 @@ export function ChatComposer({
       aria-label="Agent 输入框"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!manageSkills && !menuOpen) void onSubmit();
+        if (!menuOpen) void onSubmit();
       }}
     >
       {menuOpen && (
-        <SkillPicker
-          skills={options}
-          active={activeIndex}
-          listId={listId}
-          onSelect={choose}
-          onManage={() => setManageSkills(true)}
-        />
-      )}
-      {manageSkills && (
-        <SkillsDialog
-          skills={agent.snapshot.skills ?? []}
-          busy={!!agent.snapshot.busySessionId}
-          onClose={() => {
-            setManageSkills(false);
-            setDismissed(text);
-            input.current?.focus();
-          }}
-        />
+        <SkillPicker skills={options} active={activeIndex} listId={listId} onSelect={choose} />
       )}
       <div className="composer-input-surface">
         <textarea
@@ -224,15 +205,6 @@ export function ChatComposer({
           }
         >
           {agent.projectId ? '画布编辑' : 'Auto'}
-        </button>
-        <button
-          type="button"
-          className="composer-action"
-          aria-label="管理技能"
-          title="管理技能"
-          onClick={() => setManageSkills(true)}
-        >
-          <BookOpen size={16} />
         </button>
         <div className="composer-spacer" />
         <ModelPicker
