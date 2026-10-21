@@ -11,7 +11,6 @@ mac:
   icon: resources/icon.icns
   category: public.app-category.productivity
   minimumSystemVersion: '26.0'
-  identity: null
 win:
   icon: resources/icon.ico
 publish: null

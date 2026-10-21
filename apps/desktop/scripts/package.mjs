@@ -10,6 +10,7 @@ await build({
   config: {
     extends: resolve(import.meta.dirname, '../electron-builder.yml'),
     directories: { output },
+    mac: { identity: null, hardenedRuntime: false, notarize: false },
   },
 });
 
