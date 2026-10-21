@@ -1,4 +1,4 @@
-name: Package macOS Apple Silicon
+name: Package macOS and Windows
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: package-${{ inputs.tag || github.ref_name }}
@@ -20,11 +20,25 @@ concurrency:
 
 jobs:
   package:
-    name: Build unsigned arm64 package
-    runs-on: macos-15-intel
+    name: Build unsigned ${{ matrix.platform }} ${{ matrix.arch }} package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            arch: arm64
+            runner: macos-15-intel
+          - platform: windows
+            arch: x64
+            runner: windows-2022
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 60
     env:
       RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,9 +69,11 @@ jobs:
       - run: pnpm check
       - run: pnpm build
       - name: Build unsigned DMG and ZIP
+        if: matrix.platform == 'macos'
         working-directory: apps/desktop
         run: pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
-      - name: Verify package architecture
+      - name: Verify macOS package
+        if: matrix.platform == 'macos'
         run: |
           version="$(node -p 'require("./apps/desktop/package.json").version')"
           release_dir="release/github-${version}"
@@ -69,17 +85,78 @@ jobs:
           test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
           hdiutil verify "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
           unzip -tqq "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
+      - name: Build unsigned Windows installer
+        if: matrix.platform == 'windows'
+        working-directory: apps/desktop
+        run: pnpm exec electron-builder --win --x64 --publish never --config electron-builder.release.yml
+      - name: Verify Windows package
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $version = (Get-Content apps/desktop/package.json | ConvertFrom-Json).version
+          $releaseDir = "release/github-$version"
+          $app = "$releaseDir/win-unpacked/Jarvis.exe"
+          $installer = "$releaseDir/Jarvis-$version-windows-x64-unsigned-setup.exe"
+          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path $app))
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3c)
+          if ([BitConverter]::ToUInt32($bytes, $peOffset) -ne 0x4550 -or
+              [BitConverter]::ToUInt16($bytes, $peOffset + 4) -ne 0x8664) {
+            throw 'Application is not a Windows x64 PE executable'
+          }
+          if ([version](Get-Item $app).VersionInfo.FileVersion -ne [version]"$version.0") {
+            throw 'Application version does not match the release'
+          }
+          foreach ($file in @($app, $installer)) {
+            if ((Get-Item $file).Length -eq 0) { throw "Empty package: $file" }
+            if ((Get-AuthenticodeSignature $file).Status -ne 'NotSigned') {
+              throw "Expected unsigned file: $file"
+            }
+          }
       - uses: actions/upload-artifact@v4
         with:
-          name: Jarvis-macos-arm64-unsigned-${{ github.run_id }}
+          name: Jarvis-${{ matrix.platform }}-${{ matrix.arch }}-unsigned-${{ github.run_id }}
           path: |
             release/github-*/*.dmg
             release/github-*/*.zip
+            release/github-*/*-setup.exe
           if-no-files-found: error
-      - name: Publish GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
+          overwrite: true
+
+  publish:
+    name: Publish combined GitHub Release
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Jarvis-*-unsigned-${{ github.run_id }}
+          path: release-assets
+          merge-multiple: true
+      - name: Verify assets and publish one Release
+        shell: bash
         run: |
-          gh release create "$RELEASE_TAG" \
-            release/github-*/*.dmg release/github-*/*.zip \
-            --verify-tag --generate-notes --prerelease --title "$RELEASE_TAG (unsigned, Apple Silicon)"
+          version="$(node -p 'require("./apps/desktop/package.json").version')"
+          assets=(
+            "release-assets/Jarvis-${version}-macos-arm64-unsigned.dmg"
+            "release-assets/Jarvis-${version}-macos-arm64-unsigned.zip"
+            "release-assets/Jarvis-${version}-windows-x64-unsigned-setup.exe"
+          )
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "GitHub Release already exists for $RELEASE_TAG"
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" "${assets[@]}" \
+            --verify-tag --generate-notes --prerelease \
+            --title "$RELEASE_TAG (unsigned, macOS arm64 + Windows x64)"

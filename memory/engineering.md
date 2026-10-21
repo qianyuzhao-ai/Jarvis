@@ -2,6 +2,14 @@
 
 最后更新：2026-10-21
 
+## 双平台未签名标签打包（2026-10-21）
+
+- 用户授权增加 Windows x64 安装包，与 macOS 一起通过版本标签构建并发布同一 Release；Windows 功能由用户自行验收。本轮从干净 develop 创建 `feature/windows-release`；已提交的画布修复仍保留在 `feature/node-marquee-selection`，尚未合入此分支。
+- `electron-builder.release.yml` 新增 Windows x64 NSIS 目标，禁用签名但保留版本等资源编辑；安装器按当前用户安装、可选目录，文件名 `Jarvis-${version}-windows-x64-unsigned-setup.exe`。原 Mac arm64 DMG/ZIP 保留。
+- 保留 `.github/workflows/release-macos.yml` 文件路径，名称更新为 Package macOS and Windows；matrix 使用 macos-15-intel 与 windows-2022，各自检查/构建/打包，fail-fast=false。Windows 校验 PE x64、版本与未签名状态；平台 Artifact 汇总到依赖全部构建成功的唯一 publish 作业，三个文件齐全才创建同一预发布 Release。构建作业仅 contents:read，发布作业 contents:write。
+- 标签及已有标签手动重试继续可用；同 run 重跑允许替换本次 Artifact，已有 Release 不覆盖。首次双平台发版需使用包含新配置的新标签，不能用旧标签凭空补出 Windows 配置。
+- 本地 `pnpm check`、`pnpm build`、electron-builder 配置 schema、工作流 YAML/触发条件/依赖/唯一发布校验及 Bash 语法检查通过。用模拟 gh 执行实际发布脚本，验证缺少产物阻止发布、已有 Release 阻止覆盖、三个产物齐全时只调用一次预发布。本机为 macOS，未执行 Windows 打包或 PowerShell 校验，GitHub 双平台流程尚未运行；用户随后授权提交并通过 develop→main PR 发布 v0.1.4，发布结果待后续记录。
+
 ## v0.1.3 未签名 Apple Silicon 预发布完成（2026-10-21）
 
 - `v0.1.3` 保持指向 main 合并提交 `9c575c0`，没有修改受保护标签。用户授权的后续流程修正通过 PR #11→develop、#12→main，将云端作业聚焦检查/构建/打包；第一次手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 因 GitHub macOS arm64 runner 容量不足零步骤失败。再经 PR #13→develop、#14→main 将宿主改为 `macos-15-intel`，仍显式构建 arm64。

@@ -24,7 +24,7 @@
 | `feature/<主题>` | `develop` | 独立功能开发，可跨越多个发布周期 | `develop` |
 | `hotfix/<版本或主题>` | `main` | 已发布版本的线上紧急缺陷修复 | `main` 和 `develop` |
 
-当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端 arm64 构建与预发布。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
+当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端流程，分别构建 macOS arm64 和 Windows x64 未签名包，全部成功后统一预发布。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
 
 旧参考图的原始 release 分支流程（历史，不再用于正常发版）：
 
@@ -76,6 +76,8 @@
 - `main` 保持初始基线；尚无发布，不建立 release/hotfix 分支或版本标签，不推送。实际提交与合并结果以 `git log --graph --oneline --all` 为准。
 
 ## 变更记录
+
+- 2026-10-21：用户要求增加 Windows x64 未签名 NSIS 安装包，与 macOS arm64 DMG/ZIP 由同一版本标签触发，构建全部成功后发布至同一 Release。保留标签/手动重试入口与不覆盖已有 Release 的规则；首次使用需包含配置的新版本标签。实现位于 `feature/windows-release`，用户随后授权提交、PR 合入 develop 并发布 v0.1.4；Windows 功能由用户验收。
 
 - 2026-10-21：用户要求清理远端 feature/aigc-workspace。fetch 后确认其相对 origin/main 与 origin/develop 的独有提交数均为 0，且没有匹配保护规则；仅删除该远端分支，随后 ls-remote 核对已不存在。main、develop、release/0.1.0 与 v0.1.0 未改动。
 
