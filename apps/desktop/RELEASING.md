@@ -19,12 +19,14 @@
 ## 发布和验证
 
 1. 按 `memory/git-workflow.md` 完成 feature → develop → main，版本号和变更记录在发版前确定。仅在获得发布授权后创建新版本标签。
-2. 标签须包含本轮工作流、配置、entitlements 和校验脚本。旧标签不会获得新配置，不移动旧标签，也不覆盖已有 Release。
+2. 应用源码、版本号、打包配置和 entitlements 来自版本标签；macOS 校验脚本来自工作流触发提交，独立稀疏检出到 `.release-tools`，不混入应用。修复校验工具后，在 Actions 选择最新 main 手动输入旧标签重试；直接重跑原运行仍使用原工作流。旧标签不获得新的应用配置，不移动旧标签，也不覆盖已有 Release。
 3. macOS 打包步骤先检查五项凭据是否齐全，再由 electron-builder 导入证书、签名、提交公证并附加票据。发布配置不允许缺失证书后降级为未签名包。
 4. `scripts/verify-macos-release.sh` 校验目录包，以及 ZIP 解压和 DMG 只读挂载后的实际应用：架构、版本、Bundle ID、签名完整性、Developer ID Application 身份、Team ID、Hardened Runtime、公证票据和 Gatekeeper。临时检查目录留在 runner，不执行批量删除；DMG 检查后卸载。
 5. Windows 构建及校验也成功后，统一发布三个文件到同一个 GitHub 预发布 Release。macOS 文件名不含 `unsigned`，Windows 文件名保留该标记。
 
 首次发布仍需回读 Actions 成功状态与 Release 资产，并在 Apple Silicon Mac 上通过实际下载的 DMG 安装、启动并检查核心功能。静态配置通过不等于 Apple 接受了本次公证，也不等于真实签名包可正常运行。
+
+`stapler validate` 和 `spctl --assess` 仅对明确的 Apple 网络错误（NSURLErrorDomain/CFNetwork 的 -1001、-1003、-1004、-1005、-1006、-1009）最多执行 3 次，间隔 5 秒和 10 秒。明确 rejected/revoked、签名错误、无网络标识的票据失败立即停止；Error 68 本身不触发重试。最后一次失败仍返回原退出码，阻止发布，`codesign` 不重试也不跳过。回归脚本 `scripts/apple-network-retry.test.sh` 验证恢复、次数上限和真实拒绝边界，云端先运行回归再验证实际产物。
 
 ## 查询公证进度
 

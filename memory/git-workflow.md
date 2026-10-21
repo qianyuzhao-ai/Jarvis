@@ -2,6 +2,12 @@
 
 最后更新：2026-10-21
 
+## 0.1.8 校验工具修复与同标签重试（2026-10-21）
+
+- 用户明确授权有限重试修复、Gitflow 提交/推送/合并，以及重试发布 v0.1.8。原运行的 Apple 公证已成功，失败发生于 DMG 内应用 stapler validate 的 Apple 网络 -1005/退出 68；Windows、目录包与 ZIP 内应用校验成功。
+- `feature/apple-network-retry` 从刷新后的 origin/develop `efbce12` 创建于独立 `/private/tmp/jarvis-apple-network-retry`，保留原工作区 feature/ui-style 未提交工作。仍经 feature → develop → main PR，不移动 v0.1.8（应继续指向 `caa4256e857957259f21518b772be24d5cc9d07f`），不覆盖已有 Release。
+- 合并后从最新 main 手动 dispatch 发布工作流、输入 v0.1.8。应用源码/配置来自原标签，macOS 校验工具来自工作流触发提交的独立稀疏 checkout；原运行的 rerun 不会读取后续脚本修复。此次授权只重试这一版本，最终运行/资产结果待回读。
+
 ## 0.1.8 发布验证（2026-10-21）
 
 - 用户授权按 Gitflow 提交、推送、合并、发布 0.1.8 并验证 macOS 签名公证。实现提交 `23c96d4` 经 [PR #34](https://github.com/qianyuzhao-ai/Jarvis/pull/34) 合入 develop（`5447840`），[PR #35](https://github.com/qianyuzhao-ai/Jarvis/pull/35) 合入 main（`caa4256`）。`v0.1.8` 指向该 main 合并提交，远端标签已回读；没有移动旧标签或覆盖已有 Release。
