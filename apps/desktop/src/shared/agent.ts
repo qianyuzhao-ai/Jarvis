@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { SkillInfo } from './agent-skills';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   canvasChangeSchema,
@@ -120,6 +121,7 @@ export interface RelayView {
   hasKey: boolean;
 }
 export interface AgentSnapshot {
+  skills?: SkillInfo[];
   sessions: ChatSession[];
   busySessionId: string | null;
 }
@@ -129,6 +131,9 @@ export interface AgentEvent {
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface AgentBridge {
+  listSkills(): Promise<AgentResult<SkillInfo[]>>;
+  importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
+  setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getConfiguration(): Promise<AgentResult<RelayView>>;
   saveConfiguration(input: RelayInput): Promise<AgentResult<RelayView>>;
   testConnection(input: RelayInput): Promise<AgentResult<string>>;

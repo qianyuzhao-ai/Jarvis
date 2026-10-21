@@ -6,6 +6,9 @@ import type { CanvasCommand } from '../shared/canvas-agent';
 const desktop: DesktopInfo = {
   platform: process.platform,
   agent: {
+    listSkills: () => ipcRenderer.invoke('agent:skills'),
+    importSkill: () => ipcRenderer.invoke('agent:import-skill'),
+    setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getConfiguration: () => ipcRenderer.invoke('agent:configuration'),
     saveConfiguration: (input) => ipcRenderer.invoke('agent:save', input),
     testConnection: (input) => ipcRenderer.invoke('agent:test', input),

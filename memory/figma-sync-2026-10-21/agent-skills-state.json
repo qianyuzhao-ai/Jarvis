@@ -1,0 +1,398 @@
+{
+  "date": "2026-10-21",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "branch": "feature/agent-skills",
+  "baseCommit": "e74a460",
+  "status": "implemented and verified; local commit authorized; no push",
+  "confirmed": {
+    "source": "Jarvis independent storage, manual directory import",
+    "invocation": [
+      "slash explicit selection",
+      "model-driven activation from description"
+    ],
+    "entryPoints": [
+      "homepage",
+      "canvas sidebar"
+    ]
+  },
+  "components": {
+    "createdNodeIds": [
+      "271:20358",
+      "271:20359",
+      "271:20360",
+      "271:20363",
+      "271:20379",
+      "271:20383",
+      "271:20384",
+      "271:20385",
+      "271:20386",
+      "271:20387",
+      "271:20388",
+      "271:20389",
+      "271:20400",
+      "271:20411",
+      "271:20415",
+      "271:20416",
+      "271:20417",
+      "271:20428",
+      "271:20432",
+      "271:20433",
+      "271:20434",
+      "271:20435",
+      "271:20439",
+      "271:20440",
+      "271:20456",
+      "271:20457",
+      "271:20458",
+      "271:20467",
+      "271:20468",
+      "271:20472",
+      "271:20473",
+      "271:20474",
+      "271:20475",
+      "271:20476",
+      "271:20477",
+      "271:20478",
+      "271:20484",
+      "271:20485",
+      "271:20486",
+      "271:20487",
+      "271:20488",
+      "271:20489",
+      "271:20495"
+    ],
+    "mutatedNodeIds": [
+      "271:20361",
+      "271:20362"
+    ],
+    "region": "271:20358",
+    "row": "271:20363",
+    "rowProps": {
+      "description": "Description#271:0",
+      "manual": "Manual only#271:1"
+    },
+    "book": "271:20359",
+    "pickerSet": "271:20439",
+    "pickers": [
+      {
+        "id": "271:20387",
+        "name": "State=All",
+        "w": 560,
+        "h": 196
+      },
+      {
+        "id": "271:20415",
+        "name": "State=Search",
+        "w": 560,
+        "h": 132
+      },
+      {
+        "id": "271:20432",
+        "name": "State=Empty",
+        "w": 560,
+        "h": 92
+      }
+    ],
+    "dialog": "271:20440",
+    "dialogSize": [
+      600,
+      444
+    ],
+    "settingRows": [
+      "271:20473",
+      "271:20484"
+    ],
+    "effectStyle": "S:1db4178fd1b38dbd2ff749132f8bb451363ab7b6,"
+  },
+  "pages": [
+    {
+      "id": "278:20335",
+      "state": "SlashAll",
+      "theme": "Light",
+      "picker": "271:20387",
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20371",
+      "menu": "278:23203"
+    },
+    {
+      "id": "278:20372",
+      "state": "SlashSearch",
+      "theme": "Dark",
+      "picker": "271:20415",
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20408",
+      "menu": "278:23242"
+    },
+    {
+      "id": "278:20409",
+      "state": "Chosen",
+      "theme": "Light",
+      "picker": null,
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20445"
+    },
+    {
+      "id": "278:20446",
+      "state": "AutoLoaded",
+      "theme": "Light",
+      "picker": null,
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20493",
+      "activity": "278:23499"
+    },
+    {
+      "id": "278:20494",
+      "state": "Manage",
+      "theme": "Light",
+      "picker": null,
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20530",
+      "dialog": "278:23513"
+    },
+    {
+      "id": "278:20531",
+      "state": "Manage",
+      "theme": "Dark",
+      "picker": null,
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20567",
+      "dialog": "278:23563"
+    },
+    {
+      "id": "278:20568",
+      "state": "CanvasSlash",
+      "theme": "Light",
+      "picker": "271:20387",
+      "w": 1440,
+      "h": 900,
+      "composer": "I278:20621;241:13916",
+      "menu": "278:23623"
+    },
+    {
+      "id": "278:20623",
+      "state": "CanvasSlash",
+      "theme": "Dark",
+      "picker": "271:20387",
+      "w": 1440,
+      "h": 900,
+      "composer": "I278:20676;241:13916",
+      "menu": "278:23662"
+    },
+    {
+      "id": "278:20678",
+      "state": "SlashEmpty",
+      "theme": "Light",
+      "picker": "271:20432",
+      "w": 1280,
+      "h": 820,
+      "composer": "278:20714",
+      "menu": "278:23701"
+    },
+    {
+      "id": "282:22539",
+      "state": "Chosen",
+      "theme": "Dark",
+      "w": 1280,
+      "h": 820,
+      "composer": "282:22575"
+    },
+    {
+      "id": "283:22761",
+      "state": "CanvasChosen",
+      "theme": "Light",
+      "composer": "I283:22814;241:13916"
+    },
+    {
+      "id": "283:22994",
+      "state": "CanvasChosen",
+      "theme": "Dark",
+      "composer": "I283:23047;241:13916"
+    }
+  ],
+  "audit": {
+    "section": "278:20334",
+    "total": 3056,
+    "counts": {
+      "FRAME": 1016,
+      "INSTANCE": 762,
+      "VECTOR": 716,
+      "TEXT": 461,
+      "ELLIPSE": 48,
+      "RECTANGLE": 46,
+      "GROUP": 7
+    },
+    "fonts": [
+      "Noto Sans SC"
+    ],
+    "wrongFonts": [],
+    "imageNodes": [],
+    "frames": [
+      {
+        "id": "278:20335",
+        "name": "Jarvis / Skills / SlashAll / Light",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20372",
+        "name": "Jarvis / Skills / SlashSearch / Dark",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20409",
+        "name": "Jarvis / Skills / Chosen / Light",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20446",
+        "name": "Jarvis / Skills / AutoLoaded / Light",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20494",
+        "name": "Jarvis / Skills / Manage / Light",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20531",
+        "name": "Jarvis / Skills / Manage / Dark",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "278:20568",
+        "name": "Jarvis / Skills / CanvasSlash / Light",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "278:20623",
+        "name": "Jarvis / Skills / CanvasSlash / Dark",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "278:20678",
+        "name": "Jarvis / Skills / SlashEmpty / Light",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "282:22539",
+        "name": "Jarvis / Skills / Chosen / Dark",
+        "w": 1280,
+        "h": 820
+      },
+      {
+        "id": "283:22761",
+        "name": "Jarvis / Skills / CanvasChosen / Light",
+        "w": 1440,
+        "h": 900
+      },
+      {
+        "id": "283:22994",
+        "name": "Jarvis / Skills / CanvasChosen / Dark",
+        "w": 1440,
+        "h": 900
+      }
+    ],
+    "links": [
+      {
+        "from": "I278:20371;272:20416",
+        "to": "278:20494"
+      },
+      {
+        "from": "I278:23203;271:20400",
+        "to": "278:20409"
+      },
+      {
+        "from": "I278:23203;271:20411",
+        "to": "278:20494"
+      },
+      {
+        "from": "I278:20408;272:20416",
+        "to": "278:20531"
+      },
+      {
+        "from": "I278:23242;271:20417",
+        "to": "282:22539"
+      },
+      {
+        "from": "I278:23242;271:20428",
+        "to": "278:20531"
+      },
+      {
+        "from": "I278:20445;272:20425",
+        "to": "278:20494"
+      },
+      {
+        "from": "I278:20493;272:20416",
+        "to": "278:20494"
+      },
+      {
+        "from": "I278:23513;271:20458",
+        "to": "278:20335"
+      },
+      {
+        "from": "I278:23563;271:20458",
+        "to": "278:20372"
+      },
+      {
+        "from": "I278:23623;271:20400",
+        "to": "283:22761"
+      },
+      {
+        "from": "I278:23662;271:20400",
+        "to": "283:22994"
+      },
+      {
+        "from": "I278:20714;272:20416",
+        "to": "278:20494"
+      },
+      {
+        "from": "I278:23701;271:20435",
+        "to": "278:20494"
+      },
+      {
+        "from": "I282:22575;272:20425",
+        "to": "278:20531"
+      }
+    ]
+  },
+  "prototypeNote": "Fixed-data manual-plan completion and management examples only. Automatic activation is shown separately; not a runnable model or exhaustive Present test.",
+  "validation": {
+    "check": "passed",
+    "build": "passed",
+    "fullTests": "55/55 (1.6m)",
+    "screenshots": "Electron import manager, slash search, automatic activity, dark canvas and dark manager inspected; Figma light/slash, dark manager/canvas, activity layout inspected",
+    "provider": "mock HTTP with real Pi SDK and Electron, no real relay validation"
+  },
+  "storage": {
+    "path": "Electron userData/agent/skills.json",
+    "format": "SKILL.md metadata/body plus copied package bytes as base64; model receives only named text resources",
+    "importLimits": {
+      "files": 100,
+      "totalBytes": 2000000,
+      "fileBytes": 256000,
+      "bodyCharacters": 128000,
+      "referenceCharacters": 64000,
+      "skills": 100
+    },
+    "updates": "same name preserves id and enabled flag",
+    "execution": "no scripts, Shell, arbitrary file or additional tool permissions"
+  },
+  "sources": [
+    "https://agentskills.io/specification",
+    "https://agentskills.io/client-implementation/adding-skills-support"
+  ]
+}

@@ -1,4 +1,4 @@
-import { app, clipboard, ipcMain, type WebContents } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
 import {
@@ -35,6 +35,7 @@ export async function registerAgent() {
   try {
     await config.initialize();
     await store.initialize();
+    await service.skills.initialize();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
   }
@@ -49,6 +50,23 @@ export async function registerAgent() {
     target.contents.send('agent:canvas-command', command);
   };
   const handlers: Record<string, (request: unknown, owner: number) => unknown> = {
+    'agent:skills': () => service.skills.list(),
+    'agent:import-skill': async (_r, owner) => {
+      if (service.isBusy) throw new Error('请先停止或等待当前请求完成');
+      const contents = trusted.get(owner)?.contents;
+      const window = contents && BrowserWindow.fromWebContents(contents);
+      if (!window) throw new Error('当前窗口不可用');
+      const result = await dialog.showOpenDialog(window, {
+        title: '导入技能包（选择包含 SKILL.md 的文件夹）',
+        properties: ['openDirectory'],
+      });
+      if (result.canceled || !result.filePaths[0]) return null;
+      return service.importSkill(result.filePaths[0]);
+    },
+    'agent:enable-skill': (r) => {
+      const v = z.object({ id: agentId, enabled: z.boolean() }).strict().parse(r);
+      return service.setSkillEnabled(v.id, v.enabled);
+    },
     'agent:configuration': () => config.view(),
     'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
     'agent:test': (r, owner) => service.test(relayInputSchema.parse(r), owner),

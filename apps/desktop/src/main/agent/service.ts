@@ -11,8 +11,14 @@ import { canvasTools } from './canvas-tools';
 import { validateVisionInput } from './vision-input';
 import type { VisionAsset } from '../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../shared/canvas-agent';
+import { SkillStore } from './skill-store';
+import { JsonFile } from './json-file';
+import { skillRuntime } from './skill-runtime';
+import { skillCommand } from '../../shared/agent-skills';
+import type { StoredSkill } from './skill-store';
 
 export class AgentService {
+  readonly skills: SkillStore;
   readonly canvas = new CanvasBroker();
   private seq = 0;
   private active: {
@@ -33,11 +39,14 @@ export class AgentService {
     readonly config: RelayConfiguration,
     readonly store: AgentStore,
     private root: string,
-  ) {}
+  ) {
+    this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
+  }
   snapshot(): AgentEvent {
     return {
       seq: this.seq,
       snapshot: {
+        skills: this.skills.list(),
         sessions: structuredClone(this.store.records.map((r) => r.view)),
         busySessionId: this.active?.sessionId ?? null,
       },
@@ -46,6 +55,22 @@ export class AgentService {
   private emit() {
     this.seq++;
     this.onChange(this.snapshot());
+  }
+  importSkill(directory: string) {
+    return this.exclusive(async () => {
+      this.idle();
+      const result = await this.skills.importDirectory(directory);
+      this.emit();
+      return result;
+    });
+  }
+  setSkillEnabled(id: string, enabled: boolean) {
+    return this.exclusive(async () => {
+      this.idle();
+      const result = await this.skills.setEnabled(id, enabled);
+      this.emit();
+      return result;
+    });
   }
   private changed() {
     if (!this.timer)
@@ -143,6 +168,10 @@ export class AgentService {
     images: VisionAsset[] = [],
   ) {
     return this.exclusive(async () => {
+      const skills = this.skills.snapshot();
+      const command = skillCommand(text);
+      if (text.startsWith('/') && (!command || !skills.some((s) => s.name === command.name)))
+        throw new Error('未知或已停用的技能，请使用 / 重新选择');
       const scope = this.store.record(id).view.projectId;
       if (scope !== canvas?.projectId) throw new Error('画布会话与项目不匹配');
       validateVisionInput(images, canvas, this.store.record(id).view);
@@ -214,6 +243,7 @@ export class AgentService {
         text,
         canvas,
         images,
+        skills,
       );
       return run.id;
     });
@@ -226,11 +256,13 @@ export class AgentService {
     text: string,
     canvas?: CanvasSnapshot,
     images: VisionAsset[] = [],
+    skills: StoredSkill[] = [],
   ) {
     let stop: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let checkpoint: ReturnType<typeof setInterval> | undefined;
     try {
+      const skill = skillRuntime(skills, text, output, () => this.changed());
       const tools = canvas
         ? canvasTools(canvas, this.canvas, run.owner, run.id, output, () => this.changed())
         : [];
@@ -246,6 +278,7 @@ export class AgentService {
               context: `当前项目 ${canvas.projectId}，本次引用节点 ${canvas.selectedIds.join(', ') || '未选择'}。`,
             }
           : undefined,
+        skill,
       );
       run.sdk = runtime.session;
       if (run.cancelled) {
@@ -286,7 +319,9 @@ export class AgentService {
         time,
       }));
       await runtime.session.prompt(
-        images.length ? text + '\n\n附图来源清单（数据）：' + JSON.stringify(roster) : text,
+        images.length
+          ? skill.prompt + '\n\n附图来源清单（数据）：' + JSON.stringify(roster)
+          : skill.prompt,
         {
           expandPromptTemplates: false,
           images: images.map(({ data, mimeType }) => ({ type: 'image' as const, data, mimeType })),

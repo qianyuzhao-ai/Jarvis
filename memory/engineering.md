@@ -2,6 +2,17 @@
 
 最后更新：2026-10-21
 
+## Agent Skills 与 / 输入（2026-10-21）
+
+- 用户要求输入框用 `/` 主动选择技能，也由 Agent 按技能规则主动调用；明确选择“Jarvis 独立管理，手动导入技能包”。已在 `feature/agent-skills` 实现，依赖上一轮 `e74a460` 画布 Agent；用户随后授权本地 commit，提交范围包含本轮代码、测试和设计记录；不推送、不合并、不发布。
+- `SkillStore` 从原生文件夹选择器导入根目录含 SKILL.md 的包，复用 Pi 1.3.0 的 parseFrontmatter；校验 name/description/非空正文和 disable-model-invocation 布尔标记。将正文和包内文件字节复制到 userData/agent/skills.json，更新同名包保留 ID/启停，写成功后再发布元数据。最多100技能、每包100文件/2MB、单文件256KB，正文128k字符；拒绝符号链接，忽略隐藏目录和 node_modules，不递归扫描用户其他 Agent/Pi 目录。
+- 新桥接只有 listSkills/importSkill/setSkillEnabled；文件夹路径来自主进程原生选择，不接受 renderer 提供任意路径，沿用 senderFrame/URL 校验。snapshot 仅给名称/描述/启停等元数据，不把包文件字节发送给 renderer。修改时要求无运行中请求。
+- `skillRuntime` 向模型提供已启用且可自动调用技能的名称/触发描述，再通过 `load_skill` 加载正文；显式 `/skill:name 参数` 或 `/name 参数` 由服务端解析并注入完整说明。手动专用技能不进自动目录，模型直接调用也拒绝。`read_skill_resource` 仅允许本轮已加载技能包清单中的 UTF-8 文本（64k字符），拒绝路径穿越/外部文件/二进制，不运行脚本。每轮快照冻结，记录实际主动选择/自动匹配与参考读取活动。停用不擦除已有历史中的技能正文。
+- Pi 的默认资源扫描仍 noSkills/noExtensions/noContextFiles；Jarvis 自管导入与指令注入，避免引入内置 read/bash 权限。openAgent 合并明确的技能工具和当前画布工具并核对 allowlist；有技能时允许8次模型请求与最多12次技能读取，首页无技能仍保持原来单请求/零工具行为。canvas 操作和视觉输入边界不变，skills allowed-tools 不扩权。
+- 首页和画布共用 ChatComposer：开头输入 `/` 按名称/描述筛选启用技能，方向键循环，Enter/Tab 补全为 `/skill:name `，不立即发送；Esc/点击外部关闭，IME 确认与 Shift+Enter 保留。输入框下方书本图标打开原生 dialog 技能管理，支持导入/更新、启停和错误状态；保存前复选框即时反馈、失败恢复，弹窗内 Enter 不发送底层草稿。输入框继续固定底部。
+- **最终验证**：pnpm check、pnpm build、git diff --check；完整 Electron + 本地模拟服务 **55/55**（1.6分钟）通过。新增导入存储2项、权限/真实Pi工具循环2项、真实窗口完整流程1项。覆盖手动专用拒绝自动读取、未加载参考/路径穿越拒绝、实际模型请求含完整技能/参考、未知/停用命令、同名更新、重启恢复、首页/画布与浅深色、弹窗防误发。没有新增依赖，真实中转站未验证。Figma 12状态页与组件、最后视觉检查见 design.md 及 agent-skills-state.json。
+- 核对 [Agent Skills 格式](https://agentskills.io/specification) 和 [渐进加载规范](https://agentskills.io/client-implementation/adding-skills-support)，并读取仓库实际 Pi 1.3.0 的 skills.d.ts、frontmatter 和命令展开代码；实现采用独立导入快照与专用工具，不声称脚本执行/全文件访问已支持。
+
 ## 画布 Agent V1、项目会话与视觉输入（2026-10-21）
 
 - 用户授权代码 + Figma 同步及本地 commit，追加会话新建/历史/重命名/删除，多选图片和视频抽帧。`feature/canvas-agent` 从已完成 Chat V2 `d60eece` 继续（依赖该提交，未直接改 main/develop），保留原工作；本轮不推送/合并/打标签/发布。
