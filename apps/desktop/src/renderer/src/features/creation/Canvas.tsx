@@ -160,7 +160,6 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       project.nodes.map((n) => ({
         ...n,
         selected: selectedIds.includes(n.id),
-        className: related.nodes.has(n.id) ? 'workflow-node-related' : '',
         zIndex: 10,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
@@ -169,7 +168,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
         height: 240,
         measured: { width: 360, height: 240 },
       })),
-    [project.nodes, selectedIds, related],
+    [project.nodes, selectedIds],
   );
   const active = nodes.find((n): n is MediaNode => n.id === editorId && n.type === 'media');
   const downloadable: DownloadMedia[] = project.nodes.flatMap((node): DownloadMedia[] => {

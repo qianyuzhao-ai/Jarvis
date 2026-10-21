@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## 上下游仅连线高亮（2026-10-21）
+
+- 在 `feature/node-marquee-selection` 继续调整：移除 Canvas 的关联节点 class 和对应 CSS 描边，保留连线高亮以及真实选中节点的 2px 描边。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；3 项相关 Electron 窗口回归同轮通过，覆盖关联节点不描边、连线蚂蚁动画、节点选中样式和半面积框选。用户随后授权将此后续改动提交到当前分支，未推送。
+
 ## 节点半面积框选修复（2026-10-21）
 
 - 从干净 develop 创建 `feature/node-marquee-selection`。`Canvas.tsx` 订阅 React Flow 的框选矩形，转换为画布坐标后，以节点实测面积覆盖率至少 50% 判定选中；框选期间忽略库默认的节点/边选择变化，避免关联连线选择清空节点。库会先原地修改候选节点的 selected，因此每次矩形更新都重应用受控选择，即使命中 ID 不变。

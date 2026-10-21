@@ -562,8 +562,14 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     );
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await expect(page.locator('.workflow-edge-active')).toHaveCount(3);
-    await expect(page.locator('.workflow-node-related')).toHaveCount(4);
-    await expect(node(page, ids.sibling)).not.toHaveClass(/workflow-node-related/);
+    await expect(node(page, ids.imageA).locator('.media-placeholder')).toHaveCSS(
+      'outline-width',
+      '2px',
+    );
+    for (const id of [ids.imageAsset, ids.imageB, ids.video, ids.sibling]) {
+      await expect(node(page, id).locator('.media-placeholder')).toHaveCSS('outline-style', 'none');
+      await expect(node(page, id)).not.toHaveClass(/selected/);
+    }
     const active = page.locator('.workflow-edge-active .react-flow__edge-path').first();
     await expect(active).toHaveCSS('animation-name', 'workflow-ants');
     const layers = await page
