@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 发布准备（2026-10-21）
+
+- 用户授权提交当前改动、PR 合入 develop 并发布 v0.1.4，随后明确包含全部 3 个画布修复。Windows 打包提交 `da696b1` 与画布分支通过 `f2c625e` 集成，PR #17 指向 develop。根包、桌面包、README 和版本记录统一为 0.1.4。
+- 发布源码 `pnpm check`、构建、版本校验、`git diff --check` 通过；完整真实 Electron 窗口回归 34/34 同轮通过。云端双平台打包和 Release 结果待标签触发后核验，Windows 功能由用户验收。
+
 ## 双平台未签名标签打包（2026-10-21）
 
 - 用户授权增加 Windows x64 安装包，与 macOS 一起通过版本标签构建并发布同一 Release；Windows 功能由用户自行验收。本轮从干净 develop 创建 `feature/windows-release`；用户确认 v0.1.4 一起包含画布修复，已将 `feature/node-marquee-selection` 的三个提交合入此分支。
