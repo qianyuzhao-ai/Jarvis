@@ -99,14 +99,6 @@
 .canvas-agent-new-chat:hover:not(:disabled) {
   background: var(--color-border);
 }
-.canvas-agent-project {
-  padding: 0 16px 24px;
-  color: var(--color-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-}
 .canvas-agent-scroll {
   min-height: 0;
   flex: 1;

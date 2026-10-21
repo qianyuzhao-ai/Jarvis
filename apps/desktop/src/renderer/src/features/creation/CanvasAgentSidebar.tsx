@@ -224,7 +224,6 @@ export function CanvasAgentSidebar({
             <span>新聊天</span>
           </button>
         </header>
-        <div className="canvas-agent-project">{project.name}</div>
         {!history &&
           !!project.agentEdits.length &&
           !session?.messages.some((m) =>
