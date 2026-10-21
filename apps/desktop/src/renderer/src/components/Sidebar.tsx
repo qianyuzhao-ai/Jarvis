@@ -1,6 +1,6 @@
 import type { Ref } from 'react';
 import {
-  ArrowLeft,
+  ChevronLeft,
   BookmarkCheck,
   Cpu,
   Database,
@@ -62,6 +62,12 @@ export function Sidebar({
           <PanelLeftClose size={18} />
         </IconButton>
       </div>
+      {settings && (
+        <button type="button" className="sidebar-back" onClick={onProjects}>
+          <ChevronLeft size={14} strokeWidth={1.75} />
+          返回工作台
+        </button>
+      )}
       <div className="brand">
         <strong>{settings ? '设置' : 'Jarvis'}</strong>
         {!settings && <span>个人工作台</span>}
@@ -165,21 +171,14 @@ export function Sidebar({
           )}
         </div>
       )}
-      <div className="sidebar-footer">
-        {settings ? (
-          <button className="text-button" onClick={onProjects}>
-            <ArrowLeft size={14} />
-            返回工作台
-          </button>
-        ) : (
-          <>
-            <span>本地工作台</span>
-            <IconButton label="设置" onClick={onSettings}>
-              <Settings2 size={18} />
-            </IconButton>
-          </>
-        )}
-      </div>
+      {!settings && (
+        <div className="sidebar-footer">
+          <span>本地工作台</span>
+          <IconButton label="设置" onClick={onSettings}>
+            <Settings2 size={18} />
+          </IconButton>
+        </div>
+      )}
     </aside>
   );
 }
