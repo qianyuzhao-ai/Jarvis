@@ -12,6 +12,7 @@ import { RelayConfiguration } from './configuration';
 import { JsonFile } from './json-file';
 import { AgentService } from './service';
 import { AgentStore } from './store';
+import { canvasReplySchema } from '../../shared/canvas-agent';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -41,6 +42,12 @@ export async function registerAgent() {
     for (const { contents, url } of trusted.values())
       if (!contents.isDestroyed() && contents.getURL() === url) contents.send('agent:event', event);
   };
+  service.canvas.dispatch = (owner, command) => {
+    const target = trusted.get(owner);
+    if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
+      throw new Error('画布窗口已关闭');
+    target.contents.send('agent:canvas-command', command);
+  };
   const handlers: Record<string, (request: unknown, owner: number) => unknown> = {
     'agent:configuration': () => config.view(),
     'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
@@ -48,17 +55,22 @@ export async function registerAgent() {
     'agent:models': (r) => config.models(relayModelsInputSchema.parse(r)),
     'agent:snapshot': () => service.snapshot(),
     'agent:create': () => service.create(),
+    'agent:create-canvas': (r) => service.create(agentId.parse(r)),
+    'agent:claim-canvas': (r, owner) => service.canvas.claim(owner, agentId.parse(r)),
+    'agent:complete-canvas': (r, owner) =>
+      service.canvas.complete(owner, canvasReplySchema.parse(r)),
     'agent:rename': (r) => {
       const v = z.object({ sessionId: agentId, title: z.string().trim().min(1).max(100) }).parse(r);
       return service.rename(v.sessionId, v.title);
     },
+    'agent:delete': (r) => service.deleteSession(agentId.parse(r)),
     'agent:model': (r) => {
       const v = z.object({ sessionId: agentId, model: z.string().trim().min(1).max(200) }).parse(r);
       return service.setModel(v.sessionId, v.model);
     },
     'agent:send': (r, owner) => {
       const v = agentSendSchema.parse(r);
-      return service.send(v.sessionId, v.requestId, v.text, owner);
+      return service.send(v.sessionId, v.requestId, v.text, owner, v.canvas, v.images);
     },
     'agent:cancel': (r, owner) => service.cancel(agentId.parse(r), owner),
     'agent:copy-reply': (r) => {

@@ -204,6 +204,7 @@ export async function registerGeneration(file: string) {
         if (value) safeHeaders.set(name, value);
       }
       safeHeaders.set('Cache-Control', 'no-store');
+      safeHeaders.set('Access-Control-Allow-Origin', '*');
       safeHeaders.set('X-Content-Type-Options', 'nosniff');
       return new Response(response.body, { status: response.status, headers: safeHeaders });
     } catch {

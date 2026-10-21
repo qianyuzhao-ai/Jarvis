@@ -25,13 +25,52 @@ function diffLines(diff: string) {
   });
 }
 
-export function ChatActivity({ activities }: { activities: ChatMessage['activities'] }) {
+export type CanvasActivityActions = {
+  focus: (ids: string[]) => void;
+  undo: (id: string) => void;
+  canUndo: (id: string) => boolean;
+};
+export function ChatActivity({
+  activities,
+  canvas,
+}: {
+  activities: ChatMessage['activities'];
+  canvas?: CanvasActivityActions;
+}) {
   if (!activities?.length) return null;
   return (
     <div className="chat-activities">
       {activities.map((activity) => (
         <details className="chat-activity" key={activity.id} open>
           <summary>{activity.label}</summary>
+          {canvas && activity.nodeIds?.length ? (
+            <div className="canvas-activity-actions">
+              <button type="button" onClick={() => canvas.focus(activity.nodeIds ?? [])}>
+                定位节点
+              </button>
+              {activity.transactionId && (
+                <button
+                  type="button"
+                  disabled={!canvas.canUndo(activity.transactionId)}
+                  onClick={() => canvas.undo(activity.transactionId ?? '')}
+                >
+                  撤销本次修改
+                </button>
+              )}
+            </div>
+          ) : null}
+          {!!activity.changes?.length && (
+            <details className="canvas-change-details">
+              <summary>查看 {activity.changes.length} 项变更</summary>
+              {activity.changes.map((change, index) => (
+                <div key={`${change.nodeId}-${index}`}>
+                  <strong>{change.label}</strong>
+                  <del>{change.before || '未填写'}</del>
+                  <ins>{change.after || '未填写'}</ins>
+                </div>
+              ))}
+            </details>
+          )}
           {activity.files.length > 0 && (
             <div className="chat-files">
               {activity.files.map((file, index) => (

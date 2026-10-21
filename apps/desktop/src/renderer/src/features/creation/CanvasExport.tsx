@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, PanelRightOpen } from 'lucide-react';
-import { IconButton } from '../../components/IconButton';
+import { Download } from 'lucide-react';
 
 export function CanvasExport({
   projectId,
@@ -51,9 +50,7 @@ export function CanvasExport({
         <Download size={16} />
         <span>{busy ? '正在导出…' : '导出 Excel'}</span>
       </button>
-      <IconButton label="展开右侧栏" title="展开右侧栏（待实现）" disabled>
-        <PanelRightOpen size={18} />
-      </IconButton>
+
       {feedback && (
         <div className="canvas-export-feedback" role={feedback.error ? 'alert' : 'status'}>
           <span>{feedback.message}</span>

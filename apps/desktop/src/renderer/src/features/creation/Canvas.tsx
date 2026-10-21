@@ -31,6 +31,7 @@ import {
   Plus,
   Video,
   Upload,
+  PanelRightOpen,
   Link2,
 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
@@ -39,6 +40,8 @@ import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
 import { NodeRenameContext } from './node-rename-context';
 import { CanvasExport } from './CanvasExport';
+import { CanvasAgentSidebar } from './CanvasAgentSidebar';
+import { useCanvasHost } from './use-canvas-host';
 import { promptMentions } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
 import { connectSelected, connectionIssue, relatedWorkflow } from './connections';
@@ -55,6 +58,9 @@ const nodeTypes = { media: MediaPlaceholder, asset: AssetNode };
 type Props = {
   project: Project;
   onChange: (update: (project: Project) => Project) => void;
+  onCommit: (update: (project: Project) => Project) => Promise<void>;
+  onConfigureAgent: () => void;
+  agentBusy: boolean;
   onBack: () => void;
   theme: 'light' | 'dark';
   status: string;
@@ -65,7 +71,21 @@ type Props = {
     onNotice: (message: string) => void,
   ) => Promise<void>;
 };
-function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, onImport }: Props) {
+function CanvasContent({
+  project,
+  onChange,
+  onCommit,
+  onConfigureAgent,
+  agentBusy,
+  onBack,
+  theme,
+  status,
+  onGenerate,
+  onImport,
+}: Props) {
+  const [agentOpen, setAgentOpen] = useState(
+    () => localStorage.getItem('jarvis:canvas-agent-open') === 'true',
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editorId, setEditorId] = useState<string | null>(null);
   const [connectingIds, setConnectingIds] = useState<string[] | null>(null);
@@ -82,6 +102,30 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   const [importNotice, setImportNotice] = useState('');
   const flow = useReactFlow<CanvasNode>();
   const store = useStoreApi<CanvasNode, CanvasEdge>();
+  const focusNodes = useCallback(
+    (ids: string[]) => {
+      const existing = ids.filter((id) => project.nodes.some((n) => n.id === id));
+      if (existing.length !== ids.length) setConnectionNotice('部分节点已不存在');
+      if (!existing.length) return;
+      setSelectedIds(existing);
+      setEditorId(null);
+      void flow.fitView({
+        nodes: existing.map((id) => ({ id })),
+        padding: 0.3,
+        maxZoom: 1.2,
+        duration: 0,
+      });
+    },
+    [flow, project.nodes],
+  );
+  useCanvasHost(project, onCommit, focusNodes, setConnectionNotice);
+  function toggleAgent() {
+    setAgentOpen((value) => {
+      localStorage.setItem('jarvis:canvas-agent-open', String(!value));
+      return !value;
+    });
+  }
+
   useEffect(
     () =>
       store.subscribe((state, previous) => {
@@ -418,244 +462,269 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           projectName={project.name}
           status={status}
         />
+        <IconButton
+          label={agentOpen ? '收起画布助手' : '展开画布助手'}
+          aria-expanded={agentOpen}
+          title={agentBusy ? '画布助手正在回复' : '画布助手'}
+          onClick={toggleAgent}
+        >
+          <PanelRightOpen size={18} />
+          {agentBusy && <span className="canvas-agent-running-dot" />}
+        </IconButton>
       </header>
-      <div
-        className="canvas-body"
-        ref={container}
-        onDragEnter={(e) => {
-          if (!e.dataTransfer.types.includes('Files')) return;
-          e.preventDefault();
-          dragDepth.current++;
-          setDragging(true);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = e.dataTransfer.types.includes('Files') ? 'copy' : 'none';
-        }}
-        onDragLeave={() => {
-          dragDepth.current = Math.max(0, dragDepth.current - 1);
-          if (!dragDepth.current) setDragging(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          dragDepth.current = 0;
-          setDragging(false);
-          if (e.dataTransfer.files.length)
-            importFiles(Array.from(e.dataTransfer.files), { x: e.clientX, y: e.clientY });
-        }}
-      >
-        <ReactFlow<CanvasNode, CanvasEdge>
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodesChange={changes}
-          onEdgesChange={edgeChanges}
-          onConnect={connect}
-          isValidConnection={(connection) => !connectionIssue(project, connection)}
-          onConnectEnd={(_, state) => {
-            if (state.isValid || !state.fromNode || !state.toNode) return;
-            const forward = state.fromHandle?.type === 'source';
-            const issue = connectionIssue(project, {
-              source: forward ? state.fromNode.id : state.toNode.id,
-              target: forward ? state.toNode.id : state.fromNode.id,
-            });
-            if (issue) setConnectionNotice(issue);
+      <div className="canvas-workspace">
+        <div
+          className="canvas-body"
+          ref={container}
+          onDragEnter={(e) => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            e.preventDefault();
+            dragDepth.current++;
+            setDragging(true);
           }}
-          defaultViewport={project.viewport}
-          onMoveEnd={(_, v) => patch({ viewport: v })}
-          onNodeClick={(event, n) => {
-            if (connectingIds) {
-              connectTo(n.id);
-              return;
-            }
-            if (event.shiftKey || event.metaKey || event.ctrlKey) return;
-            setSelectedIds([n.id]);
-            setEditorId(n.type === 'media' ? n.id : null);
-            setSelectedEdge(null);
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = e.dataTransfer.types.includes('Files') ? 'copy' : 'none';
           }}
-          onEdgeClick={(_, edge) => {
-            setSelectedIds([]);
-            setEditorId(null);
-            setConnectingIds(null);
-            setSelectedEdge(edge.id);
+          onDragLeave={() => {
+            dragDepth.current = Math.max(0, dragDepth.current - 1);
+            if (!dragDepth.current) setDragging(false);
           }}
-          onPaneClick={() => {
-            setSelectedIds([]);
-            setEditorId(null);
-            setConnectingIds(null);
-            setSelectedEdge(null);
+          onDrop={(e) => {
+            e.preventDefault();
+            dragDepth.current = 0;
+            setDragging(false);
+            if (e.dataTransfer.files.length)
+              importFiles(Array.from(e.dataTransfer.files), { x: e.clientX, y: e.clientY });
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
+        >
+          <ReactFlow<CanvasNode, CanvasEdge>
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={changes}
+            onEdgesChange={edgeChanges}
+            onConnect={connect}
+            isValidConnection={(connection) => !connectionIssue(project, connection)}
+            onConnectEnd={(_, state) => {
+              if (state.isValid || !state.fromNode || !state.toNode) return;
+              const forward = state.fromHandle?.type === 'source';
+              const issue = connectionIssue(project, {
+                source: forward ? state.fromNode.id : state.toNode.id,
+                target: forward ? state.toNode.id : state.fromNode.id,
+              });
+              if (issue) setConnectionNotice(issue);
+            }}
+            defaultViewport={project.viewport}
+            onMoveEnd={(_, v) => patch({ viewport: v })}
+            onNodeClick={(event, n) => {
+              if (connectingIds) {
+                connectTo(n.id);
+                return;
+              }
+              if (event.shiftKey || event.metaKey || event.ctrlKey) return;
+              setSelectedIds([n.id]);
+              setEditorId(n.type === 'media' ? n.id : null);
+              setSelectedEdge(null);
+            }}
+            onEdgeClick={(_, edge) => {
+              setSelectedIds([]);
+              setEditorId(null);
+              setConnectingIds(null);
+              setSelectedEdge(edge.id);
+            }}
+            onPaneClick={() => {
               setSelectedIds([]);
               setEditorId(null);
               setConnectingIds(null);
               setSelectedEdge(null);
-            }
-          }}
-          snapToGrid={project.snap}
-          snapGrid={[24, 24]}
-          minZoom={0.15}
-          maxZoom={2.5}
-          deleteKeyCode={['Backspace', 'Delete']}
-          colorMode={theme}
-          zIndexMode="manual"
-          elevateEdgesOnSelect={false}
-          elevateNodesOnSelect={false}
-          edgesReconnectable={false}
-          connectionRadius={24}
-          panOnScroll
-          selectionMode={SelectionMode.Partial}
-          selectionOnDrag
-          multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
-          panOnDrag={[1, 2]}
-          zoomOnDoubleClick={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          {project.dots && (
-            <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--dot)" />
-          )}
-          {project.minimap && (
-            <MiniMap
-              className="canvas-minimap"
-              pannable
-              zoomable
-              nodeColor="var(--color-secondary)"
-              maskColor="var(--minimap-mask)"
-              ariaLabel="画布缩略图"
-            />
-          )}
-          <Panel position="bottom-left" className="floating-controls">
-            <IconButton label="缩小" onClick={() => void flow.zoomOut()}>
-              <Minus size={18} />
-            </IconButton>
-            <button className="zoom-value" title="重置为 100%" onClick={() => void flow.zoomTo(1)}>
-              {Math.round(viewport.zoom * 100)}%
-            </button>
-            <IconButton label="放大" onClick={() => void flow.zoomIn()}>
-              <Plus size={18} />
-            </IconButton>
-            <span className="control-divider" />
-            <IconButton
-              label="适应视图"
-              onClick={() => void flow.fitView({ padding: 0.3, maxZoom: 1 })}
-            >
-              <Maximize size={18} />
-            </IconButton>
-          </Panel>
-          <Panel position="bottom-right" className="floating-controls">
-            <IconButton
-              label="缩略图显示"
-              aria-pressed={project.minimap}
-              onClick={() => patch({ minimap: !project.minimap })}
-            >
-              <Map size={18} />
-            </IconButton>
-            <IconButton
-              label="背景点阵显示"
-              aria-pressed={project.dots}
-              onClick={() => patch({ dots: !project.dots })}
-            >
-              <LayoutGrid size={18} />
-            </IconButton>
-            <IconButton
-              label="磁力吸附"
-              aria-pressed={project.snap}
-              onClick={() => patch({ snap: !project.snap })}
-            >
-              <Magnet size={18} />
-            </IconButton>
-          </Panel>
-        </ReactFlow>
-        {selectedIds.length > 1 && (
-          <div className="canvas-selection-actions" role="toolbar" aria-label="多选节点操作">
-            <span>已选择 {selectedIds.length} 个节点</span>
-            <button
-              type="button"
-              aria-pressed={Boolean(connectingIds)}
-              onClick={() => {
-                setEditorId(null);
-                setConnectingIds(connectingIds ? null : selectedIds);
-                setConnectionNotice('');
-              }}
-            >
-              <Link2 size={16} />
-              {connectingIds ? '取消连接' : '连接到节点'}
-            </button>
-            <button
-              type="button"
-              disabled={batchBusy || !downloadable.length}
-              aria-label={batchBusy ? '正在下载' : `下载可用文件 (${downloadable.length})`}
-              title={batchBusy ? '正在下载' : `下载 ${downloadable.length} 个可用文件`}
-              aria-busy={batchBusy}
-              onClick={() => void downloadSelected()}
-            >
-              <Download size={16} aria-hidden="true" />
-              <span className="selection-download-count" aria-hidden="true">
-                {downloadable.length}
-              </span>
-            </button>
-            {connectingIds && <span>点击目标图像或视频节点</span>}
-          </div>
-        )}
-        {connectionNotice && (
-          <div className="canvas-import-notice" role="alert">
-            {connectionNotice}
-            <button onClick={() => setConnectionNotice('')}>关闭</button>
-          </div>
-        )}
-        {dragging && (
-          <div className="canvas-drop-hint" role="status">
-            <Upload size={24} />
-            <span>松开以上传图片、视频或音频</span>
-          </div>
-        )}
-        {importNotice && (
-          <div className="canvas-import-notice" role="alert">
-            {importNotice}
-            <button onClick={() => setImportNotice('')}>关闭</button>
-          </div>
-        )}
-        {active && (
-          <motion.div
-            ref={editorRef}
-            className="editor-position"
-            style={{ left, top }}
-            initial={reducedMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={
-              reducedMotion ? { duration: 0 } : { duration: 0.18, ease: [0.32, 0.72, 0, 1] }
-            }
-          >
-            <MediaEditor
-              key={active.id}
-              data={active.data}
-              mentions={promptMentions(project, active)}
-              connectedCount={project.edges.filter((edge) => edge.target === active.id).length}
-              onGenerate={() => onGenerate(active.id)}
-              onClose={() => setEditorId(null)}
-              onDelete={() => {
-                onChange((p) => ({
-                  ...p,
-                  nodes: p.nodes.filter((n) => n.id !== active.id),
-                  edges: p.edges.filter(
-                    (edge) => edge.source !== active.id && edge.target !== active.id,
-                  ),
-                }));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
                 setSelectedIds([]);
                 setEditorId(null);
-              }}
-              onChange={(data) =>
-                onChange((p) => ({
-                  ...p,
-                  nodes: p.nodes.map((n) =>
-                    n.id === active.id && n.type === 'media' ? { ...n, data } : n,
-                  ),
-                }))
+                setConnectingIds(null);
+                setSelectedEdge(null);
               }
-            />
-          </motion.div>
-        )}
+            }}
+            snapToGrid={project.snap}
+            snapGrid={[24, 24]}
+            minZoom={0.15}
+            maxZoom={2.5}
+            deleteKeyCode={['Backspace', 'Delete']}
+            colorMode={theme}
+            zIndexMode="manual"
+            elevateEdgesOnSelect={false}
+            elevateNodesOnSelect={false}
+            edgesReconnectable={false}
+            connectionRadius={24}
+            panOnScroll
+            selectionMode={SelectionMode.Partial}
+            selectionOnDrag
+            multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
+            panOnDrag={[1, 2]}
+            zoomOnDoubleClick={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            {project.dots && (
+              <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--dot)" />
+            )}
+            {project.minimap && (
+              <MiniMap
+                className="canvas-minimap"
+                pannable
+                zoomable
+                nodeColor="var(--color-secondary)"
+                maskColor="var(--minimap-mask)"
+                ariaLabel="画布缩略图"
+              />
+            )}
+            <Panel position="bottom-left" className="floating-controls">
+              <IconButton label="缩小" onClick={() => void flow.zoomOut()}>
+                <Minus size={18} />
+              </IconButton>
+              <button
+                className="zoom-value"
+                title="重置为 100%"
+                onClick={() => void flow.zoomTo(1)}
+              >
+                {Math.round(viewport.zoom * 100)}%
+              </button>
+              <IconButton label="放大" onClick={() => void flow.zoomIn()}>
+                <Plus size={18} />
+              </IconButton>
+              <span className="control-divider" />
+              <IconButton
+                label="适应视图"
+                onClick={() => void flow.fitView({ padding: 0.3, maxZoom: 1 })}
+              >
+                <Maximize size={18} />
+              </IconButton>
+            </Panel>
+            <Panel position="bottom-right" className="floating-controls">
+              <IconButton
+                label="缩略图显示"
+                aria-pressed={project.minimap}
+                onClick={() => patch({ minimap: !project.minimap })}
+              >
+                <Map size={18} />
+              </IconButton>
+              <IconButton
+                label="背景点阵显示"
+                aria-pressed={project.dots}
+                onClick={() => patch({ dots: !project.dots })}
+              >
+                <LayoutGrid size={18} />
+              </IconButton>
+              <IconButton
+                label="磁力吸附"
+                aria-pressed={project.snap}
+                onClick={() => patch({ snap: !project.snap })}
+              >
+                <Magnet size={18} />
+              </IconButton>
+            </Panel>
+          </ReactFlow>
+          {selectedIds.length > 1 && (
+            <div className="canvas-selection-actions" role="toolbar" aria-label="多选节点操作">
+              <span>已选择 {selectedIds.length} 个节点</span>
+              <button
+                type="button"
+                aria-pressed={Boolean(connectingIds)}
+                onClick={() => {
+                  setEditorId(null);
+                  setConnectingIds(connectingIds ? null : selectedIds);
+                  setConnectionNotice('');
+                }}
+              >
+                <Link2 size={16} />
+                {connectingIds ? '取消连接' : '连接到节点'}
+              </button>
+              <button
+                type="button"
+                disabled={batchBusy || !downloadable.length}
+                aria-label={batchBusy ? '正在下载' : `下载可用文件 (${downloadable.length})`}
+                title={batchBusy ? '正在下载' : `下载 ${downloadable.length} 个可用文件`}
+                aria-busy={batchBusy}
+                onClick={() => void downloadSelected()}
+              >
+                <Download size={16} aria-hidden="true" />
+                <span className="selection-download-count" aria-hidden="true">
+                  {downloadable.length}
+                </span>
+              </button>
+              {connectingIds && <span>点击目标图像或视频节点</span>}
+            </div>
+          )}
+          {connectionNotice && (
+            <div className="canvas-import-notice" role="alert">
+              {connectionNotice}
+              <button onClick={() => setConnectionNotice('')}>关闭</button>
+            </div>
+          )}
+          {dragging && (
+            <div className="canvas-drop-hint" role="status">
+              <Upload size={24} />
+              <span>松开以上传图片、视频或音频</span>
+            </div>
+          )}
+          {importNotice && (
+            <div className="canvas-import-notice" role="alert">
+              {importNotice}
+              <button onClick={() => setImportNotice('')}>关闭</button>
+            </div>
+          )}
+          {active && (
+            <motion.div
+              ref={editorRef}
+              className="editor-position"
+              style={{ left, top }}
+              initial={reducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={
+                reducedMotion ? { duration: 0 } : { duration: 0.18, ease: [0.32, 0.72, 0, 1] }
+              }
+            >
+              <MediaEditor
+                key={active.id}
+                data={active.data}
+                mentions={promptMentions(project, active)}
+                connectedCount={project.edges.filter((edge) => edge.target === active.id).length}
+                onGenerate={() => onGenerate(active.id)}
+                onClose={() => setEditorId(null)}
+                onDelete={() => {
+                  onChange((p) => ({
+                    ...p,
+                    nodes: p.nodes.filter((n) => n.id !== active.id),
+                    edges: p.edges.filter(
+                      (edge) => edge.source !== active.id && edge.target !== active.id,
+                    ),
+                  }));
+                  setSelectedIds([]);
+                  setEditorId(null);
+                }}
+                onChange={(data) =>
+                  onChange((p) => ({
+                    ...p,
+                    nodes: p.nodes.map((n) =>
+                      n.id === active.id && n.type === 'media' ? { ...n, data } : n,
+                    ),
+                  }))
+                }
+              />
+            </motion.div>
+          )}
+        </div>
+        <CanvasAgentSidebar
+          key={project.id}
+          project={project}
+          selectedIds={selectedIds}
+          open={agentOpen}
+          onClose={toggleAgent}
+          focus={focusNodes}
+          commit={onCommit}
+          configure={onConfigureAgent}
+        />
       </div>
     </main>
   );

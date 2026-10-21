@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, CircleAlert, Copy } from 'lucide-react';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import logo from '../../../../../resources/icon.png';
-import { ChatActivity } from './ChatActivity';
+import { ChatActivity, type CanvasActivityActions } from './ChatActivity';
 
 function replyTime(time: number, now: number) {
   const minutes = Math.max(0, Math.floor((now - time) / 60000));
@@ -17,11 +17,13 @@ export function ChatMessageItem({
   sessionId,
   now,
   onError,
+  canvas,
 }: {
   message: ChatMessage;
   sessionId: string;
   now: number;
   onError: (message: string) => void;
+  canvas?: CanvasActivityActions;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -44,7 +46,43 @@ export function ChatMessageItem({
       data-status={m.status}
       aria-label={m.role === 'user' ? '用户消息' : 'Jarvis 回复'}
     >
-      {m.role === 'assistant' && <ChatActivity activities={m.activities} />}
+      {!!m.visionAssets?.length && (
+        <div className="chat-vision-assets" aria-label="已发送视觉资产">
+          {m.visionAssets.map((asset, index) => (
+            <div key={`${asset.nodeId}-${index}`}>
+              <img
+                src={asset.preview}
+                alt={
+                  asset.kind === 'video-frame'
+                    ? `${asset.name} ${asset.time?.toFixed(2)}s`
+                    : asset.name
+                }
+                width={64}
+                height={48}
+              />
+              <small>
+                {asset.name}
+                {asset.kind === 'video-frame' ? ` · ${asset.time?.toFixed(2)}s` : ''}
+              </small>
+            </div>
+          ))}
+        </div>
+      )}
+      {!!m.canvasReferences?.length && (
+        <div className="canvas-message-references">
+          {m.canvasReferences.map((node) => (
+            <button
+              type="button"
+              key={node.id}
+              disabled={!canvas}
+              onClick={() => canvas?.focus([node.id])}
+            >
+              {node.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {m.role === 'assistant' && <ChatActivity activities={m.activities} canvas={canvas} />}
       <div className="chat-bubble">
         <div className="chat-text">
           {m.text || (m.status === 'running' ? '正在等待模型回复…' : '未收到回复内容')}

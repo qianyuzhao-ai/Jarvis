@@ -269,7 +269,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     let page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await expect(page.getByRole('button', { name: '展开右侧栏', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '展开画布助手', exact: true })).toBeEnabled();
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' });
     });

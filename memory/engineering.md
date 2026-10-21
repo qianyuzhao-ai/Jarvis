@@ -2,6 +2,18 @@
 
 最后更新：2026-10-21
 
+## 画布 Agent V1、项目会话与视觉输入（2026-10-21）
+
+- 用户授权代码 + Figma 同步及本地 commit，追加会话新建/历史/重命名/删除，多选图片和视频抽帧。`feature/canvas-agent` 从已完成 Chat V2 `d60eece` 继续（依赖该提交，未直接改 main/develop），保留原工作；本轮不推送/合并/打标签/发布。
+- `shared/canvas-agent.ts` 定义严格快照/操作/回执；快照不含 Blob/资源 URL。主进程只注册 get_canvas_summary/get_node_details/edit_canvas/focus_nodes 四项工具，无内置文件/Shell/扩展/Skills/MCP。先读概况与目标详情再编辑，每轮最多 20 次工具调用、8 次模型请求。首页仍无工具、仅文字输入，不读取个人 Pi 目录。
+- `CanvasBroker` 按窗口 owner、项目、run 和一次性 claim 关联命令；15 秒回执超时。`use-canvas-host` 常驻当前 Canvas，与侧栏显隐解耦；校验项目/版本/过期/并发对象，严格批量验证后保存 IndexedDB，再回传成功。保存失败可恢复 UI；已 claim 的保存完成后停止，不把已保存变更假装回滚。回执超时后的已保存修改仍可通过画布最近修改记录撤销。
+- `canvas-commands` 复用真实模型预设、连接类型/循环/数量限制和生成忙碌保护；仅创建图像/视频节点，编辑允许的提示词/参数/名称、移动、连接/断开、定位。没有节点删除、结果覆盖、自动生成。`canvas-transactions` 按 run 合并最多 20 轮撤销历史；只撤销最后且图未变化的一轮，冲突明确报错。变更详情来自真实前后图比较。
+- `useAgent(projectId)` 隔离首页和项目历史，按项目记住会话选择；首次发送创建会话，新建空对话不立即写入。会话重命名复用现有端点；删除新增明确 UUID 端点，主进程先重命名该会话的一个 SDK JSONL、原子移除索引，失败恢复；完成后只 unlink 一个明确临时文件，不触及画布资产。沿用可信 senderFrame/URL 校验，不暴露通用文件/IPC。
+- `canvas-vision` 通过已有媒体协议加载所选资产，匿名跨源图片/视频 Canvas 取像素；媒体协议启用 CORS 并返回允许头。图片编码 JPEG（长边 1536px）及128px历史预览；视频在10%/50%/90%取三帧并附来源/时间。失败/未知时长不发送，音频不支持。每次最多6资产/12图块/16000000 base64字符，每会话最多60图块。发送前核对节点仍存在且资源URL未变化；主进程核对附件与本次选中快照一致、格式头及总量。无任意文件读接口。
+- Pi canvas runtime 声明 text+image，SDK prompt receives `{type:'image',data,mimeType}` 与 JSON 来源清单；会话索引只保存预览/来源，原图片由 SDK history 保存。请求幂等 hash 包含画布与图像内容，避免同 requestId 改附件。模型视觉能力需配置支持的中转模型，不能从模型名称自动保证。
+- **验证通过**：`pnpm check`、`pnpm build`、`git diff --check`；完整 Playwright **50/50**（1.6分钟）。新增 pure commands/broker 3 项、Pi 工具运行 1 项、完整窗口画布交互 1 项、视觉窗口 1 项，Responses 原用例增加 image body 验证。图片/视频 fixture 为两个小文件，无新增依赖或运行时 ffmpeg。窗口覆盖读写/原子拒绝/撤销/冲突/停止/收起继续/项目隔离/重启、重命名/取消删除/实际删除单个 SDK JSONL、两图三帧实际请求/失败移除/历史预览。真实中转站、Windows 与打包运行未新增验证。
+- 首次整套测试被沙箱 localhost listen EPERM / Electron 启动限制阻止，已在获准的沙箱外同命令重跑全通过，不是待修代码错误。截图证据：`apps/desktop/test-results/0e8c7409-f125-4c19-a466-b816b0576c7f/`。Figma 组件/23页面/原型与浅深截图验证详见 design.md 和 `figma-sync-2026-10-21/canvas-agent-v1-state.json`。
+
 ## Chat V2 对话与 Composer 实现（2026-10-21）
 
 - 用户随后授权本地 commit，范围为本轮 Chat UI、受限复制接口、回归测试及同轮 Figma 设计记录；不推送、不合并、不发布。验证沿用本轮已通过的检查、构建和 44/44 回归，提交前再次检查 diff。

@@ -1,11 +1,19 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { rename, unlink } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
 import type { AgentEvent, ChatMessage, RelayInput } from '../../shared/agent';
 import { RelayConfiguration } from './configuration';
 import { openAgent, replyFailure } from './runtime';
 import { AgentStore } from './store';
+import { CanvasBroker } from './canvas-broker';
+import { canvasTools } from './canvas-tools';
+import { validateVisionInput } from './vision-input';
+import type { VisionAsset } from '../../shared/canvas-vision';
+import type { CanvasSnapshot } from '../../shared/canvas-agent';
 
 export class AgentService {
+  readonly canvas = new CanvasBroker();
   private seq = 0;
   private active: {
     id: string;
@@ -58,10 +66,10 @@ export class AgentService {
     );
     return pending;
   }
-  create() {
+  create(projectId?: string) {
     return this.exclusive(async () => {
       this.idle();
-      const id = await this.store.create(this.config.resolve().config);
+      const id = await this.store.create(this.config.resolve().config, projectId);
       this.emit();
       return id;
     });
@@ -86,6 +94,29 @@ export class AgentService {
       this.emit();
     });
   }
+  deleteSession(id: string) {
+    return this.exclusive(async () => {
+      this.idle();
+      this.store.record(id);
+      const path = join(this.root, 'sessions', `${id}.jsonl`);
+      const pending = join(this.root, 'sessions', `${id}.${randomUUID()}.deleted`);
+      let moved = false;
+      try {
+        await rename(path, pending);
+        moved = true;
+      } catch (error) {
+        if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+      }
+      try {
+        await this.store.remove(id);
+      } catch (error) {
+        if (moved) await rename(pending, path);
+        throw error;
+      }
+      this.emit();
+      if (moved) await unlink(pending);
+    });
+  }
   setModel(id: string, model: string) {
     return this.exclusive(async () => {
       this.idle();
@@ -103,11 +134,29 @@ export class AgentService {
       this.emit();
     });
   }
-  send(id: string, requestId: string, text: string, owner: number) {
+  send(
+    id: string,
+    requestId: string,
+    text: string,
+    owner: number,
+    canvas?: CanvasSnapshot,
+    images: VisionAsset[] = [],
+  ) {
     return this.exclusive(async () => {
+      const scope = this.store.record(id).view.projectId;
+      if (scope !== canvas?.projectId) throw new Error('画布会话与项目不匹配');
+      validateVisionInput(images, canvas, this.store.record(id).view);
+      if (canvas && JSON.stringify(canvas).length > 250000) throw new Error('画布上下文过大');
       const prior = this.store.requests.find((r) => r.id === requestId);
+      const inputHash = createHash('sha256')
+        .update(JSON.stringify({ canvas, images }))
+        .digest('hex');
       if (prior) {
-        if (prior.sessionId !== id || prior.text !== text)
+        if (
+          prior.sessionId !== id ||
+          prior.text !== text ||
+          (prior.inputHash ? prior.inputHash !== inputHash : !!canvas || images.length > 0)
+        )
           throw new Error('同一请求标识不能用于不同消息');
         return prior.runId;
       }
@@ -130,11 +179,23 @@ export class AgentService {
         text: '',
         status: 'running',
       };
+      if (canvas)
+        user.canvasReferences = canvas.nodes
+          .filter((n) => canvas.selectedIds.includes(n.id))
+          .map(({ id, name }) => ({ id, name }));
+      if (images.length)
+        user.visionAssets = images.map(({ nodeId, name, kind, time, preview }) => ({
+          nodeId,
+          name,
+          kind,
+          time,
+          preview,
+        }));
       record.view.messages.push(user, assistant);
       record.view.runId = run.id;
       record.view.updatedAt = Date.now();
       if (record.view.messages.length === 2) record.view.title = text.slice(0, 36);
-      this.store.requests.push({ id: requestId, runId: run.id, sessionId: id, text });
+      this.store.requests.push({ id: requestId, runId: run.id, sessionId: id, text, inputHash });
       this.active = run;
       try {
         await this.store.save();
@@ -145,7 +206,15 @@ export class AgentService {
         throw error;
       }
       this.emit();
-      this.completion = this.perform(run, record.config, current.apiKey, assistant, text);
+      this.completion = this.perform(
+        run,
+        record.config,
+        current.apiKey,
+        assistant,
+        text,
+        canvas,
+        images,
+      );
       return run.id;
     });
   }
@@ -155,12 +224,29 @@ export class AgentService {
     key: string,
     output: ChatMessage,
     text: string,
+    canvas?: CanvasSnapshot,
+    images: VisionAsset[] = [],
   ) {
     let stop: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let checkpoint: ReturnType<typeof setInterval> | undefined;
     try {
-      const runtime = await openAgent(this.root, run.sessionId, config, key);
+      const tools = canvas
+        ? canvasTools(canvas, this.canvas, run.owner, run.id, output, () => this.changed())
+        : [];
+      const runtime = await openAgent(
+        this.root,
+        run.sessionId,
+        config,
+        key,
+        false,
+        canvas
+          ? {
+              tools,
+              context: `当前项目 ${canvas.projectId}，本次引用节点 ${canvas.selectedIds.join(', ') || '未选择'}。`,
+            }
+          : undefined,
+      );
       run.sdk = runtime.session;
       if (run.cancelled) {
         output.status = 'cancelled';
@@ -192,7 +278,20 @@ export class AgentService {
           this.changed();
         }
       });
-      await runtime.session.prompt(text, { expandPromptTemplates: false });
+      const roster = images.map(({ nodeId, name, kind, time }, index) => ({
+        image: index + 1,
+        nodeId,
+        name,
+        kind,
+        time,
+      }));
+      await runtime.session.prompt(
+        images.length ? text + '\n\n附图来源清单（数据）：' + JSON.stringify(roster) : text,
+        {
+          expandPromptTemplates: false,
+          images: images.map(({ data, mimeType }) => ({ type: 'image' as const, data, mimeType })),
+        },
+      );
       const last = runtime.session.messages.filter((m) => m.role === 'assistant').at(-1);
       if (run.cancelled) output.status = 'cancelled';
       else if (!last || !['stop', 'length'].includes(last.stopReason) || !output.text.trim()) {

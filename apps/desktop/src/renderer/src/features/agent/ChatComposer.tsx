@@ -12,6 +12,9 @@ export function ChatComposer({
   model,
   onModel,
   onSubmit,
+  onAttach,
+  preparing = false,
+  hasAttachments = false,
 }: {
   agent: ReturnType<typeof useAgent>;
   text: string;
@@ -20,6 +23,9 @@ export function ChatComposer({
   model: string;
   onModel: (value: string) => void;
   onSubmit: () => Promise<void>;
+  onAttach?: () => void;
+  preparing?: boolean;
+  hasAttachments?: boolean;
 }) {
   const busy = !!agent.session?.runId;
   const configured = !!agent.configuration.config;
@@ -95,7 +101,8 @@ export function ChatComposer({
             aria-label="发送消息"
             title={agent.snapshot.busySessionId ? '另一个对话正在回复' : '发送消息'}
             disabled={
-              !text.trim() ||
+              (!text.trim() && !hasAttachments) ||
+              preparing ||
               !configured ||
               agent.loading ||
               agent.sending ||
@@ -110,9 +117,10 @@ export function ChatComposer({
         <button
           type="button"
           className="composer-action"
-          aria-label="添加附件（暂不支持）"
-          aria-disabled="true"
-          title="暂不支持附件"
+          aria-label={onAttach ? '添加选中画布资产' : '添加附件（暂不支持）'}
+          aria-disabled={!onAttach || preparing}
+          onClick={onAttach}
+          title={onAttach ? '添加画布选中的图片与视频' : '暂不支持附件'}
         >
           <Plus size={20} />
         </button>
@@ -120,9 +128,9 @@ export function ChatComposer({
           type="button"
           className="composer-action composer-auto"
           aria-disabled="true"
-          title="当前仅聊天，无工具执行权限"
+          title={agent.projectId ? '允许编辑当前画布，可撤销修改' : '当前仅聊天，无工具执行权限'}
         >
-          Auto
+          {agent.projectId ? '画布编辑' : 'Auto'}
         </button>
         <div className="composer-spacer" />
         <ModelPicker
