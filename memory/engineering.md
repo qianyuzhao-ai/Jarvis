@@ -2,6 +2,14 @@
 
 最后更新：2026-10-21
 
+## 0.1.8 云端签名公证验证（2026-10-21）
+
+- 发布前 `pnpm check`、构建、完整 Electron + 本地模拟服务 **57/57（1.7m）** 通过，版本一致性、electron-builder 合并配置/schema、工作流 shell、Secrets 作用域、entitlements plist 和 diff 检查通过。
+- 实现由 PR #34 → develop、PR #35 → main；标签 v0.1.8 指向 main 合并提交 `caa4256`。唯一发布运行 [39613181833](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39613181833) 的 Windows 作业已全绿（4m44s）；macOS 实时日志确认选用 Developer ID Application 签名，尚未返回公证结果。
+- 只读诊断经 PR #36/#37 集成，[运行 39615732424](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39615732424) 成功使用三项 Apple 凭据读取公证历史：`Jarvis.zip` 于北京时间 22:09:14 提交，ID `71055590-e096-4ee7-974c-6e75244c9610`，查询状态 `In Progress`。这证明签名及公证上传阶段已完成、凭据认证可用；不代表 Apple 已接受公证或 Gatekeeper 已通过。实际 Release、票据和包内校验结果待完成。
+- 使用 Chrome 已登录会话读取 GitHub 实时日志；`gh run view --log` 在作业结束前不可用，IAB 未登录不能查看日志。没有读取本地私钥或 GitHub Secret 明文，也未重复构建或重新提交公证。
+- 第二次只读诊断 [39616937355](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39616937355) 的查询作业成功返回同一提交 `In Progress`，没有 Invalid。发布运行仍等待 Apple，尚未通过公证票据/Gatekeeper 校验或创建 Release；这是外部队列等待，不能宣称 0.1.8 发布成功。原作业上限 60 分钟；后续先读取运行结果及同一提交状态，保留受保护标签。
+
 ## macOS Developer ID 签名与公证（2026-10-21）
 
 - 0.1.8 首次云端运行 `39613181833` 的 Windows 已构建校验成功，macOS 在选用 Developer ID 身份后长时间无新日志。为区分签名阶段和 Apple 队列，新增独立手动 `notarization-status.yml`，仅运行 `notarytool history` 读取团队公证历史，不构建应用、不上传、不重提公证。按 feature → develop → main 集成后手动查询，不移动 v0.1.8 标签或重复打包。
@@ -10,7 +18,7 @@
 - `feature/macos-signing-notarization` 从刷新后的 `origin/develop` 创建。基础配置移除 `identity: null`，本地 `scripts/package.mjs` 显式关闭正式签名、公证及 Hardened Runtime；发布配置使用 distribution、macOS 专属 forceCodeSigning、Hardened Runtime、公证，以及应用/Helper 共用的最小 JIT 与可执行内存 entitlements。Windows 继续未签名，不注入 Apple 凭据。
 - macOS 打包步骤检查五项 Secrets 非空及 Team ID 格式，覆盖全局 `CSC_IDENTITY_AUTO_DISCOVERY=false`。`verify-macos-release.sh` 验证目录包、ZIP 解压包、DMG 只读挂载包的 arm64、版本、Bundle ID、Developer ID 身份、Team ID、runtime 标志、codesign 完整性、公证票据与 Gatekeeper；校验失败不进入统一发布。macOS 文件移除 unsigned 后缀，Windows 保留；Release 仍为预发布。
 - 已验证：electron-builder 26.15.3 的实际合并配置和 schema、entitlements plist、工作流 YAML/Secrets 作用域、Bash 语法、`pnpm check`、`pnpm build`。应用运行代码未修改，本轮不重复窗口测试。
-- 尚未提交、推送、触发 CI 或发布。真实凭据、Apple 公证、签名包启动及升级均未验证；0.1.7 及旧 Release 保持未签名。自动更新器及更新元数据未接入，`publish: null` 保留。后续操作见 `apps/desktop/RELEASING.md`。
+- 初始配置阶段未提交、推送或触发 CI；后续用户已授权 0.1.8 发布，提交、合并、标签和真实凭据验证已完成，详见顶部本版云端记录。Apple 公证、签名包启动及升级结果仍须分别验证；0.1.7 及旧 Release 保持未签名。自动更新器及更新元数据未接入，`publish: null` 保留。后续操作见 `apps/desktop/RELEASING.md`。
 
 ## 0.1.7 发布验证（2026-10-21）
 
