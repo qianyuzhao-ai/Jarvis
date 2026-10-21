@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## 高亮限定直接上下游（2026-10-21）
+
+- 用户明确不包含下游的下游；`relatedWorkflow` 改为仅匹配当前节点为 source 或 target 的边，不再递归追踪上游或下游。保留只高亮连线、实际选中节点描边的行为。
+- `pnpm check`、`pnpm build` 和 `git diff --check` 通过；直接邻接逻辑测试与真实 Electron 连线测试 2 项同轮通过。用户随后授权提交到当前分支，未推送。
+
 ## 上下游仅连线高亮（2026-10-21）
 
 - 在 `feature/node-marquee-selection` 继续调整：移除 Canvas 的关联节点 class 和对应 CSS 描边，保留连线高亮以及真实选中节点的 2px 描边。

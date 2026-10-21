@@ -248,7 +248,7 @@ test('mixed media selection connects to video and downloads image, audio and vid
   }
 });
 
-test('highlight follows all ancestors and descendants without lighting sibling branches', () => {
+test('highlight includes only direct upstream and downstream connections', () => {
   const edges = [
     { id: 'a', source: 'root', target: 'parent' },
     { id: 'b', source: 'parent', target: 'selected' },
@@ -258,8 +258,8 @@ test('highlight follows all ancestors and descendants without lighting sibling b
     { id: 'other', source: 'x', target: 'y' },
   ];
   const related = relatedWorkflow(edges, 'selected');
-  expect([...related.links].sort()).toEqual(['a', 'b', 'c', 'd']);
-  expect([...related.nodes].sort()).toEqual(['child', 'end', 'parent', 'root', 'selected']);
+  expect([...related.links].sort()).toEqual(['b', 'c']);
+  expect([...related.nodes].sort()).toEqual(['child', 'parent', 'selected']);
   expect(relatedWorkflow(edges, null).links.size).toBe(0);
 });
 
@@ -561,7 +561,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
       'rgb(163, 166, 170)',
     );
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
-    await expect(page.locator('.workflow-edge-active')).toHaveCount(3);
+    await expect(page.locator('.workflow-edge-active')).toHaveCount(2);
     await expect(node(page, ids.imageA).locator('.media-placeholder')).toHaveCSS(
       'outline-width',
       '2px',
