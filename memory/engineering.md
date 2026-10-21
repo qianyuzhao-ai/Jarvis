@@ -2,11 +2,68 @@
 
 最后更新：2026-10-21
 
+## 0.1.6 发布准备（2026-10-21）
+
+- 用户授权打包发布 0.1.6，明确包含 Agent、App Icon 和其余待发布改动；授权本次版本准备、提交/推送、PR 合并、版本标签和发布。起点为干净的 `feature/pi-agent-chat` `83e053e`，包含独立图标提交 `95e132f`；已 fetch 核对远端，v0.1.6 标签与 Release 不存在，没有开放 PR。
+- 根包、桌面包及 README 统一为 0.1.6，CHANGELOG 汇总 Pi Chat/中转配置、密钥保护、图标及设计/测试记录。沿用 develop → main PR → main 合并提交标签的发布规则，不移动旧标签，不删除历史分支；目标是唯一标签工作流双平台全部成功后统一未签名预发布。
+- Agent 功能代码在本次版本准备前已通过完整44项回归及打包版 Chat 1/1；版本准备另验版本一致性、检查、构建和 diff。真实中转站、Windows 实机及签名/公证仍不作为已验证结果。
+
+## Pi Chat 本地提交（2026-10-21）
+
+- 用户授权 `commit`，范围为本轮 Agent 代码、测试、依赖和相关设计/工程记忆，不推送、不发布。核对图标已单独提交 `95e132f` 后，将原 `feature/pi-agent-chat` 从 develop 基线快进到该已完成提交并切回，保持图标提交和分支不变，再独立记录 Agent 变更。
+- 代码验证沿用上一轮检查/构建、44项完整回归和最终包 Chat 1/1；提交前重新核对暂存内容与 diff。后续状态以该分支 Git 提交记录为准。
+
+## Pi 首页 Chat V1 基础实现（2026-10-21）
+
+- 用户明确“开始 coding”，按已确认范围实现首页文字 Chat 与中转站模型配置，不接写作/创作空间 Agent、官方登录、文件/Shell/生成工具。使用 `@earendil-works/pi-coding-agent` / `pi-ai` **1.3.0**，按实际安装导出使用 ModelRuntime、InMemoryCredentialStore、SessionManager；并非旧示例 AuthStorage 导出。
+- 开始时 fetch 核对 develop 与 origin/develop 无差异，从 `c7aed14a96a1432ced8d42936f39727475e9fc7b` 创建 `feature/pi-agent-chat`，保留此前未提交设计记忆。开发期间共享 checkout 被图标任务切到 `feature/app-icon`，并出现 resources、electron-builder 和主进程图标改动；未回切、重置或覆盖，本轮 Agent 改动未提交/推送/发布。后续 Git 操作先重新检查共享状态。
+- 主进程 `main/agent/` 包含配置、原子串行 JSON 存储、SDK 运行、会话/运行和固定 IPC；共享契约 `shared/agent.ts`，preload 仅暴露 `desktop.agent`。校验可信窗口主 frame、输入 schema、UUID 会话和去重 ID，不开放通用 IPC/文件/Shell。SDK 使用独立 userData/agent 目录、内存认证；禁用扩展/Skill/模板/上下文扫描，显式空工具且校验活动工具为空。仅使用配置的中转模型，单轮只进行一个模型请求，禁用重试/自动压缩。
+- 支持中转站 Chat Completions / Responses SSE；当前只传文字。Key 通过系统 safeStorage 加密到 `agent/connection.json`，读取接口只返回 hasKey；拒绝不可用/弱降级存储。更换地址须重新输入 Key 或显式清除；HTTP 重定向拒绝，空 Key 不发送 Authorization。上游错误先在流边界脱敏再交 SDK 保存，验证恶意错误回显 Key 不进入 SDK JSONL。
+- `agent/index.json` 保存会话投影、配置快照和请求账本；`agent/sessions/<UUID>.jsonl` 保存 SDK 完整历史，workspace 仅是独立运行目录。一个应用最多一个回复；发送先持久化意图，requestId 去重。停止、120 秒超时、断流保留部分输出；运行中每秒检查点，正常关闭取消并等待写盘；遗留运行重启标中断，不重发。连接测试用临时会话，与保存分离；无模型列表时手动填写。
+- 默认打开 Chat。完整 Composer 保留附件/权限/思考/语音视觉，未实现项禁用或明确提示；可选模型 ID，未知容量/未返回用量显示未知。上下文数值仅采用上次成功上游 usage，不将 SDK 估算当实测。支持左右气泡、回到最新、接近底部时跟随、复制、手动重发、重命名与历史切换；IME 组词确认不发送。设置表单有脏值离开确认；画布/写作仍沿用现有入口和保存链路。
+- 为默认首页变化，旧回归显式进入创作空间（包括刷新后）；未修改原功能行为来适应测试。新增 5 项测试覆盖两协议正常/缺结束帧、中文/emoji 分块、取消、无工具、重定向、错误脱敏、运行恢复，以及真实窗口配置→测试→保存→聊天→停止→重命名→重启继续上下文与加密文件检查。
+- **验证**：`pnpm check`、`pnpm build`、`git diff --check` 通过；完整 **44/44** 同轮通过（约 1.4 分钟）。此前一次 43/44 的旧设置确认框超时，目标复测通过后完整重跑通过，未作为环境常驻限制。最后仅将 hook 文件改为 kebab-case 与隐藏模型页无关画布保存提示，检查/构建及最终目录包 Chat **1/1** 再通过（约 9 秒）。
+- 最终本地包：`release/a94f56ae-c028-4531-9a9b-85caad4b52b6/mac-arm64/Jarvis.app`，另保留前一验证包 `release/89c4fa52-c7b0-40fe-a7e3-efdda0485fa9/`。最终包含共享图标工作区内容；仍为未签名/未公证目录包，无 Release。electron-builder 对未使用 SDK 服务商依赖给出收集警告，当前中转站完整流程已在包内验证，不据此声称所有 Pi 服务商均可用。
+- 最终打包窗口截图位于 `apps/desktop/test-results/b8ae053c-50fa-4745-971c-53cd30f2859b/agent-homepage-Chat-relay--0b3e4-secrets-theme-and-isolation/`；开发完整回归的浅深配置/聊天截图在 `33ab1f00-9297-4d7f-aaf9-e27c913dbb15` 对应目录，已查看深色与紧凑/设置截图。
+- **限制**：真实中转站/真实 Key 未提供，网络验证使用本地 mock；Windows 未运行本轮实机测试。回复按纯文本呈现；长对话超过 60,000 字符本地保护上限须新建，不自动摘要/裁剪，不提供删除接口。API 协议、模型与容量需按实际服务配置；macOS 未签名包的钥匙串跨版本体验未验证。
+- 已将当前实现、验证与限制同步原 [Agent方案](https://docs.google.com/document/d/1vhqRZOgR2JJ22RINUgMvDaAqsQEkbBxa2FvaJt3K1yc)，保留研究与设计内容；四段状态修订和新增实现摘要均已回读比对。
+
+## 应用图标接入（2026-10-21）
+
+- 从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
+- `electron-builder.yml` 配置 mac/win 图标及 PNG extraResources，发布配置继承基础配置。主进程窗口使用开发资源或 `process.resourcesPath/icon.png`，开发 macOS Dock 单独设置，正式 macOS bundle 使用 ICNS。
+- 从 develop 建立 `feature/app-icon`，保留原有 Agent 未提交改动；用户授权本轮仅提交图标相关改动；未推送或发布。`pnpm check`、构建与本地 macOS arm64 目录打包通过。产物 `release/218937ad-9c02-4af8-b96a-9e165f38dd9a/mac-arm64/Jarvis.app` 的 Info.plist 图标引用和两份图标资源字节验证通过，仍为未签名包。
+- 首次沙箱打包因下载 Electron DNS 受限失败，沙箱外重试成功；窗口测试沙箱内无法启动，沙箱外首轮超时，独立重跑窗口导航与隔离回归 1/1 通过（1.4 秒）。打包发现既有 Agent 依赖收集警告，未扩展到依赖修复，不声称完成打包后 Agent 验收。
+
+## Composer 组件纠正与深色侧栏（2026-10-21）
+
+- 按用户截图统一回完整 `Jarvis / Agent Composer` `121:4438`，13 处实例替换，移除简化组件集 `177:7986`；附件/权限/思考强度/语音保留视觉，不等于授权接入这些能力。
+- 修复侧栏原生默认/选中行与现有历史标题的固定黑色填充，绑定主题文字并恢复正常混合模式；深色和 900×640 稿截图验证通过。详情、ID 和用户最新要求见 design.md 顶部；无应用源码、依赖、构建或测试变更。
+
+## Pi V1 范围确认与设计完成（2026-10-21）
+
+- 用户最新明确先完善设计，首期仅首页文字 Chat、左右气泡和 SSE；只接中转站 API，官方 API、写作/创作空间 Agent 暂不处理。此前跨空间建议不再作为首期任务。
+- Figma 首页/气泡/流式状态与中转站模型设置已完善，含浅深、等待/停止/中断、未配置、测试/保存、模型与协议菜单及紧凑窗口；当前 IDs、截图验证和边界见 design.md 顶部与 `memory/figma-sync-2026-10-21/agent-v1-state.json`。
+- [Agent方案](https://docs.google.com/document/d/1vhqRZOgR2JJ22RINUgMvDaAqsQEkbBxa2FvaJt3K1yc) 已原位修订范围并全文匹配回读：后续写作/画布仅作参考，不进入 V1 代码改点/验收；保留 SDK 受限嵌入建议。SSE 在上游消费，经受限 preload 事件传 UI；Figma 不发送真实请求。
+- 本轮只更新 Figma、方案和仓库记忆/设计脚本，未修改应用源码、安装依赖、提交或发布，未运行应用检查/构建。真实 SDK、SSE、目标中转站和模型兼容性仍需实现阶段验证。
+
+## Pi Agent 接入研究方案（2026-10-21，待审阅）
+
+- 用户仅授权查本地记忆、研究 Pi，并将方案写入指定 [Agent方案](https://docs.google.com/document/d/1vhqRZOgR2JJ22RINUgMvDaAqsQEkbBxa2FvaJt3K1yc)，要求 check 后再实现。本轮未改应用实现、安装依赖、提交或发布。
+- 已核对当前 Jarvis 0.1.5：无 Pi 依赖、Agent 路由/会话与模型服务配置；写作助手仍占位。现有内网上传/生成协议不是聊天模型服务，不可混用；真实内网联调仍未确认。
+- 旧全局记忆只记录 AIGC-FLOW 的只读助手规划；本轮检查其当前源码发现已有 pi-coding-agent/pi-ai 1.3.0、会话、运行恢复、画布读写/生成及 Skill 管理。该结论仅来自静态读取，未运行验证，不代表 Jarvis 已实现。
+- 当前建议（未确认）：受限嵌入 Pi Coding Agent SDK，由主进程管理模型/密钥/会话，显式关闭默认工具和自动资源扫描；preload 固定接口。先首页对话和会话恢复，再写作/画布只读助手；写操作、生成、MCP、Skill、语音另行评审。完整 SDK 与 core 自建会话的取舍、首期范围、会话粒度和目标模型保留待审阅。
+- Google 文档保留原有内容并追加 12 节方案，已逐段回读比对全文和标题结构。官方资料已读取；npm 版本、SDK/Electron 打包、认证注入与真实模型兼容性尚未实测。方案不等于实施验收。
+
 ## 0.1.5 发布集成（2026-10-21）
 
 - 用户明确授权 0.1.5 并要求所有改动纳入本版，覆盖写作空间、此前独立的三项画布修复、设计/工程记忆及 Figma 续传脚本；对话参考图片保留本地并加入 .gitignore，不作为应用源码发布。
 - 写作空间提交 `9d8f8c8`；本轮已将 `feature/reference-preview-fix` 的 65c33e2 / ed13812 / 8814a0e 非快进合入当前功能分支。合并仅在设计/工程记忆冲突，保留已包含修复记录及较新 Figma 状态的完整文件；代码无冲突。
-- 根包、桌面包和 README 升至 0.1.5，CHANGELOG 汇总实际功能与未签名/基础编辑边界。后续按 feature → develop PR、develop → main PR、main 合并提交上打 v0.1.5 标签进行单次双平台构建；版本校验、检查、构建、git diff --check 与最终集成 39/39 项真实 Electron 回归同轮通过，约 1.2 分钟；远端集成与构建结果待完成后更新。
+- 根包、桌面包和 README 升至 0.1.5，CHANGELOG 汇总实际功能与未签名/基础编辑边界。版本校验、检查、构建、git diff --check 与最终集成 39/39 项真实 Electron 回归同轮通过，约 1.2 分钟。
+- 已经 [PR #25](https://github.com/qianyuzhao-ai/Jarvis/pull/25) 合入 develop (`7506c2b`)、[PR #26](https://github.com/qianyuzhao-ai/Jarvis/pull/26) 合入 main (`1f3be23`)；`v0.1.5` 已创建并核对远端 peeled SHA 为 `1f3be230fd2c147868d9501ca763d3c1d006b9af`。未移动旧标签。
+- 唯一发布运行：[39548892511](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39548892511)，由标签 push 触发。macOS、Windows 和统一发布三个作业均成功，未重试或重建；已回读 [v0.1.5 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.5)，非草稿、prerelease=true，三个文件状态均 uploaded。GitHub 连接器创建 PR 返回 403，先用 CLI 核对无同名 PR 后改用已登录的 CLI 完成；没有重复创建或重复触发构建。
+- Release 三个文件：DMG 229488251 字节（SHA-256 02ff0bd5264cdb2efbead064eafd3ed983179819c342692b59b440e57c0b0f1e）、ZIP 229535150 字节（209a7c70dbc3d0de9f74507ddcf9144d7e1e7cccf6f8650f37480f8b42612dd2）、Windows EXE 205496351 字节（4a0bbc836932416710e85f71dba988cbe282cc87b278c7126631399275352f4f）。摘要来自 GitHub Release API，未重复下载大文件。仍为未签名/未公证包；Windows 运行功能由用户验收。
+- 已核对发布标签包含此前独立修复分支的全部提交，发布代码与 develop 无差异。本地 main/develop 均已快进到对应远端；发布结果记录另走文档 PR 更新 develop，不改已发布标签或重复发包。
 
 ## 写作空间基础版（2026-10-21）
 

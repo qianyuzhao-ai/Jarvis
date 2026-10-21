@@ -15,6 +15,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
   });
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const handle = page.getByRole('separator', { name: '调整侧栏宽度' });
@@ -38,6 +39,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     await expect(handle).toHaveAttribute('aria-valuenow', '280');
     await expect(page.locator('.save-status')).toHaveText('已保存到本机');
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await expect(handle).toHaveAttribute('aria-valuenow', '280');
     await handle.focus();
     await page.keyboard.press('ArrowRight');

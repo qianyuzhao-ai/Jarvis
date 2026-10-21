@@ -32,6 +32,7 @@ test('Image, Nano and video use shared single-row macOS controls', async () => {
   });
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.emulateMedia({ colorScheme: 'light' });
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();

@@ -54,6 +54,7 @@ test('general settings persist download directory and only skip dialogs when don
   let app = await launch();
   try {
     let page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     const checkbox = page.getByRole('checkbox', { name: '不再提醒，直接保存到默认位置' });
     await expect(checkbox).toBeDisabled();
@@ -92,6 +93,7 @@ test('general settings persist download directory and only skip dialogs when don
     await app.close();
     app = await launch();
     page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await expect(
       page.getByRole('checkbox', { name: '不再提醒，直接保存到默认位置' }),
@@ -143,6 +145,7 @@ test('download settings report unavailable IPC and allow retry after it recovers
   });
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await app.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler('downloads:get-preferences');
     });
@@ -205,6 +208,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
   });
   try {
     const page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     video = Buffer.from(
       await page.evaluate(async () => {
         const canvas = document.createElement('canvas');
@@ -296,6 +300,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       db.close();
     }, workspace);
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /节点下载测试/ }).click();
     for (const index of [2, 3]) {
       const generated = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);
@@ -362,6 +367,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await page.screenshot({ path: test.info().outputPath('renamed-selected-dark.png') });
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /节点下载测试/ }).click();
     for (let index = 0; index < 4; index++) {
       await expect(

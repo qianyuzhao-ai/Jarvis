@@ -8,9 +8,11 @@ saveExact: true
 verifyDepsBeforeRun: false
 
 allowBuilds:
+  '@google/genai': false
   electron: true
   electron-winstaller: false
   esbuild: true
+  protobufjs: false
 
 minimumReleaseAgeExclude:
   - electron@44.9.1
