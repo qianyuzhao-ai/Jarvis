@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { IconButton } from '../../components/IconButton';
 import type { ChatSession } from '../../../../shared/agent';
 export function CanvasConversations({
   sessions,
@@ -80,34 +81,37 @@ export function CanvasConversations({
             ) : (
               <>
                 <button
-                  className="canvas-conversation-title"
+                  className={`side-link canvas-conversation-title ${currentId === s.id ? 'selected' : ''}`}
                   type="button"
                   disabled={pending}
                   aria-current={currentId === s.id ? 'true' : undefined}
                   onClick={() => select(s.id)}
                 >
-                  {s.title}
-                  {s.runId ? ' · 回复中' : ''}
+                  <MessageSquare size={18} />
+                  <span>{s.title}</span>
+                  {s.runId && (
+                    <span className="history-running" aria-label="回复中">
+                      •
+                    </span>
+                  )}
                 </button>
-                <button
-                  type="button"
+                <IconButton
                   disabled={pending}
-                  aria-label={`重命名画布对话：${s.title}`}
+                  label={`重命名画布对话：${s.title}`}
                   onClick={() => {
                     setEditing(s.id);
                     setTitle(s.title);
                   }}
                 >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  type="button"
+                  <Pencil size={18} />
+                </IconButton>
+                <IconButton
                   disabled={busy || pending}
-                  aria-label={`删除画布对话：${s.title}`}
+                  label={`删除画布对话：${s.title}`}
                   onClick={() => void deleteChat(s)}
                 >
-                  <Trash2 size={14} />
-                </button>
+                  <Trash2 size={18} />
+                </IconButton>
               </>
             )}
           </div>

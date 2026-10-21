@@ -1,25 +1,43 @@
 .canvas-workspace {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 .canvas-workspace > .canvas-body {
   flex: 1;
   min-width: 0;
 }
-.canvas-agent {
+.canvas-agent-shell {
   position: relative;
+  flex: 0 0 auto;
+}
+.canvas-agent {
+  position: absolute;
+  inset: 0 0 0 auto;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
   min-width: 0;
   border-left: 1px solid var(--color-border);
   background: var(--color-sidebar);
   color: var(--color-ink);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    visibility 0s 260ms;
 }
-.canvas-agent[hidden] {
-  display: none;
+.canvas-agent[data-open='true'] {
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas-agent {
+    transition: none;
+  }
 }
 .canvas-agent-resizer {
   position: absolute;
@@ -30,43 +48,42 @@
   cursor: col-resize;
   z-index: 10;
   touch-action: none;
+  outline: none;
 }
-.canvas-agent-resizer:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -3px;
+.canvas-agent-resizer::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  inset-block: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+}
+.canvas-agent-resizer:hover::after,
+.canvas-agent-resizer:focus-visible::after,
+.canvas-agent-resizer:active::after {
+  background: var(--color-accent);
 }
 .canvas-agent-header {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 48px;
-  padding: 8px 14px;
+  height: 60px;
+  padding: 0 16px;
   flex-shrink: 0;
 }
 .canvas-agent-header strong {
   margin-right: auto;
-  font-size: 14px;
-  font-weight: 500;
-}
-.canvas-agent-header button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-}
-.canvas-agent-header button:hover {
-  background: var(--node-field);
+  font-size: 22px;
+  font-weight: 600;
 }
 .canvas-agent-project {
-  padding: 0 16px 12px;
+  padding: 0 16px 24px;
   color: var(--color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11px;
 }
 .canvas-agent-scroll {
   min-height: 0;
@@ -92,13 +109,8 @@
   color: var(--color-secondary);
 }
 .canvas-agent-welcome button {
-  display: block;
   text-align: left;
-  padding: 10px;
   width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
   margin-top: 8px;
 }
 .canvas-agent-dock {
@@ -138,22 +150,18 @@
   max-height: min(240px, 30vh);
 }
 .canvas-agent-history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   max-height: 180px;
   overflow: auto;
   padding: 8px 16px;
   border-block: 1px solid var(--color-border);
 }
-.canvas-agent-history button {
-  display: block;
-  text-align: left;
-  width: 100%;
-  padding: 8px;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-}
-.canvas-agent-history button:hover {
-  background: var(--node-field);
+.canvas-agent-history > p {
+  padding: 4px 10px;
+  color: var(--color-secondary);
+  font-size: 11px;
 }
 .canvas-activity-actions {
   display: flex;
@@ -261,20 +269,17 @@
 .canvas-conversation-row .canvas-conversation-title {
   flex: 1;
   min-width: 0;
+  color: var(--color-ink);
+  font-size: 12px;
+}
+.canvas-conversation-title > span:first-of-type {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.canvas-conversation-row > button:not(.canvas-conversation-title) {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 4px;
+.canvas-conversation-row > .icon-button {
   flex: 0 0 auto;
-}
-.canvas-conversation-title[aria-current='true'] {
-  background: var(--color-selected);
 }
 .canvas-conversation-row form {
   display: flex;
