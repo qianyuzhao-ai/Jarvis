@@ -2,6 +2,35 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 发布准备（2026-10-21）
+
+- 用户授权提交当前改动、PR 合入 develop 并发布 v0.1.4，随后明确包含全部 3 个画布修复。Windows 打包提交 `da696b1` 与画布分支通过 `f2c625e` 集成，PR #17 指向 develop。根包、桌面包、README 和版本记录统一为 0.1.4。
+- 发布源码 `pnpm check`、构建、版本校验、`git diff --check` 通过；完整真实 Electron 窗口回归 34/34 同轮通过。云端双平台打包和 Release 结果待标签触发后核验，Windows 功能由用户验收。
+
+## 双平台未签名标签打包（2026-10-21）
+
+- 用户授权增加 Windows x64 安装包，与 macOS 一起通过版本标签构建并发布同一 Release；Windows 功能由用户自行验收。本轮从干净 develop 创建 `feature/windows-release`；用户确认 v0.1.4 一起包含画布修复，已将 `feature/node-marquee-selection` 的三个提交合入此分支。
+- `electron-builder.release.yml` 新增 Windows x64 NSIS 目标，禁用签名但保留版本等资源编辑；安装器按当前用户安装、可选目录，文件名 `Jarvis-${version}-windows-x64-unsigned-setup.exe`。原 Mac arm64 DMG/ZIP 保留。
+- 保留 `.github/workflows/release-macos.yml` 文件路径，名称更新为 Package macOS and Windows；matrix 使用 macos-15-intel 与 windows-2022，各自检查/构建/打包，fail-fast=false。Windows 校验 PE x64、版本与未签名状态；平台 Artifact 汇总到依赖全部构建成功的唯一 publish 作业，三个文件齐全才创建同一预发布 Release。构建作业仅 contents:read，发布作业 contents:write。
+- 标签及已有标签手动重试继续可用；同 run 重跑允许替换本次 Artifact，已有 Release 不覆盖。首次双平台发版需使用包含新配置的新标签，不能用旧标签凭空补出 Windows 配置。
+- 本地 `pnpm check`、`pnpm build`、electron-builder 配置 schema、工作流 YAML/触发条件/依赖/唯一发布校验及 Bash 语法检查通过。用模拟 gh 执行实际发布脚本，验证缺少产物阻止发布、已有 Release 阻止覆盖、三个产物齐全时只调用一次预发布。本机为 macOS，未执行 Windows 打包或 PowerShell 校验，GitHub 双平台流程尚未运行；用户随后授权提交并通过 develop→main PR 发布 v0.1.4，发布结果待后续记录。
+
+## 高亮限定直接上下游（2026-10-21）
+
+- 用户明确不包含下游的下游；`relatedWorkflow` 改为仅匹配当前节点为 source 或 target 的边，不再递归追踪上游或下游。保留只高亮连线、实际选中节点描边的行为。
+- `pnpm check`、`pnpm build` 和 `git diff --check` 通过；直接邻接逻辑测试与真实 Electron 连线测试 2 项同轮通过。用户随后授权提交到当前分支，未推送。
+
+## 上下游仅连线高亮（2026-10-21）
+
+- 在 `feature/node-marquee-selection` 继续调整：移除 Canvas 的关联节点 class 和对应 CSS 描边，保留连线高亮以及真实选中节点的 2px 描边。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；3 项相关 Electron 窗口回归同轮通过，覆盖关联节点不描边、连线蚂蚁动画、节点选中样式和半面积框选。用户随后授权将此后续改动提交到当前分支，未推送。
+
+## 节点半面积框选修复（2026-10-21）
+
+- 从干净 develop 创建 `feature/node-marquee-selection`。`Canvas.tsx` 订阅 React Flow 的框选矩形，转换为画布坐标后，以节点实测面积覆盖率至少 50% 判定选中；框选期间忽略库默认的节点/边选择变化，避免关联连线选择清空节点。库会先原地修改候选节点的 selected，因此每次矩形更新都重应用受控选择，即使命中 ID 不变。
+- 保留普通点击、Shift/Cmd/Ctrl 加选、单独选线删除、批量连线及下载。新窗口回归覆盖 49% 不选、50%/100% 选中、正反向、有连线节点和只框线；测试先将画布平移离开边缘，避免自动平移使固定测试坐标失效。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；`connections.spec.ts` 相关 10 项回归同轮通过。首次沙箱内 Electron 无法启动，获准在沙箱外运行后验证成功。本轮未运行全量窗口套件；用户随后授权在该修复分支本地提交，未推送。
+
 ## v0.1.3 未签名 Apple Silicon 预发布完成（2026-10-21）
 
 - `v0.1.3` 保持指向 main 合并提交 `9c575c0`，没有修改受保护标签。用户授权的后续流程修正通过 PR #11→develop、#12→main，将云端作业聚焦检查/构建/打包；第一次手动重试 [39482146051](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39482146051) 因 GitHub macOS arm64 runner 容量不足零步骤失败。再经 PR #13→develop、#14→main 将宿主改为 `macos-15-intel`，仍显式构建 arm64。

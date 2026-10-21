@@ -64,22 +64,11 @@ export function relatedWorkflow(edges: Link[], selected: string | null) {
   const links = new Set<string>();
   if (!selected) return { nodes, links };
   nodes.add(selected);
-  for (const direction of ['upstream', 'downstream'] as const) {
-    const seen = new Set([selected]);
-    const queue = [selected];
-    for (let index = 0; index < queue.length; index++) {
-      for (const edge of edges) {
-        const from = direction === 'upstream' ? edge.target : edge.source;
-        const to = direction === 'upstream' ? edge.source : edge.target;
-        if (from !== queue[index]) continue;
-        links.add(edge.id);
-        nodes.add(to);
-        if (!seen.has(to)) {
-          seen.add(to);
-          queue.push(to);
-        }
-      }
-    }
+  for (const edge of edges) {
+    if (edge.source !== selected && edge.target !== selected) continue;
+    links.add(edge.id);
+    nodes.add(edge.source);
+    nodes.add(edge.target);
   }
   return { nodes, links };
 }

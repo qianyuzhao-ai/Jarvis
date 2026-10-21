@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 AIGC 创作空间的界面和基础交互，尚未接入 Pi Agent。
 
-当前源码版本：`0.1.3`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.1.4`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
@@ -51,8 +51,11 @@ pnpm dev
 
 - 新功能从 `develop` 创建功能分支，以 PR 合回 `develop`。发版前在 `develop` 更新根包和桌面包版本、版本记录，并在本地完成 `pnpm check` 与 `pnpm test:smoke`。
 - 直接由 `develop` 向 `main` 提发布 PR。合并后在 `main` 的合并提交上推送 `v<版本号>` 标签；这是唯一自动触发 GitHub 云端构建的事件。PR、`develop` 和 `main` 推送不会运行构建。
-- 标签工作流核对版本和 `main` 祖先关系，运行 `pnpm check` 与一次 `pnpm build`，在 GitHub 的 Intel macOS runner 上交叉生成 **arm64 专用** DMG/ZIP，并核对二进制架构、应用版本及压缩包完整性后创建 **预发布**。真实 Electron 窗口测试在发版前的 M 芯片本机运行。已存在标签的任务若失败或取消，可在 Actions 手动输入该标签重试同一个流程；已存在 GitHub Release 时会在构建前停止，避免重复发布。
-- 产物文件名带 `unsigned`。当前没有 Developer ID 签名和 Apple 公证，macOS Gatekeeper 可能阻止直接打开；这些包用于先验证打包和发布链路，不能视为正式可信安装包。当前打包配置最低系统版本为 macOS 26.0。
+- 标签工作流（`.github/workflows/release-macos.yml`）核对版本和 `main` 祖先关系，然后分别运行检查与一次构建：Intel macOS runner 交叉生成 **macOS arm64 DMG/ZIP**，Windows runner 生成 **Windows x64 NSIS EXE 安装包**。Windows 安装器支持选择安装目录，默认按当前用户安装。
+- 两个平台分别上传 Artifact，全部成功后由一个发布任务核对三个文件齐全，再创建同一个 **预发布 Release**。任一平台失败则不创建 Release，已成功平台的 Artifact 仍可下载。PR 和普通分支推送不触发构建。
+- 已存在标签的任务失败或取消时，可重新运行失败作业，或在 Actions 手动输入该标签重试；已存在 Release 则停止，避免覆盖。首次双平台发布必须使用包含新配置的新版本标签，旧标签不会自动获得 Windows 配置，也不会补改现有 Release。
+- 产物命名为 `Jarvis-<版本>-macos-arm64-unsigned.dmg`、同名 `.zip` 和 `Jarvis-<版本>-windows-x64-unsigned-setup.exe`。Windows 构建核对程序 x64 架构、版本与程序/安装器未签名状态；macOS 核对架构、版本、DMG/ZIP 完整性。
+- 当前均为未签名测试包；Mac 也未公证，最低系统版本仍为 macOS 26.0。Windows 功能由用户自行验收，构建成功不代表功能验证完成。真实 Electron 窗口回归继续在发版前的本机运行。
 
 ## 目录
 
