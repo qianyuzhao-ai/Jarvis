@@ -296,6 +296,54 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     }, workspace);
     await page.reload();
     await page.getByRole('button', { name: /节点下载测试/ }).click();
+    const renamed = ['休眠舱%20.v2.png', '驾驶舱 v2', '生成全景.v2', '全息影像.mp4'];
+    for (let index = 0; index < 4; index++) {
+      const current = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);
+      await current.getByRole('button', { name: /^重命名 / }).click();
+      const input = current.getByRole('textbox', { name: '节点名称', exact: true });
+      await input.fill(renamed[index]!);
+      if (index === 1) await page.getByLabel('项目名称', { exact: true }).click();
+      else await input.press('Enter');
+      await expect(
+        current.getByRole('button', { name: `重命名 ${renamed[index]}`, exact: true }),
+      ).toBeVisible();
+    }
+    const first = page.locator(`.react-flow__node[data-id="${ids[0]}"]`);
+    const renameButton = first.getByRole('button', { name: `重命名 ${renamed[0]}`, exact: true });
+    await renameButton.click();
+    await first.getByLabel('节点名称', { exact: true }).fill('取消的名称');
+    await first.getByLabel('节点名称', { exact: true }).press('Escape');
+    await expect(renameButton).toBeVisible();
+    await renameButton.click();
+    await first.getByLabel('节点名称', { exact: true }).fill('   ');
+    await first.getByLabel('节点名称', { exact: true }).press('Enter');
+    await expect(renameButton).toBeVisible();
+    await renameButton.click();
+    await first.getByLabel('节点名称', { exact: true }).press('Backspace');
+    await expect(page.locator('.react-flow__node')).toHaveCount(5);
+    await first.getByLabel('节点名称', { exact: true }).press('Escape');
+    await first.click({ position: { x: 30, y: 30 } });
+    await expect(first.locator('.media-placeholder')).toHaveCSS('outline-width', '3px');
+    await expect(first.locator('.media-placeholder')).toHaveCSS('outline-offset', '3px');
+    await expect(first.locator('.media-placeholder')).not.toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)',
+    );
+    await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
+    await page.screenshot({ path: test.info().outputPath('renamed-selected-light.png') });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.screenshot({ path: test.info().outputPath('renamed-selected-dark.png') });
+    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.reload();
+    await page.getByRole('button', { name: /节点下载测试/ }).click();
+    for (let index = 0; index < 4; index++) {
+      await expect(
+        page.locator(`.react-flow__node[data-id="${ids[index]}"]`).getByRole('button', {
+          name: `重命名 ${renamed[index]}`,
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
     const outputPaths = [
       test.info().outputPath('asset.png'),
       test.info().outputPath('asset.webm'),
@@ -316,7 +364,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       },
       {
         paths: outputPaths,
-        names: ['photo.png', 'camera.webm', 'generated.png', 'generated.webm'],
+        names: ['休眠舱%20.v2.png', '驾驶舱 v2.webm', '生成全景.v2.png', '全息影像.webm'],
       },
     );
     for (let index = 0; index < 4; index++) {

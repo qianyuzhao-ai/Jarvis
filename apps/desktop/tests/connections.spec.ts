@@ -218,6 +218,17 @@ test('mixed media selection connects to video and downloads image, audio and vid
   const page = await app.firstWindow();
   const mock = await fixture(page);
   try {
+    for (const [id, name] of [
+      [mock.ids.imageAsset, '新图片'],
+      [mock.ids.audio, '新配音'],
+      [mock.ids.videoAsset, '新视频'],
+    ]) {
+      await node(page, id!)
+        .getByRole('button', { name: /^重命名 / })
+        .click();
+      await node(page, id!).getByLabel('节点名称', { exact: true }).fill(name!);
+      await node(page, id!).getByLabel('节点名称', { exact: true }).press('Enter');
+    }
     await node(page, mock.ids.imageAsset).click({ position: { x: 30, y: 30 } });
     await node(page, mock.ids.audio).click({ position: { x: 30, y: 30 }, modifiers: ['Shift'] });
     await node(page, mock.ids.videoAsset).click({
@@ -235,7 +246,15 @@ test('mixed media selection connects to video and downloads image, audio and vid
     );
     await app.evaluate(({ dialog }, outputPaths) => {
       let index = 0;
-      dialog.showSaveDialog = async () => ({ canceled: false, filePath: outputPaths[index++]! });
+      const names = ['新图片.png', '新配音.wav', '新视频.webm'];
+      dialog.showSaveDialog = async (
+        ...args: [Electron.BaseWindow, Electron.SaveDialogOptions] | [Electron.SaveDialogOptions]
+      ) => {
+        const options = args.length === 2 ? args[1] : args[0];
+        if (options.defaultPath !== names[index])
+          throw new Error(`批量下载未使用新名称：${options.defaultPath}`);
+        return { canceled: false, filePath: outputPaths[index++]! };
+      };
     }, paths);
     await page.getByRole('button', { name: '下载可用文件 (3)' }).click();
     await expect(page.getByText('批量下载：已下载 3 个，跳过 0 个，失败 0 个')).toBeVisible();
@@ -316,7 +335,7 @@ async function launch() {
     ),
   });
 }
-async function fixture(page: Page) {
+async function fixture(page: Page, imageName = 'source.png') {
   const calls: Record<string, unknown>[] = [];
   const video = Buffer.from(
     await page.evaluate(async () => {
@@ -405,7 +424,7 @@ async function fixture(page: Page) {
       position: { x: 0, y: 0 },
       data: {
         kind: 'image',
-        name: 'source.png',
+        name: imageName,
         upload: { status: 'ready', url: base + '/image.png?asset=1' },
       },
     },
@@ -564,7 +583,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await expect(page.locator('.workflow-edge-active')).toHaveCount(2);
     await expect(node(page, ids.imageA).locator('.media-placeholder')).toHaveCSS(
       'outline-width',
-      '2px',
+      '3px',
     );
     for (const id of [ids.imageAsset, ids.imageB, ids.video, ids.sibling]) {
       await expect(node(page, id).locator('.media-placeholder')).toHaveCSS('outline-style', 'none');
@@ -664,6 +683,82 @@ test('connected asset and generated URLs enter the request without reuploading s
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await expect(page.locator('.editor-notice').filter({ hasText: '尚无可用 URL' })).toBeVisible();
     expect(mock.calls).toHaveLength(2);
+  } finally {
+    await app.close();
+    await mock.close();
+  }
+});
+
+test('connected references preview upstream media and keep long mention rows on one line', async () => {
+  const app = await launch();
+  const page = await app.firstWindow();
+  const longName = 'Apple风格飞船驾驶舱 v2（全息影像·面部虚化·超长文件名称参考图）.png';
+  const mock = await fixture(page, longName);
+  try {
+    const { ids } = mock;
+    await node(page, ids.video).click({ position: { x: 30, y: 30 } });
+    await expect(page.getByLabel('暂无参考素材')).toBeVisible();
+    await expect(page.getByRole('button', { name: '添加参考素材' })).toHaveCount(0);
+    await page.getByRole('button', { name: '关闭编辑面板' }).click();
+    for (const source of [ids.imageA, ids.imageB, ids.imageAsset, ids.audio]) {
+      await connect(page, source, ids.video);
+    }
+    await node(page, ids.video).click({ position: { x: 30, y: 30 } });
+    const preview = page.locator('.reference-stack');
+    await expect(preview).toContainText('共 4');
+    await expect(preview.getByAltText(longName)).toHaveAttribute('src', /^jarvis-media:/);
+    await expect
+      .poll(() =>
+        preview.getByAltText(longName).evaluate((img) => (img as HTMLImageElement).naturalWidth),
+      )
+      .toBeGreaterThan(0);
+    await expect(page.getByRole('button', { name: '添加参考素材' })).toHaveCount(0);
+    await page.getByLabel('视频提示词').fill('@');
+    const options = page.getByRole('listbox', { name: '引用参考素材' }).getByRole('option');
+    await expect(options).toHaveCount(4);
+    const longOption = options.filter({ hasText: longName });
+    await expect(longOption).toHaveAttribute('title', `图片 3 · ${longName}`);
+    const layout = await longOption.evaluate((row) => {
+      const label = row.querySelector('span')!;
+      const name = row.querySelector('small')!;
+      return {
+        labelHeight: label.getBoundingClientRect().height,
+        nameHeight: name.getBoundingClientRect().height,
+        labelLineHeight: parseFloat(getComputedStyle(label).lineHeight),
+        nameLineHeight: parseFloat(getComputedStyle(name).lineHeight),
+        truncated: name.scrollWidth > name.clientWidth,
+        ellipsis: getComputedStyle(name).textOverflow,
+        fits: name.getBoundingClientRect().right <= row.getBoundingClientRect().right,
+      };
+    });
+    expect(layout.labelHeight).toBeLessThanOrEqual(layout.labelLineHeight + 1);
+    expect(layout.nameHeight).toBeLessThanOrEqual(layout.nameLineHeight + 1);
+    expect(layout.truncated).toBe(true);
+    expect(layout.ellipsis).toBe('ellipsis');
+    expect(layout.fits).toBe(true);
+    await page.screenshot({ path: test.info().outputPath('connected-mentions-light.png') });
+    await longOption.click();
+    await expect(page.getByLabel('视频提示词')).toHaveValue('@image_3 ');
+    await preview.click();
+    await expect(page.locator('.reference-item')).toHaveCount(4);
+    await expect(page.locator('.reference-item .reference-index')).toHaveText([
+      '图片 1',
+      '图片 2',
+      '图片 3',
+      '音频 1',
+    ]);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.screenshot({
+      path: test.info().outputPath('connected-references-expanded-dark.png'),
+    });
+    await page.getByRole('button', { name: '还原面板' }).click();
+    await page.getByRole('button', { name: '关闭编辑面板' }).click();
+    const edge = page.locator('.react-flow__edge').last();
+    await edge.focus();
+    await edge.press('Enter');
+    await edge.press('Delete');
+    await node(page, ids.video).click({ position: { x: 30, y: 30 } });
+    await expect(page.locator('.reference-stack')).toContainText('共 3');
   } finally {
     await app.close();
     await mock.close();

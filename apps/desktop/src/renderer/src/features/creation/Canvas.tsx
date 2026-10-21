@@ -37,6 +37,7 @@ import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
+import { NodeRenameContext } from './node-rename-context';
 import { CanvasExport } from './CanvasExport';
 import { promptMentions } from './prompt-mentions';
 import { generationBusy } from './useGeneration';
@@ -177,7 +178,9 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       return node.data.upload.status === 'ready'
         ? [{ url: node.data.upload.url, kind: node.data.kind, fileName: node.data.name }]
         : [];
-    return node.data.result ? [{ url: node.data.result.url, kind: node.data.kind }] : [];
+    return node.data.result
+      ? [{ url: node.data.result.url, kind: node.data.kind, fileName: node.data.name }]
+      : [];
   });
   async function downloadSelected() {
     if (batchPending.current) return;
@@ -652,9 +655,26 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   );
 }
 export function Canvas(props: Props) {
+  const rename = useCallback(
+    (id: string, name: string) => {
+      props.onChange((project) => ({
+        ...project,
+        nodes: project.nodes.map((node) =>
+          node.id !== id
+            ? node
+            : node.type === 'asset'
+              ? { ...node, data: { ...node.data, name } }
+              : { ...node, data: { ...node.data, name } },
+        ),
+      }));
+    },
+    [props.onChange],
+  );
   return (
-    <ReactFlowProvider key={props.project.id}>
-      <CanvasContent {...props} />
-    </ReactFlowProvider>
+    <NodeRenameContext value={rename}>
+      <ReactFlowProvider key={props.project.id}>
+        <CanvasContent {...props} />
+      </ReactFlowProvider>
+    </NodeRenameContext>
   );
 }

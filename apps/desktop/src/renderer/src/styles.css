@@ -784,8 +784,10 @@ svg {
   }
 }
 .react-flow .react-flow__node.selected .media-placeholder {
-  outline: 2px solid var(--color-accent);
+  outline: 3px solid var(--color-accent);
   outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--flow-bg);
+  background: var(--node-preview);
 }
 .react-flow .workflow-port {
   width: 20px;
@@ -966,6 +968,7 @@ svg {
 }
 .prompt-mentions button {
   display: flex;
+  align-items: center;
   width: 100%;
   gap: 12px;
   padding: 9px 10px;
@@ -977,7 +980,12 @@ svg {
 .prompt-mentions button:focus-visible {
   background: var(--control-hover);
 }
+.prompt-mentions button > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .prompt-mentions small {
+  min-width: 0;
   overflow: hidden;
   color: var(--color-secondary);
   text-overflow: ellipsis;
@@ -1066,6 +1074,7 @@ svg {
   max-width: 180px;
   flex-shrink: 0;
 }
+.reference-empty,
 .reference-add {
   width: 72px;
   height: 96px;
@@ -1203,12 +1212,34 @@ svg {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -24px;
+  bottom: -34px;
+  height: 28px;
+  width: 100%;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-secondary);
+  font-size: 13px;
+  line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
-  pointer-events: none;
+}
+button.node-name:hover {
+  background: var(--control-hover);
+  color: var(--color-ink);
+}
+input.node-name {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-accent);
+  user-select: text;
+}
+input.node-name:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 .canvas-drop-hint {
   position: absolute;
@@ -1469,17 +1500,6 @@ svg {
   padding: 1px 5px;
   text-align: center;
   font-size: 11px;
-}
-.reference-add.reference-add-overlay {
-  position: absolute;
-  z-index: 5;
-  right: 0;
-  bottom: 0;
-  width: 24px;
-  height: 24px;
-  border: 1px solid var(--node-border);
-  background: var(--color-surface);
-  border-radius: 6px;
 }
 
 .reference-index {

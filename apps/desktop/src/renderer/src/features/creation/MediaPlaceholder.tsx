@@ -4,7 +4,8 @@ import type { MediaNode } from './types';
 import { UrlMedia } from './UrlMedia';
 import { NodePorts } from './NodePorts';
 import { NodeDownload } from './NodeDownload';
-export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<MediaNode>) {
+import { NodeName } from './NodeName';
+export function MediaPlaceholder({ id, data, selected, isConnectable }: NodeProps<MediaNode>) {
   const Icon = data.kind === 'image' ? Image : Video;
   return (
     <div className="media-placeholder" data-selected={selected} data-ready={Boolean(data.result)}>
@@ -24,7 +25,12 @@ export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<Me
       )}
       {data.result && (
         <div className="asset-actions nodrag nopan">
-          <NodeDownload key={data.result.url} url={data.result.url} kind={data.kind} />
+          <NodeDownload
+            key={data.result.url}
+            url={data.result.url}
+            kind={data.kind}
+            fileName={data.name}
+          />
         </div>
       )}
       {data.generation && (
@@ -41,6 +47,7 @@ export function MediaPlaceholder({ data, selected, isConnectable }: NodeProps<Me
           }
         </span>
       )}
+      <NodeName id={id} name={data.name ?? (data.kind === 'image' ? '图像' : '视频')} />
     </div>
   );
 }

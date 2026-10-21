@@ -27,6 +27,7 @@ export const referenceSchema = z.object({
   uploadedFor: z.string().optional(),
 });
 export const mediaSchema = z.object({
+  name: z.string().optional(),
   kind: z.enum(['image', 'video']),
   prompt: z.string(),
   model: z.string(),
