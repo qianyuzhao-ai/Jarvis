@@ -1,4 +1,4 @@
-import { app, ipcMain, type WebContents } from 'electron';
+import { app, clipboard, ipcMain, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
 import {
@@ -61,6 +61,13 @@ export async function registerAgent() {
       return service.send(v.sessionId, v.requestId, v.text, owner);
     },
     'agent:cancel': (r, owner) => service.cancel(agentId.parse(r), owner),
+    'agent:copy-reply': (r) => {
+      const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
+      const message = store.record(v.sessionId).view.messages.find((m) => m.id === v.messageId);
+      if (!message || message.role !== 'assistant' || message.status === 'running' || !message.text)
+        throw new Error('没有可复制的回复');
+      clipboard.writeText(message.text);
+    },
   };
   let quitting = false;
   app.on('before-quit', (event) => {

@@ -15,6 +15,7 @@ const desktop: DesktopInfo = {
     setModel: (input) => ipcRenderer.invoke('agent:model', input),
     send: (input) => ipcRenderer.invoke('agent:send', input),
     cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
+    copyReply: (input) => ipcRenderer.invoke('agent:copy-reply', input),
     onEvent: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, value: AgentEvent) => listener(value);
       ipcRenderer.on('agent:event', handle);

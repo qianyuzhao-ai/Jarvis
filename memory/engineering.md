@@ -2,6 +2,17 @@
 
 最后更新：2026-10-21
 
+## Chat V2 对话与 Composer 实现（2026-10-21）
+
+- 用户随后授权本地 commit，范围为本轮 Chat UI、受限复制接口、回归测试及同轮 Figma 设计记录；不推送、不合并、不发布。验证沿用本轮已通过的检查、构建和 44/44 回归，提交前再次检查 diff。
+- 用户在 Figma 确认后授权改代码。fetch origin/develop 后确认本地 develop 无差异，创建 `feature/chat-ui-v2`，保留已有未提交设计记录；未提交、推送、打标签或发布。
+- 展示拆为 ChatMessageItem、ChatActivity、ChatComposer、ContextUsage、ModelPicker；新聊天与历史对话共用底部固定 dock。消息无姓名，用户气泡 Hug/限宽，Agent 正文无气泡，底部复制/完成时间/Logo，运行时 1.2 秒透明度呼吸，减少动画时静止。
+- Composer 14px/24px，默认一行，最多 384px（16 行），同时受 45vh 限制；ResizeObserver 处理宽度变化，文本内部滚动。移除底部提示，欢迎/建议在消息区。上下文仅真实聚合值，模型显示真实配置；附件/Auto 保留禁用语义，不接未授权工具。
+- ChatMessage 增加可选 completedAt 与 activities（工具标签、文件路径/动作/增删数/统一 diff）。已完成回复在 finally 记录时间；旧消息无时间仍兼容。activities 为展示契约，当前 SDK 仍 tools: []，没有生产工具事件写入，也不会在普通 Chat 显示示例活动。Diff 按文本渲染、可折叠、滚动并解析 hunk 行号；不会读取文件或执行 HTML。
+- 新增明确最小原生接口 `agent:copy-reply` / `desktop.agent.copyReply`。仅接受严格校验的会话/消息 UUID，主进程从现有记录复制非运行中 Assistant 正文；无通用写入文本/读取剪贴板接口，沿用 senderFrame 与 URL 信任校验。首次真实测试定位旧 navigator.clipboard 权限拒绝，未放宽 Electron permission handler，而是用上述接口修复。
+- 验证：`pnpm check`、`pnpm build`、完整 Playwright **44/44**（约 1.4 分钟）和 `git diff --check` 通过。增强现有 Chat 用例覆盖底部位置、16 行与缩回单行、Shift+Enter/IME、真实剪贴板与拒绝复制用户消息、106.6k/1M/11% 格式、Esc、完成时间、历史持久化、活动记录 fixture/HTML 不执行/diff 行号、上滚时 SSE 不抢滚动、停止与 reduced-motion。未安装新依赖。
+- 最终真实窗口截图：`apps/desktop/test-results/8e7f4cfb-0a2d-43af-9dd5-c7d7bb8d0201/agent-homepage-Chat-relay--0b3e4-secrets-theme-and-isolation/`，new-chat-bottom、composer-max-lines、chat-dark、chat-compact、chat-diff-dark 等已生成；新聊天、深色/紧凑及最终带行号 diff 已查看。没有打新安装包，未验证 Windows 实机或真实中转站。
+
 ## 0.1.6 双平台预发布完成（2026-10-21）
 
 - 集成已通过 [PR #28](https://github.com/qianyuzhao-ai/Jarvis/pull/28) 合入 develop（`5c6b840`），再通过 [PR #29](https://github.com/qianyuzhao-ai/Jarvis/pull/29) 合入 main（`9526901`）。`v0.1.6` peeled SHA 已核对为 `9526901bf61c1af0f201f455aa4517fb26e2f0d3`，包含 Agent `83e053e` 和图标 `95e132f`。唯一标签运行 [39560464413](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39560464413) 的 macOS、Windows 和统一发布三个作业全部成功，未重试、重复触发或移动旧标签。

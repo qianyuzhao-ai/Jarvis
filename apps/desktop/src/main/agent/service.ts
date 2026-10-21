@@ -212,6 +212,7 @@ export class AgentService {
       output.status = run.cancelled ? 'cancelled' : 'failed';
       output.error ??= '模型连接失败或回复中断，请检查中转站后重新发送';
     } finally {
+      output.completedAt = Date.now();
       clearTimeout(timeout);
       clearInterval(checkpoint);
       stop?.();

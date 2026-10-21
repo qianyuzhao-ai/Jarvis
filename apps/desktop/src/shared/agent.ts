@@ -56,12 +56,30 @@ export const agentSendSchema = z.object({
   text: z.string().trim().min(1).max(32000),
 });
 export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
+export const chatActivitySchema = z.object({
+  id: z.string().min(1).max(200),
+  label: z.string().max(500),
+  files: z
+    .array(
+      z.object({
+        path: z.string().max(2000),
+        action: z.enum(['created', 'edited', 'deleted']),
+        added: z.number().int().nonnegative(),
+        removed: z.number().int().nonnegative(),
+        diff: z.string().max(200000),
+      }),
+    )
+    .max(100)
+    .default([]),
+});
 export const chatMessageSchema = z.object({
   id: agentId,
   role: z.enum(['user', 'assistant']),
   text: z.string().max(2_000_000),
   status: agentStatus,
   error: z.string().optional(),
+  completedAt: z.number().nonnegative().optional(),
+  activities: z.array(chatActivitySchema).max(100).optional(),
 });
 export const chatSessionSchema = z.object({
   id: agentId,
@@ -102,6 +120,7 @@ export interface AgentBridge {
   setModel(input: { sessionId: string; model: string }): Promise<AgentResult<void>>;
   send(input: z.infer<typeof agentSendSchema>): Promise<AgentResult<string>>;
   cancel(runId: string): Promise<AgentResult<void>>;
+  copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   onEvent(listener: (event: AgentEvent) => void): () => void;
 }
 export function agentValue<T>(result: AgentResult<T>): T {
