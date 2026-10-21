@@ -740,6 +740,9 @@ svg {
   color: inherit;
   cursor: pointer;
 }
+.selection-download-count {
+  font-variant-numeric: tabular-nums;
+}
 .canvas-selection-actions button:disabled {
   opacity: 0.5;
   cursor: default;

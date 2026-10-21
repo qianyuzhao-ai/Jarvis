@@ -256,7 +256,12 @@ test('mixed media selection connects to video and downloads image, audio and vid
         return { canceled: false, filePath: outputPaths[index++]! };
       };
     }, paths);
-    await page.getByRole('button', { name: '下载可用文件 (3)' }).click();
+    const download = page.getByRole('button', { name: '下载可用文件 (3)' });
+    await expect(download).toHaveText('3');
+    await expect(download.locator('svg')).toHaveCount(1);
+    await expect(download).toHaveAttribute('title', '下载 3 个可用文件');
+    await page.screenshot({ path: test.info().outputPath('selection-download-count.png') });
+    await download.click();
     await expect(page.getByText('批量下载：已下载 3 个，跳过 0 个，失败 0 个')).toBeVisible();
     expect((await readFile(paths[0]!)).subarray(0, 8)).toEqual(png.subarray(0, 8));
     expect((await readFile(paths[1]!)).toString('ascii', 0, 4)).toBe('RIFF');

@@ -585,10 +585,15 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
             <button
               type="button"
               disabled={batchBusy || !downloadable.length}
+              aria-label={batchBusy ? '正在下载' : `下载可用文件 (${downloadable.length})`}
+              title={batchBusy ? '正在下载' : `下载 ${downloadable.length} 个可用文件`}
+              aria-busy={batchBusy}
               onClick={() => void downloadSelected()}
             >
-              <Download size={16} />
-              {batchBusy ? '下载中…' : `下载可用文件 (${downloadable.length})`}
+              <Download size={16} aria-hidden="true" />
+              <span className="selection-download-count" aria-hidden="true">
+                {downloadable.length}
+              </span>
             </button>
             {connectingIds && <span>点击目标图像或视频节点</span>}
           </div>
