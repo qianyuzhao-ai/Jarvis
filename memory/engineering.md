@@ -2,6 +2,14 @@
 
 最后更新：2026-10-21
 
+## Apple 票据校验网络错误有限重试（2026-10-21）
+
+- 用户授权修复 Apple 网络校验重试、按 Gitflow 提交/推送/合并、重试发布 0.1.8 并验证。原工作区 `feature/ui-style` 的 UI、测试及设计记忆未提交改动保留；修复从最新 origin/develop 的 `efbce12` 在 `/private/tmp/jarvis-apple-network-retry` 独立 worktree 开展。
+- 原运行 `39613181833` 实际于北京时间 22:47:25 报告 notarization successful；目录包与 ZIP 内应用的票据和 Gatekeeper 均通过（Notarized Developer ID）。DMG 内应用 codesign 通过，但 stapler validate 访问 Apple CloudKit 时 NSURLErrorDomain -1005，退出 68，导致 macOS 作业失败和统一发布跳过；此前“仍待公证”记录为当时快照，已由本次真实日志替代。
+- `apple-network-retry.sh` 仅对明确 NSURLErrorDomain/CFNetwork 临时网络代码最多 3 次，间隔 5/10 秒；拒绝/撤销/签名错误、无网络代码的 Error 68 不重试，最后失败保留原退出码。应用于 stapler validate 和 spctl，codesign 与所有签名/票据检查保留。
+- 手动重试仍检出 v0.1.8 应用源码及原打包配置，但 macOS 验证工具从 github.sha 对应的工作流提交独立稀疏检出；避免移动保护标签，也避免直接重跑旧工作流仍调用旧脚本。工具不打包进应用，原 Tag SHA 与来源须在重试后回读核对。
+- 7 项本地 Bash 回归已通过：首次成功、网络后恢复、3 次耗尽、无网络标识的票据失败、拒绝伴随网络日志、签名错误、未知错误。`pnpm check`、`pnpm build`、工作流 YAML/所有 Bash 步骤语法及源码/工具来源隔离检查、`git diff --check` 通过。应用运行代码未改，沿用 v0.1.8 已通过的 57 项窗口回归；云端运行同一重试回归后校验真实产物，最终发布结果待回读。
+
 ## 0.1.8 云端签名公证验证（2026-10-21）
 
 - 发布前 `pnpm check`、构建、完整 Electron + 本地模拟服务 **57/57（1.7m）** 通过，版本一致性、electron-builder 合并配置/schema、工作流 shell、Secrets 作用域、entitlements plist 和 diff 检查通过。
