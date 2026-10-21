@@ -2,6 +2,13 @@
 
 最后更新：2026-10-21
 
+## 应用图标接入（2026-10-21）
+
+- 从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
+- `electron-builder.yml` 配置 mac/win 图标及 PNG extraResources，发布配置继承基础配置。主进程窗口使用开发资源或 `process.resourcesPath/icon.png`，开发 macOS Dock 单独设置，正式 macOS bundle 使用 ICNS。
+- 从 develop 建立 `feature/app-icon`，保留原有 Agent 未提交改动；用户授权本轮仅提交图标相关改动；未推送或发布。`pnpm check`、构建与本地 macOS arm64 目录打包通过。产物 `release/218937ad-9c02-4af8-b96a-9e165f38dd9a/mac-arm64/Jarvis.app` 的 Info.plist 图标引用和两份图标资源字节验证通过，仍为未签名包。
+- 首次沙箱打包因下载 Electron DNS 受限失败，沙箱外重试成功；窗口测试沙箱内无法启动，沙箱外首轮超时，独立重跑窗口导航与隔离回归 1/1 通过（1.4 秒）。打包发现既有 Agent 依赖收集警告，未扩展到依赖修复，不声称完成打包后 Agent 验收。
+
 ## 0.1.5 发布集成（2026-10-21）
 
 - 用户明确授权 0.1.5 并要求所有改动纳入本版，覆盖写作空间、此前独立的三项画布修复、设计/工程记忆及 Figma 续传脚本；对话参考图片保留本地并加入 .gitignore，不作为应用源码发布。

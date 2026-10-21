@@ -2,6 +2,13 @@
 
 最后更新：2026-10-21
 
+## 应用图标（2026-10-21）
+
+- 用户指定采用 [jarvis-icon-white 1](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=192-12530)，节点 `192:12530`。已通过 Figma MCP 读取设计和原始导出，保留原有浅色背景、圆角底与紫蓝环形图形，没有修改 Figma。
+- 原始 1024 × 1024 PNG 保存为 `apps/desktop/resources/icon.png`，从同一原图生成 macOS `icon.icns` 与 Windows 多尺寸 `icon.ico`；只做格式和尺寸转换，未重绘或裁切。本地预览与 Figma 截图核对通过。
+- 基础 electron-builder 配置指定两平台图标并将 PNG 复制到 Resources；主进程为窗口设置图标，macOS 开发运行设置 Dock 图标，正式包采用应用 bundle 图标。
+- 检查、构建、窗口导航与隔离回归 1/1 和 macOS arm64 本地未签名目录打包通过；已读取产物 Info.plist 的 `CFBundleIconFile=icon.icns`，包内 ICNS 与运行时 PNG 均与源码 SHA-256 一致。Windows 仅验证 ICO 资源及配置，未执行 Windows 安装包或实机验收。用户授权本轮仅提交图标相关改动；未推送或发布。
+
 ### 写作空间基础 UI 已实现（2026-10-21）
 
 - 用户已认可设计并授权开始基础代码。当前 `feature/writing-space` 完成写作入口、本地目录/文件树、目录下拉、搜索图标按需展开、新建文档/文件夹、多文档标签与保存、基础 Markdown 实时预览、大纲和侧栏布局。Figma 页面及组件 ID 保持不变。

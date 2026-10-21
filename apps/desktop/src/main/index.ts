@@ -13,6 +13,10 @@ protocol.registerSchemesAsPrivileged([
 ]);
 app.setName('Jarvis');
 
+const appIcon = app.isPackaged
+  ? join(process.resourcesPath, 'icon.png')
+  : join(import.meta.dirname, '../../resources/icon.png');
+
 function reportStartupError(error: unknown): void {
   console.error('Jarvis failed to start:', error);
   app.exit(1);
@@ -28,6 +32,7 @@ async function createWindow(): Promise<void> {
   const trustedUrl = developmentUrl ?? pathToFileURL(rendererFile).href;
   const window = new BrowserWindow({
     title: 'Jarvis',
+    icon: appIcon,
     width: 1280,
     height: 820,
     minWidth: 900,
@@ -66,6 +71,9 @@ async function createWindow(): Promise<void> {
 void app
   .whenReady()
   .then(async () => {
+    if (!app.isPackaged && process.platform === 'darwin') {
+      app.dock?.setIcon(appIcon);
+    }
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => {
       callback(false);
     });
