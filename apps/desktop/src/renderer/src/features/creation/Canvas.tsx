@@ -10,6 +10,8 @@ import {
   Panel,
   applyNodeChanges,
   useReactFlow,
+  useStoreApi,
+  SelectionMode,
   useViewport,
   type NodeChange,
   type EdgeChange,
@@ -77,6 +79,44 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   const [dragging, setDragging] = useState(false);
   const [importNotice, setImportNotice] = useState('');
   const flow = useReactFlow<CanvasNode>();
+  const store = useStoreApi<CanvasNode, CanvasEdge>();
+  useEffect(
+    () =>
+      store.subscribe((state, previous) => {
+        const rect = state.userSelectionRect;
+        if (!rect || !state.userSelectionActive || rect === previous.userSelectionRect) return;
+        const [panX, panY, zoom] = state.transform;
+        const selection = {
+          x: (rect.x - panX) / zoom,
+          y: (rect.y - panY) / zoom,
+          width: rect.width / zoom,
+          height: rect.height / zoom,
+        };
+        const ids: string[] = [];
+        for (const node of state.nodeLookup.values()) {
+          if (node.hidden || node.selectable === false) continue;
+          const { x, y } = node.internals.positionAbsolute;
+          const { width = 0, height = 0 } = node.measured;
+          const overlapWidth = Math.max(
+            0,
+            Math.min(x + width, selection.x + selection.width) - Math.max(x, selection.x),
+          );
+          const overlapHeight = Math.max(
+            0,
+            Math.min(y + height, selection.y + selection.height) - Math.max(y, selection.y),
+          );
+          if (width > 0 && height > 0 && overlapWidth * overlapHeight >= width * height * 0.5)
+            ids.push(node.id);
+        }
+        // React Flow mutates candidate selections before publishing the rectangle.
+        // Reapply our area threshold even when the matching IDs have not changed.
+        setSelectedIds(ids);
+        setEditorId(null);
+        setSelectedEdge(null);
+        setConnectingIds(null);
+      }),
+    [store],
+  );
   const reducedMotion = useReducedMotion();
   const viewport = useViewport();
   const selected = selectedIds.length === 1 ? selectedIds[0]! : null;
@@ -120,7 +160,6 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       project.nodes.map((n) => ({
         ...n,
         selected: selectedIds.includes(n.id),
-        className: related.nodes.has(n.id) ? 'workflow-node-related' : '',
         zIndex: 10,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
@@ -129,7 +168,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
         height: 240,
         measured: { width: 360, height: 240 },
       })),
-    [project.nodes, selectedIds, related],
+    [project.nodes, selectedIds],
   );
   const active = nodes.find((n): n is MediaNode => n.id === editorId && n.type === 'media');
   const downloadable: DownloadMedia[] = project.nodes.flatMap((node): DownloadMedia[] => {
@@ -231,7 +270,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
       return node && !generationBusy(node.data);
     });
     const selections = items.filter((c) => c.type === 'select');
-    if (selections.length && !connectingIds) {
+    if (selections.length && !connectingIds && !store.getState().userSelectionRect) {
       setSelectedIds((previous) => {
         const next = new Set(previous);
         for (const change of selections)
@@ -269,7 +308,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
   }
   function edgeChanges(items: EdgeChange<CanvasEdge>[]) {
     for (const change of items)
-      if (change.type === 'select') {
+      if (change.type === 'select' && !store.getState().userSelectionRect) {
         if (change.selected) {
           setSelectedIds([]);
           setEditorId(null);
@@ -462,6 +501,7 @@ function CanvasContent({ project, onChange, onBack, theme, status, onGenerate, o
           edgesReconnectable={false}
           connectionRadius={24}
           panOnScroll
+          selectionMode={SelectionMode.Partial}
           selectionOnDrag
           multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
           panOnDrag={[1, 2]}

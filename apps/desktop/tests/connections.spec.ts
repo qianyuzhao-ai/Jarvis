@@ -163,6 +163,56 @@ test('marquee selection keeps the editor closed and connects selected images to 
   }
 });
 
+test('marquee selects half-covered nodes and ignores connected edges in both directions', async () => {
+  const app = await launch();
+  const page = await app.firstWindow();
+  const mock = await fixture(page);
+  try {
+    await connect(page, mock.ids.imageAsset, mock.ids.imageA);
+    await clickBlankPane(page);
+    await page.mouse.move(500, 400);
+    await page.mouse.down({ button: 'middle' });
+    await page.mouse.move(560, 460, { steps: 6 });
+    await page.mouse.up({ button: 'middle' });
+    const first = await node(page, mock.ids.imageAsset).boundingBox();
+    const last = await node(page, mock.ids.imageB).boundingBox();
+    if (!first || !last) throw new Error('节点未显示');
+    for (const reverse of [false, true]) {
+      for (const fraction of [0.49, 0.5, 1]) {
+        const start = { x: first.x - 12, y: first.y - 12 };
+        const end = { x: last.x + last.width + 12, y: first.y + first.height * fraction };
+        await page.mouse.move(reverse ? end.x : start.x, reverse ? end.y : start.y);
+        await page.mouse.down();
+        await page.mouse.move(reverse ? start.x : end.x, reverse ? start.y : end.y, {
+          steps: 12,
+        });
+        await expect(
+          page.locator('.react-flow__node.selected'),
+          `reverse=${reverse}, fraction=${fraction}`,
+        ).toHaveCount(fraction < 0.5 ? 0 : 3);
+        await page.mouse.up();
+        await expect(
+          page.locator('.react-flow__node.selected'),
+          `reverse=${reverse}, fraction=${fraction}`,
+        ).toHaveCount(fraction < 0.5 ? 0 : 3);
+        await expect(page.locator('.react-flow__edge.selected')).toHaveCount(0);
+        await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
+        await clickBlankPane(page);
+      }
+    }
+    // Only the line between the first two nodes intersects this rectangle.
+    await page.mouse.move(first.x + first.width + 20, first.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(first.x + first.width + 80, first.y + first.height - 20, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator('.react-flow__node.selected')).toHaveCount(0);
+    await expect(page.locator('.react-flow__edge.selected')).toHaveCount(0);
+  } finally {
+    await app.close();
+    await mock.close();
+  }
+});
+
 test('mixed media selection connects to video and downloads image, audio and video', async () => {
   const app = await launch();
   const page = await app.firstWindow();
@@ -198,7 +248,7 @@ test('mixed media selection connects to video and downloads image, audio and vid
   }
 });
 
-test('highlight follows all ancestors and descendants without lighting sibling branches', () => {
+test('highlight includes only direct upstream and downstream connections', () => {
   const edges = [
     { id: 'a', source: 'root', target: 'parent' },
     { id: 'b', source: 'parent', target: 'selected' },
@@ -208,8 +258,8 @@ test('highlight follows all ancestors and descendants without lighting sibling b
     { id: 'other', source: 'x', target: 'y' },
   ];
   const related = relatedWorkflow(edges, 'selected');
-  expect([...related.links].sort()).toEqual(['a', 'b', 'c', 'd']);
-  expect([...related.nodes].sort()).toEqual(['child', 'end', 'parent', 'root', 'selected']);
+  expect([...related.links].sort()).toEqual(['b', 'c']);
+  expect([...related.nodes].sort()).toEqual(['child', 'parent', 'selected']);
   expect(relatedWorkflow(edges, null).links.size).toBe(0);
 });
 
@@ -511,9 +561,15 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
       'rgb(163, 166, 170)',
     );
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
-    await expect(page.locator('.workflow-edge-active')).toHaveCount(3);
-    await expect(page.locator('.workflow-node-related')).toHaveCount(4);
-    await expect(node(page, ids.sibling)).not.toHaveClass(/workflow-node-related/);
+    await expect(page.locator('.workflow-edge-active')).toHaveCount(2);
+    await expect(node(page, ids.imageA).locator('.media-placeholder')).toHaveCSS(
+      'outline-width',
+      '2px',
+    );
+    for (const id of [ids.imageAsset, ids.imageB, ids.video, ids.sibling]) {
+      await expect(node(page, id).locator('.media-placeholder')).toHaveCSS('outline-style', 'none');
+      await expect(node(page, id)).not.toHaveClass(/selected/);
+    }
     const active = page.locator('.workflow-edge-active .react-flow__edge-path').first();
     await expect(active).toHaveCSS('animation-name', 'workflow-ants');
     const layers = await page
