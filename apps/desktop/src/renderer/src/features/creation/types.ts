@@ -56,6 +56,7 @@ const mediaNodeSchema = z.object({
 });
 const nodeSchema = z.discriminatedUnion('type', [mediaNodeSchema, assetNodeSchema]);
 export const edgeSchema = z.object({ id: z.string(), source: z.string(), target: z.string() });
+const graphSchema = z.object({ nodes: z.array(nodeSchema), edges: z.array(edgeSchema) });
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -66,6 +67,19 @@ export const projectSchema = z.object({
   minimap: z.boolean(),
   dots: z.boolean(),
   snap: z.boolean().default(true),
+  agentEdits: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        runId: z.string().uuid(),
+        createdAt: z.number(),
+        before: graphSchema,
+        afterRevision: z.string(),
+        nodeIds: z.array(z.string()),
+      }),
+    )
+    .max(20)
+    .default([]),
 });
 export const settingsSchema = z.object({
   reqFrom: z.string().max(100),
@@ -108,6 +122,7 @@ export function createProject(): Project {
     minimap: false,
     dots: true,
     snap: true,
+    agentEdits: [],
   };
 }
 export function mediaName(data: Pick<MediaData, 'kind' | 'name'>): string {

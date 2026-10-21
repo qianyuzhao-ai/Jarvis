@@ -9,7 +9,13 @@ import { registerAgent, trustAgentWindow } from './agent/bridge';
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'jarvis-media',
-    privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true },
+    privileges: {
+      standard: true,
+      secure: true,
+      stream: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+    },
   },
 ]);
 app.setName('Jarvis');

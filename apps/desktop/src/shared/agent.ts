@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import type { SkillInfo } from './agent-skills';
+import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
+import {
+  canvasChangeSchema,
+  canvasSnapshotSchema,
+  type CanvasCommand,
+  type CanvasReply,
+} from './canvas-agent';
 
 export const relaySchema = z
   .object({
@@ -54,14 +62,43 @@ export const agentSendSchema = z.object({
   sessionId: agentId,
   requestId: agentId,
   text: z.string().trim().min(1).max(32000),
+  canvas: canvasSnapshotSchema.optional(),
+  images: z.array(visionAssetSchema).max(12).optional(),
 });
 export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
+export const chatActivitySchema = z.object({
+  id: z.string().min(1).max(200),
+  label: z.string().max(500),
+  nodeIds: z.array(z.string().max(100)).max(200).optional(),
+  transactionId: z.string().uuid().optional(),
+  changes: z.array(canvasChangeSchema).max(200).optional(),
+  projectId: z.string().uuid().optional(),
+  files: z
+    .array(
+      z.object({
+        path: z.string().max(2000),
+        action: z.enum(['created', 'edited', 'deleted']),
+        added: z.number().int().nonnegative(),
+        removed: z.number().int().nonnegative(),
+        diff: z.string().max(200000),
+      }),
+    )
+    .max(100)
+    .default([]),
+});
 export const chatMessageSchema = z.object({
   id: agentId,
   role: z.enum(['user', 'assistant']),
   text: z.string().max(2_000_000),
   status: agentStatus,
   error: z.string().optional(),
+  completedAt: z.number().nonnegative().optional(),
+  activities: z.array(chatActivitySchema).max(100).optional(),
+  visionAssets: z.array(visionAssetInfoSchema).max(12).optional(),
+  canvasReferences: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .max(100)
+    .optional(),
 });
 export const chatSessionSchema = z.object({
   id: agentId,
@@ -73,6 +110,7 @@ export const chatSessionSchema = z.object({
   runId: agentId.nullable(),
   contextTokens: z.number().nullable(),
   contextWindow: z.number().nullable(),
+  projectId: z.string().uuid().optional(),
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type RelayInput = z.infer<typeof relayInputSchema>;
@@ -83,6 +121,7 @@ export interface RelayView {
   hasKey: boolean;
 }
 export interface AgentSnapshot {
+  skills?: SkillInfo[];
   sessions: ChatSession[];
   busySessionId: string | null;
 }
@@ -92,16 +131,25 @@ export interface AgentEvent {
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface AgentBridge {
+  listSkills(): Promise<AgentResult<SkillInfo[]>>;
+  importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
+  setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getConfiguration(): Promise<AgentResult<RelayView>>;
   saveConfiguration(input: RelayInput): Promise<AgentResult<RelayView>>;
   testConnection(input: RelayInput): Promise<AgentResult<string>>;
   listModels(input: RelayInput): Promise<AgentResult<string[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
   createSession(): Promise<AgentResult<string>>;
+  createCanvasSession(projectId: string): Promise<AgentResult<string>>;
+  claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
+  completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
+  onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;
   renameSession(input: { sessionId: string; title: string }): Promise<AgentResult<void>>;
+  deleteSession(sessionId: string): Promise<AgentResult<void>>;
   setModel(input: { sessionId: string; model: string }): Promise<AgentResult<void>>;
   send(input: z.infer<typeof agentSendSchema>): Promise<AgentResult<string>>;
   cancel(runId: string): Promise<AgentResult<void>>;
+  copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   onEvent(listener: (event: AgentEvent) => void): () => void;
 }
 export function agentValue<T>(result: AgentResult<T>): T {

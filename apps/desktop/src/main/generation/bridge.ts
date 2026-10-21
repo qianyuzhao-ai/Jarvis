@@ -1,5 +1,6 @@
 import {
   app,
+  clipboard,
   BrowserWindow,
   dialog,
   ipcMain,
@@ -100,6 +101,12 @@ export async function registerGeneration(file: string) {
   );
   handle('generation:start', (request) => jobs.start(startRequestSchema.parse(request)));
   handle('generation:get', (request) => jobs.get(z.uuid().parse(request)));
+  handle('generation:copy-result-url', (request) => {
+    const job = jobs.get(z.uuid().parse(request));
+    if (!job || job.status !== 'succeeded' || !job.resultUrl)
+      throw new Error('没有可复制的成功生成结果');
+    clipboard.writeText(httpUrl.parse(job.resultUrl));
+  });
   const preferences = () => {
     if (preferencesError) throw new Error('下载设置无法读取，原文件已保留，请先恢复设置文件');
     return downloadPreferences.get();
@@ -204,6 +211,7 @@ export async function registerGeneration(file: string) {
         if (value) safeHeaders.set(name, value);
       }
       safeHeaders.set('Cache-Control', 'no-store');
+      safeHeaders.set('Access-Control-Allow-Origin', '*');
       safeHeaders.set('X-Content-Type-Options', 'nosniff');
       return new Response(response.body, { status: response.status, headers: safeHeaders });
     } catch {

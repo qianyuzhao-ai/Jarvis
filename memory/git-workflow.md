@@ -2,6 +2,21 @@
 
 最后更新：2026-10-21
 
+## 0.1.7 发布（2026-10-21）
+
+- 用户要求“把最新的改动都一起发新版本，0.1.7”，授权本轮提交、推送、PR 合并、标签及发布。已 fetch 核对：当前分支包含 develop 和全部 5 个待发布功能提交（d60eece、e74a460、5ae71ae、074890f、f11244c）；其他本地功能没有遗漏的独有实现提交。保留历史分支、stash 和已有标签。按功能 PR → develop → main PR → main 合并提交标签 v0.1.7 执行；云端结果待回读。
+
+## 本轮已完成的功能分支（2026-10-21）
+
+- `feature/prompt-reference-tags` 依赖生成详情提交 `074890f`，实现光标引用菜单和整体tag编辑；用户随后授权本地 commit，包含代码、测试及 Figma 同步记录；不推送、不合并、不发布。
+
+- `feature/node-generation-details` 依赖已完成 Skills 提交 `5ae71ae`，实现图像/视频节点的折叠详情与结果 URL 复制。用户随后授权本地 commit，范围包含代码、测试与 Figma 同步记录；不推送、不合并、不发布。
+
+- Skills 后续开发位于 `feature/agent-skills`，依赖已本地提交的画布 Agent `e74a460`（及 Chat V2 `d60eece`）。用户随后要求 commit，授权本地提交 Skills 代码、测试与同轮 Figma 记忆；不推送、不合并、不发布，不表示已集成 develop/main。
+
+- Chat V2 已在 `feature/chat-ui-v2` 本地提交 `d60eece`。随后用户授权画布 Agent 第一版和追加会话管理/图片视频帧输入，并要求 commit；从该完成点继续建立 `feature/canvas-agent`，明确依赖 Chat V2，未丢弃或重置已有工作。后续整合需包含该依赖，避免只摘取画布提交。
+- 此轮授权仅本地提交代码、测试和同轮 Figma/工程记忆；没有推送、PR、合并、标签或发布授权。功能不表示 main/develop 已含本轮代码。
+
 ## 决策与来源
 
 用户于 2026-10-20 明确要求本项目使用提供的 Gitflow 分支管理参考图。

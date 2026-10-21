@@ -115,6 +115,19 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           onImport={(files, point, onNotice) => importAssets(project.id, files, point, onNotice)}
           onGenerate={(nodeId) => void generate(project.id, nodeId)}
           onChange={changeProject}
+          onCommit={(change) =>
+            commit(
+              (previous) => ({
+                ...previous,
+                projects: previous.projects.map((p) =>
+                  p.id === project.id ? { ...change(p), updatedAt: Date.now() } : p,
+                ),
+              }),
+              true,
+            )
+          }
+          onConfigureAgent={() => openSettings('models')}
+          agentBusy={agent.busyProjectId === project.id}
           onBack={() => setRoute('projects')}
           theme={theme}
           status={status}
