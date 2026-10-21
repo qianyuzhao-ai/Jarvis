@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, useRef } from 'react';
 import { PanelLeftOpen, Workflow } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
 import { SidebarLayout } from './components/SidebarLayout';
@@ -15,12 +15,15 @@ import { createProject, type Project, type WorkspaceData } from './features/crea
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
 import { useAssetUpload } from './features/creation/useAssetUpload';
+const WritingSpace = lazy(() =>
+  import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
+);
 
 function Workbench({ initial }: { initial: WorkspaceData }) {
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const generate = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
-  const [route, setRoute] = useState<'projects' | 'settings' | 'canvas'>('projects');
+  const [route, setRoute] = useState<'projects' | 'settings' | 'canvas' | 'writing'>('projects');
   const [settingsSection, setSettingsSection] = useState<'general' | 'services'>('general');
   const theme = useResolvedTheme(data.theme);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -80,7 +83,17 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           <button onClick={() => update((p) => ({ ...p }))}>重试保存</button>
         </div>
       )}
-      {route === 'canvas' && project ? (
+      {route === 'writing' ? (
+        <Suspense
+          fallback={
+            <main className="launch-message" role="status">
+              正在打开写作空间…
+            </main>
+          }
+        >
+          <WritingSpace onBack={() => setRoute('projects')} />
+        </Suspense>
+      ) : route === 'canvas' && project ? (
         <Canvas
           project={project}
           onImport={(files, point, onNotice) => importAssets(project.id, files, point, onNotice)}
@@ -105,6 +118,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               section={settingsSection}
               onGeneral={() => openSettings('general')}
               onServices={() => openSettings('services')}
+              onWriting={() => setRoute('writing')}
             />
           }
         >

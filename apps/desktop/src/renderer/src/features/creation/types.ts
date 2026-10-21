@@ -27,6 +27,7 @@ export const referenceSchema = z.object({
   uploadedFor: z.string().optional(),
 });
 export const mediaSchema = z.object({
+  name: z.string().optional(),
   kind: z.enum(['image', 'video']),
   prompt: z.string(),
   model: z.string(),
@@ -109,9 +110,13 @@ export function createProject(): Project {
     snap: true,
   };
 }
+export function mediaName(data: Pick<MediaData, 'kind' | 'name'>): string {
+  return data.name || (data.kind === 'image' ? '图像生成' : '视频生成');
+}
 export function createMedia(kind: MediaData['kind']): MediaData {
   return {
     kind,
+    name: mediaName({ kind }),
     prompt: '',
     model: kind === 'image' ? 'gpt-image-2.5-flare' : 'seedance-2.5',
     size: kind === 'image' ? '16:9(2k)' : '16:9',

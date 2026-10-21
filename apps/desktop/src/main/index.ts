@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { registerGeneration, trustGenerationWindow } from './generation/bridge';
+import { registerWriting, trustWritingWindow } from './writing/bridge';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -47,6 +48,7 @@ async function createWindow(): Promise<void> {
   });
 
   trustGenerationWindow(window.webContents, trustedUrl);
+  trustWritingWindow(window.webContents, trustedUrl);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => {
     if (url !== trustedUrl) event.preventDefault();
@@ -80,6 +82,7 @@ void app
     );
 
     await registerGeneration(join(app.getPath('userData'), 'generation-jobs.json'));
+    await registerWriting();
     await createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

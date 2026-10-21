@@ -85,6 +85,7 @@ export function MediaEditor({
       >
         <div className="editor-top">
           <References
+            items={mentions}
             expanded={expanded}
             onExpand={() => toggleExpanded(true)}
             onError={setReferenceError}

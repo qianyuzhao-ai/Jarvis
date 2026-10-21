@@ -13,6 +13,8 @@
 
 ## 当前分支职责和流向（2026-10-21 用户更新）
 
+- 2026-10-21 用户授权 0.1.5，要求全部改动纳入：写作空间与独立画布修复集成后通过 PR 进入 develop，再由 develop PR main，标签仅触发一次 macOS arm64 + Windows x64 未签名预发布流程。此次授权包含提交、推送、PR 合并、版本标签与发布；不删除历史分支或移动旧版本标签。
+
 `v0.1.4` 已由 PR #17→develop、#18→main 集成并打标签，指向 main 合并提交 `2aed851`。后续 CI 修复均走 develop→main PR，不移动标签；同一次成功双平台构建的三个文件已发布到 [v0.1.4 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.4)。Windows 功能由用户验收，具体构建重试及发布路径问题见工程记忆。
 
 `v0.1.3` 标签保持指向 main 发布提交 `9c575c0`。原标签作业在 GUI 测试失败，第一次手动重试因 arm64 runner 容量不足零步骤失败；流程修正经 PR #11/#12 和 #13/#14 依序通过 develop→main。第二次手动输入原标签，在 Intel macOS runner 上成功交叉构建 arm64 DMG/ZIP 并创建 [v0.1.3 GitHub 预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.3)；具体运行验证与未签名边界见 `memory/engineering.md`。未修改或重建受保护标签。

@@ -134,12 +134,7 @@
   ],
   "created": {},
   "mutated": [],
-  "pending": [
-    "read Page 1 first to determine whether interrupted call changed anything",
-    "sync General settings and 4 original canvas toolbars",
-    "create Light/Dark default/highlight workflow and download settings views",
-    "validate page hierarchy, typography and screenshots"
-  ],
+  "pending": "Toolbar import/export/right-sidebar and connection example pages remain pending; inspect before resuming pages-script.txt to avoid duplicating download settings pages.",
   "discoveryNodes": [
     {
       "id": "87:1353",
@@ -1234,11 +1229,569 @@
   },
   "phase": "download-pages-verified-other-workflow-pages-pending",
   "blocker": null,
-  "pending": "Toolbar import/export/right-sidebar and connection example pages remain pending; inspect before resuming pages-script.txt to avoid duplicating download settings pages.",
   "runtimeValidation": {
     "check": "passed",
     "build": "passed",
     "tests": "28 passed in one run",
     "screenshots": "download settings light/dark inspected"
+  },
+  "agentComposerDesign": {
+    "date": "2026-10-21",
+    "scope": "Figma-only homepage composer design; no application code",
+    "home": "5:35",
+    "homeComposer": "122:4156",
+    "wideHome": "122:4390",
+    "wideComposer": "122:4408",
+    "stateBoard": "122:4208",
+    "componentSet": "121:4438",
+    "variants": {
+      "Empty": "121:4335",
+      "Ready": "121:4370",
+      "Running": "121:4405"
+    },
+    "icons": {
+      "mic": "121:4327",
+      "shield": "121:4332"
+    },
+    "validation": {
+      "screenshots": [
+        "5:35",
+        "122:4208",
+        "122:4390"
+      ],
+      "font": "Noto Sans SC",
+      "imageFillNodes": 0,
+      "status": "passed",
+      "latestRevisionScreenshots": [
+        "5:35",
+        "122:4208"
+      ]
+    },
+    "proposedSizing": {
+      "minWidth": 788,
+      "maxWidth": 1120,
+      "height": 152,
+      "mainGutter": 48,
+      "cornerRadius": 24,
+      "promptFontSize": 18,
+      "controlFontSize": 14,
+      "actionSize": 40
+    },
+    "pendingDecisions": [
+      "Agent permissions meaning of second icon",
+      "reasoning strength control",
+      "exact pixel constraints"
+    ],
+    "styleRevision": "User requested compact Jarvis style; main components, home, wide home and state board updated"
+  },
+  "displayUsernameDesign": {
+    "date": "2026-10-21",
+    "scope": "Figma only: global display username except creation request username",
+    "component": "127:4725",
+    "input": "127:4727",
+    "instances": {
+      "87:1353": "127:4730",
+      "114:4022": "127:4735",
+      "114:4247": "127:4740"
+    },
+    "sampleValue": "Hugo",
+    "validation": {
+      "screenshots": [
+        "87:1353",
+        "114:4247"
+      ],
+      "status": "passed"
+    },
+    "applicationImplementation": false
+  },
+  "canvasUiSync": {
+    "scope": "本轮对话画布 UI 样式同步",
+    "fileKey": "mIwnyR5nAlECFMam1NvmER",
+    "status": "verified",
+    "updated": "2026-10-21",
+    "stages": [
+      {
+        "stage": 1,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[\"135:4738\",\"135:4741\",\"135:4744\",\"135:4745\",\"135:4748\",\"135:4749\",\"135:4754\",\"135:4757\",\"135:4758\",\"135:4761\",\"135:4764\",\"135:4765\",\"135:4766\"],\"mutatedNodeIds\":[\"72:1093\",\"72:1138\",\"107:4047\",\"107:4080\",\"107:4048\",\"107:4109\",\"107:4049\",\"107:4129\",\"107:4050\"],\"media\":[{\"id\":\"72:1093\",\"name\":\"135:4738\",\"selected\":\"Selected#135:0\",\"generating\":\"Generating#135:1\",\"title\":\"Title#72:0\"},{\"id\":\"72:1138\",\"name\":\"135:4749\",\"selected\":\"Selected#135:2\",\"generating\":\"Generating#135:3\",\"title\":\"Title#72:1\"}],\"assetSelected\":\"Selected#135:4\"}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 2,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[\"136:4750\",\"136:4751\",\"136:4752\",\"136:4753\",\"136:4754\",\"136:4755\",\"136:4756\",\"136:4757\",\"136:4758\",\"136:4759\",\"136:4760\",\"136:4761\",\"136:4762\",\"136:4763\",\"136:4764\",\"136:4765\",\"136:4766\",\"136:4767\",\"136:4768\",\"136:4769\",\"136:4770\",\"136:4774\",\"136:4775\",\"136:4776\",\"136:4781\",\"136:4782\",\"136:4783\",\"136:4784\",\"136:4785\",\"136:4786\"],\"mutatedNodeIds\":[],\"board\":\"136:4750\",\"tag\":\"136:4752\",\"menu\":\"136:4754\",\"toolbar\":\"136:4767\",\"names\":\"136:4786\"}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 3,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[\"137:4754\",\"137:4755\",\"137:4756\",\"137:4758\",\"137:4760\",\"137:4762\",\"137:4764\",\"137:4788\",\"137:4789\",\"137:4790\",\"137:4792\",\"137:4794\",\"137:4796\",\"137:4798\",\"137:4822\",\"137:4823\",\"137:4824\",\"137:4826\",\"137:4828\",\"137:4830\",\"137:4832\",\"137:4867\",\"137:4868\",\"137:4869\",\"137:4871\",\"137:4873\",\"137:4875\",\"137:4877\",\"137:4901\",\"137:4902\",\"137:4903\",\"137:4905\",\"137:4907\",\"137:4909\",\"137:4911\",\"137:4935\",\"137:4936\",\"137:4937\",\"137:4939\",\"137:4941\",\"137:4943\",\"137:4945\"],\"mutatedNodeIds\":[\"75:1358\",\"95:1634\",\"95:1653\",\"95:1654\",\"95:1655\",\"95:1660\",\"111:3938\",\"77:1373\",\"95:1739\",\"95:1758\",\"95:1759\",\"95:1760\",\"95:1765\",\"111:3941\",\"95:1842\",\"95:1844\",\"95:1863\",\"95:1864\",\"95:1865\",\"95:1870\",\"111:3943\",\"95:1929\",\"95:1932\",\"95:1938\",\"95:1945\",\"95:1952\",\"95:1959\",\"95:1966\",\"95:1973\",\"95:1980\",\"95:1987\",\"95:1994\",\"95:2001\",\"95:2008\",\"111:3944\",\"95:2086\",\"95:2089\",\"95:2095\",\"95:2102\",\"95:2109\",\"95:2116\",\"95:2123\",\"95:2130\",\"95:2137\",\"95:2144\",\"95:2151\",\"95:2158\",\"95:2165\",\"111:3946\",\"95:2224\",\"95:2227\",\"95:2233\",\"95:2240\",\"95:2247\",\"95:2254\",\"95:2261\",\"95:2268\",\"95:2275\",\"95:2282\",\"95:2289\",\"95:2296\",\"95:2303\",\"111:3948\"],\"editors\":[{\"id\":\"75:1358\",\"field\":\"137:4754\",\"props\":{\"Connected#111:0\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:0\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":760,\"height\":210},{\"id\":\"77:1373\",\"field\":\"137:4788\",\"props\":{\"Connected#111:1\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:1\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":760,\"height\":210},{\"id\":\"95:1842\",\"field\":\"137:4822\",\"props\":{\"Connected#111:2\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:2\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":760,\"height\":210},{\"id\":\"95:1929\",\"field\":\"137:4867\",\"props\":{\"Connected#111:3\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:3\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":960,\"height\":600},{\"id\":\"95:2086\",\"field\":\"137:4901\",\"props\":{\"Connected#111:4\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:4\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":960,\"height\":600},{\"id\":\"95:2224\",\"field\":\"137:4935\",\"props\":{\"Connected#111:5\":{\"type\":\"BOOLEAN\",\"defaultValue\":false},\"Show mention menu#137:5\":{\"type\":\"BOOLEAN\",\"defaultValue\":false}},\"width\":960,\"height\":600}]}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 4,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[\"139:4425\",\"139:4530\",\"139:4545\",\"139:4546\",\"139:4547\",\"139:4548\",\"139:4549\",\"139:4550\",\"139:4551\",\"139:4589\",\"139:4590\",\"139:4591\",\"139:4615\",\"139:4616\",\"139:4617\",\"139:4682\",\"139:4683\",\"139:4684\",\"139:4685\",\"139:4750\",\"139:4751\",\"139:4752\",\"139:4814\",\"139:4815\",\"139:4816\",\"139:4818\",\"139:4820\",\"139:4821\",\"139:4822\",\"139:4823\",\"139:4948\",\"139:4949\",\"139:4950\",\"139:4965\",\"139:4966\",\"139:4967\",\"139:4968\",\"139:4969\",\"139:4970\",\"139:4971\",\"139:4995\",\"139:4996\",\"139:4997\",\"139:5021\",\"139:5022\",\"139:5023\",\"139:5088\",\"139:5089\",\"139:5090\",\"139:5091\",\"139:5156\",\"139:5157\",\"139:5158\",\"139:5220\",\"139:5221\",\"139:5222\",\"139:5224\",\"139:5226\",\"139:5227\",\"139:5228\",\"139:5229\",\"139:5342\",\"139:5343\",\"139:5344\"],\"mutatedNodeIds\":[\"72:1534\",\"72:1535\",\"139:4425\",\"72:1297\",\"72:1298\",\"139:4530\",\"139:4551\",\"139:4591\",\"139:4617\",\"139:4685\",\"139:4752\",\"139:4816\",\"139:4818\",\"139:4823\",\"139:4950\",\"139:4971\",\"139:4997\",\"139:5023\",\"139:5091\",\"139:5158\",\"139:5222\",\"139:5224\",\"139:5229\",\"139:5344\"],\"views\":[{\"id\":\"72:1507\",\"toolbar\":\"139:4425\"},{\"id\":\"72:1270\",\"toolbar\":\"139:4530\"},{\"id\":\"139:4545\",\"theme\":\"Light\",\"width\":1280,\"height\":1366,\"editor\":\"139:4823\",\"toolbar\":\"139:4950\"},{\"id\":\"139:4965\",\"theme\":\"Dark\",\"width\":1280,\"height\":1366,\"editor\":\"139:5229\",\"toolbar\":\"139:5344\"}]}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 5,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[\"140:4979\",\"140:4980\",\"140:4981\",\"140:4986\",\"140:4997\",\"140:4998\",\"140:4999\",\"140:5033\",\"140:5055\",\"140:5077\",\"140:5078\",\"140:5079\"],\"mutatedNodeIds\":[\"136:4750\",\"75:1358\",\"95:1633\",\"95:1633\",\"95:1634\",\"77:1373\",\"95:1738\",\"95:1738\",\"95:1739\",\"95:1842\",\"95:1843\",\"95:1843\",\"95:1844\",\"95:1929\",\"95:1930\",\"95:1931\",\"95:2086\",\"95:2087\",\"95:2088\",\"95:2224\",\"95:2225\",\"95:2226\",\"107:4047\",\"107:4048\",\"107:4049\"],\"referencePreview\":\"140:4998\",\"variants\":[{\"id\":\"140:4979\",\"name\":\"State=Empty\"},{\"id\":\"140:4997\",\"name\":\"State=Connected\"}]}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 6,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[],\"mutatedNodeIds\":[\"139:4545\",\"139:4548\",\"139:4549\",\"139:4589\",\"139:4615\",\"139:4682\",\"139:4683\",\"139:4750\",\"139:4814\",\"139:4822\",\"139:4965\",\"139:4968\",\"139:4969\",\"139:4995\",\"139:5021\",\"139:5088\",\"139:5089\",\"139:5156\",\"139:5220\",\"139:5228\"],\"validatedRoots\":[\"139:4545\",\"139:4965\"]}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      },
+      {
+        "stage": 7,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"createdNodeIds\":[],\"mutatedNodeIds\":[\"140:5077\",\"107:4051\",\"140:5078\",\"107:4081\",\"140:5079\",\"107:4110\"],\"fix\":\"selected background placed above the canvas-colored preview surface and below media content\"}"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
+      }
+    ],
+    "validation": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"verification\":[{\"id\":\"139:4545\",\"name\":\"Jarvis / Canvas UI / Light / 2026-10-21\",\"width\":1280,\"height\":1366,\"textNodes\":48,\"fonts\":[\"Noto Sans SC\"],\"imageFillNodes\":0,\"completedBadgeText\":0,\"componentInstances\":54},{\"id\":\"139:4965\",\"name\":\"Jarvis / Canvas UI / Dark / 2026-10-21\",\"width\":1280,\"height\":1366,\"textNodes\":48,\"fonts\":[\"Noto Sans SC\"],\"imageFillNodes\":0,\"completedBadgeText\":0,\"componentInstances\":54}],\"status\":\"editable-text-vectors-and-local-instances\"}"
+        }
+      ],
+      "structuredContent": null,
+      "isError": false
+    },
+    "verifiedScreenshots": [
+      "139:4545",
+      "139:4965",
+      "136:4750",
+      "72:1507",
+      "99:1860"
+    ],
+    "views": {
+      "light": "139:4545",
+      "dark": "139:4965",
+      "components": "136:4750"
+    },
+    "components": {
+      "promptTag": "136:4752",
+      "mentionMenu": "136:4754",
+      "multiSelectionToolbar": "136:4767",
+      "editableName": "136:4786",
+      "referencePreview": "140:4998"
+    },
+    "updatedExisting": {
+      "media": [
+        "72:1093",
+        "72:1138"
+      ],
+      "uploadedResource": "107:4050",
+      "editors": [
+        "75:1358",
+        "77:1373",
+        "95:1842",
+        "95:1929",
+        "95:2086",
+        "95:2224"
+      ],
+      "canvasPages": [
+        "72:1507",
+        "72:1270"
+      ]
+    }
+  },
+  "writingSpaceDesign": {
+    "date": "2026-10-21",
+    "scope": "Figma-only local Markdown writing space; live preview chosen by user",
+    "pages": {
+      "lightEditing": "149:5790",
+      "darkEditing": "149:5992",
+      "noFolder": "149:6194",
+      "noDocument": "149:6378"
+    },
+    "window": {
+      "width": 1440,
+      "height": 900,
+      "leftSidebar": 260,
+      "rightSidebar": 280,
+      "documentMaxWidth": 680
+    },
+    "components": {
+      "group": "146:5036",
+      "sidebarWriting": "146:5073",
+      "mainEntry": "146:5207",
+      "fileRows": "146:5064",
+      "fileRow": "146:5038",
+      "selectedRow": "146:5047",
+      "folderRow": "146:5056",
+      "outline": "146:5065",
+      "aiPlaceholder": "146:5067",
+      "documentTab": "151:5684",
+      "search": "153:5705"
+    },
+    "validation": {
+      "status": "passed",
+      "screenshots": [
+        "149:5790",
+        "149:5992",
+        "149:6194",
+        "149:6378",
+        "5:35"
+      ],
+      "fonts": [
+        "Noto Sans SC"
+      ],
+      "imageFillNodes": 0,
+      "repairs": [
+        "paragraph height and spacing",
+        "document tab grouping",
+        "dark search background and text contrast",
+        "no-document selected file highlight"
+      ]
+    },
+    "applicationImplementation": true,
+    "prototypeBoundary": "Folder selection and document opening are example page transitions only; no native file picker or editor",
+    "rightSidebarTabs": {
+      "date": "2026-10-21",
+      "library": "158:5871",
+      "buttonSet": "158:5888",
+      "sidebarSet": "158:6036",
+      "outlineIcon": "158:5864",
+      "variants": {
+        "outlineOpen": "158:5889",
+        "assistantOpen": "158:5928",
+        "outlineEmpty": "158:5966",
+        "assistantEmpty": "158:5998"
+      },
+      "assistantPages": {
+        "light": "158:6135",
+        "dark": "158:6340"
+      },
+      "updatedPages": [
+        "149:5790",
+        "149:5992",
+        "149:6194",
+        "149:6378"
+      ],
+      "validation": {
+        "screenshots": [
+          "149:5790",
+          "149:5992",
+          "158:6135",
+          "149:6194"
+        ],
+        "tabVisibleTextNodes": 0,
+        "changeToActions": 4,
+        "status": "passed"
+      },
+      "applicationImplementation": false
+    },
+    "documentTabSelection": {
+      "date": "2026-10-21",
+      "userPreference": "neutral colors; no blue active background or underline",
+      "componentSet": "159:6163",
+      "active": "151:5684",
+      "inactive": "159:6158",
+      "hiddenIndicator": "159:6162",
+      "surfaceVariable": "VariableID:160:6165",
+      "colors": {
+        "light": "#E8EAED",
+        "dark": "#41464D"
+      },
+      "pages": [
+        "149:5790",
+        "149:5992",
+        "158:6135",
+        "158:6340"
+      ],
+      "validation": {
+        "screenshots": [
+          "149:5790",
+          "149:5992"
+        ],
+        "status": "passed"
+      },
+      "applicationImplementation": false,
+      "currentStyle": "Superseded independent gray surface: active tab now matches editor canvas; strip matches sidebar; neutral separators"
+    },
+    "sidebarCleanup": {
+      "date": "2026-10-21",
+      "sidebar": "146:5073",
+      "props": {
+        "folderName": "Folder name#162:0",
+        "searchExpanded": "Search expanded#162:4"
+      },
+      "hidden": [
+        "146:5098",
+        "146:5201",
+        "146:5206"
+      ],
+      "searchInstance": "153:5711",
+      "toolbar": "146:5115",
+      "actionComponent": "162:6176",
+      "actions": {
+        "search": "162:6181",
+        "newFile": "162:6189",
+        "newFolder": "162:6199",
+        "more": "162:6208"
+      },
+      "icons": {
+        "filePlus": "162:6165",
+        "folderPlus": "162:6171"
+      },
+      "folderMenu": "162:6217",
+      "states": {
+        "searchLight": "163:6323",
+        "searchDark": "163:6564",
+        "folderMenuLight": "163:6805",
+        "folderMenuDark": "163:7078"
+      },
+      "validation": {
+        "screenshots": [
+          "149:5790",
+          "163:6323",
+          "163:6805",
+          "163:7078"
+        ],
+        "font": "Noto Sans SC",
+        "imageFillNodes": 0,
+        "status": "passed"
+      },
+      "applicationImplementation": false
+    },
+    "surfaceHierarchy": {
+      "date": "2026-10-21",
+      "sidebarAndTabStripToken": "VariableID:5:4",
+      "editorAndActiveTabToken": "VariableID:5:3",
+      "tabSize": {
+        "width": 208,
+        "height": 44,
+        "topRadius": 8,
+        "bottomRadius": 0
+      },
+      "tabStripHeight": 52,
+      "separator": {
+        "width": 1,
+        "height": 20,
+        "containerWidth": 12
+      },
+      "updatedPages": [
+        "149:5790",
+        "149:5992",
+        "149:6194",
+        "149:6378",
+        "158:6135",
+        "158:6340",
+        "163:6323",
+        "163:6564",
+        "163:6805",
+        "163:7078"
+      ],
+      "iconFix": {
+        "rootCause": "file-plus and folder-plus SVG frames used MIN constraints instead of SCALE",
+        "frames": [
+          "162:6166",
+          "162:6172"
+        ],
+        "iconSize": 18,
+        "buttonSize": 28,
+        "sourceStrokeWidth": 1.75
+      },
+      "validation": {
+        "screenshots": [
+          "149:5790",
+          "149:5992",
+          "158:6135"
+        ],
+        "tokenEqualityChecked": true,
+        "iconAndSvgSizesChecked": true,
+        "status": "passed"
+      },
+      "applicationImplementation": false,
+      "tabStripLeftPadding": 0,
+      "firstTabX": 0,
+      "leftPaddingUpdatedPages": [
+        "149:5790",
+        "149:5992",
+        "158:6135",
+        "158:6340",
+        "163:6323",
+        "163:6564",
+        "163:6805",
+        "163:7078"
+      ]
+    },
+    "sidebarVisibility": {
+      "date": "2026-10-21",
+      "overviewTitle": "171:6796",
+      "rightToggleIcon": "170:6979",
+      "pages": {
+        "light": {
+          "bothOpen": "171:6797",
+          "leftOnly": "171:7041",
+          "rightOnly": "171:7285",
+          "bothClosed": "171:7542"
+        },
+        "dark": {
+          "bothOpen": "171:7799",
+          "leftOnly": "171:8043",
+          "rightOnly": "171:8287",
+          "bothClosed": "171:8544"
+        }
+      },
+      "window": {
+        "width": 1440,
+        "height": 900
+      },
+      "editorWidths": {
+        "bothOpen": 900,
+        "leftOnly": 1180,
+        "rightOnly": 1160,
+        "bothClosed": 1440
+      },
+      "documentWidth": 680,
+      "collapsedLeftHeaderWidth": 140,
+      "prototypeActions": 16,
+      "validation": {
+        "screenshots": [
+          "171:6797",
+          "171:7041",
+          "171:7285",
+          "171:7542",
+          "171:8544"
+        ],
+        "font": "Noto Sans SC",
+        "imageFillNodes": 0,
+        "status": "passed"
+      },
+      "applicationImplementation": false
+    },
+    "implementation": {
+      "date": "2026-10-21",
+      "stage": "foundation",
+      "branch": "feature/writing-space",
+      "planDocument": "https://docs.google.com/document/d/1w5ipoZlR4-9uYy8kAjLkDB46kuU_2VJYmbIfefZ-FS4",
+      "planDocumentReadback": true,
+      "validation": {
+        "check": "passed",
+        "build": "passed",
+        "electronFullSuite": {
+          "passed": 38,
+          "failed": 0
+        },
+        "finalWritingRegression": {
+          "passed": 4,
+          "failed": 0
+        },
+        "screenshots": "apps/desktop/test-results/9aec6d76-8533-415f-b24a-6484cb47c1e7",
+        "platform": "macOS"
+      },
+      "externalChanges": "2.5-second current-document polling plus focus; save checks independent disk revision",
+      "pending": [
+        "AI conversation",
+        "full image/table/task-widget support",
+        "full-text search",
+        "OS file watcher",
+        "crash recovery drafts",
+        "undo history across restart",
+        "advanced conflict merge"
+      ],
+      "committed": true,
+      "pushed": false
+    }
+  },
+  "settingsBackAtTop": {
+    "date": "2026-10-21",
+    "sidebar": "48:874",
+    "instance": "48:873",
+    "component": "155:5696",
+    "y": 58,
+    "height": 24,
+    "pages": [
+      "8:53",
+      "84:1221",
+      "87:1353",
+      "114:4022",
+      "114:4247"
+    ],
+    "prototypeDestination": "5:35",
+    "screenshotValidation": [
+      "87:1353",
+      "114:4247"
+    ],
+    "status": "passed",
+    "applicationImplementation": false
+  },
+  "release015": {
+    "version": "0.1.5",
+    "date": "2026-10-21",
+    "scope": [
+      "writing workspace foundation",
+      "all three canvas repair commits",
+      "design and engineering records",
+      "Figma scripts"
+    ],
+    "sourceBranch": "feature/writing-space",
+    "writingCommit": "9d8f8c8",
+    "canvasMerge": "a39051c",
+    "validation": {
+      "check": "passed",
+      "build": "passed",
+      "releaseVersionCheck": "passed",
+      "electronPassed": 39,
+      "electronFailed": 0
+    },
+    "status": "ready for develop PR"
   }
 }

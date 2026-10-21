@@ -5,6 +5,7 @@ import { UrlMedia } from './UrlMedia';
 import type { AssetNode as AssetNodeType, CanvasNode } from './types';
 import { NodePorts } from './NodePorts';
 import { NodeDownload } from './NodeDownload';
+import { NodeName } from './NodeName';
 
 export function AssetNode({ id, data, selected, isConnectable }: NodeProps<AssetNodeType>) {
   const flow = useReactFlow<CanvasNode>();
@@ -46,9 +47,7 @@ export function AssetNode({ id, data, selected, isConnectable }: NodeProps<Asset
           <X size={16} />
         </IconButton>
       </div>
-      <span className="asset-name" title={data.name}>
-        {data.name}
-      </span>
+      <NodeName id={id} name={data.name} />
     </div>
   );
 }
