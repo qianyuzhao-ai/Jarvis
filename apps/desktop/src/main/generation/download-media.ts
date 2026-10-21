@@ -38,7 +38,7 @@ function downloadFileName(request: DownloadMedia, contentType: string) {
   const path = new URL(request.url).pathname;
   let original = request.fileName || basename(path);
   try {
-    original = decodeURIComponent(original);
+    if (!request.fileName) original = decodeURIComponent(original);
   } catch {
     /* Keep malformed URL names readable. */
   }
@@ -59,7 +59,8 @@ function downloadFileName(request: DownloadMedia, contentType: string) {
       ? fromName
       : { image: 'png', video: 'mp4', audio: 'mp3' }[request.kind]);
   const name = (
-    parse(original).name || { image: '图像', video: '视频', audio: '音频' }[request.kind]
+    (allowed.includes(fromName) ? parse(original).name : original) ||
+    { image: '图像', video: '视频', audio: '音频' }[request.kind]
   ).slice(0, 100);
   return { name: `${name}.${extension}`, extension };
 }
