@@ -5,7 +5,7 @@
 ### 0.1.7 设计纳入发布（2026-10-21）
 
 - 用户授权将最新改动全部发布为 0.1.7。本轮 Chat、画布 Agent/会话与视觉资产、Skills、生成详情和 Prompt 引用已同步的设计记录均随代码纳入；现有 Figma 节点及设计要求不变。
-- 发布前当前源码完整 Electron 回归 57/57 通过，云端发布状态见 git-workflow.md 与 engineering.md。
+- 发布前当前源码完整 Electron 回归 57/57 通过；v0.1.7 双平台构建及统一预发布成功，三个安装文件已回读上传完成。发布状态见 git-workflow.md 与 engineering.md。
 
 ### Prompt 光标引用菜单与原子 tag（2026-10-21）
 

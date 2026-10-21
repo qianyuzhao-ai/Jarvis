@@ -6,7 +6,7 @@
 
 - 用户授权将全部最新改动发布为 0.1.7；根包、桌面包、README 和 CHANGELOG 已统一版本。包含 Chat V2、画布 Agent/视觉资产、Skills、生成详情和原子 Prompt 引用 5 个功能提交。
 - 本轮重新执行 pnpm check、pnpm test:smoke（包含构建），完整 **57/57** 在 1.7m 通过；版本校验脚本 v0.1.7 和 git diff --check 通过。受限沙箱不能启动 Electron/模拟端口，切换原生权限后同一完整回归通过，没有更改实现或放宽断言。
-- 真实服务联调和 Windows 功能验收边界不变；云端双平台构建与发布结果待回读，不将本地通过等同于已发布。
+- 真实服务联调和 Windows 功能验收边界不变；v0.1.7 标签指向 main 合并提交 2f7ef56（功能 PR #31 → develop 69756c5，发布 PR #32 → main）。唯一云端运行 [39605956426](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39605956426) 的 macOS、Windows 和统一发布作业全部成功；[Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.7) 已回读为非草稿预发布。三个 uploaded 文件为 DMG 246747514 字节、ZIP 246019823 字节、Windows EXE 217792667 字节，名称均含 0.1.7 与 unsigned。未移动旧标签、未重复运行构建；Release 说明包含本版功能及验证边界。
 
 ## Prompt 引用原子编辑与光标菜单（2026-10-21）
 

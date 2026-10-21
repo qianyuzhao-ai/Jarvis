@@ -4,7 +4,7 @@
 
 ## 0.1.7 发布（2026-10-21）
 
-- 用户要求“把最新的改动都一起发新版本，0.1.7”，授权本轮提交、推送、PR 合并、标签及发布。已 fetch 核对：当前分支包含 develop 和全部 5 个待发布功能提交（d60eece、e74a460、5ae71ae、074890f、f11244c）；其他本地功能没有遗漏的独有实现提交。保留历史分支、stash 和已有标签。按功能 PR → develop → main PR → main 合并提交标签 v0.1.7 执行；云端结果待回读。
+- 用户要求“把最新的改动都一起发新版本，0.1.7”，授权本轮提交、推送、PR 合并、标签及发布。已 fetch 核对：当前分支包含 develop 和全部 5 个待发布功能提交（d60eece、e74a460、5ae71ae、074890f、f11244c）；其他本地功能没有遗漏的独有实现提交。保留历史分支、stash 和已有标签。已由 [PR #31](https://github.com/qianyuzhao-ai/Jarvis/pull/31) 合入 develop（69756c5），再由 [PR #32](https://github.com/qianyuzhao-ai/Jarvis/pull/32) 合入 main（2f7ef56），标签 v0.1.7 指向 main 合并提交。唯一云端运行 [39605956426](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39605956426) 双平台构建、校验及统一发布全部成功；[v0.1.7 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.7) 已回读为非草稿的未签名预发布，DMG/ZIP/EXE 三个文件均已上传。没有移动旧标签或重试构建；发布说明与结果记录通过独立文档 PR 回到 develop。
 
 ## 本轮已完成的功能分支（2026-10-21）
 
