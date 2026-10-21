@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+### V1 Chat 与 App Icon 纳入 0.1.6（2026-10-21）
+
+- 用户授权将 Agent、App Icon 及其余改动统一打包发布。已通过 PR #28→develop、#29→main，`v0.1.6` 指向 `9526901`；[双平台预发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.6) 的 macOS arm64 DMG/ZIP 与 Windows x64 EXE 均已上传，唯一云端流程全部成功。
+- Figma 页面/组件 ID 未改；本轮是版本及发布记录，不新增 UI 实现。未签名/未公证、真实中转站待联调和 Windows 功能待实机验收的边界继续保留；具体资产摘要见 engineering.md。
+
 ### 首页 Chat V1 与中转配置已实现（2026-10-21）
 
 - 用户授权开始 coding；已按完整 Composer `121:4438` 和 Chat/配置页面设计实现首页、最近会话、左右气泡、流式/停止/中断、手动重发/复制/重命名及中转站设置。原 Figma 节点不变，本轮未写 Figma。

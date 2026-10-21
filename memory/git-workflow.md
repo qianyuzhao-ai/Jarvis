@@ -13,6 +13,8 @@
 
 ## 当前分支职责和流向（2026-10-21 用户更新）
 
+`v0.1.6` 已经 PR #28 集成 Agent、App Icon 和全部待发布改动到 develop（`5c6b840`），PR #29 进入 main（`9526901`），标签指向 main 合并提交。唯一运行 [39560464413](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39560464413) 双平台构建及统一发布全部成功；[Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.6) 非草稿、未签名预发布，DMG/ZIP/EXE 三个文件均已上传。没有移动旧标签、手动重试或重复构建。发布说明与结果记录后续仅通过文档分支回到 develop，不修改已发布标签。
+
 - 2026-10-21：用户授权发布 0.1.6，范围包含 `83e053e` Agent 实现、`95e132f` App Icon 及全部待发布改动。按 feature PR → develop → main PR → main 合并提交标签 `v0.1.6` 执行，标签只触发一次双平台统一预发布；此次不清理历史分支或移动旧标签，发布结果以远端回读为准。
 
 `v0.1.5` 已由 PR #25 进入 develop (`7506c2b`)、PR #26 进入 main (`1f3be23`)，标签指向 main 的该合并提交。唯一运行 [39548892511](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39548892511) 的 macOS arm64、Windows x64 和统一发布作业全部成功，三个未签名安装文件已发布到 [v0.1.5](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.5)。此前独立的三项画布修复和写作空间均已纳入，旧标签未改动；本地最终集成回归 39/39 通过。
