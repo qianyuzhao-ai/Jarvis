@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 Windows 版本校验修复（2026-10-21）
+
+- 第一次重试 `39526651851` 的 Windows 检查、构建与 NSIS 打包成功，但后续版本校验将 FileVersion 与固定的四段 `$version.0` 比较而失败。当前 electron-builder 的 fileVersion 使用 appInfo.buildVersion（本项目为三段 0.1.4），不是固定四段字符串。
+- 校验改用 FileMajorPart/FileMinorPart/FileBuildPart 比较 0.1.4，同时输出 FileVersion/ProductVersion 诊断；保留 x64 架构及未签名检查。仅调整工作流，不修改应用源码或 v0.1.4 标签。修正后继续手动重试原标签。
+
 ## v0.1.4 Windows 检出换行修复（2026-10-21）
 
 - PR #17 合入 develop（`8b3106d`），PR #18 合入 main（`2aed851`），`v0.1.4` 指向 main 合并提交。唯一标签运行 `39526365544` 的 Windows 作业在 Biome 检查失败：Windows Git 默认将 LF 检出为 CRLF，产生 68 个格式错误，尚未构建安装包。
