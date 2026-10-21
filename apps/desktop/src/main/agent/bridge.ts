@@ -69,6 +69,8 @@ export async function registerAgent() {
     },
     'agent:configuration': () => config.view(),
     'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
+    'agent:remove-model': (id) => service.removeModel(agentId.parse(id)),
+    'agent:default-model': (id) => service.setDefaultModel(agentId.parse(id)),
     'agent:test': (r, owner) => service.test(relayInputSchema.parse(r), owner),
     'agent:models': (r) => config.models(relayModelsInputSchema.parse(r)),
     'agent:snapshot': () => service.snapshot(),

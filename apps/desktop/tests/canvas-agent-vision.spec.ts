@@ -67,7 +67,7 @@ test('selected images and sampled video frames reach the vision model; failed as
   });
   try {
     const page = await app.firstWindow();
-    await page.getByRole('heading', { name: '先连接你的中转站' }).waitFor();
+    await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1600, 950));
     const project = createProject();
     project.name = '视觉资产项目';

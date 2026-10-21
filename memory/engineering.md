@@ -1,6 +1,19 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 我的模型与 DeepSeek 官方接入（2026-10-22）
+
+- 用户明确模型服务采用可持久化的“我的模型”列表，支持 DeepSeek 官方与多个自定义中转模型共存、Chat/画布按会话切换。实现留在当前 `feature/ui-style`；用户随后授权本地提交代码、测试及项目记忆，不推送或合并。
+- 已实际检查安装的 `@earendil-works/pi-ai` / `pi-coding-agent` 1.3.0：通过 `getBuiltinModels`（`@earendil-works/pi-ai/providers/all`）和 `ModelRuntime.getModel('deepseek', id)` 核对内置 DeepSeek。根包没有旧 `getModels` 命名导出，不沿用旧 API。官方文档 https://api-docs.deepseek.com/ 与 https://api-docs.deepseek.com/api/list-models/ 本轮读取确认 `deepseek-flash` / `deepseek-v4-pro` 和官方地址；思考/工具兼容规则见 https://api-docs.deepseek.com/guides/thinking_mode/ 。
+- `RelayConfig.provider` 可选 `relay` / `deepseek`，缺少字段的旧记录按 relay 处理。官方配置校验固定 `https://api.deepseek.com` 和 `openai-completions`，仅接受当前版本内置模型；Runtime 使用原生 deepseek provider，保留内置兼容与输入能力。上下文默认采用 SDK 的 1,000,000 保护值，输出仍沿用应用原有 4096 默认与 32768 配置上限；不宣称这些应用选值是官方完整上限。思考仍 off。
+- `agent/connection.json` 升为 `{version:2,defaultModelId,models:[{id,config,encryptedKey}]}`，最多 100 条。初始化将旧 `{config,encryptedKey}` 原子迁移为一条 UUID 模型记录，保留密文。`view()` 仅返回 `{config,hasKey,defaultModelId,models:[{id,config,hasKey}]}`，不包含 Key 或密文；返回配置用结构化副本，避免会话切换修改模型库。
+- `saveConfiguration` 输入兼容旧负载；新增 `create:true` 为追加，`modelId` 为编辑，二者互斥；均省略时保持编辑默认模型的旧语义。测试连接/获取模型可带相同目标信息以解析对应 Key；切换来源/地址不得暗中沿用其他模型的 Key。官方来源必须提供 Key，继续使用 safeStorage 加密。
+- 新增受限 IPC `agent:remove-model(UUID)` / `agent:default-model(UUID)`；从 preload 暴露对应方法。模型删除只更新配置数组，保留会话与 SDK 历史；删除默认模型改为第一条剩余记录，空库默认 null。读写仍由主进程串行处理，运行/测试期间禁止配置写入。
+- `ChatSession.modelId` 为可选 UUID，新会话绑定默认记录；既有 `setModel({sessionId,model})` 中 `model` 现在指已保存记录 UUID，不再接收任意自由输入 ID。切换更新会话连接、模型、上下文及 Key 解析目标；发送按该 UUID 解析，不依赖全局默认来源。旧会话无 UUID 时保留原展示和原连接检查，可重新选择模型升级绑定。模型删除后发送明确失败，不偷偷回退到别的凭据。
+- 原生模型选择框同时用于首页和画布，保留历史。DeepSeek Pro 的当前附件/历史图片在 renderer 和主进程边界阻止，避免 SDK 忽略不支持的图像；Flash 继续支持已授权的图片与视频代表帧。SDK 资源加载和工具限制不扩展。
+- SDK fetch 包装统一构造 `Request`，保留 SDK 请求头/请求体并拒绝重定向；无鉴权中转仍移除 Authorization。DeepSeek 测试使用固定官方地址和原生 provider，通过测试内 fetch 转发到本地 SSE 模拟服务，不放宽生产地址校验或读取真实 Key。
+- 检查、构建和 diff 通过；最终相关回归 8/8（17.1s）通过。整组 60/61（1.7m），唯一剩余为已有侧栏动画退出中间帧取样不稳定，独立复测通过；鼠标连线两项也独立及后续整组通过。没有为了全绿修改这些断言。真实 DeepSeek 服务、真实 Key 和费用未验证。本轮未发布或提交。
 
 ## 0.1.8 云端签名公证验证（2026-10-21）
 

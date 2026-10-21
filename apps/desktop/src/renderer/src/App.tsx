@@ -17,7 +17,7 @@ import { useGeneration } from './features/creation/useGeneration';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
-import { RelaySettings } from './features/agent/RelaySettings';
+import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
 import './features/agent/agent.css';
 const WritingSpace = lazy(() =>
@@ -216,7 +216,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <RelaySettings
+              <ModelSettings
                 value={agent.configuration}
                 onSaved={agent.setConfiguration}
                 onDirtyChange={setSettingsDirty}

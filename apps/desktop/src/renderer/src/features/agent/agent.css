@@ -218,16 +218,14 @@
   position: relative;
 }
 .model-trigger {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-overflow: ellipsis;
   max-width: min(300px, 35vw);
   padding-inline: 8px;
   color: var(--color-ink);
   font-size: 14px;
-}
-.model-trigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .context-ring {
   width: 28px;
@@ -291,11 +289,6 @@
   font-size: 12px;
   line-height: 22px;
 }
-.model-popover {
-  display: grid;
-  gap: 8px;
-}
-.model-popover input,
 .chat-rename input {
   min-width: 0;
   width: 100%;
@@ -304,7 +297,6 @@
   background: var(--color-canvas);
   padding: 8px;
 }
-.model-popover button,
 .chat-rename button {
   border: 0;
   border-radius: 6px;

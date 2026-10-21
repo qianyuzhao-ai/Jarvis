@@ -27,25 +27,36 @@ export async function openAgent(
     allowModelNetwork: false,
     refreshOnCreate: false,
   });
-  models.registerProvider('jarvis-relay', {
-    name: config.name,
-    baseUrl: config.baseUrl,
-    api: config.api,
-    models: [
-      {
-        id: config.model,
-        name: config.model,
-        reasoning: false,
-        input: canvas ? ['text', 'image'] : ['text'],
-        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-        contextWindow: config.contextWindow ?? 32768,
-        maxTokens: config.maxTokens,
-      },
-    ],
-  });
-  await models.setRuntimeApiKey('jarvis-relay', key || 'jarvis-no-auth');
-  const model = models.getModel('jarvis-relay', config.model);
-  if (!model) throw new Error('无法初始化中转站模型');
+  if (config.provider !== 'deepseek')
+    models.registerProvider('jarvis-relay', {
+      name: config.name,
+      baseUrl: config.baseUrl,
+      api: config.api,
+      models: [
+        {
+          id: config.model,
+          name: config.model,
+          reasoning: false,
+          input: canvas ? ['text', 'image'] : ['text'],
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          contextWindow: config.contextWindow ?? 32768,
+          maxTokens: config.maxTokens,
+        },
+      ],
+    });
+  const provider = config.provider === 'deepseek' ? 'deepseek' : 'jarvis-relay';
+  if (provider === 'deepseek' && !key) throw new Error('请填写 DeepSeek API Key');
+  await models.setRuntimeApiKey(provider, key || 'jarvis-no-auth');
+  const selectedModel = models.getModel(provider, config.model);
+  if (!selectedModel) throw new Error('当前 SDK 不支持此模型，请选择可用模型');
+  const model =
+    config.provider === 'deepseek'
+      ? {
+          ...selectedModel,
+          contextWindow: config.contextWindow ?? selectedModel.contextWindow,
+          maxTokens: config.maxTokens,
+        }
+      : selectedModel;
   const settings = sdk.SettingsManager.inMemory({
     retry: { enabled: false },
     compaction: { enabled: false },
@@ -96,6 +107,14 @@ export async function openAgent(
   if (!tools.length) session.agent.finishTurn = async () => ({ action: 'end' });
   let requests = 0;
   session.agent.streamFunction = (m, context, options) => {
+    if (
+      !m.input.includes('image') &&
+      context.messages.some(
+        (message) =>
+          Array.isArray(message.content) && message.content.some((part) => part.type === 'image'),
+      )
+    )
+      throw new Error('所选模型不支持图片输入，请切换支持图片的模型或新建文字对话');
     if (++requests > (canvas || tools.length ? 8 : 1)) throw new Error('本轮请求次数已达上限');
     const source = stream(m, context, {
       ...options,
@@ -103,9 +122,9 @@ export async function openAgent(
       maxRetries: 0,
       transport: 'sse',
       fetch: (url, init) => {
-        const headers = new Headers(init?.headers);
-        if (!key) headers.delete('authorization');
-        return fetch(url, { ...init, headers, redirect: 'error' });
+        const request = new Request(url, init);
+        if (!key) request.headers.delete('authorization');
+        return fetch(request, { redirect: 'error' });
       },
       onResponse: (response) => {
         httpStatus = response.status;
@@ -153,6 +172,6 @@ export async function openAgent(
 }
 export function replyFailure(status: number) {
   return status >= 400
-    ? `中转站请求失败（${status}），请检查 Key、协议和模型`
-    : '模型回复失败或连接中断，请检查中转站后重新发送';
+    ? `模型服务请求失败（${status}），请检查 Key、协议和模型`
+    : '模型回复失败或连接中断，请检查模型服务后重新发送';
 }

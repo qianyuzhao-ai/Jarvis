@@ -1,9 +1,28 @@
+import { randomUUID } from 'node:crypto';
 import { safeStorage } from 'electron';
 import { z } from 'zod';
 import { relaySchema, type RelayInput, type RelayView } from '../../shared/agent';
 import { JsonFile, readJson } from './json-file';
 
-const storedSchema = z.object({ config: relaySchema, encryptedKey: z.string() });
+const modelSchema = z.object({
+  id: z.string().uuid(),
+  config: relaySchema,
+  encryptedKey: z.string(),
+});
+const legacySchema = z.object({ config: relaySchema, encryptedKey: z.string() });
+const storedSchema = z
+  .object({
+    version: z.literal(2),
+    defaultModelId: z.string().uuid().nullable(),
+    models: z.array(modelSchema).max(100),
+  })
+  .refine(
+    (v) =>
+      new Set(v.models.map((m) => m.id)).size === v.models.length &&
+      (v.models.length
+        ? v.models.some((m) => m.id === v.defaultModelId)
+        : v.defaultModelId === null),
+  );
 function secureStorageAvailable() {
   return (
     safeStorage.isEncryptionAvailable() &&
@@ -11,46 +30,104 @@ function secureStorageAvailable() {
   );
 }
 export class RelayConfiguration {
-  private stored: z.infer<typeof storedSchema> | null = null;
+  private stored: z.infer<typeof storedSchema> = { version: 2, defaultModelId: null, models: [] };
   constructor(private file: JsonFile) {}
   async initialize() {
     const value = await readJson(this.file.path);
-    if (value) this.stored = storedSchema.parse(value);
+    if (!value) return;
+    if (typeof value === 'object' && 'version' in value) {
+      this.stored = storedSchema.parse(value);
+    } else {
+      const legacy = legacySchema.parse(value);
+      const id = randomUUID();
+      const next = { version: 2 as const, defaultModelId: id, models: [{ id, ...legacy }] };
+      await this.file.write(next);
+      this.stored = next;
+    }
+  }
+  private profile(id: string) {
+    const profile = this.stored.models.find((m) => m.id === id);
+    if (!profile) throw new Error('模型不存在或已删除，请重新选择');
+    return profile;
   }
   view(): RelayView {
-    return { config: this.stored?.config ?? null, hasKey: !!this.stored?.encryptedKey };
+    const selected = this.stored.models.find((m) => m.id === this.stored.defaultModelId);
+    return {
+      config: selected ? structuredClone(selected.config) : null,
+      hasKey: !!selected?.encryptedKey,
+      defaultModelId: this.stored.defaultModelId,
+      models: this.stored.models.map(({ id, config, encryptedKey }) => ({
+        id,
+        config: structuredClone(config),
+        hasKey: !!encryptedKey,
+      })),
+    };
   }
   resolve(input?: RelayInput) {
-    const config = input?.config ?? this.stored?.config;
-    if (!config) throw new Error('请先配置中转站模型');
-    if (input?.clearKey) return { config, apiKey: '' };
-    if (input?.apiKey) return { config, apiKey: input.apiKey };
-    if (
-      input &&
-      this.stored &&
-      config.baseUrl !== this.stored.config.baseUrl &&
-      this.stored.encryptedKey
-    )
-      throw new Error('更换中转地址时请填写新 API Key 或明确清除旧 Key');
+    const id = input?.modelId ?? (input?.create ? null : this.stored.defaultModelId);
+    const profile = id ? this.profile(id) : undefined;
+    const config = input?.config ?? profile?.config;
+    if (!config) throw new Error('请先添加模型');
     let apiKey = '';
-    if (this.stored?.encryptedKey) {
+    if (input?.clearKey) {
+      if (config.provider === 'deepseek') throw new Error('DeepSeek 官方接入需要 API Key');
+    } else if (input?.apiKey) apiKey = input.apiKey;
+    else if (profile?.encryptedKey) {
+      if (
+        config.baseUrl !== profile.config.baseUrl ||
+        (config.provider ?? 'relay') !== (profile.config.provider ?? 'relay')
+      )
+        throw new Error('更换服务来源或地址时请填写新 API Key；中转站也可明确清除旧 Key');
       if (!secureStorageAvailable()) throw new Error('系统密钥存储不可用，请重新配置');
       try {
-        apiKey = safeStorage.decryptString(Buffer.from(this.stored.encryptedKey, 'base64'));
+        apiKey = safeStorage.decryptString(Buffer.from(profile.encryptedKey, 'base64'));
       } catch {
         throw new Error('无法解密已保存的 Key，请重新填写');
       }
     }
-    return { config, apiKey };
+    if (config.provider === 'deepseek' && !apiKey) throw new Error('请填写 DeepSeek API Key');
+    return { config: structuredClone(config), apiKey, modelId: profile?.id };
+  }
+  resolveModel(id: string) {
+    const profile = this.profile(id);
+    return this.resolve({ config: profile.config, modelId: id, apiKey: '', clearKey: false });
   }
   async save(input: RelayInput) {
-    const { config, apiKey } = this.resolve(input);
+    const { config, apiKey, modelId } = this.resolve(input);
     let encryptedKey = '';
     if (apiKey) {
       if (!secureStorageAvailable()) throw new Error('系统密钥存储不可用，未保存 Key');
       encryptedKey = safeStorage.encryptString(apiKey).toString('base64');
     }
-    const next = { config, encryptedKey };
+    const id = modelId ?? randomUUID();
+    const models = [...this.stored.models];
+    const index = models.findIndex((m) => m.id === id);
+    const model = { id, config, encryptedKey };
+    if (index < 0) {
+      if (models.length >= 100) throw new Error('最多保存 100 个模型');
+      models.push(model);
+    } else models[index] = model;
+    const next = { version: 2 as const, defaultModelId: this.stored.defaultModelId ?? id, models };
+    await this.file.write(next);
+    this.stored = next;
+    return this.view();
+  }
+  async remove(id: string) {
+    this.profile(id);
+    const models = this.stored.models.filter((m) => m.id !== id);
+    const next = {
+      ...this.stored,
+      models,
+      defaultModelId:
+        this.stored.defaultModelId === id ? (models[0]?.id ?? null) : this.stored.defaultModelId,
+    };
+    await this.file.write(next);
+    this.stored = next;
+    return this.view();
+  }
+  async setDefault(id: string) {
+    this.profile(id);
+    const next = { ...this.stored, defaultModelId: id };
     await this.file.write(next);
     this.stored = next;
     return this.view();

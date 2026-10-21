@@ -115,7 +115,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     let page = await app.firstWindow();
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.getByRole('heading', { name: '先连接你的中转站' }).waitFor();
+    await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
     const saved = await page.evaluate(
       async (baseUrl) =>
         window.desktop?.agent.saveConfiguration({

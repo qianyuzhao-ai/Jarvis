@@ -112,7 +112,7 @@ export function ChatComposer({
           }
           value={text}
           maxLength={32000}
-          placeholder={configured ? '输入 / 选择技能，或与 Jarvis 对话' : '连接中转站后开始对话'}
+          placeholder={configured ? '输入 / 选择技能，或与 Jarvis 对话' : '添加模型后开始对话'}
           disabled={agent.loading || !configured}
           onChange={(e) => {
             setText(e.target.value);
@@ -209,12 +209,24 @@ export function ChatComposer({
         <div className="composer-spacer" />
         <ModelPicker
           model={model}
+          models={agent.configuration.models ?? []}
+          selectedId={
+            agent.session
+              ? agent.session.modelId
+              : (agent.configuration.models?.find((entry) => entry.id === model)?.id ??
+                agent.configuration.defaultModelId ??
+                undefined)
+          }
           disabled={!configured || busy || agent.sending || !!agent.snapshot.busySessionId}
           onChange={onModel}
         />
         <ContextUsage
           used={agent.session?.contextTokens}
-          capacity={agent.session?.contextWindow ?? agent.configuration.config?.contextWindow}
+          capacity={
+            agent.session?.contextWindow ??
+            agent.configuration.models?.find((entry) => entry.id === model)?.config.contextWindow ??
+            agent.configuration.config?.contextWindow
+          }
         />
       </div>
     </form>

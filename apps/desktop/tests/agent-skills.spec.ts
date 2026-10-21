@@ -67,7 +67,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
   let app = await launch();
   try {
     let page = await app.firstWindow();
-    await page.getByRole('heading', { name: '先连接你的中转站' }).waitFor();
+    await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1440, 900));
     await page.evaluate(async (baseUrl) => {
       const r = await window.desktop?.agent.saveConfiguration({
@@ -146,7 +146,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     let input = page.getByLabel('消息', { exact: true });
     await input.fill('/');
-    await expect(page.getByRole('option')).toHaveCount(2);
+    await expect(page.locator('.skill-picker').getByRole('option')).toHaveCount(2);
     await expect(page.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await input.press('ArrowDown');
     await input.press('Enter');
@@ -187,7 +187,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await input.fill('/manual');
-    await expect(page.getByRole('option')).toHaveCount(0);
+    await expect(page.locator('.skill-picker').getByRole('option')).toHaveCount(0);
     await input.press('Escape');
     await expect(page.locator('.skill-picker')).toHaveCount(0);
     await app.close();
@@ -204,7 +204,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     const sidebar = page.getByRole('complementary', { name: '画布助手' });
     const canvasInput = sidebar.getByLabel('消息', { exact: true });
     await canvasInput.fill('/shot');
-    await expect(sidebar.getByRole('option')).toHaveCount(1);
+    await expect(sidebar.locator('.skill-picker').getByRole('option')).toHaveCount(1);
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('skills-canvas-dark.png') });
@@ -219,7 +219,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     expect(JSON.stringify(requests.at(-1)?.tools)).toContain('load_skill');
     await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await canvasInput.fill('/');
-    await expect(sidebar.getByRole('option')).toHaveCount(1);
+    await expect(sidebar.locator('.skill-picker').getByRole('option')).toHaveCount(1);
     await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath('skills-canvas-picker-dark.png') });
   } finally {

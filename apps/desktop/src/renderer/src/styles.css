@@ -1473,6 +1473,65 @@ input.node-name:focus-visible {
   padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
 }
+.model-library {
+  padding: 24px 40px 40px;
+}
+.model-library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.model-library h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.model-library-heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.configured-model {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.configured-model > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.configured-model p,
+.configured-model small,
+.models-empty {
+  color: var(--color-secondary);
+  font-size: 12px;
+}
+.configured-model p {
+  margin: 6px 0;
+}
+.configured-model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.configured-model-actions button,
+.model-library-back {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--node-field);
+  color: var(--color-ink);
+}
+.relay-settings .model-library-back {
+  margin-bottom: 16px;
+}
 .general-settings {
   padding: 24px 40px 40px;
   display: flex;
