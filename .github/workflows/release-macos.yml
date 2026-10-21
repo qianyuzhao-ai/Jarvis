@@ -40,6 +40,9 @@ jobs:
       RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
+      - name: Preserve LF line endings on Windows
+        if: matrix.platform == 'windows'
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

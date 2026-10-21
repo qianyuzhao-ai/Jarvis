@@ -2,6 +2,11 @@
 
 最后更新：2026-10-21
 
+## v0.1.4 Windows 检出换行修复（2026-10-21）
+
+- PR #17 合入 develop（`8b3106d`），PR #18 合入 main（`2aed851`），`v0.1.4` 指向 main 合并提交。唯一标签运行 `39526365544` 的 Windows 作业在 Biome 检查失败：Windows Git 默认将 LF 检出为 CRLF，产生 68 个格式错误，尚未构建安装包。
+- 修复在 Windows checkout 前设置 `core.autocrlf=false`，按仓库存储的 LF 检出；不改应用源码、不移动标签。流程修正进入 main 后通过 workflow_dispatch 输入原 v0.1.4 重试。
+
 ## v0.1.4 发布准备（2026-10-21）
 
 - 用户授权提交当前改动、PR 合入 develop 并发布 v0.1.4，随后明确包含全部 3 个画布修复。Windows 打包提交 `da696b1` 与画布分支通过 `f2c625e` 集成，PR #17 指向 develop。根包、桌面包、README 和版本记录统一为 0.1.4。
