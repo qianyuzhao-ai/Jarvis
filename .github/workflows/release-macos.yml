@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   package:
-    name: Build unsigned ${{ matrix.platform }} ${{ matrix.arch }} package
+    name: Build ${{ matrix.platform }} ${{ matrix.arch }} package
     strategy:
       fail-fast: false
       matrix:
@@ -71,23 +71,33 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
-      - name: Build unsigned DMG and ZIP
+      - name: Build signed and notarized DMG and ZIP
         if: matrix.platform == 'macos'
         working-directory: apps/desktop
-        run: pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'true'
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing required secret: $name"
+              exit 1
+            fi
+          done
+          if [[ ! "$APPLE_TEAM_ID" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo '::error::APPLE_TEAM_ID must contain 10 uppercase letters or digits'
+            exit 1
+          fi
+          pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
       - name: Verify macOS package
         if: matrix.platform == 'macos'
-        run: |
-          version="$(node -p 'require("./apps/desktop/package.json").version')"
-          release_dir="release/github-${version}"
-          app="$release_dir/mac-arm64/Jarvis.app"
-          test -d "$app"
-          test "$(lipo -archs "$app/Contents/MacOS/Jarvis")" = arm64
-          test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "$version"
-          test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
-          test -f "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
-          hdiutil verify "$release_dir/Jarvis-${version}-macos-arm64-unsigned.dmg"
-          unzip -tqq "$release_dir/Jarvis-${version}-macos-arm64-unsigned.zip"
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash apps/desktop/scripts/verify-macos-release.sh
       - name: Build unsigned Windows installer
         if: matrix.platform == 'windows'
         working-directory: apps/desktop
@@ -120,7 +130,7 @@ jobs:
           }
       - uses: actions/upload-artifact@v4
         with:
-          name: Jarvis-${{ matrix.platform }}-${{ matrix.arch }}-unsigned-${{ github.run_id }}
+          name: Jarvis-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}
           path: |
             release/github-*/*.dmg
             release/github-*/*.zip
@@ -144,7 +154,7 @@ jobs:
           ref: ${{ inputs.tag || github.ref_name }}
       - uses: actions/download-artifact@v4
         with:
-          pattern: Jarvis-*-unsigned-${{ github.run_id }}
+          pattern: Jarvis-*-${{ github.run_id }}
           path: release-assets
           merge-multiple: true
       - name: Verify assets and publish one Release
@@ -152,8 +162,8 @@ jobs:
         run: |
           version="$(node -p 'require("./apps/desktop/package.json").version')"
           assets=(
-            "release-assets/github-${version}/Jarvis-${version}-macos-arm64-unsigned.dmg"
-            "release-assets/github-${version}/Jarvis-${version}-macos-arm64-unsigned.zip"
+            "release-assets/github-${version}/Jarvis-${version}-macos-arm64.dmg"
+            "release-assets/github-${version}/Jarvis-${version}-macos-arm64.zip"
             "release-assets/github-${version}/Jarvis-${version}-windows-x64-unsigned-setup.exe"
           )
           for asset in "${assets[@]}"; do
@@ -165,4 +175,4 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" "${assets[@]}" \
             --verify-tag --generate-notes --prerelease \
-            --title "$RELEASE_TAG (unsigned, macOS arm64 + Windows x64)"
+            --title "$RELEASE_TAG (macOS signed & notarized, Windows unsigned)"
