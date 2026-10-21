@@ -772,9 +772,7 @@
   color: var(--color-secondary);
 }
 .skills-manager header,
-.skills-manager h2,
-.skills-import,
-.skills-import > button {
+.skills-manager h2 {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -793,16 +791,6 @@
   font-size: 12px;
   line-height: 20px;
   color: var(--color-secondary);
-}
-.skills-import {
-  flex-wrap: wrap;
-  margin-block: 20px;
-}
-.skills-import > button {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 7px 12px;
 }
 .skills-list article {
   display: flex;
@@ -843,11 +831,4 @@
 .skills-manager footer {
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
-}
-
-.skills-settings {
-  padding: 24px 40px 40px;
-}
-.skills-settings h2 {
-  font-size: 24px;
 }

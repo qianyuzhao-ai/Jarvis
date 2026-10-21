@@ -1387,6 +1387,83 @@ input.node-name:focus-visible {
   min-width: 0;
   margin-inline: auto;
 }
+.plugins-settings {
+  padding: 24px 40px 40px;
+}
+.plugins-settings > h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.plugins-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-block: 24px;
+}
+.plugins-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.plugins-add:hover:not(:disabled) {
+  background: var(--color-sidebar);
+}
+.plugins-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--color-sidebar);
+}
+.plugins-tabs > button {
+  min-width: 72px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+}
+.plugins-tabs > button:hover {
+  color: var(--color-ink);
+}
+.plugins-tabs > button[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.plugins-settings > [role='tabpanel']:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.plugins-mcp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-border);
+}
+.plugins-mcp h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+.plugins-mcp > span {
+  color: var(--color-secondary);
+  font-size: 12px;
+}
 .settings-row {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr);

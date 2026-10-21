@@ -1,7 +1,7 @@
 import type { Ref } from 'react';
 import {
   ChevronLeft,
-  BookmarkCheck,
+  Puzzle,
   Cpu,
   Database,
   Folder,
@@ -27,7 +27,7 @@ export function Sidebar({
   collapseRef,
   onWriting,
   onModels,
-  onSkills,
+  onPlugins,
   onNewChat,
   onSelectChat,
   chatSessions,
@@ -38,13 +38,13 @@ export function Sidebar({
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
-  section: 'general' | 'services' | 'models' | 'skills';
+  section: 'general' | 'services' | 'models' | 'plugins';
   onGeneral: () => void;
   onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
   onWriting: () => void;
   onModels: () => void;
-  onSkills: () => void;
+  onPlugins: () => void;
   onNewChat: () => void;
   onSelectChat: (id: string) => void;
   chatSessions: ChatSession[];
@@ -105,17 +105,13 @@ export function Sidebar({
               <Folder />
               文件与权限
             </button>
-            <button className="side-link" disabled>
-              <Plug />
-              MCP 连接
-            </button>
             <button
-              className={`side-link ${section === 'skills' ? 'selected' : ''}`}
-              onClick={onSkills}
-              aria-current={section === 'skills' ? 'page' : undefined}
+              className={`side-link ${section === 'plugins' ? 'selected' : ''}`}
+              onClick={onPlugins}
+              aria-current={section === 'plugins' ? 'page' : undefined}
             >
-              <BookmarkCheck />
-              Skill
+              <Puzzle />
+              插件
             </button>
             <button className="side-link" disabled>
               <Database />

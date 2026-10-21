@@ -18,7 +18,7 @@ import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
 import { RelaySettings } from './features/agent/RelaySettings';
-import { SkillsSettings } from './features/agent/SkillsSettings';
+import { PluginSettings } from './features/settings/PluginSettings';
 import './features/agent/agent.css';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
@@ -32,7 +32,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     'chat',
   );
   const [settingsSection, setSettingsSection] = useState<
-    'general' | 'services' | 'models' | 'skills'
+    'general' | 'services' | 'models' | 'plugins'
   >('general');
   const agent = useAgent();
   const theme = useResolvedTheme(data.theme);
@@ -59,7 +59,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       })),
     [projectId, update],
   );
-  function openSettings(section: 'general' | 'services' | 'models' | 'skills') {
+  function openSettings(section: 'general' | 'services' | 'models' | 'plugins') {
     if (
       settingsDirty &&
       section !== settingsSection &&
@@ -149,7 +149,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               onGeneral={() => openSettings('general')}
               onServices={() => openSettings('services')}
               onModels={() => openSettings('models')}
-              onSkills={() => openSettings('skills')}
+              onPlugins={() => openSettings('plugins')}
               onNewChat={() => navigateChat(null)}
               onSelectChat={(id) => navigateChat(id)}
               chatSessions={agent.snapshot.sessions}
@@ -185,8 +185,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   ? '通用'
                   : settingsSection === 'models'
                     ? '模型服务'
-                    : settingsSection === 'skills'
-                      ? 'Skill'
+                    : settingsSection === 'plugins'
+                      ? '插件'
                       : '内网地址'
                 : route === 'chat'
                   ? '新对话'
@@ -199,7 +199,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 hidden={
                   route === 'chat' ||
                   (route === 'settings' &&
-                    (settingsSection === 'models' || settingsSection === 'skills'))
+                    (settingsSection === 'models' || settingsSection === 'plugins'))
                 }
               >
                 {status}
@@ -222,11 +222,11 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 onDirtyChange={setSettingsDirty}
               />
             )
-          ) : route === 'settings' && settingsSection === 'skills' ? (
+          ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (
-              <p className="launch-message">正在读取技能…</p>
+              <p className="launch-message">正在读取插件…</p>
             ) : (
-              <SkillsSettings
+              <PluginSettings
                 skills={agent.snapshot.skills ?? []}
                 busy={!!agent.snapshot.busySessionId}
               />

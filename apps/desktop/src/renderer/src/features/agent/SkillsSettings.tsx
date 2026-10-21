@@ -1,9 +1,20 @@
 import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BookOpen, FolderPlus } from 'lucide-react';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { agentValue } from '../../../../shared/agent';
 
-export function SkillsSettings({ skills, busy }: { skills: SkillInfo[]; busy: boolean }) {
+export function SkillsSettings({
+  skills,
+  busy,
+  actionTarget,
+  active,
+}: {
+  skills: SkillInfo[];
+  busy: boolean;
+  actionTarget: HTMLElement | null;
+  active: boolean;
+}) {
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -40,10 +51,7 @@ export function SkillsSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
     }
   }
   return (
-    <section
-      className="settings-page skills-settings skills-manager"
-      aria-labelledby="skills-title"
-    >
+    <section className="skills-manager" aria-labelledby="skills-title">
       <header>
         <h2 id="skills-title">
           <BookOpen size={18} />
@@ -51,13 +59,21 @@ export function SkillsSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
         </h2>
       </header>
       <p>输入 / 主动选择技能，或由 Agent 根据技能的适用规则自动加载。</p>
-      <div className="skills-import">
-        <button type="button" disabled={pending || busy} onClick={() => void change('import')}>
-          <FolderPlus size={16} />
-          {pending ? '处理中…' : '导入技能包'}
-        </button>
-        <small>选择包含 SKILL.md 的文件夹</small>
-      </div>
+      {active &&
+        actionTarget &&
+        createPortal(
+          <button
+            type="button"
+            className="plugins-add"
+            title="选择包含 SKILL.md 的文件夹"
+            disabled={pending || busy}
+            onClick={() => void change('import')}
+          >
+            <FolderPlus size={16} />
+            添加 skill
+          </button>,
+          actionTarget,
+        )}
       {busy && <p role="status">当前对话正在回复，完成或停止后可调整技能。</p>}
       {error && (
         <p className="agent-error" role="alert">
