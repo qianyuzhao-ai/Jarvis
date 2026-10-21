@@ -93,11 +93,26 @@ jobs:
             exit 1
           fi
           pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
+      - name: Load macOS verification tools from workflow commit
+        if: matrix.platform == 'macos'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          sparse-checkout: |
+            apps/desktop/scripts/verify-macos-release.sh
+            apps/desktop/scripts/apple-network-retry.sh
+            apps/desktop/scripts/apple-network-retry.test.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Test Apple network retry policy
+        if: matrix.platform == 'macos'
+        run: bash .release-tools/apps/desktop/scripts/apple-network-retry.test.sh
       - name: Verify macOS package
         if: matrix.platform == 'macos'
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bash apps/desktop/scripts/verify-macos-release.sh
+        run: bash .release-tools/apps/desktop/scripts/verify-macos-release.sh
       - name: Build unsigned Windows installer
         if: matrix.platform == 'windows'
         working-directory: apps/desktop

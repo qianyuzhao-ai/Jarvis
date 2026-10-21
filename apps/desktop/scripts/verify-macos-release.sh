@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/apple-network-retry.sh"
+
 : "${APPLE_TEAM_ID:?APPLE_TEAM_ID is required}"
 version="$(node -p 'require("./apps/desktop/package.json").version')"
 release_dir="$(pwd)/release/github-${version}"
@@ -19,8 +21,8 @@ verify_app() {
   grep -Fq 'Authority=Developer ID Application:' <<< "$signature"
   grep -Fxq "TeamIdentifier=$APPLE_TEAM_ID" <<< "$signature"
   grep -Eq 'flags=.*\(.*runtime' <<< "$signature"
-  xcrun stapler validate "$app"
-  spctl --assess --type execute --verbose=4 "$app"
+  retry_apple_network xcrun stapler validate "$app"
+  retry_apple_network spctl --assess --type execute --verbose=4 "$app"
 }
 
 verify_app "$release_dir/mac-arm64/Jarvis.app"

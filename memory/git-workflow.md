@@ -2,12 +2,25 @@
 
 最后更新：2026-10-21
 
+## 0.1.8 校验工具修复与同标签重试（2026-10-21）
+
+- 用户明确授权有限重试修复、Gitflow 提交/推送/合并，以及重试发布 v0.1.8。原运行的 Apple 公证已成功，失败发生于 DMG 内应用 stapler validate 的 Apple 网络 -1005/退出 68；Windows、目录包与 ZIP 内应用校验成功。
+- `feature/apple-network-retry` 从刷新后的 origin/develop `efbce12` 创建于独立 `/private/tmp/jarvis-apple-network-retry`，保留原工作区 feature/ui-style 未提交工作。仍经 feature → develop → main PR，不移动 v0.1.8（应继续指向 `caa4256e857957259f21518b772be24d5cc9d07f`），不覆盖已有 Release。
+- 合并后从最新 main 手动 dispatch 发布工作流、输入 v0.1.8。应用源码/配置来自原标签，macOS 校验工具来自工作流触发提交的独立稀疏 checkout；原运行的 rerun 不会读取后续脚本修复。此次授权只重试这一版本，最终运行/资产结果待回读。
+
+## 0.1.8 发布验证（2026-10-21）
+
+- 用户授权按 Gitflow 提交、推送、合并、发布 0.1.8 并验证 macOS 签名公证。实现提交 `23c96d4` 经 [PR #34](https://github.com/qianyuzhao-ai/Jarvis/pull/34) 合入 develop（`5447840`），[PR #35](https://github.com/qianyuzhao-ai/Jarvis/pull/35) 合入 main（`caa4256`）。`v0.1.8` 指向该 main 合并提交，远端标签已回读；没有移动旧标签或覆盖已有 Release。
+- 唯一标签构建 [39613181833](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39613181833) 已触发。Windows 构建、产物校验和 Artifact 上传成功（4m44s）；macOS 已使用 Developer ID Application 身份签名并提交 Apple，公证及统一发布待完成。
+- 为区分签名等待与公证排队，诊断提交 `52f0027` 经 [PR #36](https://github.com/qianyuzhao-ai/Jarvis/pull/36) → develop（`593b982`）、[PR #37](https://github.com/qianyuzhao-ai/Jarvis/pull/37) → main（`13bd2d6`）集成。独立手动诊断 [39615732424](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39615732424) 成功查询：Apple 于 `2026-10-21T14:09:14.028Z` 收到 `Jarvis.zip`，提交 ID `71055590-e096-4ee7-974c-6e75244c9610`，查询时为 `In Progress`。诊断不构建、不上传、不重提公证，没有改动 v0.1.8。
+- 第二次只读诊断 [39616937355](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39616937355) 的历史查询作业成功，同一提交仍为 `In Progress`。本轮尚未取得 Apple Accepted、公证票据、Gatekeeper 或 Release 成功结果；不能把完成 Gitflow 和签名描述为发布成功。原标签构建继续等待 Apple，作业上限 60 分钟；后续先回读原运行与同一提交的状态，不移动标签或盲目重复上传。
+
 ## macOS 签名公证发布配置（2026-10-21）
 
 - 后续用户授权本轮按 Gitflow 提交、推送、PR 合并并发布 0.1.8，验证云端 macOS 签名和公证。已 fetch 核对 develop 基线 `351ed83`，远端无 v0.1.8 标签、无打开的 PR，五项 Secrets 名称存在；不读取秘密值。根包、桌面包和版本记录统一 0.1.8，发布结果待回读。
 - 用户完成 Developer ID Application 证书创建与带私钥 `.p12` 导出，并报告五项 Repository secrets 已配置；本轮授权修改工作流启用 macOS 签名、公证，不包含提交、推送、合并、标签或发布。
 - 从已 fetch 的 `origin/develop` 创建 `feature/macos-signing-notarization`。新配置将 macOS arm64 包改为正式签名、公证并验证后发布；Windows x64 保持未签名，仍需双平台全部成功后统一预发布。首次使用须有包含新配置的新标签；0.1.7 及历史产物不改动。
-- 本地检查与构建已通过；真实 Apple 签名、公证和 Gatekeeper 结果待首次授权的云端发布验证。凭据操作说明见 `apps/desktop/RELEASING.md`。
+- 本地检查与构建已通过；后续 0.1.8 已按用户新授权完成 PR 集成、标签和云端签名/上传，公证与 Gatekeeper 仍待完成，详见顶部 0.1.8 记录。凭据操作说明见 `apps/desktop/RELEASING.md`。
 
 ## 0.1.7 发布（2026-10-21）
 
