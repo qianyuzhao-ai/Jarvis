@@ -7,6 +7,7 @@
 - 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。
 - 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；完整集成验证和云端结果待回读。
 - 合并后使用 Node 22.23.3 验证：pnpm check、构建与完整 Electron 回归 74/74（2.2m）通过；更新清单 3/3 和 Apple 网络有限重试 7/7 通过，git diff --check 通过。真实 DeepSeek 服务及两个签名版本间的生产自动升级仍未验证。
+- 当前状态：本地集成提交 4d21362、验证记录 0b3c00f 已完成；原 UI worktree 和集成 worktree 均干净，所有待发布实现已包含。推送多次遇到 GitHub TLS SSL_ERROR_SYSCALL，REST 为 EOF，连接器也无法连接。尚未推送成功、创建 PR、合入 develop/main、创建 v0.2.0 标签或触发云端发布；网络恢复后从 feature/in-app-updates 继续，不重复创建版本或移动旧标签。
 
 ## 应用内自动更新开发（2026-10-22）
 
