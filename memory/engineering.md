@@ -1,6 +1,41 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 0.2.0 集成与发布（2026-10-22）
+
+- 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。
+- 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；完整集成验证和云端结果待回读。
+- 合并后使用 Node 22.23.3 验证：pnpm check、构建与完整 Electron 回归 74/74（2.2m）通过；更新清单 3/3 和 Apple 网络有限重试 7/7 通过，git diff --check 通过。真实 DeepSeek 服务及两个签名版本间的生产自动升级仍未验证。
+
+## 我的模型与 DeepSeek 官方接入（2026-10-22）
+
+- 用户明确模型服务采用可持久化的“我的模型”列表，支持 DeepSeek 官方与多个自定义中转模型共存、Chat/画布按会话切换。实现留在当前 `feature/ui-style`；用户随后授权本地提交代码、测试及项目记忆，不推送或合并。
+- 已实际检查安装的 `@earendil-works/pi-ai` / `pi-coding-agent` 1.3.0：通过 `getBuiltinModels`（`@earendil-works/pi-ai/providers/all`）和 `ModelRuntime.getModel('deepseek', id)` 核对内置 DeepSeek。根包没有旧 `getModels` 命名导出，不沿用旧 API。官方文档 https://api-docs.deepseek.com/ 与 https://api-docs.deepseek.com/api/list-models/ 本轮读取确认 `deepseek-flash` / `deepseek-v4-pro` 和官方地址；思考/工具兼容规则见 https://api-docs.deepseek.com/guides/thinking_mode/ 。
+- `RelayConfig.provider` 可选 `relay` / `deepseek`，缺少字段的旧记录按 relay 处理。官方配置校验固定 `https://api.deepseek.com` 和 `openai-completions`，仅接受当前版本内置模型；Runtime 使用原生 deepseek provider，保留内置兼容与输入能力。上下文默认采用 SDK 的 1,000,000 保护值，输出仍沿用应用原有 4096 默认与 32768 配置上限；不宣称这些应用选值是官方完整上限。思考仍 off。
+- `agent/connection.json` 升为 `{version:2,defaultModelId,models:[{id,config,encryptedKey}]}`，最多 100 条。初始化将旧 `{config,encryptedKey}` 原子迁移为一条 UUID 模型记录，保留密文。`view()` 仅返回 `{config,hasKey,defaultModelId,models:[{id,config,hasKey}]}`，不包含 Key 或密文；返回配置用结构化副本，避免会话切换修改模型库。
+- `saveConfiguration` 输入兼容旧负载；新增 `create:true` 为追加，`modelId` 为编辑，二者互斥；均省略时保持编辑默认模型的旧语义。测试连接/获取模型可带相同目标信息以解析对应 Key；切换来源/地址不得暗中沿用其他模型的 Key。官方来源必须提供 Key，继续使用 safeStorage 加密。
+- 新增受限 IPC `agent:remove-model(UUID)` / `agent:default-model(UUID)`；从 preload 暴露对应方法。模型删除只更新配置数组，保留会话与 SDK 历史；删除默认模型改为第一条剩余记录，空库默认 null。读写仍由主进程串行处理，运行/测试期间禁止配置写入。
+- `ChatSession.modelId` 为可选 UUID，新会话绑定默认记录；既有 `setModel({sessionId,model})` 中 `model` 现在指已保存记录 UUID，不再接收任意自由输入 ID。切换更新会话连接、模型、上下文及 Key 解析目标；发送按该 UUID 解析，不依赖全局默认来源。旧会话无 UUID 时保留原展示和原连接检查，可重新选择模型升级绑定。模型删除后发送明确失败，不偷偷回退到别的凭据。
+- 原生模型选择框同时用于首页和画布，保留历史。DeepSeek Pro 的当前附件/历史图片在 renderer 和主进程边界阻止，避免 SDK 忽略不支持的图像；Flash 继续支持已授权的图片与视频代表帧。SDK 资源加载和工具限制不扩展。
+- SDK fetch 包装统一构造 `Request`，保留 SDK 请求头/请求体并拒绝重定向；无鉴权中转仍移除 Authorization。DeepSeek 测试使用固定官方地址和原生 provider，通过测试内 fetch 转发到本地 SSE 模拟服务，不放宽生产地址校验或读取真实 Key。
+- 检查、构建和 diff 通过；最终相关回归 8/8（17.1s）通过。整组 60/61（1.7m），唯一剩余为已有侧栏动画退出中间帧取样不稳定，独立复测通过；鼠标连线两项也独立及后续整组通过。没有为了全绿修改这些断言。真实 DeepSeek 服务、真实 Key 和费用未验证。本轮未发布或提交。
+
+## 应用内自动更新（2026-10-22）
+
+- 持久目录迁移后，修复了 14 个自动生成的 pnpm 启动脚本中的旧绝对路径。登录 shell 的 Node 22.17.0 在 Playwright 加载 ExcelJS 时出现内部模块错误，未跳过回归；改用项目固定 Node 22.23.3 后，持久目录最终检查/构建和完整 **70/70（1.8m）**、3 项清单测试均通过。隔离 Node 位于 `/Users/hugo/Developer/my-jarvis-worktrees/node-v22.23.3-darwin-arm64/bin/node`，官方分发 SHA-256 已核验，未改全局 Node。运行测试时临时将该 bin 加入 PATH；未关闭供应链或 TLS 检查、未删除缓存。
+- 本地 ASAR 已检查，包含 electron-updater 6.8.9 及全部直接运行时依赖。最终文案区分“本次检查未完成”和“当前已是最新版本”，时间标为上次成功检查，已有成功记录不能掩盖后续网络失败。
+
+- **最终验证**：`pnpm check`、构建及完整 Electron 回归 **70/70（1.8m）** 通过；3 项 Node 清单回归、实际 ZIP 更新源/清单哈希、工作流 YAML/Bash、发布 schema 和 debug 排除检查通过。追加原生交接失败后恢复窗口的回归已纳入同一轮。浅色进度和 900×640 深色下载完成截图均已查看；截图位于 `apps/desktop/test-results/de12538f-b51d-472e-b664-f76c87b1000f/updates-automatic-and-manu-3f630-ation-work-in-a-real-window/`。
+
+- 用户要求自动/手动检查、下载进度、确认后重启安装，并明确选择包含 GitHub 预发布版本。从刷新后的 origin/develop `004beb3` 创建 `feature/in-app-updates`，位于 `/Users/hugo/Developer/my-jarvis-worktrees/in-app-updates`；原 `feature/ui-style` 工作区及未提交修改未触碰。本轮仅实现，未提交、推送或发布，版本号保持 0.1.8。
+- 运行时依赖 `electron-updater 6.8.9`，开发依赖 `yaml 2.9.0`，均固定版本。npm 查询临时失败后从 pnpm 缓存成功安装，锁文件同步。更新逻辑只在主进程，preload 仅提供状态、检查、下载、安装和保存回执接口，没有任意 URL/文件/Shell 能力；sandbox/contextIsolation/CSP 保持。
+- 正式 macOS/Windows 包且存在资源 app-update.yml 才启用。启动 15 秒后及每 4 小时自动检查，包含预发布、拒绝降级、不自动下载、不在普通退出时安装。检查/下载/安装防重复，状态带 revision 防止旧 IPC 回包覆盖新进度；后台无新版本或检查失败不弹窗。
+- 主进程确认框默认稍后。重启前拒绝活跃 Agent、生成、上传、下载、导出和写作操作；renderer 以一次性 ID 确认保存，项目 IndexedDB 写入完成、写作文档 flush、无未保存设置后才交接。回执核对 owner/mainFrame/URL/ID，超时 15 秒不安装；窗口关闭等待上限 5 秒，收到 closed 后才 quitAndInstall。取消恢复焦点，交接失败恢复窗口/错误状态，普通退出不安装。
+- 正式发布配置覆盖基础 publish:null，GitHub provider 固定公开 qianyuzhao-ai/Jarvis；未向客户端打包 token。CI 校验更新清单版本、通道/平台文件名、目标 ZIP/EXE、真实大小与 SHA-512，上传清单和 blockmap，排除 builder 调试清单。保留签名公证及有限重试、双平台全成功后统一预发布的流程。
+- 已通过更新状态/确认单测、3 项清单回归及真实 Electron 更新交互；真实 electron-updater 通过本地 HTTP 下载到独立测试缓存，坏 SHA-512 被拒绝后重试成功。原生交接测试验证写作文件先保存、窗口先关闭、再调用模拟安装器；未运行真实替换安装。
+- 已生成本地独立目录未签名 ZIP：`release/updates-validation-2d0e73d8-d75a-4841-b4af-c0345a753b98/`，验证应用资源内 GitHub app-update.yml（无 token）及实际 latest-mac.yml 的版本/大小/SHA-512。发现并排除 builder-debug.yml；此包不发布、不作为签名升级验收。完整回归与截图结果见本节最终验证。
+- 已发布 0.1.8 仍无更新器。首次含更新器的新版本须手动安装一次；真实 A→B 签名升级、云端新清单发布及 Windows 更新实机验收尚未完成，不能据此宣称已发布或已验证跨版本升级。发布操作见 apps/desktop/RELEASING.md。
 
 ## Apple 票据校验网络错误有限重试（2026-10-21）
 
@@ -123,7 +158,10 @@
 
 ## 应用图标接入（2026-10-21）
 
-- 从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
+- 挂载图标验证追加：基础配置显式指定 `dmg.icon: resources/icon.icns`，沿用已有透明 ICNS；用户明确 `.dmg` 文件保持系统默认图标，没有加入文件图标后处理。使用前轮未签名目录包创建 `/tmp/jarvis-dmg-icon-check/Jarvis-0.1.8-arm64.dmg`，只读挂载 `Jarvis Icon Check` 后确认 `.VolumeIcon.icns` 与源码字节一致，并已卸载测试卷；本轮首试因沙箱 hdiutil 设备权限失败，沙箱外通过。用户随后授权本地提交；不涉及正式签名、公证、推送或发布。
+- **透明背景修复（同日追加）**：按用户截图移除旧图标的方形灰白外底。新增原 Figma `192:12530` 导出的 `resources/icon.svg`，保留圆角形状与紫蓝图案；通过 Electron Chromium 透明渲染并转换为 `icon.png`、`icon.ico`、`icon.icns`。PNG 1024px、ICO 16/24/32/48/64/128/256px 和 ICNS 全部表示的四角 alpha=0；现有 mac/win/运行时配置继续引用同名资源。`pnpm check`、构建与 diff 检查通过；用户随后授权本轮本地提交，不推送或发布，Windows 实机未验证。
+- 透明背景修复的 macOS arm64 未签名目录包验证通过：`release/0f51fe49-d1d3-42bb-bbf6-5cdc6de91f4f/mac-arm64/Jarvis.app`，Info.plist 引用 `icon.icns`，包内 PNG/ICNS 与源码字节相同。首轮因沙箱 DNS 无法下载 Electron 失败，联网重试成功；没有签名、公证或发布，不代表 Windows 或系统 Dock/桌面显示已验收。
+- 首次接入历史：从用户指定 Figma `192:12530` 导出 1024 × 1024 PNG，资源位于 `apps/desktop/resources/icon.png` / `icon.icns` / `icon.ico`；ICNS 与 ICO 使用 Pillow 从原图转换，运行和构建不增加依赖。
 - `electron-builder.yml` 配置 mac/win 图标及 PNG extraResources，发布配置继承基础配置。主进程窗口使用开发资源或 `process.resourcesPath/icon.png`，开发 macOS Dock 单独设置，正式 macOS bundle 使用 ICNS。
 - 从 develop 建立 `feature/app-icon`，保留原有 Agent 未提交改动；用户授权本轮仅提交图标相关改动；未推送或发布。`pnpm check`、构建与本地 macOS arm64 目录打包通过。产物 `release/218937ad-9c02-4af8-b96a-9e165f38dd9a/mac-arm64/Jarvis.app` 的 Info.plist 图标引用和两份图标资源字节验证通过，仍为未签名包。
 - 首次沙箱打包因下载 Electron DNS 受限失败，沙箱外重试成功；窗口测试沙箱内无法启动，沙箱外首轮超时，独立重跑窗口导航与隔离回归 1/1 通过（1.4 秒）。打包发现既有 Agent 依赖收集警告，未扩展到依赖修复，不声称完成打包后 Agent 验收。

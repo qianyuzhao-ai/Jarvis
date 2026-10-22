@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { saveWorkspace } from './storage';
 import type { WorkspaceData } from './types';
+import { useUpdateGuard } from '../updates/use-update-guard';
 export type ChangeWorkspace = (previous: WorkspaceData) => WorkspaceData;
 export function useWorkspace(initial: WorkspaceData) {
   const [data, setData] = useState(initial);
@@ -40,5 +41,16 @@ export function useWorkspace(initial: WorkspaceData) {
     },
     [commit],
   );
+  useUpdateGuard(async () => {
+    const busy = current.current.projects.some((project) =>
+      project.nodes.some((node) =>
+        node.type === 'asset'
+          ? node.data.upload.status === 'uploading'
+          : ['uploading', 'submitting', 'running'].includes(node.data.generation?.status ?? ''),
+      ),
+    );
+    if (busy) throw new Error('请先等待素材上传或生成任务完成，再重启安装。');
+    await commit((value) => value);
+  });
   return { data, update, commit, getCurrent, status, saveError };
 }

@@ -52,13 +52,13 @@ export function ServiceSettings({
     onDirtyChange(false);
   }
   return (
-    <form className="settings-form" onSubmit={submit} noValidate>
+    <form className="settings-page settings-form" onSubmit={submit} noValidate>
       <div>
         <h1>配置内网服务</h1>
         <p>填写请求来源标识及各服务地址。</p>
       </div>
       {fields.map(([key, label]) => (
-        <label className="form-field" key={key} htmlFor={key}>
+        <label className="settings-row form-field" key={key} htmlFor={key}>
           <span>{label}</span>
           <input
             id={key}

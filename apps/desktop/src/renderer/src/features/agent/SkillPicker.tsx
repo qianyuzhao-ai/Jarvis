@@ -1,4 +1,4 @@
-import { BookOpen, Settings2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 
 export function SkillPicker({
@@ -6,13 +6,11 @@ export function SkillPicker({
   active,
   listId,
   onSelect,
-  onManage,
 }: {
   skills: SkillInfo[];
   active: number;
   listId: string;
   onSelect: (skill: SkillInfo) => void;
-  onManage: () => void;
 }) {
   return (
     <div className="skill-picker">
@@ -41,10 +39,6 @@ export function SkillPicker({
           <p>没有匹配的已启用技能</p>
         )}
       </div>
-      <button type="button" className="skill-picker-manage" onClick={onManage}>
-        <Settings2 size={14} />
-        管理技能
-      </button>
     </div>
   );
 }

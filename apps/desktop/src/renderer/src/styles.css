@@ -133,6 +133,28 @@ button:disabled {
   padding: 16px 0 24px;
 }
 
+.sidebar-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  width: 100%;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-secondary);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-back:hover {
+  background: var(--color-border);
+}
+
 .brand strong {
   font-size: 22px;
   font-weight: 600;
@@ -285,7 +307,7 @@ h1 {
   height: 100dvh;
   color: var(--color-ink);
   background: var(--color-sidebar);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   color-scheme: light;
 }
@@ -551,29 +573,31 @@ svg {
   padding: 24px 40px 40px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  width: min(100%, 700px);
+  gap: 0;
 }
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.settings-form > div:first-child {
+  margin-bottom: 24px;
 }
 .form-field > span {
-  font-weight: 500;
+  padding-top: 8px;
+  font-weight: 400;
+}
+.form-field > small {
+  grid-column: 2;
 }
 .form-field input {
   height: 36px;
   width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0 10px;
 }
 .form-field input[aria-invalid='true'] {
   border-color: #c64a4a;
 }
 .form-actions {
+  margin-top: 24px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -1357,21 +1381,171 @@ input.node-name:focus-visible {
   min-height: 100%;
   width: 100%;
 }
+.settings-page {
+  width: 100%;
+  max-width: 700px;
+  min-width: 0;
+  margin-inline: auto;
+}
+.plugins-settings {
+  padding: 24px 40px 40px;
+}
+.plugins-settings > h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.plugins-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-block: 24px;
+}
+.plugins-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.plugins-add:hover:not(:disabled) {
+  background: var(--color-sidebar);
+}
+.plugins-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--color-sidebar);
+}
+.plugins-tabs > button {
+  min-width: 72px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+}
+.plugins-tabs > button:hover {
+  color: var(--color-ink);
+}
+.plugins-tabs > button[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+.plugins-settings > [role='tabpanel']:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.plugins-mcp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-border);
+}
+.plugins-mcp h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+}
+.plugins-mcp > span {
+  color: var(--color-secondary);
+  font-size: 12px;
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px 16px;
+  min-height: 64px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.model-library {
+  padding: 24px 40px 40px;
+}
+.model-library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.model-library h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+.model-library-heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.configured-model {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.configured-model > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.configured-model p,
+.configured-model small,
+.models-empty {
+  color: var(--color-secondary);
+  font-size: 12px;
+}
+.configured-model p {
+  margin: 6px 0;
+}
+.configured-model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.configured-model-actions button,
+.model-library-back {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--node-field);
+  color: var(--color-ink);
+}
+.relay-settings .model-library-back {
+  margin-bottom: 16px;
+}
 .general-settings {
   padding: 24px 40px 40px;
   display: flex;
   flex-direction: column;
   gap: 32px;
-  max-width: 700px;
 }
 .download-settings {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 .download-settings h2 {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   margin: 0;
 }
 .download-directory-row {
@@ -1379,25 +1553,43 @@ input.node-name:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-border);
 }
-.download-directory-row > div {
-  min-width: 0;
-}
-.download-directory-row > button {
-  flex-shrink: 0;
+.download-location {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  max-width: 60%;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.download-location:hover:not(:disabled) {
+  background: var(--color-sidebar);
+  color: var(--color-ink);
 }
 .download-directory {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .download-dont-ask {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
   min-height: 36px;
   cursor: pointer;
+  color: var(--color-secondary);
+  font-size: 12px;
 }
 .download-dont-ask input {
   width: 16px;
@@ -1412,27 +1604,48 @@ input.node-name:focus-visible {
   color: var(--color-secondary);
   margin: 8px 0 0;
 }
+.theme-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--color-border);
+}
 .theme-setting h2 {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   margin: 0;
 }
 .theme-choices {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--color-sidebar);
 }
 .theme-choices button {
-  flex: 1;
-  height: 44px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-surface);
-  font-weight: 500;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+}
+.theme-choices button:hover {
+  color: var(--color-ink);
 }
 .theme-choices button[aria-pressed='true'] {
-  border-color: var(--color-accent);
-  background: var(--color-selected);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 12%),
+    inset 0 0 0 1px var(--color-border);
 }
 
 .editor-window-actions {

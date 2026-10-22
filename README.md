@@ -2,11 +2,11 @@
 
 个人工作台桌面应用。已实现 Pi 首页 Chat、带画布 Agent 的 AIGC 创作空间和本地 Markdown 写作空间。
 
-当前源码版本：`0.1.8`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.2.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
-使用 pnpm 11.24.0。项目通过 `devEngines.runtime` 管理 Node.js 22.23.3，不改变全局 Node；首次安装需要联网下载依赖和运行时。
+使用 pnpm 11.24.0。项目通过 `devEngines.runtime` 管理 Node.js 22.23.3，不改变全局 Node；首次安装需要联网下载依赖和运行时。运行检查前确认实际 `node --version` 为 22.23.3；若现有 PATH 仍落到旧 Node，请先在当前终端切换运行时，避免测试加载器兼容问题。
 
 ```sh
 pnpm install --frozen-lockfile
@@ -57,14 +57,22 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；[0.1.8 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.8) 已发布，macOS Developer ID 签名、公证、目录包及 DMG/ZIP 内应用的票据和 Gatekeeper 均通过云端验证。0.1.7 及之前版本仍为未签名包。自动更新尚未接入，Windows 安装包仍未签名，功能需实机验收。
+当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；[0.1.8 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.8) 已发布，macOS Developer ID 签名、公证、目录包及 DMG/ZIP 内应用的票据和 Gatekeeper 均通过云端验证。当前开发分支已接入应用内自动更新，已发布的 0.1.8 尚无更新器，需手动安装一次首个包含更新器的新版本。Windows 安装包仍未签名，功能需实机验收。
+
+## 应用内更新
+
+- 通过公开的 GitHub Releases 检查更新，包含预发布版本，拒绝降级。正式安装包启动 15 秒后检查一次，此后每 4 小时检查；通用设置提供手动检查。
+- 点击“下载更新”后显示百分比、已下载/总量和速度；失败可重试。下载完成不会自行安装，普通退出也不会触发安装。
+- 点击“重启并安装”后由原生对话框确认，再保存项目和写作文档。未保存设置、写作冲突、任务仍在运行或保存失败会阻止安装。窗口关闭后才交给安装器；安装器交接失败会恢复窗口显示错误。
+- 通用设置显示完整更新面板，其他页面提供更新提醒。开发模式、本地目录包缺少更新源时明确显示不可用，不访问更新服务。
+- 正式版本间升级仍需两个递增的签名发布版本实机验证，步骤见 [发布与更新说明](apps/desktop/RELEASING.md)。当前实现未改变项目、文档或会话的存储路径。
 
 ## GitHub 打包与发布
 
 - 新功能从 `develop` 创建功能分支，以 PR 合回 `develop`。发版前在 `develop` 更新根包和桌面包版本、版本记录，并在本地完成 `pnpm check` 与 `pnpm test:smoke`。
 - 直接由 `develop` 向 `main` 提发布 PR。合并后在 `main` 的合并提交上推送 `v<版本号>` 标签；这是唯一自动触发 GitHub 云端构建的事件。PR、`develop` 和 `main` 推送不会运行构建。
 - 标签工作流（`.github/workflows/release-macos.yml`）核对版本和 `main` 祖先关系，然后分别运行检查与一次构建：Intel macOS runner 交叉生成 **macOS arm64 DMG/ZIP**，Windows runner 生成 **Windows x64 NSIS EXE 安装包**。Windows 安装器支持选择安装目录，默认按当前用户安装。
-- 两个平台分别上传 Artifact，全部成功后由一个发布任务核对三个文件齐全，再创建同一个 **预发布 Release**。任一平台失败则不创建 Release，已成功平台的 Artifact 仍可下载。PR 和普通分支推送不触发构建。
+- 两个平台分别校验并上传 Artifact，包含三个安装文件、更新清单和生成的 blockmap；统一发布任务核对齐全后创建同一个 **预发布 Release**。更新清单上传前校验版本、平台目标、文件大小与 SHA-512，排除 builder 调试文件。任一平台失败则不创建 Release，已成功平台的 Artifact 仍可下载。PR 和普通分支推送不触发构建。
 - 已存在标签的任务失败或取消时，可重新运行失败作业，或在 Actions 手动输入该标签重试；已存在 Release 则停止，避免覆盖。首次双平台发布必须使用包含新配置的新版本标签，旧标签不会自动获得 Windows 配置，也不会补改现有 Release。
 - 新配置的产物命名为 `Jarvis-<版本>-macos-arm64.dmg`、同名 `.zip` 和 `Jarvis-<版本>-windows-x64-unsigned-setup.exe`。Windows 构建核对程序 x64 架构、版本与程序/安装器未签名状态；macOS 校验目录包、ZIP 解压后的应用及 DMG 中应用的架构、版本、Developer ID 签名、Team ID、Hardened Runtime、公证票据和 Gatekeeper，并检查归档完整性。
 - 签名、公证凭据仅注入 macOS 打包步骤；缺失凭据或验证失败会阻止发布。配置与凭据维护见 [macOS 发布说明](apps/desktop/RELEASING.md)。最低系统版本仍为 macOS 26.0，Windows 仍为未签名测试包。真实 Electron 窗口回归继续在发版前的本机运行。

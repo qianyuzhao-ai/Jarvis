@@ -2,15 +2,35 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
 import type { AgentEvent } from '../shared/agent';
 import type { CanvasCommand } from '../shared/canvas-agent';
+import type { UpdateState } from '../shared/updates';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
+  updates: {
+    getState: () => ipcRenderer.invoke('updates:state'),
+    check: () => ipcRenderer.invoke('updates:check'),
+    download: () => ipcRenderer.invoke('updates:download'),
+    install: () => ipcRenderer.invoke('updates:install'),
+    completePreparation: (input) => ipcRenderer.invoke('updates:prepared', input),
+    onState: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: UpdateState) => listener(value);
+      ipcRenderer.on('updates:state', handle);
+      return () => ipcRenderer.removeListener('updates:state', handle);
+    },
+    onPrepareInstall: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, id: string) => listener(id);
+      ipcRenderer.on('updates:prepare', handle);
+      return () => ipcRenderer.removeListener('updates:prepare', handle);
+    },
+  },
   agent: {
     listSkills: () => ipcRenderer.invoke('agent:skills'),
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getConfiguration: () => ipcRenderer.invoke('agent:configuration'),
     saveConfiguration: (input) => ipcRenderer.invoke('agent:save', input),
+    removeModel: (id) => ipcRenderer.invoke('agent:remove-model', id),
+    setDefaultModel: (id) => ipcRenderer.invoke('agent:default-model', id),
     testConnection: (input) => ipcRenderer.invoke('agent:test', input),
     listModels: (input) => ipcRenderer.invoke('agent:models', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),

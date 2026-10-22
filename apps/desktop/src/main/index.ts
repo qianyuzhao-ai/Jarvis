@@ -5,6 +5,9 @@ import { pathToFileURL } from 'node:url';
 import { registerGeneration, trustGenerationWindow } from './generation/bridge';
 import { registerWriting, trustWritingWindow } from './writing/bridge';
 import { registerAgent, trustAgentWindow } from './agent/bridge';
+import { registerUpdates, trustUpdateWindow, isUpdateInstalling } from './updates/bridge';
+export { configureUpdates } from './updates/bridge';
+export { createElectronBackend } from './updates/backend';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -62,6 +65,7 @@ async function createWindow(): Promise<void> {
   trustGenerationWindow(window.webContents, trustedUrl);
   trustWritingWindow(window.webContents, trustedUrl);
   trustAgentWindow(window.webContents, trustedUrl);
+  trustUpdateWindow(window.webContents, trustedUrl);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => {
     if (url !== trustedUrl) event.preventDefault();
@@ -100,6 +104,7 @@ void app
     await registerGeneration(join(app.getPath('userData'), 'generation-jobs.json'));
     await registerWriting();
     await registerAgent();
+    registerUpdates(createWindow);
     await createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -110,5 +115,5 @@ void app
   .catch(reportStartupError);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' && !isUpdateInstalling()) app.quit();
 });

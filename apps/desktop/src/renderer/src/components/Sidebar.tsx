@@ -1,7 +1,7 @@
 import type { Ref } from 'react';
 import {
-  ArrowLeft,
-  BookmarkCheck,
+  ChevronLeft,
+  Puzzle,
   Cpu,
   Database,
   Folder,
@@ -27,6 +27,7 @@ export function Sidebar({
   collapseRef,
   onWriting,
   onModels,
+  onPlugins,
   onNewChat,
   onSelectChat,
   chatSessions,
@@ -37,12 +38,13 @@ export function Sidebar({
   onProjects: () => void;
   onSettings: () => void;
   onCollapse: () => void;
-  section: 'general' | 'services' | 'models';
+  section: 'general' | 'services' | 'models' | 'plugins';
   onGeneral: () => void;
   onServices: () => void;
   collapseRef: Ref<HTMLButtonElement>;
   onWriting: () => void;
   onModels: () => void;
+  onPlugins: () => void;
   onNewChat: () => void;
   onSelectChat: (id: string) => void;
   chatSessions: ChatSession[];
@@ -62,6 +64,12 @@ export function Sidebar({
           <PanelLeftClose size={18} />
         </IconButton>
       </div>
+      {settings && (
+        <button type="button" className="sidebar-back" onClick={onProjects}>
+          <ChevronLeft size={14} strokeWidth={1.75} />
+          返回工作台
+        </button>
+      )}
       <div className="brand">
         <strong>{settings ? '设置' : 'Jarvis'}</strong>
         {!settings && <span>个人工作台</span>}
@@ -97,13 +105,13 @@ export function Sidebar({
               <Folder />
               文件与权限
             </button>
-            <button className="side-link" disabled>
-              <Plug />
-              MCP 连接
-            </button>
-            <button className="side-link" disabled>
-              <BookmarkCheck />
-              Skill
+            <button
+              className={`side-link ${section === 'plugins' ? 'selected' : ''}`}
+              onClick={onPlugins}
+              aria-current={section === 'plugins' ? 'page' : undefined}
+            >
+              <Puzzle />
+              插件
             </button>
             <button className="side-link" disabled>
               <Database />
@@ -165,21 +173,14 @@ export function Sidebar({
           )}
         </div>
       )}
-      <div className="sidebar-footer">
-        {settings ? (
-          <button className="text-button" onClick={onProjects}>
-            <ArrowLeft size={14} />
-            返回工作台
-          </button>
-        ) : (
-          <>
-            <span>本地工作台</span>
-            <IconButton label="设置" onClick={onSettings}>
-              <Settings2 size={18} />
-            </IconButton>
-          </>
-        )}
-      </div>
+      {!settings && (
+        <div className="sidebar-footer">
+          <span>本地工作台</span>
+          <IconButton label="设置" onClick={onSettings}>
+            <Settings2 size={18} />
+          </IconButton>
+        </div>
+      )}
     </aside>
   );
 }

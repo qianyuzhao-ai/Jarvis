@@ -16,6 +16,7 @@ import { canvasReplySchema } from '../../shared/canvas-agent';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
+export const isAgentBusy = () => service?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });
   contents.on('did-start-navigation', (_event, _url, _inPlace, main) => {
@@ -69,6 +70,8 @@ export async function registerAgent() {
     },
     'agent:configuration': () => config.view(),
     'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
+    'agent:remove-model': (id) => service.removeModel(agentId.parse(id)),
+    'agent:default-model': (id) => service.setDefaultModel(agentId.parse(id)),
     'agent:test': (r, owner) => service.test(relayInputSchema.parse(r), owner),
     'agent:models': (r) => config.models(relayModelsInputSchema.parse(r)),
     'agent:snapshot': () => service.snapshot(),

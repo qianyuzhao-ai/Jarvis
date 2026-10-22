@@ -1,6 +1,19 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 0.2.0 集成与发布（2026-10-22）
+
+- 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。
+- 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；完整集成验证和云端结果待回读。
+- 合并后使用 Node 22.23.3 验证：pnpm check、构建与完整 Electron 回归 74/74（2.2m）通过；更新清单 3/3 和 Apple 网络有限重试 7/7 通过，git diff --check 通过。真实 DeepSeek 服务及两个签名版本间的生产自动升级仍未验证。
+- 当前状态：本地集成提交 4d21362、验证记录 0b3c00f 已完成；原 UI worktree 和集成 worktree 均干净，所有待发布实现已包含。推送多次遇到 GitHub TLS SSL_ERROR_SYSCALL，REST 为 EOF，连接器也无法连接。尚未推送成功、创建 PR、合入 develop/main、创建 v0.2.0 标签或触发云端发布；网络恢复后从 feature/in-app-updates 继续，不重复创建版本或移动旧标签。
+
+## 应用内自动更新开发（2026-10-22）
+
+- 用户本轮要求接入 GitHub Releases 自动更新，并确认包含预发布版本。本轮只实现与验证，未执行提交、推送、PR、合并、标签或发布；根包/桌面包版本保留 0.1.8，已发布标签及资产不变。
+- 从刷新后的 origin/develop `004beb3` 创建 feature/in-app-updates，独立 worktree `/Users/hugo/Developer/my-jarvis-worktrees/in-app-updates`。保留原 feature/ui-style 的未提交设置、字体、样式与记忆改动，不在原分支覆盖或混合实现。
+- 新版本发布须包含 updater 运行时依赖、GitHub 发布配置、清单验证脚本和更新后的工作流；统一 Release 还需上传相应 yml 清单及 blockmap，builder 调试文件不得上传。已发布 0.1.8 无更新器，不能靠补改旧标签使现有客户端自动升级。
 
 ## 0.1.8 校验工具修复与同标签重试（2026-10-21）
 

@@ -28,6 +28,9 @@ import {
 } from '../../shared/generation';
 
 const trusted = new Map<number, string>();
+let activeRequests = 0;
+let runningJobs = () => false;
+export const isGenerationBusy = () => activeRequests > 0 || runningJobs();
 export function trustGenerationWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, new URL(url).href);
   contents.once('destroyed', () => trusted.delete(contents.id));
@@ -52,6 +55,7 @@ export async function registerGeneration(file: string) {
     preferencesError = true;
   }
   const jobs = new GenerationJobs(file);
+  runningJobs = () => jobs.isBusy;
   const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'));
   let uploadHistoryError = false;
   try {
@@ -73,11 +77,22 @@ export async function registerGeneration(file: string) {
     requiresJobs = true,
   ) {
     ipcMain.handle(channel, async (event, request): Promise<BridgeResult<T>> => {
+      const tracked = [
+        'generation:upload',
+        'generation:start',
+        'generation:download-media',
+        'generation:export-project',
+      ].includes(channel);
       try {
         assertSender(event);
         if (requiresJobs && storageError)
           throw new Error('本地任务记录无法读取，原文件已保留；请先恢复记录再生成');
-        return { ok: true, value: await callback(request, event) };
+        if (tracked) activeRequests++;
+        try {
+          return { ok: true, value: await callback(request, event) };
+        } finally {
+          if (tracked) activeRequests--;
+        }
       } catch (error) {
         return {
           ok: false,
