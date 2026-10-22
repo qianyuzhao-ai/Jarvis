@@ -8,7 +8,12 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { loginAddress, loginOrigins, platformLoginSchema } from '../src/shared/generation-login';
+import {
+  loginAddress,
+  loginOrigins,
+  platformLoginSchema,
+  secureLoginHop,
+} from '../src/shared/generation-login';
 
 test('login configuration accepts explicit origins and rejects credentials, wildcards and unsafe schemes', () => {
   expect(loginAddress('sso.example.com').href).toBe('https://sso.example.com/');
@@ -48,6 +53,18 @@ test('login configuration accepts explicit origins and rejects credentials, wild
       'sso.example.com/path',
     ),
   ).toThrow();
+  const origins = loginOrigins(
+    'https://api.example.com/tasks',
+    'https://platform.example.com',
+    'sso.example.com',
+  );
+  expect(secureLoginHop('http://platform.example.com/cb?ticket=t', origins)).toBe(
+    'https://platform.example.com/cb?ticket=t',
+  );
+  expect(secureLoginHop('http://other.example.com/', origins)).toBeUndefined();
+  expect(secureLoginHop('http://platform.example.com:8080/', origins)).toBeUndefined();
+  expect(secureLoginHop('http://user:pw@platform.example.com/', origins)).toBeUndefined();
+  expect(secureLoginHop('https://other.example.com/', origins)).toBeUndefined();
 });
 
 test('SSO login is isolated, supplies task cookies, pauses on expiration and resumes without resubmitting', async () => {
@@ -69,7 +86,10 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     if (url.pathname === '/sso') {
       ssoVisits++;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end('<form action="/sso-login" method="post"><button>模拟统一登录</button></form>');
+      res.end(
+        `<iframe hidden src="${hidden}/hidden-auth"></iframe>` +
+          '<form action="/sso-login" method="post"><button>模拟统一登录</button></form>',
+      );
       return;
     }
     if (url.pathname === '/sso-login') {
@@ -115,6 +135,10 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
   if (!address || typeof address === 'string') throw new Error('Missing port');
   const base = `http://127.0.0.1:${address.port}`;
   const sso = `http://localhost:${address.port}`;
+  // An unlisted loopback origin standing in for SSO pages' hidden auth iframes.
+  const hidden = `http://127.0.0.2:${address.port}`;
+  // A second listed domain, like a zero-trust gateway callback.
+  const gateway = 'https://gateway.example.com';
   const endpoint = `${base}/api/mr/tasks`;
   const profile = test.info().outputPath('profile');
   const launch = () =>
@@ -143,6 +167,7 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     ).toEqual({ desktop: false, node: false });
     await login.getByRole('button', { name: '模拟统一登录' }).click();
     await expect(login.getByRole('heading', { name: '登录完成' })).toBeVisible();
+    expect(calls.some((call) => call.path === '/hidden-auth')).toBe(false);
     await login.evaluate(() => window.open('https://example.invalid/blocked'));
     expect(app!.windows()).toHaveLength(2);
     await login.close();
@@ -160,7 +185,17 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     await page.getByRole('button', { name: '登录生成平台', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('未配置的域名');
     expect(ssoVisits).toBe(0);
-    await page.getByLabel('允许的统一登录域名', { exact: true }).fill(sso);
+    await page.getByRole('button', { name: '验证连接', exact: true }).click();
+    await expect(
+      page.getByText(`上次登录未完成，登录跳转到未配置的域名 ${sso}`, { exact: false }),
+    ).toBeVisible();
+    await page.getByLabel('允许的统一登录域名', { exact: true }).fill(`${sso}\n${gateway}`);
+    const domains = page.getByLabel('允许的统一登录域名', { exact: true });
+    expect(
+      await domains.evaluate(
+        (node) => node.clientHeight >= 2 * Number.parseFloat(getComputedStyle(node).lineHeight),
+      ),
+    ).toBe(true);
     await page.getByRole('button', { name: '保存更改' }).click();
     await signIn(page);
     await page.screenshot({ path: test.info().outputPath('platform-login-light.png') });
@@ -251,7 +286,9 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     page = await app.firstWindow();
     await settings(page);
     await expect(page.getByLabel('平台登录地址', { exact: true })).toHaveValue(`${base}/portal`);
-    await expect(page.getByLabel('允许的统一登录域名', { exact: true })).toHaveValue(sso);
+    await expect(page.getByLabel('允许的统一登录域名', { exact: true })).toHaveValue(
+      `${sso}\n${gateway}`,
+    );
     await page.getByRole('button', { name: '验证连接', exact: true }).click();
     await expect(page.getByText('平台连接已验证', { exact: true })).toBeVisible();
     const otherOrigin = await page.evaluate(
@@ -269,7 +306,10 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     ).toBe(0);
     await page.screenshot({ path: test.info().outputPath('platform-login-compact.png') });
     await page.getByRole('button', { name: '退出登录', exact: true }).click();
-    await expect(page.getByText('已退出本应用中的平台登录', { exact: true })).toBeVisible();
+    // After a blocked subframe navigation, Chromium's clearStorageData takes about 5s on Windows.
+    await expect(page.getByText('已退出本应用中的平台登录', { exact: true })).toBeVisible({
+      timeout: 20_000,
+    });
     await page.getByRole('button', { name: '验证连接', exact: true }).click();
     await expect(
       page.getByText('平台要求登录或账号无权限，请完成统一登录后重试', { exact: true }),

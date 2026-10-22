@@ -18,6 +18,17 @@
 - macOS arm64 ZIP：239849602 字节，SHA-256 `739c745f977c9edf1398761a475545331b932242610ef22b9e5841f0d51af20d`。
 - Windows x64 EXE：209922697 字节，SHA-256 `622485146f6ee9cb9b3af866c6aa61f9d5f42cd5ea59d1dd6d9891e435974ae0`。
 
+## 统一登录实机失败排查（2026-10-22）
+
+- 用户在 Windows 实机反馈登录后“验证连接”始终不通过。只读检查本机 userData：最新任务错误为“平台要求登录”（Session.fetch 手动重定向被取消的分支），说明接口仍被重定向到 SSO。
+- 登录窗口 HTTP 缓存显示真实链路：`https://atlas-dh.baidu-int.com/` → `uuap.baidu.com/authorize`，回调 service 为零信任网关 `https://l.baidu-int.com/zt_callback?service=https://atlas-dh.baidu-int.com/…`。UUAP 扫码成功后用 `<img>` 同步 erp/fusion 域 Cookie，再 `location.replace` 跳到网关回调。
+- 专用会话 Cookie 只有 .baidu.com / .uuap.baidu.com / .erp / .fusion 域，没有任何 baidu-int.com Cookie，网关回调未完成。判断为 `l.baidu-int.com` 未加入统一登录域名，跳转被登录窗口拦截。设置需包含 `uuap.baidu.com` 与 `l.baidu-int.com`；待用户按此配置复测确认。
+- 代码层另发现：`will-frame-navigate` / `will-redirect` 未区分主 frame，UUAP 如流认证使用的隐藏 iframe 跳到未登记域名时会直接关闭整个登录窗口；拦截报错在点击“验证连接”后被清空，用户难以看到被拦域名。
+- 用户授权后在 `feature/login-window-frames`（从 develop b1df41e）修复：未登记域名的子 frame 导航只静默拦截，主 frame 才关闭窗口并报错；`GenerationSessions` 记住最近一次登录窗口失败原因，验证返回需登录时显示“上次登录未完成，<被拦域名>”，正常完成登录或退出后清除。登录测试的模拟 SSO 页增加指向未登记 loopback 源的隐藏 iframe，断言窗口不被关闭、该请求未发出，并断言验证后仍显示被拦域名。
+- 验证（Windows，Node 22.23.4）：`pnpm check`、`pnpm build` 通过；登录与任务协议相关 Electron 回归 9/9 通过。Windows 上子 frame 被拦截后 `clearStorageData` 实测约 5 秒，退出登录断言等待放宽到 20 秒（仅测试等待，未改实现）。未运行完整回归；`pnpm format` 在 autocrlf=true 的检出上把全部文件改写为 LF，仅为换行差异，git 内容 diff 只有 4 个文件。未提交、未推送；真实 UUAP 链路待用户按域名配置复测。
+- 用户 dev 实测反馈“允许的统一登录域名”只能填一个：textarea 被 `#loginDomains` 样式固定为 36px 高，看似单行输入框（解析本身已支持换行/逗号分隔）。改为最小 64px、可纵向拉伸、占位示例两行、说明注明每行一个或逗号分隔；登录测试改为填写两行域名并断言可见高度至少两行、保存后回读两行。check、build、登录测试 2/2 通过。
+- 用户继续实测：设置不接受 `http://` 域名（只允许 HTTPS），但登录过程中主页面跳到 `http://atlas-dh.baidu-int.com` 被拦截。新增 `secureLoginHop`：主 frame 跳到已允许主机的明文 HTTP（同主机、默认端口、无账号密码）时阻止原请求并改用 HTTPS 重新加载同一地址，不放宽 HTTP、不明文发送票据；其他 HTTP 仍按未配置域名拦截。纯函数用例覆盖升级、未登记主机、非默认端口、带账号、HTTPS 未登记。check、build、登录与任务协议回归 9/9 通过；真实 UUAP 链路待用户复测。
+
 ## 生成平台统一登录（2026-10-22）
 
 - 用户提供新平台请求记录并确认公司统一登录跳转，随后明确采用“登录生成平台”入口，并要求域名由自己在设置中填写。新请求携带平台/统一登录 Cookie；不复制 Cookie 值到代码、记忆、任务账本或导出。0.2.2 的无登录态任务调用不等于真实内网联调通过。

@@ -15,6 +15,8 @@ export class GenerationSessions {
   private sessions = new Map<string, Session>();
   private windows = new Map<string, BrowserWindow>();
   private states = new Map<string, PlatformLoginStatus>();
+  // The last blocked/failed login stays the explanation until a login window closes cleanly.
+  private failures = new Map<string, string>();
   constructor(private readonly authenticated: (origin: string) => Promise<void>) {}
   get isBusy() {
     return this.windows.size > 0;
@@ -85,11 +87,14 @@ export class GenerationSessions {
       await this.authenticated(origin);
       result = { state: 'verified', message: '平台连接已验证' };
     } catch (error) {
+      const failure = this.failures.get(origin);
       result = {
         state: error instanceof ServiceError && error.authRequired ? 'expired' : 'unverified',
         message:
           error instanceof ServiceError && error.authRequired
-            ? '平台要求登录或账号无权限，请完成统一登录后重试'
+            ? failure
+              ? `平台要求登录：上次登录未完成，${failure}`
+              : '平台要求登录或账号无权限，请完成统一登录后重试'
             : '暂时无法验证平台连接，请检查内网连接后重试',
       };
     }
@@ -108,7 +113,11 @@ export class GenerationSessions {
     this.windows.set(origin, login.window);
     try {
       await login.closed;
+      this.failures.delete(origin);
       await current.cookies.flushStore();
+    } catch (error) {
+      if (error instanceof Error) this.failures.set(origin, error.message);
+      throw error;
     } finally {
       this.windows.delete(origin);
       this.states.delete(origin);
@@ -122,6 +131,7 @@ export class GenerationSessions {
     await current.clearCache();
     await current.clearAuthCache();
     await current.cookies.flushStore();
+    this.failures.delete(origin);
     const result: PlatformLoginStatus = { state: 'empty', message: '已退出本应用中的平台登录' };
     this.states.set(origin, result);
     return result;

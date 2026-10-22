@@ -110,9 +110,9 @@ export function ServiceSettings({
         <textarea
           id="loginDomains"
           aria-labelledby="login-domains-label"
-          rows={2}
+          rows={3}
           value={draft.loginDomains ?? ''}
-          placeholder="统一登录跳转经过的域名，每行一个"
+          placeholder={'uuap.baidu.com\nl.baidu-int.com'}
           spellCheck={false}
           autoComplete="off"
           aria-invalid={Boolean(errors.loginDomains)}
@@ -125,7 +125,7 @@ export function ServiceSettings({
           }}
         />
         <small id="login-domains-help">
-          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名。平台自身域名自动允许。
+          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名，每行一个（也可用逗号分隔）。平台自身域名自动允许。
         </small>
         {errors.loginDomains && <small className="error-text">{errors.loginDomains}</small>}
       </label>
