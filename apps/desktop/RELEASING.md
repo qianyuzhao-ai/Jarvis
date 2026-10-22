@@ -61,3 +61,9 @@
 `patches/app-builder-lib@26.15.3.patch` 通过 pnpm patchedDependencies 固定应用一行补丁，使 pnpm 使用 builder 已有的磁盘依赖遍历，避开 pnpm list 去重子树丢失。必需依赖无法解析时遍历直接失败，补丁不能用忽略警告或只添加 debug 代替。版本升级时应重新验证补丁是否仍需要；上游同类问题：https://github.com/electron-userland/electron-builder/issues/10000 。
 
 本地验证命令：`node apps/desktop/scripts/verify-packaged-startup.mjs release/<唯一标识>`。本地目录包保持无正式签名和公证，不能替代后续云端 Windows 原生启动与 macOS 签名公证验证。已崩溃的 0.2.0 客户端无法通过应用内更新修复，需手动安装修复版。
+
+## macOS 26 签名钥匙串（2026-10-22）
+
+app-builder-lib 26.15.3 的自动导入把证书密码传给 set-key-partition-list，而临时钥匙串使用另一随机密码；macOS 26 会因此报 SecKeychainUnlock。工作流从触发提交加载 prepare-macos-signing.mjs，使用 base64 CSC_LINK 和 CSC_KEY_PASSWORD 导入证书，单独生成钥匙串密码配置访问权限，并确认同一 Apple Team 的 Developer ID Application 身份。临时 p12 权限为 0600，导入后只删除这一明确路径的文件；钥匙串仅保存在临时 runner。
+
+构建步骤只接收 CSC_KEYCHAIN 和公证凭据，不再设置 CSC_LINK / CSC_KEY_PASSWORD，避免重复导入。仍要求正式签名、公证和全部校验通过。此准备脚本随工作流提交加载，允许在保持旧版本标签不变时修复 CI 签名工具。
