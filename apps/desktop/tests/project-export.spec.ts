@@ -3,15 +3,20 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { writeFile, readFile } from 'node:fs/promises';
 import ExcelJS from 'exceljs';
-import { _electron as electron, expect, test } from '@playwright/test';
+import { _electron as electron, expect as baseExpect, test } from '@playwright/test';
+
 import {
   createProjectWorkbook,
   exportFileName,
   textParts,
 } from '../src/main/generation/export-project';
+import { TaskService } from './helpers/task-service';
 import { GenerationJobs } from '../src/main/generation/jobs';
 import { UploadHistory } from '../src/main/generation/upload-history';
 import type { RequestRecord, StartRequest, UploadRequest } from '../src/shared/generation';
+
+const expect = baseExpect.configure({ timeout: 12_000 });
+test.setTimeout(60_000);
 
 const projectId = randomUUID();
 const png = Buffer.from(
@@ -47,8 +52,10 @@ function column(sheet: ExcelJS.Worksheet, header: string) {
 async function service() {
   const calls: { path: string; body: string }[] = [];
   let failure = false;
+  const tasks = new TaskService();
   const server = createServer(async (req, res) => {
     const path = req.url ?? '';
+    if (tasks.query(req, res)) return;
     if (req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'image/png' });
       res.end(png);
@@ -61,14 +68,11 @@ async function service() {
     res.setHeader('Content-Type', 'application/json');
     if (path.startsWith('/upload'))
       res.end(JSON.stringify({ files: [{ url: base + '/image.png' }] }));
-    else if (failure)
-      res.end(JSON.stringify({ result: { status: 'error', error: 'mock failure' } }));
+    else if (failure) tasks.submit(res, { result: { status: 'error', error: 'mock failure' } });
     else
-      res.end(
-        JSON.stringify({
-          result: { status: 'success', content: [`${base}/image.png?request=${calls.length}`] },
-        }),
-      );
+      tasks.submit(res, {
+        result: { status: 'success', content: [`${base}/image.png?request=${calls.length}`] },
+      });
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
@@ -153,7 +157,7 @@ test('empty exports and legacy jobs keep missing history explicit', async () => 
   const file = test.info().outputPath('legacy-jobs.json');
   const legacy = record({ model: undefined, requestJson: undefined });
   await writeFile(file, JSON.stringify([{ ...legacy, fingerprint: 'legacy' }]));
-  const jobs = new GenerationJobs(file);
+  const jobs = new GenerationJobs(file, 20);
   await jobs.initialize();
   expect(jobs.records(projectId)[0]).toMatchObject({
     status: 'succeeded',
@@ -172,7 +176,7 @@ test('durable request snapshots match wire bodies and survive repeated generatio
   const mock = await service();
   try {
     const file = test.info().outputPath('jobs.json');
-    const jobs = new GenerationJobs(file);
+    const jobs = new GenerationJobs(file, 20);
     await jobs.initialize();
     const request: StartRequest = {
       requestId: randomUUID(),
@@ -210,7 +214,7 @@ test('durable request snapshots match wire bodies and survive repeated generatio
     };
     await jobs.start(next);
     await expect.poll(() => jobs.get(next.requestId)?.status).toBe('failed');
-    const restored = new GenerationJobs(file);
+    const restored = new GenerationJobs(file, 20);
     await restored.initialize();
     expect(restored.records(projectId)).toHaveLength(2);
     expect(restored.records(projectId)[0]!.requestJson).toBe(mock.calls[0]!.body);
@@ -286,7 +290,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('export-test');
-    await page.getByLabel('aigc 地址', { exact: true }).fill(mock.base + '/generate');
+    await page.getByLabel('生成任务地址', { exact: true }).fill(mock.base + '/generate');
     await page.getByLabel('upload 地址', { exact: true }).fill(mock.base + '/upload');
     await page.getByLabel('upload-media 地址', { exact: true }).fill(mock.base + '/upload-media');
     await page.getByRole('button', { name: '保存更改' }).click();

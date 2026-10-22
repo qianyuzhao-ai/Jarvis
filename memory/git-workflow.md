@@ -2,11 +2,29 @@
 
 最后更新：2026-10-22
 
+## 0.2.2 发布（2026-10-22）
+
+- 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
+- 远端核对最新版本为 v0.2.1，无开放 PR；feature/generation-tasks 起点与 origin/develop 一致。根包/桌面包、README 源码版本和变更记录更新为 0.2.2，按 feature → develop → main PR 集成，随后在 main 合并提交打新标签，不移动旧标签、不覆盖旧资产。
+- 代码已通过完整回归 79/79 及最终相关复测 8/8；本次继续执行版本、检查、构建与发布工具回归。真实内网不在本机验证范围，云端发布结果待回读。
+
+## AIGC 任务接口改造（2026-10-22）
+
+- 用户授权开始实现新平台任务协议，全部图像/视频模型统一迁移、5 秒轮询；真实内网由用户联调。开始时 develop 与 origin/develop 一致且工作区干净，已创建 `feature/generation-tasks`。
+- 本轮仅本地实现、验证和更新项目记忆，不包含提交、推送、PR、合并、标签或发布；版本维持 0.2.1。
+
 ## 0.2.1 热修复发布（2026-10-22）
 
-- 用户明确回复“发布”，授权提交、推送、按 Gitflow 合并并发布 0.2.1，以及核验云端双平台真实启动、macOS 签名公证和更新清单。本节替代此前仅修复、尚未授权发布的状态。
-- hotfix/packaged-runtime-dependencies 从 main 5a191aa 出发；根包、桌面包和变更记录统一 0.2.1。经 PR 合入 main 后在 main 合并提交上打 v0.2.1，再同步到 develop；不移动旧标签、不覆盖 0.2.0 资产。
-- 此次发布包含 pnpm 收集器补丁、锁文件、依赖闭包和实际打包启动门禁；0.2.1 本地检查、构建、5 项门禁/清单回归通过，新版本包的 360 项依赖及实际启动通过。修复源码完整回归 74/74 已通过；云端结果待回读。0.2.0 无法启动时需要手动安装修复版。
+- 用户明确授权发布及后续排错；最终运行 [39717656519](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39717656519) 的 Windows、macOS、统一发布三个作业均 success。[v0.2.1 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.1) 于 2026-10-22 11:44:54（UTC+8）发布，非草稿、预发布；Release API 已回读 8 个资产均 uploaded。
+- 应用修复 ef9bdb8 经 [PR #45](https://github.com/qianyuzhao-ai/Jarvis/pull/45) 合入 main 995c42323379e738cccbac73b0d0e7d68e9fbf6f。v0.2.1 标签对象仍为 27b4ea20831f3a50f9b923a52d77024184c10a14，剥离后仍指向该 main 提交。后续仅修复执行工作流，没有移动标签、覆盖旧资产或改变标签应用源码。
+- 直接同步 PR #46 遇到 README 历史说明冲突，改在同步分支保留两侧说明，经 [PR #47](https://github.com/qianyuzhao-ai/Jarvis/pull/47) 合入 develop fdeff75；GitHub 同时将 #46 标记已合并。
+- 首轮 [39714945343](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39714945343) 的 Windows 真实启动已通过，但新增 macOS 启动门禁仍沿用 Intel runner，无法执行 arm64 应用。此为本轮配置遗漏，首轮主动取消；runner 修正 c2f8e3c 经 [PR #48](https://github.com/qianyuzhao-ai/Jarvis/pull/48) 合入 main 7462fc2，改为满足最低系统要求的 macos-26 ARM64，通过 [PR #49](https://github.com/qianyuzhao-ai/Jarvis/pull/49) 同步 develop。
+- 第二轮 [39716096465](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39716096465) Windows 全部通过，macOS 在 set-key-partition-list 报 SecKeychainUnlock：app-builder-lib 26.15.3 创建随机密码钥匙串后错用 p12 密码配置访问权限。证书导入已成功，无需用户更换 Secrets；本轮没有发布。
+- 钥匙串修复 886b95d 经 [PR #50](https://github.com/qianyuzhao-ai/Jarvis/pull/50) 合入 main d6924288e3218ee329309ff57306b1c00d61f683，通过 [PR #51](https://github.com/qianyuzhao-ai/Jarvis/pull/51) 同步 develop 60e59a7。从工作流提交加载独立签名准备脚本，区分证书密码和随机钥匙串密码，校验同团队 Developer ID Application，构建只使用 CSC_KEYCHAIN，保持全部签名、公证、原生启动门禁。两项准备脚本回归、pnpm check、工作流凭据作用域/步骤顺序和 diff 检查通过。
+- 最终运行从 main d692428 的工作流构建原 v0.2.1 源码。Windows 作业 119623541003：360 项必需依赖、实际 win32 打包应用启动、ASAR 页面、设置/更新 IPC 和版本 0.2.1 通过；安装器保持未签名。macOS 作业 119623541301：钥匙串准备、Developer ID 签名、公证、目录/ZIP/DMG 内应用的票据及 Gatekeeper 均通过，三者均 accepted / Notarized Developer ID；360 项依赖和真实 darwin 打包启动同样通过。
+- Apple 只读查询 [39718367184](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39718367184) 确认公证 1f0283f9-3765-40c2-9ed4-fa5bd627e9fa 为 Accepted。两端均实际通过更新清单版本、目标、大小、SHA-512 校验；已上传 DMG/ZIP/EXE、latest-mac.yml / latest.yml 和三个 blockmap。
+- 本地修复源码完整回归 74/74；0.2.1 本地检查、构建、五项依赖/清单回归、360 项依赖及实际打包启动通过。原始 0.2.0 包被新增门禁拒绝。NSIS 完整安装、用户设备环境、真实第三方服务及两个可启动生产签名版本间的升级不在本次云端启动结论内；0.2.0 崩溃客户端需手动安装 0.2.1。
+- 收尾时短暂遇到本机 GitHub TLS/EOF 中断，随后恢复。两份线上更新清单已下载，SHA-256 与 GitHub asset digest 一致，版本 0.2.1、所有目标文件名和大小匹配实际发布资产；补充发布说明已回读确认。已保存成功日志与 Release API 结果。
 
 ## 0.2.0 发布包启动依赖修复（2026-10-22）
 

@@ -57,6 +57,7 @@ export async function createProjectWorkbook(
     '文件名',
     '错误',
     '记录警告',
+    '平台任务 ID',
   ];
   const values = source.map((r) => [
     r.requestId,
@@ -74,8 +75,9 @@ export async function createProjectWorkbook(
     r.fileName ?? '',
     r.error ?? '',
     r.warning ?? '',
+    r.remoteTaskId ?? '',
   ]);
-  const widths = [38, 38, 26, 10, 12, 30, 14, 20, 32, 48, 48];
+  const widths = [38, 38, 26, 10, 12, 30, 14, 20, 32, 48, 48, 38];
   for (const field of ['endpoint', 'resultUrl', 'requestJson'] as const) {
     const label = {
       endpoint: '请求地址',
