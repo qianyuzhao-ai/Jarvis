@@ -2,6 +2,21 @@
 
 最后更新：2026-10-22
 
+## 0.2.1 热修复发布（2026-10-22）
+
+- 用户明确回复“发布”，授权提交、推送、按 Gitflow 合并并发布 0.2.1，以及核验云端双平台真实启动、macOS 签名公证和更新清单。本节替代此前仅修复、尚未授权发布的状态。
+- hotfix/packaged-runtime-dependencies 从 main 5a191aa 出发；根包、桌面包和变更记录统一 0.2.1。经 PR 合入 main 后在 main 合并提交上打 v0.2.1，再同步到 develop；不移动旧标签、不覆盖 0.2.0 资产。
+- 此次发布包含 pnpm 收集器补丁、锁文件、依赖闭包和实际打包启动门禁；0.2.1 本地检查、构建、5 项门禁/清单回归通过，新版本包的 360 项依赖及实际启动通过。修复源码完整回归 74/74 已通过；云端结果待回读。0.2.0 无法启动时需要手动安装修复版。
+
+## 0.2.0 发布包启动依赖修复（2026-10-22）
+
+- 用户报告 Windows 启动报 Cannot find module debug，堆栈为 builder-util-runtime → electron-updater → 主进程。先从 origin/develop 1e4cb47 的诊断分支完成验证，随后按线上修复规则保留所有修改迁移到 origin/main 5a191aa 起点的 hotfix/packaged-runtime-dependencies；临时诊断分支已删除，当前仅修复与验证，未授权或执行新版本发布、标签移动、旧产物覆盖。
+- 实际下载 v0.2.0 macOS ZIP（SHA-256 b5df633841c6d01ee70e787a058563326bc99fb72e54b22f555d1a413d8dded3），用包内 Electron 读取 app.asar 复现相同 debug 缺失；依赖完整性门禁还拦住 pi-ai → anthropic SDK 缺失。原云端签名、公证、清单通过并不证明可启动，既有源码回归依赖工作区 node_modules 未覆盖漏包。
+- pnpm 11 list 的去重子树使 app-builder-lib 26.15.3 pnpm 收集器漏依赖。pnpm patchedDependencies 固定一行补丁，选择 builder 已有的磁盘遍历收集器，锁文件仅新增 patch hash，未改运行时依赖或工具版本。必需依赖找不到时直接失败。
+- 新增 verify-packaged-dependencies.cjs 检查 ASAR 中完整必需依赖闭包（识别内置模块与可选依赖，不得借用包外 node_modules），verify-packaged-startup.mjs 用实际打包程序、仓库外 cwd 和隔离 profile 验证页面及更新 IPC。双平台发布在上传前执行门禁；门禁回归 2/2 通过，原发布包确实被拒绝。
+- 本地修复 macOS 目录包 release/71dfb77c-9e73-4b96-bb27-9c379a8cb875 已通过 360 项必需依赖与真实启动、ASAR 页面、设置/更新桥接验证；Windows x64 目录包 /tmp/jarvis-windows-runtime-fix-91b7e3cb 的 360 项依赖检查通过。Windows 原生启动尚待 Windows CI/实机验证，本地 Mac 启动包为未正式签名/公证的结构验证产物。
+- 已崩溃的 0.2.0 无法通过应用内更新自救，修复版需手动安装。完整源码回归 74/74（2.1m）通过；pnpm check、构建和 diff 检查通过。修复仍未提交、推送或发布，源码版本保留 0.2.0。
+
 ## 0.2.0 集成与发布（2026-10-22）
 
 - 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。

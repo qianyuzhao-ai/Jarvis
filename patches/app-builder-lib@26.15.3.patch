@@ -1,0 +1,13 @@
+diff --git a/out/node-module-collector/index.js b/out/node-module-collector/index.js
+index e84ef86..34b5857 100644
+--- a/out/node-module-collector/index.js
++++ b/out/node-module-collector/index.js
+@@ -18,7 +18,7 @@ const traversalNodeModulesCollector_1 = require("./traversalNodeModulesCollector");
+ function getCollectorByPackageManager(pm, rootDir, tempDirManager) {
+     switch (pm) {
+         case packageManager_1.PM.PNPM:
+-            return new pnpmNodeModulesCollector_1.PnpmNodeModulesCollector(rootDir, tempDirManager);
++            return new traversalNodeModulesCollector_1.TraversalNodeModulesCollector(rootDir, tempDirManager);
+         case packageManager_1.PM.YARN:
+             return new yarnNodeModulesCollector_1.YarnNodeModulesCollector(rootDir, tempDirManager);
+         case packageManager_1.PM.YARN_BERRY:

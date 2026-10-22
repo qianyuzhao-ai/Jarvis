@@ -143,6 +143,11 @@ jobs:
               throw "Expected unsigned file: $file"
             }
           }
+      - name: Verify packaged dependencies and startup
+        run: |
+          version="$(node -p 'require("./apps/desktop/package.json").version')"
+          node --test apps/desktop/scripts/verify-packaged-dependencies.test.mjs
+          node apps/desktop/scripts/verify-packaged-startup.mjs "release/github-${version}"
       - name: Verify update metadata
         run: |
           version="$(node -p 'require("./apps/desktop/package.json").version')"

@@ -7,6 +7,9 @@ engineStrict: true
 saveExact: true
 verifyDepsBeforeRun: false
 
+patchedDependencies:
+  app-builder-lib@26.15.3: patches/app-builder-lib@26.15.3.patch
+
 allowBuilds:
   '@google/genai': false
   electron: true
