@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Edge, Node } from '@xyflow/react';
-import { DEFAULT_TASKS_URL, httpUrl } from '../../../../shared/generation';
+import { httpUrl } from '../../../../shared/generation';
 import { loginFields } from '../../../../shared/generation-login';
 
 export const assetSchema = z.object({
@@ -115,7 +115,7 @@ export const emptyWorkspace: WorkspaceData = {
   projects: [],
   theme: 'system',
   sidebarWidth: 230,
-  settings: { reqFrom: '', generateUrl: DEFAULT_TASKS_URL, imageUploadUrl: '', audioUploadUrl: '' },
+  settings: { reqFrom: '', generateUrl: '', imageUploadUrl: '', audioUploadUrl: '' },
 };
 export function createProject(): Project {
   return {

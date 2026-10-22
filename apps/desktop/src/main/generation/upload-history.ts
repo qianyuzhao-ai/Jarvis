@@ -6,12 +6,15 @@ import {
   type RequestRecord,
   type UploadRequest,
 } from '../../shared/generation';
-import { upload, uploadDescription } from './protocol';
+import { upload, uploadDescription, type UploadFetch } from './protocol';
 
 export class UploadHistory {
   private recordsById = new Map<string, RequestRecord>();
   private writes = Promise.resolve();
-  constructor(private readonly file: string) {}
+  constructor(
+    private readonly file: string,
+    private readonly uploadFetch?: (request: UploadRequest) => UploadFetch,
+  ) {}
   async initialize() {
     let raw: string;
     try {
@@ -71,7 +74,7 @@ export class UploadHistory {
     }
     let failure: unknown;
     try {
-      record.resultUrl = (await upload(request)).url;
+      record.resultUrl = (await upload(request, this.uploadFetch?.(request))).url;
       record.status = 'succeeded';
     } catch (error) {
       failure = error;

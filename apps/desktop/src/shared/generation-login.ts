@@ -29,6 +29,18 @@ export function loginOrigins(endpoint: string, address: string, domains: string)
   }
   return allowed;
 }
+// SSO gateways may bounce through plain HTTP on an allowed host; reload that hop over HTTPS
+// instead of sending a ticket in clear text.
+export function secureLoginHop(value: string, origins: Set<string>): string | undefined {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' || url.username || url.password) return;
+    url.protocol = 'https:';
+    return origins.has(url.origin) ? url.href : undefined;
+  } catch {
+    return;
+  }
+}
 export const platformLoginSchema = z
   .object({
     generateUrl: z.string().min(1).max(2000),

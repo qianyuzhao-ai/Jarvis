@@ -594,6 +594,13 @@ svg {
   border-radius: 8px;
   padding: 0 10px;
 }
+#loginDomains {
+  height: auto;
+  min-height: 64px;
+  padding: 6px 10px;
+  line-height: 24px;
+  resize: vertical;
+}
 .form-field input[aria-invalid='true'],
 #loginDomains[aria-invalid='true'] {
   border-color: #c64a4a;

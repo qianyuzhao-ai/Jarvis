@@ -99,6 +99,24 @@ async function fixture(file: string, interval = 20) {
   };
 }
 
+test('tasks require an explicit endpoint and preserve the configured legacy path', async () => {
+  const f = await fixture(test.info().outputPath('jobs.json'));
+  try {
+    await f.jobs.initialize();
+    await expect(
+      f.jobs.start({ ...f.request, settings: { ...f.request.settings, generateUrl: ' ' } }),
+    ).rejects.toThrow('请在设置中填写生成任务地址');
+    expect(f.calls).toEqual([]);
+    expect(f.jobs.get(f.request.requestId)).toBeNull();
+    f.request.settings.generateUrl = new URL('/aigc/', f.request.settings.generateUrl).href;
+    await f.jobs.start(f.request);
+    await expect.poll(() => f.calls.filter((call) => call.method === 'POST').length).toBe(1);
+    expect(f.calls.find((call) => call.method === 'POST')?.path).toBe('/aigc/');
+  } finally {
+    await f.close();
+  }
+});
+
 test('durable task IDs resume polling after restart and query failures never resubmit', async () => {
   const file = test.info().outputPath('jobs.json');
   const f = await fixture(file);
