@@ -4,6 +4,8 @@
 
 当前源码版本：`0.2.4`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
+0.2.4 已提交并打标签，Windows 打包与验证通过；macOS 因 GitHub runner 容量不足连续两次未启动，双平台 Release 尚未发布。[发布运行](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39800805580)。
+
 ## 启动
 
 使用 pnpm 11.24.0。项目通过 `devEngines.runtime` 管理 Node.js 22.23.3，不改变全局 Node；首次安装需要联网下载依赖和运行时。运行检查前确认实际 `node --version` 为 22.23.3；若现有 PATH 仍落到旧 Node，请先在当前终端切换运行时，避免测试加载器兼容问题。
