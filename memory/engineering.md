@@ -2,6 +2,21 @@
 
 最后更新：2026-10-22
 
+## 0.2.2 发布（2026-10-22）
+
+- 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
+- 远端核对最新版本为 v0.2.1，无开放 PR；feature/generation-tasks 起点与 origin/develop 一致。根包/桌面包、README 源码版本和变更记录更新为 0.2.2，按 feature → develop → main PR 集成，随后在 main 合并提交打新标签，不移动旧标签、不覆盖旧资产。
+- 代码已通过完整回归 79/79 及最终相关复测 8/8；本次继续执行版本、检查、构建与发布工具回归。真实内网不在本机验证范围，云端发布结果待回读。
+
+## AIGC 新平台任务接口迁移（2026-10-22）
+
+- 用户确认旧平台迁入新平台：全部图像/视频模型共用任务接口，模型参数、参考素材、上传与 Prompt 引用 `<<<image_1>>>` 等保持不变。查询周期最终明确为 **5 秒**，替代讨论中的 30 秒；真实内网联调由用户执行，本轮只做本机模拟服务与真实 Electron 窗口验证。
+- 主进程 `generation/task-protocol.ts` 提交现有 JSON 到 `/api/mr/tasks`，保存返回 `task_id` 后每 5 秒 GET 同一路径下的任务。`pending/running` 对应本地 running，`success` 从 `response.result.content[0]` 取 HTTP(S) URL，`failed` 保留具体错误码和说明。校验任务 ID，查询异常不重发 POST；提交断线、5xx、408、无有效 task_id 均保持结果未知。
+- `generation-jobs.json` 新增独立 remoteTaskId、remoteStatus、modelName 与完成额度查询状态；本地 UUID、幂等去重、原始请求 JSON 与统计保留。已取得远端 ID 的进行中任务重启后恢复查询；旧同步进行中记录和未取得 ID 的提交继续标为 unknown。先写入本地记录再提交、先保存远端 ID 再查询；任务地址固定为提交时的地址，不随当前设置改变。
+- 全新工作台默认任务地址 `https://atlas-dh.baidu-int.com/api/mr/tasks`；空地址和以 `/aigc`（可带尾斜杠）结尾的旧地址迁入该地址，其他自定义地址保留供用户指定任务服务。设置名称改为“生成任务地址”，req_from 和上传地址不改。历史账本不改写旧端点。导出明细增加“平台任务 ID”。
+- 已接单任务成功/失败后查询一次同级 `/model-quota?model_name=...`，使用真实 payload 模型家族（如 seedance、nano-banana）。生成结果先落盘并显示，额度查询独立结束；失败只提示到平台查看，不改变生成成败。额度不常驻项目；全局完成提醒按队列展示、可关闭，随文字长度自动消失，不重复提醒已处理结果。
+- 验证完成：`pnpm check`、`pnpm build`、`git diff --check` 通过，完整 Electron/本机模拟服务回归 **79/79（2.7m）** 通过，最终代码清理及深色提醒补充后相关复测 **8/8（32.7s）** 通过。覆盖全部 7 模型的任务路由/原始 payload/额度模型家族、重启恢复、真实 5 秒间隔、查询断网和不确定提交不重发、旧地址迁移、图像/视频窗口、引用/连线、下载/复制和导出。浅深提醒截图已检查；最终截图在 `apps/desktop/test-results/c1a87f25-f4cc-40ad-8a6c-7a016d05d2e8/generation-Electron-upload-fac85--video-and-restores-results/`。未发送真实内网生成请求、未提交/推送/发布，版本保持 0.2.1。
+
 ## 0.2.1 热修复发布（2026-10-22）
 
 - 用户明确授权发布及后续排错；最终运行 [39717656519](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39717656519) 的 Windows、macOS、统一发布三个作业均 success。[v0.2.1 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.1) 于 2026-10-22 11:44:54（UTC+8）发布，非草稿、预发布；Release API 已回读 8 个资产均 uploaded。

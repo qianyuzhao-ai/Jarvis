@@ -2,6 +2,17 @@
 
 最后更新：2026-10-22
 
+## 0.2.2 发布（2026-10-22）
+
+- 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
+- 远端核对最新版本为 v0.2.1，无开放 PR；feature/generation-tasks 起点与 origin/develop 一致。根包/桌面包、README 源码版本和变更记录更新为 0.2.2，按 feature → develop → main PR 集成，随后在 main 合并提交打新标签，不移动旧标签、不覆盖旧资产。
+- 代码已通过完整回归 79/79 及最终相关复测 8/8；本次继续执行版本、检查、构建与发布工具回归。真实内网不在本机验证范围，云端发布结果待回读。
+
+## AIGC 任务接口改造（2026-10-22）
+
+- 用户授权开始实现新平台任务协议，全部图像/视频模型统一迁移、5 秒轮询；真实内网由用户联调。开始时 develop 与 origin/develop 一致且工作区干净，已创建 `feature/generation-tasks`。
+- 本轮仅本地实现、验证和更新项目记忆，不包含提交、推送、PR、合并、标签或发布；版本维持 0.2.1。
+
 ## 0.2.1 热修复发布（2026-10-22）
 
 - 用户明确授权发布及后续排错；最终运行 [39717656519](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39717656519) 的 Windows、macOS、统一发布三个作业均 success。[v0.2.1 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.1) 于 2026-10-22 11:44:54（UTC+8）发布，非草稿、预发布；Release API 已回读 8 个资产均 uploaded。

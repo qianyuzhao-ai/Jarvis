@@ -1,11 +1,17 @@
-import { createServer, type ServerResponse } from 'node:http';
+import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { _electron as electron, expect, test } from '@playwright/test';
-import { generate, payload, ServiceError } from '../src/main/generation/protocol';
+import { _electron as electron, expect as baseExpect, test } from '@playwright/test';
+
+import { payload, ServiceError } from '../src/main/generation/protocol';
+import { TaskService } from './helpers/task-service';
+import { getTask, submitTask } from '../src/main/generation/task-protocol';
 import { GenerationJobs } from '../src/main/generation/jobs';
 import type { GenerationInput, StartRequest } from '../src/shared/generation';
+
+const expect = baseExpect.configure({ timeout: 12_000 });
+test.setTimeout(60_000);
 
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=',
@@ -31,7 +37,7 @@ async function service() {
   const calls: { path: string; body: Buffer; contentType: string }[] = [];
   let mode = 'success';
   let video: Buffer = Buffer.alloc(0);
-  let held: ServerResponse | undefined;
+  const tasks = new TaskService();
   const server = createServer(async (req, res) => {
     const chunks: Buffer[] = [];
     for await (const chunk of req) chunks.push(Buffer.from(chunk));
@@ -41,6 +47,7 @@ async function service() {
       body: Buffer.concat(chunks),
       contentType: req.headers['content-type'] ?? '',
     });
+    if (tasks.query(req, res)) return;
     if (path === '/image.png') {
       res.writeHead(200, { 'Content-Type': 'image/png' });
       res.end(png);
@@ -85,26 +92,23 @@ async function service() {
       return;
     }
     if (mode === 'empty') {
-      res.end(JSON.stringify({ result: { status: 'success', content: [] } }));
+      tasks.submit(res, { result: { status: 'success', content: [] } });
       return;
     }
     if (mode === 'rejected') {
-      res.end(JSON.stringify({ result: { status: 'error', error: { message: 'invalid model' } } }));
+      tasks.submit(res, { result: { status: 'error', error: { message: 'invalid model' } } });
       return;
     }
     const body = JSON.parse(Buffer.concat(chunks).toString()) as { model_name: string };
-    const response = JSON.stringify({
+    const response = {
       result: {
         status: 'success',
         content: [base + (body.model_name === 'seedance' ? '/video.webm' : '/image.png')],
       },
-    });
-    if (mode === 'hold') {
-      held = res;
-      return;
-    }
+    };
+    tasks.hold = mode === 'hold';
     res.setHeader('Content-Type', 'application/json');
-    res.end(response);
+    tasks.submit(res, response);
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
@@ -119,8 +123,9 @@ async function service() {
     setVideo: (bytes: Buffer) => {
       video = bytes;
     },
-    release: () =>
-      held?.end(JSON.stringify({ result: { status: 'success', content: [base + '/image.png'] } })),
+    release: () => {
+      tasks.hold = false;
+    },
     close: () =>
       new Promise<void>((resolve) => {
         server.closeAllConnections();
@@ -178,14 +183,33 @@ test('payload families and response failures match the protocol', async () => {
   expect(() => payload(input({ prompt: '  ' }), 'test')).toThrow();
   const mock = await service();
   try {
-    for (const mode of ['http-error', 'json-error', 'empty', 'rejected']) {
+    for (const mode of ['http-error', 'json-error']) {
       mock.setMode(mode);
-      await expect(generate(mock.base + '/generate', input(), 'test')).rejects.toBeInstanceOf(
-        ServiceError,
-      );
+      await expect(
+        submitTask(mock.base + '/generate', JSON.stringify(payload(input(), 'test'))),
+      ).rejects.toBeInstanceOf(ServiceError);
     }
+    mock.setMode('empty');
+    const empty = await submitTask(
+      mock.base + '/generate',
+      JSON.stringify(payload(input(), 'test')),
+    );
+    await expect(getTask(mock.base + '/generate', empty.task_id)).rejects.toThrow(
+      '缺少有效结果地址',
+    );
+    mock.setMode('rejected');
+    const rejected = await submitTask(
+      mock.base + '/generate',
+      JSON.stringify(payload(input(), 'test')),
+    );
+    expect(await getTask(mock.base + '/generate', rejected.task_id)).toMatchObject({
+      status: 'failed',
+      error: 'invalid model',
+    });
     mock.setMode('disconnect');
-    await expect(generate(mock.base + '/generate', input(), 'test')).rejects.toMatchObject({
+    await expect(
+      submitTask(mock.base + '/generate', JSON.stringify(payload(input(), 'test'))),
+    ).rejects.toMatchObject({
       unknown: true,
     });
   } finally {
@@ -198,7 +222,7 @@ test('local jobs prevent duplicates and recover interrupted tasks without resubm
   try {
     mock.setMode('hold');
     const file = test.info().outputPath('jobs.json');
-    const jobs = new GenerationJobs(file);
+    const jobs = new GenerationJobs(file, 20);
     await jobs.initialize();
     const request: StartRequest = {
       requestId: randomUUID(),
@@ -227,6 +251,7 @@ test('local jobs prevent duplicates and recover interrupted tasks without resubm
     expect(mock.calls.filter((c) => c.path === '/generate')).toHaveLength(1);
     mock.release();
     await expect.poll(() => jobs.get(a.requestId)?.status).toBe('succeeded');
+    jobs.dispose();
   } finally {
     await mock.close();
   }
@@ -248,6 +273,10 @@ test('Electron uploads references, generates image and video, and restores resul
   try {
     const page = await app.firstWindow();
     async function checkResult(kind: string) {
+      await expect(page.locator('.generation-notice')).toContainText('今日剩余 116');
+      await page.screenshot({ path: test.info().outputPath(`generation-notice-${kind}.png`) });
+      await page.getByRole('button', { name: '关闭生成提醒' }).click();
+      await expect(page.locator('.generation-notice')).toHaveCount(0);
       const details = page.locator('.generation-details');
       await expect(details).not.toHaveAttribute('open');
       await expect(page.getByRole('button', { name: '复制返回 URL' })).not.toBeVisible();
@@ -300,7 +329,7 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('test-client');
-    await page.getByLabel('aigc 地址', { exact: true }).fill(mock.base + '/generate');
+    await page.getByLabel('生成任务地址', { exact: true }).fill(mock.base + '/generate');
     await page.getByLabel('upload 地址', { exact: true }).fill(mock.base + '/upload');
     await page.getByLabel('upload-media 地址', { exact: true }).fill(mock.base + '/upload-audio');
     await page.getByRole('button', { name: '保存更改' }).click();
@@ -388,6 +417,8 @@ test('Electron uploads references, generates image and video, and restores resul
           .evaluate((n) => (n as HTMLVideoElement).currentTime),
       )
       .toBeGreaterThan(0);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
     await checkResult('video');
     expect(mock.calls.some((c) => c.path === '/upload-audio')).toBe(true);
     const requests = mock.calls

@@ -14,6 +14,7 @@ import { createProject, type Project, type WorkspaceData } from './features/crea
 
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
+import { GenerationNotice } from './features/creation/GenerationNotice';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
@@ -31,7 +32,7 @@ const WritingSpace = lazy(() =>
 function Workbench({ initial }: { initial: WorkspaceData }) {
   const updates = useAppUpdates();
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
-  const generate = useGeneration(data, commit, getCurrent);
+  const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
   const [route, setRoute] = useState<'chat' | 'projects' | 'settings' | 'canvas' | 'writing'>(
     'chat',
@@ -102,6 +103,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   }
   return (
     <div className="theme-root" data-theme={theme} inert={updates.state?.phase === 'installing'}>
+      <GenerationNotice notice={notice} onDismiss={dismissNotice} />
       {(route !== 'settings' || settingsSection !== 'general') && (
         <UpdateStatus updates={updates} />
       )}

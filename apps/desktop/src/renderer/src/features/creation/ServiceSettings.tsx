@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { Settings } from './types';
+import { DEFAULT_TASKS_URL, migrateGenerationUrl } from '../../../../shared/generation';
 const fields = [
   ['reqFrom', 'req_from'],
-  ['generateUrl', 'aigc 地址'],
+  ['generateUrl', '生成任务地址'],
   ['imageUploadUrl', 'upload 地址'],
   ['audioUploadUrl', 'upload-media 地址'],
 ] as const;
@@ -47,6 +48,7 @@ export function ServiceSettings({
     }
     setErrors(issues);
     if (Object.keys(issues).length) return;
+    next.generateUrl = migrateGenerationUrl(next.generateUrl);
     onSave(next);
     setDraft(next);
     onDirtyChange(false);
@@ -66,7 +68,7 @@ export function ServiceSettings({
             type="text"
             spellCheck={false}
             autoComplete="off"
-            placeholder={`请输入 ${label}`}
+            placeholder={key === 'generateUrl' ? DEFAULT_TASKS_URL : `请输入 ${label}`}
             value={draft[key]}
             aria-invalid={Boolean(errors[key])}
             aria-describedby={errors[key] ? `${key}-error` : undefined}

@@ -219,13 +219,15 @@ test('settings validate, cancel, save and restore without requests', async () =>
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '返回工作台' }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
-    await page.getByLabel('aigc 地址', { exact: true }).fill('not-a-url');
+    await page.getByLabel('生成任务地址', { exact: true }).fill('not-a-url');
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.getByText(/请输入完整的 http/)).toBeVisible();
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('');
     await page.getByLabel('req_from', { exact: true }).fill(' local-test ');
-    await page.getByLabel('aigc 地址', { exact: true }).fill('https://example.invalid/generate/');
+    await page
+      .getByLabel('生成任务地址', { exact: true })
+      .fill('https://example.invalid/generate/');
     await page.getByLabel('upload 地址', { exact: true }).fill('https://example.invalid/upload');
     await page
       .getByLabel('upload-media 地址', { exact: true })
@@ -237,7 +239,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
-    await expect(page.getByLabel('aigc 地址', { exact: true })).toHaveValue(
+    await expect(page.getByLabel('生成任务地址', { exact: true })).toHaveValue(
       'https://example.invalid/generate',
     );
     await page.screenshot({ path: test.info().outputPath('settings.png') });
@@ -246,6 +248,35 @@ test('settings validate, cancel, save and restore without requests', async () =>
       .poll(() => page.locator('.settings-form').evaluate((n) => n.scrollWidth - n.clientWidth))
       .toBe(0);
     await page.screenshot({ path: test.info().outputPath('settings-compact.png') });
+    await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve) => {
+        const request = indexedDB.open('jarvis-workspace', 1);
+        request.onsuccess = () => resolve(request.result);
+      });
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction('workspace', 'readwrite');
+        const store = tx.objectStore('workspace');
+        const request = store.get('current');
+        request.onsuccess = () => {
+          const data = request.result;
+          data.settings.generateUrl = 'https://old-platform.invalid/aigc/';
+          store.put(data, 'current');
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+    });
+    await page.reload();
+    await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
+    await expect(page.getByLabel('生成任务地址', { exact: true })).toHaveValue(
+      'https://atlas-dh.baidu-int.com/api/mr/tasks',
+    );
+    await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
+    await expect(page.getByLabel('upload 地址', { exact: true })).toHaveValue(
+      'https://example.invalid/upload',
+    );
     expect(requests).toEqual([]);
   } finally {
     await app.close();

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Edge, Node } from '@xyflow/react';
-import { httpUrl } from '../../../../shared/generation';
+import { DEFAULT_TASKS_URL, httpUrl } from '../../../../shared/generation';
 
 export const assetSchema = z.object({
   kind: z.enum(['image', 'video', 'audio']),
@@ -44,6 +44,9 @@ export const mediaSchema = z.object({
       startedAt: z.number(),
       error: z.string().optional(),
       warning: z.string().optional(),
+      remoteTaskId: z.string().optional(),
+      remoteStatus: z.string().optional(),
+      quotaPending: z.boolean().optional(),
     })
     .optional(),
   result: z.object({ requestId: z.string(), url: z.string() }).optional(),
@@ -109,7 +112,7 @@ export const emptyWorkspace: WorkspaceData = {
   projects: [],
   theme: 'system',
   sidebarWidth: 230,
-  settings: { reqFrom: '', generateUrl: '', imageUploadUrl: '', audioUploadUrl: '' },
+  settings: { reqFrom: '', generateUrl: DEFAULT_TASKS_URL, imageUploadUrl: '', audioUploadUrl: '' },
 };
 export function createProject(): Project {
   return {
