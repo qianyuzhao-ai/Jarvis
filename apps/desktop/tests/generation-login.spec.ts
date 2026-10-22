@@ -114,6 +114,8 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     res.setHeader('Cache-Control', 'public, max-age=3600');
     if (url.pathname.endsWith('/model-quota'))
       res.end(JSON.stringify({ granted: true, items: [] }));
+    else if (url.pathname === '/upload')
+      res.end(JSON.stringify({ files: [{ url: `${base}/uploaded.png` }] }));
     else if (req.method === 'POST')
       res.end(JSON.stringify({ task_id: 'logged-in-task', status: 'pending' }));
     else
@@ -205,6 +207,33 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
       endpoint,
     );
     expect(defaultCookies).toBe(0);
+    const uploadImage = () =>
+      page.evaluate(
+        (base) =>
+          window.desktop!.generation.upload({
+            requestId: crypto.randomUUID(),
+            projectId: crypto.randomUUID(),
+            nodeId: crypto.randomUUID(),
+            settings: {
+              reqFrom: 'test',
+              generateUrl: `${base}/api/mr/tasks`,
+              imageUploadUrl: `${base}/upload`,
+              audioUploadUrl: `${base}/upload-media`,
+            },
+            file: {
+              name: 'cat.png',
+              mime: 'image/png',
+              kind: 'image',
+              bytes: new Uint8Array([137, 80, 78, 71]),
+            },
+          }),
+        base,
+      );
+    expect(await uploadImage()).toEqual({ ok: true, value: { url: `${base}/uploaded.png` } });
+    const uploadCall = calls.find((call) => call.path === '/upload')!;
+    expect(uploadCall.cookie).toContain(cookie);
+    expect(uploadCall.body).toContain('name="req_from"');
+    expect(uploadCall.body).toContain('filename="cat.png"');
     const requestId = await page.evaluate(async (endpoint) => {
       const requestId = crypto.randomUUID();
       const result = await window.desktop!.generation.start({
@@ -234,8 +263,12 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
       if (!result.ok) throw new Error(result.error);
       return requestId;
     }, endpoint);
-    await expect.poll(() => calls.filter((call) => call.method === 'POST').length).toBe(1);
-    expect(calls.find((call) => call.method === 'POST')?.cookie).toContain(cookie);
+    await expect
+      .poll(() => calls.filter((call) => call.method === 'POST' && call.path !== '/upload').length)
+      .toBe(1);
+    expect(
+      calls.find((call) => call.method === 'POST' && call.path !== '/upload')?.cookie,
+    ).toContain(cookie);
     expired = true;
     expect(
       await page.evaluate(
@@ -243,6 +276,9 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
         endpoint,
       ),
     ).toMatchObject({ ok: true, value: { state: 'expired' } });
+    const expiredUpload = await uploadImage();
+    expect(expiredUpload.ok).toBe(false);
+    expect(expiredUpload.ok ? '' : expiredUpload.error).toContain('平台要求登录');
     const getJob = () => page.evaluate((id) => window.desktop!.generation.get(id), requestId);
     await expect
       .poll(
@@ -276,7 +312,9 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
         { timeout: 12_000 },
       )
       .toBe('succeeded');
-    expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+    expect(calls.filter((call) => call.method === 'POST' && call.path !== '/upload')).toHaveLength(
+      1,
+    );
     expect(JSON.stringify(await getJob())).not.toContain('mock-secret-cookie');
     expect(await readFile(resolve(profile, 'generation-jobs.json'), 'utf8')).not.toContain(
       'mock-secret-cookie',

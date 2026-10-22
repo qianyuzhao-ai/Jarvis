@@ -28,6 +28,7 @@
 - 验证（Windows，Node 22.23.4）：`pnpm check`、`pnpm build` 通过；登录与任务协议相关 Electron 回归 9/9 通过。Windows 上子 frame 被拦截后 `clearStorageData` 实测约 5 秒，退出登录断言等待放宽到 20 秒（仅测试等待，未改实现）。未运行完整回归；`pnpm format` 在 autocrlf=true 的检出上把全部文件改写为 LF，仅为换行差异，git 内容 diff 只有 4 个文件。未提交、未推送；真实 UUAP 链路待用户按域名配置复测。
 - 用户 dev 实测反馈“允许的统一登录域名”只能填一个：textarea 被 `#loginDomains` 样式固定为 36px 高，看似单行输入框（解析本身已支持换行/逗号分隔）。改为最小 64px、可纵向拉伸、占位示例两行、说明注明每行一个或逗号分隔；登录测试改为填写两行域名并断言可见高度至少两行、保存后回读两行。check、build、登录测试 2/2 通过。
 - 用户继续实测：设置不接受 `http://` 域名（只允许 HTTPS），但登录过程中主页面跳到 `http://atlas-dh.baidu-int.com` 被拦截。新增 `secureLoginHop`：主 frame 跳到已允许主机的明文 HTTP（同主机、默认端口、无账号密码）时阻止原请求并改用 HTTPS 重新加载同一地址，不放宽 HTTP、不明文发送票据；其他 HTTP 仍按未配置域名拦截。纯函数用例覆盖升级、未登记主机、非默认端口、带账号、HTTPS 未登记。check、build、登录与任务协议回归 9/9 通过；真实 UUAP 链路待用户复测。
+- 用户要求图像/视频/音频素材上传也走登录会话，其余上传方式不变。`upload()` 接受可注入的 `UploadFetch`（默认仍为原 undici 直连）；`GenerationSessions.upload(generateUrl)` 用生成任务地址对应的专用会话 Session.fetch 发送同样的 multipart（req_from + files），带 Cookie、拒绝重定向；401/403/HTML 返回明确“平台要求登录”。上传地址、类型/大小校验、账本与响应解析不变。用户明确要求测试不得向真实服务发送请求：全部验证仅使用本机模拟服务。check、build、登录（含上传带 Cookie 与过期拒绝）及导出回归 6/6 通过。canvas-assets 三类拖入与 generation 窗口用例在本机 Windows 卡在媒体 readyState（上传本身成功），改回直连路径同样失败，未在原始 HEAD 上单独复核，待确认是否为本机媒体环境问题。未提交。
 
 ## 生成平台统一登录（2026-10-22）
 

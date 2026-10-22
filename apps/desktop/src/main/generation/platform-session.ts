@@ -9,7 +9,7 @@ import {
 } from '../../shared/generation-login';
 import { getQuota, type TaskFetch } from './task-protocol';
 import { createLoginWindow } from './login-window';
-import { ServiceError } from './protocol';
+import { ServiceError, type UploadFetch } from './protocol';
 
 export class GenerationSessions {
   private sessions = new Map<string, Session>();
@@ -34,15 +34,38 @@ export class GenerationSessions {
     }
     return { origin, current };
   }
-  readonly fetch: TaskFetch = async (url, init) => {
-    const { origin, current } = this.getSession(url);
+  readonly fetch: TaskFetch = (url, init) => this.send(url, url, init);
+  // Uploads use the login session of the task endpoint, so its SSO cookies go along too.
+  upload(loginEndpoint: string): UploadFetch {
+    const login = httpUrl.safeParse(loginEndpoint).success ? loginEndpoint : undefined;
+    return (url, parts, signal) => {
+      // Session.fetch serializes the platform FormData, not undici's.
+      const form = new globalThis.FormData();
+      form.set('req_from', parts.reqFrom);
+      form.set('files', parts.file, parts.name);
+      return this.send(login ?? url, url, {
+        method: 'POST',
+        headers: {},
+        body: form,
+        redirect: 'manual',
+        signal,
+      });
+    };
+  }
+  private async send(
+    loginEndpoint: string,
+    url: string,
+    init: Omit<Parameters<TaskFetch>[1], 'body'> & { body?: string | globalThis.FormData },
+  ) {
+    const { origin, current } = this.getSession(loginEndpoint);
+    const target = new URL(httpUrl.parse(url)).origin;
     let response: Awaited<ReturnType<Session['fetch']>>;
     try {
       const options = {
         ...init,
         credentials: 'include' as const,
         cache: 'no-store' as const,
-        headers: { ...init.headers, Origin: origin, Referer: `${origin}/` },
+        headers: { ...init.headers, Origin: target, Referer: `${target}/` },
       };
       response = await current.fetch(url, options);
     } catch (error) {
@@ -67,7 +90,7 @@ export class GenerationSessions {
     )
       this.states.set(origin, { state: 'expired', message: '需要重新登录或检查账号访问权限' });
     return response;
-  };
+  }
   async status(endpoint: string): Promise<PlatformLoginStatus> {
     const { origin, current } = this.getSession(endpoint);
     if (this.windows.has(origin))

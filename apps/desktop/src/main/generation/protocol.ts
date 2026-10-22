@@ -141,8 +141,14 @@ function uploadFailure(error: unknown): never {
     'EHOSTUNREACH',
     'UND_ERR_CONNECT_TIMEOUT',
   ].includes(code);
+  // Chromium (Session.fetch) reports connection failures as net::ERR_* messages.
+  const chromium =
+    error instanceof Error &&
+    /net::ERR_(CONNECTION_REFUSED|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE|CONNECTION_TIMED_OUT|INTERNET_DISCONNECTED)/.test(
+      error.message,
+    );
   throw new ServiceError(
-    beforeConnect ? '连不上服务，请检查网络与地址' : '素材上传中断，请手动重试',
+    beforeConnect || chromium ? '连不上服务，请检查网络与地址' : '素材上传中断，请手动重试',
     { cause: error },
   );
 }
@@ -163,20 +169,43 @@ export function uploadDescription(request: UploadRequest) {
     }),
   };
 }
-export async function upload(request: UploadRequest): Promise<{ url: string }> {
+export type UploadParts = { reqFrom: string; file: Blob; name: string };
+export type UploadFetch = (
+  url: string,
+  parts: UploadParts,
+  signal: AbortSignal,
+) => Promise<
+  Pick<Response, 'ok' | 'status' | 'body'> & { headers: Pick<Response['headers'], 'get'> }
+>;
+const directUpload: UploadFetch = (url, parts, signal) => {
+  const form = new FormData();
+  form.set('req_from', parts.reqFrom);
+  form.set('files', parts.file, parts.name);
+  return fetch(url, { method: 'POST', body: form, dispatcher, redirect: 'error', signal });
+};
+export async function upload(
+  request: UploadRequest,
+  fetchUpload: UploadFetch = directUpload,
+): Promise<{ url: string }> {
   const { file, settings } = request;
   const { endpoint: url } = uploadDescription(request);
-  const form = new FormData();
-  form.set('req_from', settings.reqFrom);
-  form.set('files', new Blob([new Uint8Array(file.bytes)], { type: file.mime }), file.name);
+  const parts = {
+    reqFrom: settings.reqFrom,
+    file: new Blob([new Uint8Array(file.bytes)], { type: file.mime }),
+    name: file.name,
+  };
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: form,
-      dispatcher,
-      redirect: 'error',
-      signal: AbortSignal.timeout(10 * 60 * 1000),
-    });
+    const response = await fetchUpload(url, parts, AbortSignal.timeout(10 * 60 * 1000));
+    if (
+      response.status === 401 ||
+      response.status === 403 ||
+      (response.ok && response.headers.get('content-type')?.includes('text/html'))
+    ) {
+      await response.body?.cancel();
+      throw new ServiceError('平台要求登录或当前账号无上传权限，请在设置中登录生成平台后重新上传', {
+        authRequired: true,
+      });
+    }
     const parsed = z
       .object({ files: z.array(z.object({ url: httpUrl })) })
       .safeParse(await json(response));
