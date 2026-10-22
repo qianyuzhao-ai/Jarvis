@@ -25,9 +25,14 @@ const sizes: Record<string, string> = {
 };
 export class ServiceError extends Error {
   readonly unknown: boolean;
-  constructor(message: string, options: ErrorOptions & { unknown?: boolean } = {}) {
+  readonly authRequired: boolean;
+  constructor(
+    message: string,
+    options: ErrorOptions & { unknown?: boolean; authRequired?: boolean } = {},
+  ) {
     super(message, options);
     this.unknown = options.unknown ?? false;
+    this.authRequired = options.authRequired ?? false;
   }
 }
 export function payload(raw: GenerationInput, reqFrom: string) {
@@ -100,7 +105,7 @@ export function message(error: unknown): string {
     }
   return JSON.stringify(error)?.slice(0, 300) || '服务未返回结果';
 }
-export async function json(response: Response): Promise<unknown> {
+export async function json(response: Pick<Response, 'ok' | 'status' | 'body'>): Promise<unknown> {
   const reader = response.body?.getReader();
   let size = 0;
   const chunks: Uint8Array[] = [];

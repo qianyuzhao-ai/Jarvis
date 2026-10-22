@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { loginFields, type PlatformLogin, type PlatformLoginStatus } from './generation-login';
 
 export const REFERENCE_LIMITS = { image: 9, audio: 3, video: 3 } as const;
 export const UPLOAD_LIMIT_MIB = { image: 32, video: 200, audio: 64 } as const;
@@ -17,6 +18,7 @@ export function migrateGenerationUrl(value: string): string {
 }
 
 export const serviceSettingsSchema = z.object({
+  ...loginFields,
   reqFrom: z.string().trim().min(1, '请在设置中填写 req_from').max(100),
   generateUrl: z.string(),
   imageUploadUrl: z.string(),
@@ -95,6 +97,7 @@ export const jobSchema = z.object({
   remoteStatus: z.string().optional(),
   quotaNotice: z.string().optional(),
   quotaPending: z.boolean().optional(),
+  authRequired: z.boolean().optional(),
 });
 export const requestRecordSchema = z.object({
   requestId: z.uuid(),
@@ -139,6 +142,10 @@ export type GenerationJob = z.infer<typeof jobSchema>;
 export type ServiceSettings = z.infer<typeof serviceSettingsSchema>;
 export type BridgeResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface GenerationBridge {
+  getPlatformLogin(endpoint: string): Promise<BridgeResult<PlatformLoginStatus>>;
+  openPlatformLogin(config: PlatformLogin): Promise<BridgeResult<PlatformLoginStatus>>;
+  verifyPlatformLogin(endpoint: string): Promise<BridgeResult<PlatformLoginStatus>>;
+  logoutPlatform(endpoint: string): Promise<BridgeResult<PlatformLoginStatus>>;
   copyResultUrl(requestId: string): Promise<BridgeResult<void>>;
   getDownloadPreferences(): Promise<BridgeResult<DownloadPreferences>>;
   chooseDownloadDirectory(): Promise<

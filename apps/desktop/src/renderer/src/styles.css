@@ -585,7 +585,8 @@ svg {
 .form-field > small {
   grid-column: 2;
 }
-.form-field input {
+.form-field input,
+#loginDomains {
   height: 36px;
   width: 100%;
   background: var(--color-surface);
@@ -593,7 +594,8 @@ svg {
   border-radius: 8px;
   padding: 0 10px;
 }
-.form-field input[aria-invalid='true'] {
+.form-field input[aria-invalid='true'],
+#loginDomains[aria-invalid='true'] {
   border-color: #c64a4a;
 }
 .form-actions {
@@ -1508,6 +1510,24 @@ input.node-name:focus-visible {
   min-height: 64px;
   padding: 12px 0;
   border-bottom: 1px solid var(--color-border);
+}
+.platform-login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.platform-login-actions button {
+  min-height: 44px;
+}
+.platform-login-controls p:not(.error-text) {
+  margin: 8px 0 0;
+  color: var(--color-secondary);
+  line-height: 1.5;
+}
+#loginDomains {
+  resize: vertical;
+  min-height: 64px;
+  font: inherit;
 }
 .model-library {
   padding: 24px 40px 40px;

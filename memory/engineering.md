@@ -2,11 +2,39 @@
 
 最后更新：2026-10-22
 
+## 0.2.3 发布（2026-10-22）
+
+- 用户明确要求发布新版本，授权本次提交、推送、PR 合并、版本标签与云端发布，替代下方统一登录功能此前的仅本地开发边界。纳入统一登录功能和此前 Windows 自动更新实机验证文档。
+- 当前 feature/generation-login 起点与最新 origin/develop 一致；远端最新版本为 0.2.2，无开放 PR。根包、桌面包、README 源码版本与变更记录统一为 0.2.3，继续 feature → develop → main PR 和新版本标签流程，不移动旧标签或覆盖旧资产。
+- 功能已通过完整回归 82/82 与最终相关复测 5/5；本轮发布检查与双平台产物结果待回读。真实公司统一登录和生成服务由用户在内网设备联调。
+
+## 生成平台统一登录（2026-10-22）
+
+- 用户提供新平台请求记录并确认公司统一登录跳转，随后明确采用“登录生成平台”入口，并要求域名由自己在设置中填写。新请求携带平台/统一登录 Cookie；不复制 Cookie 值到代码、记忆、任务账本或导出。0.2.2 的无登录态任务调用不等于真实内网联调通过。
+- `shared/generation-login.ts` 定义可选 loginUrl/loginDomains，兼容旧设置；输入域名默认 HTTPS，登录入口允许路径，跳转域名按明确 origin 匹配、多个用换行/逗号分隔，拒绝凭据、票据查询参数、通配符与非 HTTPS（仅 loopback 可 HTTP）。平台入口及任务接口 origin 自动允许。
+- `main/generation/platform-session.ts` 按生成接口 origin 的 SHA-256 使用独立 persist:generation-* Chromium 会话；不读取用户 Chrome/Edge 或默认会话。生产任务提交、查询、额度改用同一 Session.fetch，保留既有 JSON/引用/上传协议，添加同源 Origin/Referer 并跳过缓存。持久 Cookie 按平台有效期在重启后复用，不把存在 Cookie 当作连接已验证。
+- `login-window.ts` 创建无 preload 的 sandbox/contextIsolation 窗口，关闭 Node/WebView，拒绝权限和下载，仅允许设置中登记的登录导航、重定向与弹窗；远端页面不注册 Jarvis IPC。未允许的跳转只提示 origin，不显示带票据的完整 URL。主窗口关闭时关闭登录窗口及其子窗口。
+- 新增四个受限 IPC：login-status / login-open / login-verify / login-logout，仍校验主窗口、主 frame 和 URL。连接验证只 GET 已知的 seedance 额度接口，不创建生成任务，也不表示所有模型额度/权限均已通过。退出仅清理本应用专用会话 Cookie、站点数据、HTTP 缓存与 HTTP 认证缓存。
+- 401/403、HTML 登录页及重定向明确标记 authRequired。Electron 44.9.1 的 Session.fetch 手动重定向实际抛出 `Redirect was cancelled`，已专门处理并经真实 Electron 验证；不跟随任务 API 跳转或把请求 JSON 发往 SSO。无任务 ID 的不确定提交仍 unknown，不自动重发；有任务 ID 的运行任务暂停上游轮询，重新登录并验证后恢复 5 秒查询，包括暂停期间重启应用。
+- 设置新增登录入口、域名列表、登录/验证/退出操作；未保存时不使用草稿登录配置。画布登录失效时提供一次可见提醒，重新登录后清除该提醒；任务详情显示等待重新登录。额度仍不常驻项目。
+- 已通过检查、构建和新登录/鉴权相关测试；模拟平台覆盖 Cookie 带入任务请求、来源隔离、未许可跳转拦截、登录过期暂停、跨进程重启续查不重发、Cookie 重启复用、过期与退出后不使用缓存及浅深/紧凑设置界面。完整回归 **82/82（3.0m）** 通过；最终补充“HTML 网关错误不误判登录”后，登录与协议复测 **5/5（20.8s）** 通过，最终 pnpm check / pnpm build / git diff --check 通过。前轮定位并修正了 Chromium HTTP 缓存导致退出后读到旧验证结果的问题；既有侧栏动画中间帧用例曾偶发失败，本轮完整重跑通过，未修改侧栏实现或放宽断言。真实统一登录、公司设备策略与真实内网生成由用户在 Windows 设备联调；本轮未提交、推送或发布，源码版本保持 0.2.2。
+
 ## 0.2.2 发布（2026-10-22）
 
 - 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
 - 远端核对最新版本为 v0.2.1，无开放 PR；feature/generation-tasks 起点与 origin/develop 一致。根包/桌面包、README 源码版本和变更记录更新为 0.2.2，按 feature → develop → main PR 集成，随后在 main 合并提交打新标签，不移动旧标签、不覆盖旧资产。
-- 代码已通过完整回归 79/79 及最终相关复测 8/8；本次继续执行版本、检查、构建与发布工具回归。真实内网不在本机验证范围，云端发布结果待回读。
+- 发布前版本、pnpm check、构建及 diff 检查通过，发布工具回归 7/7 通过；已有完整 Electron 回归 79/79 和最终相关复测 8/8。真实内网由用户在其他设备联调。
+- 实现提交 c2e976e 经 [PR #53](https://github.com/qianyuzhao-ai/Jarvis/pull/53) 合入 develop（81db00f），[PR #54](https://github.com/qianyuzhao-ai/Jarvis/pull/54) 合入 main（8688f7626c952ddf0f8d8e11342d80ed10c8031f），集成树与已验证实现一致。v0.2.2 标签对象 2331d29e8bc95074a5c33037ebc5b3209877a86f，剥离后指向该 main 提交。
+- 唯一标签运行 [39764722806](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39764722806) 的 macOS、Windows 和统一发布三个作业均 success；[v0.2.2 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.2) 于 2026-10-22 18:46:43（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。未重试构建、移动标签或覆盖旧资产。
+- Windows 作业 119777222170、macOS 作业 119777221712 均通过 360 项必需依赖检查及实际打包应用启动、ASAR 页面/更新桥接验证，版本为 0.2.2。macOS 目录、ZIP/DMG 内应用均通过签名、公证票据及 Gatekeeper（accepted / Notarized Developer ID）；Windows 安装器仍未签名。
+- 两端云端均验证更新目标、文件大小与 SHA-512。线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，版本及目标文件大小与实际资产一致；中文发布说明保留自动生成记录并已回读。真实内网生成和 macOS 实机自动升级仍待用户验收。
+- 用户于 2026-10-22 反馈 Windows 实机“发现新版本 → 点击更新 → 重启安装”流程可用，已验证通过。此为用户实测结果，替代此前 Windows 自动升级待验收状态；不据此推断内网生成已通过。
+
+### 0.2.2 安装包资产回读
+
+- macOS arm64 DMG：241029304 字节，SHA-256 `b5fce6438467c8bcd3140cf02deb35dc8dd4f58128cf72ea63c117d836cc1e2c`。
+- macOS arm64 ZIP：239844100 字节，SHA-256 `d65fb63c40f0c71bd155df2af6e71f8ca944b46ee0bc9feec2ea5157abbe96e6`。
+- Windows x64 EXE：209919186 字节，SHA-256 `247ab36b19e66eab50923f38bdc49ba96d372f0b82e5ca360c9c373e0022a92d`。
 
 ## AIGC 新平台任务接口迁移（2026-10-22）
 
