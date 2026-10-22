@@ -1,21 +1,42 @@
-import { fetch } from 'undici';
+import { fetch, type Response } from 'undici';
 import { z } from 'zod';
 import { httpUrl } from '../../shared/generation';
 import { json, message, ServiceError } from './protocol';
 
 const taskId = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/);
 const status = z.enum(['pending', 'running', 'success', 'failed']);
+export type TaskFetch = (
+  url: string,
+  init: {
+    method: 'POST' | 'GET';
+    headers: Record<string, string>;
+    body?: string;
+    redirect: 'manual';
+    signal: AbortSignal;
+  },
+) => Promise<
+  Pick<Response, 'status' | 'ok' | 'body'> & { headers: Pick<Response['headers'], 'get'> }
+>;
 
-async function request(url: string, body?: string) {
+async function request(url: string, body: string | undefined, fetchTask: TaskFetch) {
   const submitting = body !== undefined;
   try {
-    const response = await fetch(httpUrl.parse(url), {
+    const response = await fetchTask(httpUrl.parse(url), {
       method: submitting ? 'POST' : 'GET',
-      headers: submitting ? { 'Content-Type': 'application/json' } : undefined,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body,
-      redirect: 'error',
+      redirect: 'manual',
       signal: AbortSignal.timeout(submitting ? 30_000 : 15_000),
     });
+    const redirected = response.status >= 300 && response.status < 400;
+    const loginPage = response.ok && response.headers.get('content-type')?.includes('text/html');
+    if (response.status === 401 || response.status === 403 || redirected || loginPage) {
+      await response.body?.cancel();
+      throw new ServiceError('平台要求登录或当前账号无访问权限，请在设置中登录生成平台并验证连接', {
+        authRequired: true,
+        unknown: submitting && (redirected || !!loginPage),
+      });
+    }
     // A gateway failure does not prove that the upstream rejected the submission.
     if (submitting && (response.status >= 500 || response.status === 408)) {
       await response.body?.cancel();
@@ -40,14 +61,16 @@ async function request(url: string, body?: string) {
   }
 }
 
-export async function submitTask(endpoint: string, body: string) {
-  const parsed = z.object({ task_id: taskId, status }).safeParse(await request(endpoint, body));
+export async function submitTask(endpoint: string, body: string, fetchTask: TaskFetch = fetch) {
+  const parsed = z
+    .object({ task_id: taskId, status })
+    .safeParse(await request(endpoint, body, fetchTask));
   if (!parsed.success)
     throw new ServiceError('提交响应缺少有效 task_id 或状态，是否接单未知', { unknown: true });
   return parsed.data;
 }
 
-export async function getTask(endpoint: string, id: string) {
+export async function getTask(endpoint: string, id: string, fetchTask: TaskFetch = fetch) {
   const url = new URL(httpUrl.parse(endpoint));
   url.pathname = `${url.pathname.replace(/\/+$/, '')}/${encodeURIComponent(taskId.parse(id))}`;
   const parsed = z
@@ -67,7 +90,7 @@ export async function getTask(endpoint: string, id: string) {
         })
         .nullish(),
     })
-    .parse(await request(url.href));
+    .parse(await request(url.href, undefined, fetchTask));
   if (parsed.task_id !== id || (parsed.response?.request_id && parsed.response.request_id !== id))
     throw new Error('查询返回的任务 ID 不匹配，将继续查询原任务');
   if (parsed.status === 'success') {
@@ -91,7 +114,11 @@ export async function getTask(endpoint: string, id: string) {
   };
 }
 
-export async function getQuota(endpoint: string, modelName: string): Promise<string> {
+export async function getQuota(
+  endpoint: string,
+  modelName: string,
+  fetchTask: TaskFetch = fetch,
+): Promise<string> {
   const url = new URL(httpUrl.parse(endpoint));
   url.pathname = url.pathname.replace(/\/[^/]+\/?$/, '/model-quota');
   url.search = new URLSearchParams({ model_name: modelName }).toString();
@@ -101,7 +128,7 @@ export async function getQuota(endpoint: string, modelName: string): Promise<str
       granted: z.boolean(),
       items: z.array(z.object({ label: z.string(), daily: period, monthly: period })),
     })
-    .parse(await request(url.href));
+    .parse(await request(url.href, undefined, fetchTask));
   if (!quota.granted) return '平台当前未授予该模型的生成额度，详情请到平台查看。';
   return (
     quota.items

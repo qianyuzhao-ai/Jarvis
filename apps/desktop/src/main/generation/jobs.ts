@@ -13,7 +13,7 @@ import {
   type RequestRecord,
 } from '../../shared/generation';
 import { payload, ServiceError } from './protocol';
-import { getQuota, getTask, submitTask } from './task-protocol';
+import { getQuota, getTask, submitTask, type TaskFetch } from './task-protocol';
 
 const storedJob = jobSchema.extend({
   fingerprint: z.string(),
@@ -37,7 +37,23 @@ export class GenerationJobs {
   constructor(
     private readonly file: string,
     private readonly pollInterval = TASK_POLL_INTERVAL_MS,
+    private readonly fetchTask?: TaskFetch,
   ) {}
+  async resumeAfterLogin(origin: string) {
+    for (const job of this.jobs.values()) {
+      if (
+        job.status !== 'running' ||
+        !job.authRequired ||
+        !job.endpoint ||
+        new URL(job.endpoint).origin !== origin
+      )
+        continue;
+      job.authRequired = false;
+      job.warning = undefined;
+      await this.saveStatus(job);
+      this.schedule(job);
+    }
+  }
   dispose() {
     this.closed = true;
     for (const timer of this.timers.values()) clearTimeout(timer);
@@ -147,19 +163,20 @@ export class GenerationJobs {
   }
   private async perform(job: StoredJob, endpoint: string, requestJson: string) {
     try {
-      const submitted = await submitTask(endpoint, requestJson);
+      const submitted = await submitTask(endpoint, requestJson, this.fetchTask);
       job.remoteTaskId = submitted.task_id;
       job.remoteStatus = submitted.status;
     } catch (error) {
       job.status = error instanceof ServiceError && error.unknown ? 'unknown' : 'failed';
       job.error = error instanceof Error ? error.message : '生成失败';
+      job.authRequired = error instanceof ServiceError && error.authRequired;
       job.finishedAt = Date.now();
     }
     await this.saveStatus(job);
     if (job.status === 'running') this.schedule(job);
   }
   private schedule(job: StoredJob) {
-    if (this.closed || this.timers.has(job.requestId)) return;
+    if (this.closed || job.authRequired || this.timers.has(job.requestId)) return;
     const timer = setTimeout(() => {
       this.timers.delete(job.requestId);
       void this.poll(job);
@@ -173,7 +190,7 @@ export class GenerationJobs {
       // Persist the remote ID before any query, including after a failed initial write.
       await this.persist();
       if (this.closed) return;
-      const remote = await getTask(job.endpoint, job.remoteTaskId);
+      const remote = await getTask(job.endpoint, job.remoteTaskId, this.fetchTask);
       if (this.closed) return;
       job.remoteStatus = remote.status;
       job.warning = undefined;
@@ -185,7 +202,10 @@ export class GenerationJobs {
         job.quotaPending = true;
       }
     } catch (error) {
-      job.warning = `${error instanceof Error ? error.message : '任务查询失败'}；稍后继续查询，不会重新提交。`;
+      job.authRequired = error instanceof ServiceError && error.authRequired;
+      job.warning = job.authRequired
+        ? '平台登录已失效或账号无权限，请在设置中重新登录并验证连接；任务已保留，不会重新提交。'
+        : `${error instanceof Error ? error.message : '任务查询失败'}；稍后继续查询，不会重新提交。`;
     }
     await this.saveStatus(job);
     if (job.status === 'running') this.schedule(job);
@@ -195,7 +215,7 @@ export class GenerationJobs {
     try {
       job.quotaNotice =
         job.endpoint && job.modelName
-          ? await getQuota(job.endpoint, job.modelName)
+          ? await getQuota(job.endpoint, job.modelName, this.fetchTask)
           : '额度详情请到平台查看。';
     } catch {
       job.quotaNotice = '额度查询暂不可用，请到平台查看。';

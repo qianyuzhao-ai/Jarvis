@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import type { Settings } from './types';
 import { DEFAULT_TASKS_URL, migrateGenerationUrl } from '../../../../shared/generation';
+import { loginAddress, loginOrigins } from '../../../../shared/generation-login';
+import { PlatformLoginControls } from './PlatformLoginControls';
 const fields = [
   ['reqFrom', 'req_from'],
   ['generateUrl', '生成任务地址'],
   ['imageUploadUrl', 'upload 地址'],
   ['audioUploadUrl', 'upload-media 地址'],
+  ['loginUrl', '平台登录地址'],
 ] as const;
 export function ServiceSettings({
   value,
@@ -26,13 +29,17 @@ export function ServiceSettings({
     const next = { ...draft };
     const issues: typeof errors = {};
     for (const [key] of fields) {
-      next[key] = next[key].trim();
+      next[key] = (next[key] ?? '').trim();
       if (key === 'reqFrom') {
         if (next[key].length > 100) issues[key] = '最多 100 个字符';
         continue;
       }
       if (!next[key]) continue;
       try {
+        if (key === 'loginUrl') {
+          next.loginUrl = loginAddress(next.loginUrl ?? '').href;
+          continue;
+        }
         const url = new URL(next[key]);
         if (
           !['http:', 'https:'].includes(url.protocol) ||
@@ -44,6 +51,18 @@ export function ServiceSettings({
         next[key] = next[key].replace(/\/+$/, '');
       } catch {
         issues[key] = '请输入完整的 http:// 或 https:// 地址，不包含账号密码';
+      }
+    }
+    next.loginDomains = (next.loginDomains ?? '').trim();
+    if (next.loginUrl || next.loginDomains) {
+      try {
+        loginOrigins(
+          migrateGenerationUrl(next.generateUrl),
+          next.loginUrl ?? '',
+          next.loginDomains,
+        );
+      } catch (error) {
+        issues.loginDomains = error instanceof Error ? error.message : '登录域名无效';
       }
     }
     setErrors(issues);
@@ -69,7 +88,7 @@ export function ServiceSettings({
             spellCheck={false}
             autoComplete="off"
             placeholder={key === 'generateUrl' ? DEFAULT_TASKS_URL : `请输入 ${label}`}
-            value={draft[key]}
+            value={draft[key] ?? ''}
             aria-invalid={Boolean(errors[key])}
             aria-describedby={errors[key] ? `${key}-error` : undefined}
             onChange={(e) => {
@@ -86,6 +105,31 @@ export function ServiceSettings({
           )}
         </label>
       ))}
+      <label className="settings-row form-field" htmlFor="loginDomains">
+        <span id="login-domains-label">允许的统一登录域名</span>
+        <textarea
+          id="loginDomains"
+          aria-labelledby="login-domains-label"
+          rows={2}
+          value={draft.loginDomains ?? ''}
+          placeholder="统一登录跳转经过的域名，每行一个"
+          spellCheck={false}
+          autoComplete="off"
+          aria-invalid={Boolean(errors.loginDomains)}
+          aria-describedby="login-domains-help"
+          onChange={(event) => {
+            const next = { ...draft, loginDomains: event.target.value };
+            setDraft(next);
+            setErrors({ ...errors, loginDomains: undefined });
+            onDirtyChange(JSON.stringify(next) !== JSON.stringify(value));
+          }}
+        />
+        <small id="login-domains-help">
+          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名。平台自身域名自动允许。
+        </small>
+        {errors.loginDomains && <small className="error-text">{errors.loginDomains}</small>}
+      </label>
+      <PlatformLoginControls settings={value} dirty={dirty} />
       <div className="form-actions">
         <span role="status">{dirty ? '更改尚未保存' : status}</span>
         <button

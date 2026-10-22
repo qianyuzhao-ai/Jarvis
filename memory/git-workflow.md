@@ -2,6 +2,17 @@
 
 最后更新：2026-10-22
 
+## 0.2.3 发布（2026-10-22）
+
+- 用户明确要求发布新版本，授权本次提交、推送、PR 合并、版本标签与云端发布，替代下方统一登录功能此前的仅本地开发边界。纳入统一登录功能和此前 Windows 自动更新实机验证文档。
+- 当前 feature/generation-login 起点与最新 origin/develop 一致；远端最新版本为 0.2.2，无开放 PR。根包、桌面包、README 源码版本与变更记录统一为 0.2.3，继续 feature → develop → main PR 和新版本标签流程，不移动旧标签或覆盖旧资产。
+- 功能已通过完整回归 82/82 与最终相关复测 5/5；本轮发布检查与双平台产物结果待回读。真实公司统一登录和生成服务由用户在内网设备联调。
+
+## 生成平台统一登录开发（2026-10-22）
+
+- 用户授权实现可配置域名的生成平台统一登录入口；从 develop 创建 feature/generation-login。保留此前 Windows 自动更新实机验收的 README 和三份记忆未提交改动，不丢弃或重置。
+- 本轮为本地开发和模拟服务验证，不包含新版本提交、推送、PR、标签或发布；版本保持 0.2.2。0.2.2 发布授权已完成，不扩展为本轮自动发版。
+
 ## 0.2.2 发布（2026-10-22）
 
 - 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
@@ -10,7 +21,8 @@
 - 实现提交 c2e976e 经 [PR #53](https://github.com/qianyuzhao-ai/Jarvis/pull/53) 合入 develop（81db00f），[PR #54](https://github.com/qianyuzhao-ai/Jarvis/pull/54) 合入 main（8688f7626c952ddf0f8d8e11342d80ed10c8031f），集成树与已验证实现一致。v0.2.2 标签对象 2331d29e8bc95074a5c33037ebc5b3209877a86f，剥离后指向该 main 提交。
 - 唯一标签运行 [39764722806](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39764722806) 的 macOS、Windows 和统一发布三个作业均 success；[v0.2.2 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.2) 于 2026-10-22 18:46:43（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。未重试构建、移动标签或覆盖旧资产。
 - Windows 作业 119777222170、macOS 作业 119777221712 均通过 360 项必需依赖检查及实际打包应用启动、ASAR 页面/更新桥接验证，版本为 0.2.2。macOS 目录、ZIP/DMG 内应用均通过签名、公证票据及 Gatekeeper（accepted / Notarized Developer ID）；Windows 安装器仍未签名。
-- 两端云端均验证更新目标、文件大小与 SHA-512。线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，版本及目标文件大小与实际资产一致；中文发布说明保留自动生成记录并已回读。真实内网生成和用户设备上的安装/升级仍由用户验收。
+- 两端云端均验证更新目标、文件大小与 SHA-512。线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，版本及目标文件大小与实际资产一致；中文发布说明保留自动生成记录并已回读。真实内网生成和 macOS 实机自动升级仍待用户验收。
+- 用户于 2026-10-22 反馈 Windows 实机“发现新版本 → 点击更新 → 重启安装”流程可用，已验证通过。此为用户实测结果，替代此前 Windows 自动升级待验收状态；不据此推断内网生成已通过。
 
 ## AIGC 任务接口改造（2026-10-22）
 

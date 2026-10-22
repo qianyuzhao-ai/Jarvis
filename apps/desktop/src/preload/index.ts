@@ -68,6 +68,10 @@ const desktop: DesktopInfo = {
     createEntry: (request) => ipcRenderer.invoke('writing:create', request),
   },
   generation: {
+    getPlatformLogin: (endpoint) => ipcRenderer.invoke('generation:login-status', endpoint),
+    openPlatformLogin: (config) => ipcRenderer.invoke('generation:login-open', config),
+    verifyPlatformLogin: (endpoint) => ipcRenderer.invoke('generation:login-verify', endpoint),
+    logoutPlatform: (endpoint) => ipcRenderer.invoke('generation:login-logout', endpoint),
     copyResultUrl: (requestId) => ipcRenderer.invoke('generation:copy-result-url', requestId),
     getDownloadPreferences: () => ipcRenderer.invoke('downloads:get-preferences'),
     chooseDownloadDirectory: () => ipcRenderer.invoke('downloads:choose-directory'),

@@ -53,11 +53,13 @@ export function GenerationDetails({
       </summary>
       <div className="editor-notice generation-details-content" role="status">
         <p>
-          {task?.status === 'running' && task.remoteStatus === 'pending'
-            ? '任务已提交，正在排队…'
-            : task
-              ? labels[task.status]
-              : '暂无生成记录'}
+          {task?.status === 'running' && task.authRequired
+            ? '等待重新登录，任务已保留'
+            : task?.status === 'running' && task.remoteStatus === 'pending'
+              ? '任务已提交，正在排队…'
+              : task
+                ? labels[task.status]
+                : '暂无生成记录'}
         </p>
         {task?.remoteTaskId && <p>平台任务 ID：{task.remoteTaskId}</p>}
         {task?.error && <p className="error-text">{task.error}</p>}
