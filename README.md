@@ -57,7 +57,7 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；[0.1.8 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.8) 已发布，macOS Developer ID 签名、公证、目录包及 DMG/ZIP 内应用的票据和 Gatekeeper 均通过云端验证。当前开发分支已接入应用内自动更新，已发布的 0.1.8 尚无更新器，需手动安装一次首个包含更新器的新版本。Windows 安装包仍未签名，功能需实机验收。
+当前本地验证平台为 macOS arm64。应用已使用 Jarvis 图标；[0.2.0 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.0) 已发布，macOS Developer ID 签名、公证、目录包及 DMG/ZIP 内应用的票据和 Gatekeeper 均通过云端验证。0.2.0 已包含应用内自动更新，更新清单和 blockmap 已发布并通过云端校验；0.1.8 尚无更新器，需手动安装一次 0.2.0。两个生产签名版本之间的实际升级仍需后续版本验证。Windows 安装包仍未签名，功能需实机验收。
 
 ## 应用内更新
 
