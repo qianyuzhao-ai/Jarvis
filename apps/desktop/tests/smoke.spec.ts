@@ -215,6 +215,29 @@ test('settings validate, cancel, save and restore without requests', async () =>
       BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
     );
     await expect(page.locator('.settings-form')).toHaveCSS('width', '700px');
+    for (const label of [
+      '生成任务地址',
+      'upload 地址',
+      'upload-media 地址',
+      '平台登录地址',
+      '允许的统一登录域名',
+    ])
+      await expect(page.getByLabel(label, { exact: true })).toHaveValue('');
+    await expect(page.getByRole('button', { name: '登录生成平台', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '验证连接', exact: true })).toBeDisabled();
+    await page.getByLabel('req_from', { exact: true }).fill('empty-address-test');
+    await page.getByRole('button', { name: '保存更改' }).click();
+    await expect(page.locator('.form-actions')).toContainText('已保存到本机');
+    await page.reload();
+    await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
+    await expect(page.getByLabel('生成任务地址', { exact: true })).toHaveValue('');
+    await page.getByLabel('req_from', { exact: true }).fill('');
+    await page.getByRole('button', { name: '保存更改' }).click();
+    await page.getByLabel('平台登录地址', { exact: true }).fill('https://platform.example.com');
+    await page.getByRole('button', { name: '保存更改' }).click();
+    await expect(page.getByText('请先填写生成任务地址', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '取消', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '返回工作台' }).click();
@@ -271,7 +294,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await expect(page.getByLabel('生成任务地址', { exact: true })).toHaveValue(
-      'https://atlas-dh.baidu-int.com/api/mr/tasks',
+      'https://old-platform.invalid/aigc/',
     );
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
     await expect(page.getByLabel('upload 地址', { exact: true })).toHaveValue(

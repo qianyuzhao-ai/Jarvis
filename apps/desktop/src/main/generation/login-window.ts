@@ -1,4 +1,5 @@
 import { BrowserWindow, type Session } from 'electron';
+import { secureLoginHop } from '../../shared/generation-login';
 
 export function createLoginWindow(
   owner: BrowserWindow,
@@ -43,17 +44,19 @@ export function createLoginWindow(
     window.close();
   }
   function guard(target: BrowserWindow) {
+    function reject(event: Electron.Event, url: string, isMainFrame: boolean) {
+      event.preventDefault();
+      // SSO pages embed hidden auth iframes; block those quietly instead of ending the login.
+      if (!isMainFrame) return;
+      const secure = secureLoginHop(url, origins);
+      if (secure) void target.webContents.loadURL(secure).catch(() => undefined);
+      else blocked(url);
+    }
     target.webContents.on('will-frame-navigate', (event) => {
-      if (!permitted(event.url)) {
-        event.preventDefault();
-        blocked(event.url);
-      }
+      if (!permitted(event.url)) reject(event, event.url, event.isMainFrame);
     });
-    target.webContents.on('will-redirect', (event, url) => {
-      if (!permitted(url)) {
-        event.preventDefault();
-        blocked(url);
-      }
+    target.webContents.on('will-redirect', (event) => {
+      if (!permitted(event.url)) reject(event, event.url, event.isMainFrame);
     });
     target.webContents.on('will-attach-webview', (event) => event.preventDefault());
     target.webContents.on('page-title-updated', (event) => event.preventDefault());

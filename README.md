@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 Pi 首页 Chat、带画布 Agent 的 AIGC 创作空间和本地 Markdown 写作空间。
 
-当前源码版本：`0.2.3`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.2.4`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 ## 启动
 
@@ -29,7 +29,7 @@ pnpm dev
 - 主进程、preload、renderer 分离；启用沙箱和上下文隔离，renderer 不开放 Node API。
 - Pi 1.3.0 首页文字 Chat：中转站模型配置（Chat Completions / Responses）、SSE 流式回复、停止/中断反馈、会话重命名与重启恢复。API Key 经系统密钥存储加密，只在主进程使用。
 
-设置表单支持本地保存、取消和校验。生成按钮会先上传参考素材，再通过主进程提交生成，并在节点中显示图片或视频结果。支持本地任务状态、重复提交保护、刷新恢复；应用重启后的未完成任务标为结果未知，不自动重发。已支持受类型、去重和循环校验约束的节点连线。
+内网服务地址默认为空，需要在设置中手动填写实际生成、上传及登录地址。保存的地址不会被自动替换。设置表单支持本地保存、取消和校验。生成按钮会先上传参考素材，再通过主进程提交生成，并在节点中显示图片或视频结果。支持本地任务状态、重复提交保护、刷新恢复；应用重启后的未完成任务标为结果未知，不自动重发。已支持受类型、去重和循环校验约束的节点连线。
 
 首页 Chat 在「设置 → 模型服务」配置中转站地址、Key、协议和模型 ID；可先获取模型列表，也可直接填写 ID。测试连接会发出一条收费规则由中转站决定的简短请求，测试与保存独立。已有对话保留其模型与连接；更换地址/协议后请新建对话。容量未知时不显示占用百分比；长对话达到本地保护上限时需新建对话，不自动裁剪或发起摘要请求。
 
@@ -57,9 +57,9 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-[0.2.2 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.2) 已发布，包含新平台生成任务接口、5 秒轮询和重启续查。Windows x64 和 macOS arm64 均已在云端实际启动打包应用，ASAR 页面、设置/更新桥接及 360 项必需依赖检查通过；macOS 正式签名、公证、目录及 ZIP/DMG 内应用的票据和 Gatekeeper 也已通过。Windows 安装器仍未签名；用户已验证 Windows 发现新版本、点击更新及重启安装流程可用。真实第三方服务和 macOS 实机自动升级仍需后续验收。
+[0.2.3 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.3) 已发布，包含新平台任务接口、5 秒轮询、统一登录入口和登录过期后的任务续查。Windows x64 和 macOS arm64 均已在云端实际启动打包应用，ASAR 页面、设置/更新桥接及 360 项必需依赖检查通过；macOS 正式签名、公证、目录及 ZIP/DMG 内应用的票据和 Gatekeeper 也已通过。Windows 安装器仍未签名；用户已验证 Windows 发现新版本、点击更新及重启安装流程可用。真实第三方服务和 macOS 实机自动升级仍需后续验收。
 
-**0.2.0 用户请手动安装 0.2.2：** 0.2.0 因遗漏 debug 等运行时依赖可能启动即崩溃，无法通过应用内更新自救。0.2.1 已修复依赖收集，并加入发布前实际启动门禁。
+**0.2.0 用户请手动安装 0.2.3：** 0.2.0 因遗漏 debug 等运行时依赖可能启动即崩溃，无法通过应用内更新自救。0.2.1 已修复依赖收集，并加入发布前实际启动门禁。
 
 ## 应用内更新
 
@@ -73,7 +73,7 @@ pnpm dev
 
 - 新功能从 `develop` 创建功能分支，以 PR 合回 `develop`。发版前在 `develop` 更新根包和桌面包版本、版本记录，并在本地完成 `pnpm check` 与 `pnpm test:smoke`。
 - 直接由 `develop` 向 `main` 提发布 PR。合并后在 `main` 的合并提交上推送 `v<版本号>` 标签；这是唯一自动触发 GitHub 云端构建的事件。PR、`develop` 和 `main` 推送不会运行构建。
-- 标签工作流（`.github/workflows/release-macos.yml`）核对版本和 `main` 祖先关系，然后分别运行检查与一次构建：Intel macOS runner 交叉生成 **macOS arm64 DMG/ZIP**，Windows runner 生成 **Windows x64 NSIS EXE 安装包**。Windows 安装器支持选择安装目录，默认按当前用户安装。
+- 标签工作流（`.github/workflows/release-macos.yml`）核对版本和 `main` 祖先关系，然后分别运行检查与一次构建：macOS 26 ARM64 runner 生成 **macOS arm64 DMG/ZIP**，Windows runner 生成 **Windows x64 NSIS EXE 安装包**。Windows 安装器支持选择安装目录，默认按当前用户安装。
 - 两个平台分别校验并上传 Artifact，包含三个安装文件、更新清单和生成的 blockmap；统一发布任务核对齐全后创建同一个 **预发布 Release**。更新清单上传前校验版本、平台目标、文件大小与 SHA-512，排除 builder 调试文件。任一平台失败则不创建 Release，已成功平台的 Artifact 仍可下载。PR 和普通分支推送不触发构建。
 - 已存在标签的任务失败或取消时，可重新运行失败作业，或在 Actions 手动输入该标签重试；已存在 Release 则停止，避免覆盖。首次双平台发布必须使用包含新配置的新版本标签，旧标签不会自动获得 Windows 配置，也不会补改现有 Release。
 - 新配置的产物命名为 `Jarvis-<版本>-macos-arm64.dmg`、同名 `.zip` 和 `Jarvis-<版本>-windows-x64-unsigned-setup.exe`。Windows 构建核对程序 x64 架构、版本与程序/安装器未签名状态；macOS 校验目录包、ZIP 解压后的应用及 DMG 中应用的架构、版本、Developer ID 签名、Team ID、Hardened Runtime、公证票据和 Gatekeeper，并检查归档完整性。

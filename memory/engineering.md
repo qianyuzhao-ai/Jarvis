@@ -2,11 +2,45 @@
 
 最后更新：2026-10-22
 
+## 0.2.4 发布（2026-10-22）
+
+- 最终地址清理版本发布前完整 Electron/模拟服务回归 84/84（3.1m）通过；此前该版本的 pnpm check、pnpm build、相关回归 14/14、版本一致性和 diff 检查均通过。
+
+- 用户先暂停发布，要求移除真实服务地址；当时的提交和强推未执行。地址修复完成后，用户明确要求全部修改一起提交并继续发布 0.2.4，恢复本轮提交、功能分支署名同步、PR 合并、标签与云端发布授权。
+- 地址修改前，本机检查、构建、完整 Electron 回归 83/83（3.2m）及发布工具回归 7/7 通过；地址修改后的验证单独记录，不沿用之前结果。
+
+- 用户明确要求提交改过署名的版本并发布新版本，授权同步功能分支、PR 合入 develop/main、新版本标签及云端发布。包含 `9800c50`、`662de2b` 两个提交，Author/Committer 均为 `QianYu <qianyuzhao.ai@gmail.com>`，无 Claude 联合署名。
+- 远端核对最新版本为 v0.2.3，无开放 PR；origin/develop 为 b1df41e，功能分支远端仍为原 5fda514。仅使用精确旧 SHA 的 force-with-lease 同步该功能分支，不覆盖新增远端提交。版本准备为 0.2.4；本地验证与双平台发布结果待后续记录。
+
+- 地址修复完成：移除真实任务 URL 常量、读取/保存/提交时自动迁移和登录域名真实占位提示；新配置全部留空，用户已保存配置原样保留，缺失任务地址时拒绝提交。当前跟踪文本文件与本轮构建入口扫描均无原真实服务域名；历史 Git 提交及旧构建产物未重写或删除。pnpm check、pnpm build、git diff --check 通过，设置/登录/任务相关 Electron 与模拟服务回归 14/14（36.1s）通过。
+
 ## 0.2.3 发布（2026-10-22）
 
 - 用户明确要求发布新版本，授权本次提交、推送、PR 合并、版本标签与云端发布，替代下方统一登录功能此前的仅本地开发边界。纳入统一登录功能和此前 Windows 自动更新实机验证文档。
 - 当前 feature/generation-login 起点与最新 origin/develop 一致；远端最新版本为 0.2.2，无开放 PR。根包、桌面包、README 源码版本与变更记录统一为 0.2.3，继续 feature → develop → main PR 和新版本标签流程，不移动旧标签或覆盖旧资产。
-- 功能已通过完整回归 82/82 与最终相关复测 5/5；本轮发布检查与双平台产物结果待回读。真实公司统一登录和生成服务由用户在内网设备联调。
+- 发布前 pnpm check、构建、版本与 diff 检查通过，发布工具回归 7/7 通过；功能已通过完整回归 82/82 与最终相关复测 5/5。真实公司统一登录和生成服务由用户在内网设备联调。
+- 实现提交 bb94bc7 经 [PR #56](https://github.com/qianyuzhao-ai/Jarvis/pull/56) 合入 develop（2e0f6b8），[PR #57](https://github.com/qianyuzhao-ai/Jarvis/pull/57) 合入 main（5ec8e0230bde4daa350458772c3aed2bc360259f），集成树与已验证实现一致。v0.2.3 标签对象 7337e7b7d33b50abed5f8d329896d849c217041f，剥离后指向该 main 提交。
+- 唯一标签运行 [39774871216](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39774871216) 的 Windows、macOS 和统一发布三作业均 success；[v0.2.3 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.3) 于 2026-10-22 20:06:32（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。未重试构建、移动标签或覆盖旧资产。
+- Windows 作业 119811171332、macOS 作业 119811171800 均通过 360 项必需依赖及实际打包应用启动、ASAR 页面和更新桥接检查，版本 0.2.3。macOS 目录包及 ZIP/DMG 内应用均通过签名、公证票据和 Gatekeeper（accepted / Notarized Developer ID）；Windows 安装器保持未签名。
+- 两端云端校验更新文件名、版本、大小和 SHA-512；线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，清单目标及文件大小匹配已发布资产。中文发布说明与登录使用步骤已保留原自动生成记录并回读确认。真实公司统一登录及内网生成仍由用户在目标设备验收。
+
+### 0.2.3 安装包资产回读
+
+- macOS arm64 DMG：241027557 字节，SHA-256 `3755c4fa7fb7aeaf2d58b4e6460fe2af269c51f868475ec581ac8107dadb69f3`。
+- macOS arm64 ZIP：239849602 字节，SHA-256 `739c745f977c9edf1398761a475545331b932242610ef22b9e5841f0d51af20d`。
+- Windows x64 EXE：209922697 字节，SHA-256 `622485146f6ee9cb9b3af866c6aa61f9d5f42cd5ea59d1dd6d9891e435974ae0`。
+
+## 统一登录实机失败排查（2026-10-22）
+
+- 用户在 Windows 实机反馈登录后“验证连接”始终不通过。只读检查本机 userData：最新任务错误为“平台要求登录”（Session.fetch 手动重定向被取消的分支），说明接口仍被重定向到 SSO。
+- 登录窗口 HTTP 缓存显示平台经企业统一登录跳到零信任网关回调。扫码成功后用 `<img>` 同步关联域 Cookie，再 `location.replace` 跳到网关回调。真实主机名已按用户要求从仓库移除。
+- 专用会话只有认证与关联域 Cookie，缺少平台网关 Cookie，网关回调未完成。判断为网关主机未加入允许的统一登录域名，跳转被登录窗口拦截。实际认证与网关域名需由用户在设置中填写；待用户复测确认。
+- 代码层另发现：`will-frame-navigate` / `will-redirect` 未区分主 frame，UUAP 如流认证使用的隐藏 iframe 跳到未登记域名时会直接关闭整个登录窗口；拦截报错在点击“验证连接”后被清空，用户难以看到被拦域名。
+- 用户授权后在 `feature/login-window-frames`（从 develop b1df41e）修复：未登记域名的子 frame 导航只静默拦截，主 frame 才关闭窗口并报错；`GenerationSessions` 记住最近一次登录窗口失败原因，验证返回需登录时显示“上次登录未完成，<被拦域名>”，正常完成登录或退出后清除。登录测试的模拟 SSO 页增加指向未登记 loopback 源的隐藏 iframe，断言窗口不被关闭、该请求未发出，并断言验证后仍显示被拦域名。
+- 验证（Windows，Node 22.23.4）：`pnpm check`、`pnpm build` 通过；登录与任务协议相关 Electron 回归 9/9 通过。Windows 上子 frame 被拦截后 `clearStorageData` 实测约 5 秒，退出登录断言等待放宽到 20 秒（仅测试等待，未改实现）。未运行完整回归；`pnpm format` 在 autocrlf=true 的检出上把全部文件改写为 LF，仅为换行差异，git 内容 diff 只有 4 个文件。未提交、未推送；真实 UUAP 链路待用户按域名配置复测。
+- 用户 dev 实测反馈“允许的统一登录域名”只能填一个：textarea 被 `#loginDomains` 样式固定为 36px 高，看似单行输入框（解析本身已支持换行/逗号分隔）。改为最小 64px、可纵向拉伸、占位示例两行、说明注明每行一个或逗号分隔；登录测试改为填写两行域名并断言可见高度至少两行、保存后回读两行。check、build、登录测试 2/2 通过。
+- 用户继续实测：设置不接受 `http://` 域名（只允许 HTTPS），但登录过程中主页面跳到平台的 HTTP 地址被拦截。新增 `secureLoginHop`：主 frame 跳到已允许主机的明文 HTTP（同主机、默认端口、无账号密码）时阻止原请求并改用 HTTPS 重新加载同一地址，不放宽 HTTP、不明文发送票据；其他 HTTP 仍按未配置域名拦截。纯函数用例覆盖升级、未登记主机、非默认端口、带账号、HTTPS 未登记。check、build、登录与任务协议回归 9/9 通过；真实 UUAP 链路待用户复测。
+- 用户要求图像/视频/音频素材上传也走登录会话，其余上传方式不变。`upload()` 接受可注入的 `UploadFetch`（默认仍为原 undici 直连）；`GenerationSessions.upload(generateUrl)` 用生成任务地址对应的专用会话 Session.fetch 发送同样的 multipart（req_from + files），带 Cookie、拒绝重定向；401/403/HTML 返回明确“平台要求登录”。上传地址、类型/大小校验、账本与响应解析不变。用户明确要求测试不得向真实服务发送请求：全部验证仅使用本机模拟服务。check、build、登录（含上传带 Cookie 与过期拒绝）及导出回归 6/6 通过。canvas-assets 三类拖入与 generation 窗口用例在本机 Windows 卡在媒体 readyState（上传本身成功），改回直连路径同样失败，未在原始 HEAD 上单独复核，待确认是否为本机媒体环境问题。未提交。
 
 ## 生成平台统一登录（2026-10-22）
 
@@ -17,7 +51,7 @@
 - 新增四个受限 IPC：login-status / login-open / login-verify / login-logout，仍校验主窗口、主 frame 和 URL。连接验证只 GET 已知的 seedance 额度接口，不创建生成任务，也不表示所有模型额度/权限均已通过。退出仅清理本应用专用会话 Cookie、站点数据、HTTP 缓存与 HTTP 认证缓存。
 - 401/403、HTML 登录页及重定向明确标记 authRequired。Electron 44.9.1 的 Session.fetch 手动重定向实际抛出 `Redirect was cancelled`，已专门处理并经真实 Electron 验证；不跟随任务 API 跳转或把请求 JSON 发往 SSO。无任务 ID 的不确定提交仍 unknown，不自动重发；有任务 ID 的运行任务暂停上游轮询，重新登录并验证后恢复 5 秒查询，包括暂停期间重启应用。
 - 设置新增登录入口、域名列表、登录/验证/退出操作；未保存时不使用草稿登录配置。画布登录失效时提供一次可见提醒，重新登录后清除该提醒；任务详情显示等待重新登录。额度仍不常驻项目。
-- 已通过检查、构建和新登录/鉴权相关测试；模拟平台覆盖 Cookie 带入任务请求、来源隔离、未许可跳转拦截、登录过期暂停、跨进程重启续查不重发、Cookie 重启复用、过期与退出后不使用缓存及浅深/紧凑设置界面。完整回归 **82/82（3.0m）** 通过；最终补充“HTML 网关错误不误判登录”后，登录与协议复测 **5/5（20.8s）** 通过，最终 pnpm check / pnpm build / git diff --check 通过。前轮定位并修正了 Chromium HTTP 缓存导致退出后读到旧验证结果的问题；既有侧栏动画中间帧用例曾偶发失败，本轮完整重跑通过，未修改侧栏实现或放宽断言。真实统一登录、公司设备策略与真实内网生成由用户在 Windows 设备联调；本轮未提交、推送或发布，源码版本保持 0.2.2。
+- 已通过检查、构建和新登录/鉴权相关测试；模拟平台覆盖 Cookie 带入任务请求、来源隔离、未许可跳转拦截、登录过期暂停、跨进程重启续查不重发、Cookie 重启复用、过期与退出后不使用缓存及浅深/紧凑设置界面。完整回归 **82/82（3.0m）** 通过；最终补充“HTML 网关错误不误判登录”后，登录与协议复测 **5/5（20.8s）** 通过，最终 pnpm check / pnpm build / git diff --check 通过。前轮定位并修正了 Chromium HTTP 缓存导致退出后读到旧验证结果的问题；既有侧栏动画中间帧用例曾偶发失败，本轮完整重跑通过，未修改侧栏实现或放宽断言。真实统一登录、公司设备策略与真实内网生成由用户在 Windows 设备联调；上述为开发阶段验证；现已随上方 0.2.3 发布。
 
 ## 0.2.2 发布（2026-10-22）
 
@@ -41,7 +75,7 @@
 - 用户确认旧平台迁入新平台：全部图像/视频模型共用任务接口，模型参数、参考素材、上传与 Prompt 引用 `<<<image_1>>>` 等保持不变。查询周期最终明确为 **5 秒**，替代讨论中的 30 秒；真实内网联调由用户执行，本轮只做本机模拟服务与真实 Electron 窗口验证。
 - 主进程 `generation/task-protocol.ts` 提交现有 JSON 到 `/api/mr/tasks`，保存返回 `task_id` 后每 5 秒 GET 同一路径下的任务。`pending/running` 对应本地 running，`success` 从 `response.result.content[0]` 取 HTTP(S) URL，`failed` 保留具体错误码和说明。校验任务 ID，查询异常不重发 POST；提交断线、5xx、408、无有效 task_id 均保持结果未知。
 - `generation-jobs.json` 新增独立 remoteTaskId、remoteStatus、modelName 与完成额度查询状态；本地 UUID、幂等去重、原始请求 JSON 与统计保留。已取得远端 ID 的进行中任务重启后恢复查询；旧同步进行中记录和未取得 ID 的提交继续标为 unknown。先写入本地记录再提交、先保存远端 ID 再查询；任务地址固定为提交时的地址，不随当前设置改变。
-- 全新工作台默认任务地址 `https://atlas-dh.baidu-int.com/api/mr/tasks`；空地址和以 `/aigc`（可带尾斜杠）结尾的旧地址迁入该地址，其他自定义地址保留供用户指定任务服务。设置名称改为“生成任务地址”，req_from 和上传地址不改。历史账本不改写旧端点。导出明细增加“平台任务 ID”。
+- 0.2.2 曾预设真实任务服务，并将空地址或旧 `/aigc` 地址自动迁入。2026-10-22 用户要求移除真实地址，当前源码改为所有内网地址手动填写、读取及提交时保留已保存的地址，不再自动迁移。设置名称为“生成任务地址”，历史账本不改写旧端点。导出明细包含“平台任务 ID”。
 - 已接单任务成功/失败后查询一次同级 `/model-quota?model_name=...`，使用真实 payload 模型家族（如 seedance、nano-banana）。生成结果先落盘并显示，额度查询独立结束；失败只提示到平台查看，不改变生成成败。额度不常驻项目；全局完成提醒按队列展示、可关闭，随文字长度自动消失，不重复提醒已处理结果。
 - 验证完成：`pnpm check`、`pnpm build`、`git diff --check` 通过，完整 Electron/本机模拟服务回归 **79/79（2.7m）** 通过，最终代码清理及深色提醒补充后相关复测 **8/8（32.7s）** 通过。覆盖全部 7 模型的任务路由/原始 payload/额度模型家族、重启恢复、真实 5 秒间隔、查询断网和不确定提交不重发、旧地址迁移、图像/视频窗口、引用/连线、下载/复制和导出。浅深提醒截图已检查；最终截图在 `apps/desktop/test-results/c1a87f25-f4cc-40ad-8a6c-7a016d05d2e8/generation-Electron-upload-fac85--video-and-restores-results/`。未发送真实内网生成请求、未提交/推送/发布，版本保持 0.2.1。
 

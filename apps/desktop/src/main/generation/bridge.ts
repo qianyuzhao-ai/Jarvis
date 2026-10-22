@@ -61,7 +61,9 @@ export async function registerGeneration(file: string) {
   );
   const jobs = new GenerationJobs(file, undefined, sessions.fetch);
   runningJobs = () => jobs.isBusy || sessions.isBusy;
-  const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'));
+  const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'), (request) =>
+    sessions.upload(request.settings.generateUrl),
+  );
   let uploadHistoryError = false;
   try {
     await uploads.initialize();

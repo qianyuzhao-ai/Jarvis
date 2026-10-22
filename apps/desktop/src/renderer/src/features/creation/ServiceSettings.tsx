@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Settings } from './types';
-import { DEFAULT_TASKS_URL, migrateGenerationUrl } from '../../../../shared/generation';
 import { loginAddress, loginOrigins } from '../../../../shared/generation-login';
 import { PlatformLoginControls } from './PlatformLoginControls';
 const fields = [
@@ -55,19 +54,17 @@ export function ServiceSettings({
     }
     next.loginDomains = (next.loginDomains ?? '').trim();
     if (next.loginUrl || next.loginDomains) {
-      try {
-        loginOrigins(
-          migrateGenerationUrl(next.generateUrl),
-          next.loginUrl ?? '',
-          next.loginDomains,
-        );
-      } catch (error) {
-        issues.loginDomains = error instanceof Error ? error.message : '登录域名无效';
+      if (!next.generateUrl) issues.generateUrl = '请先填写生成任务地址';
+      else {
+        try {
+          loginOrigins(next.generateUrl, next.loginUrl ?? '', next.loginDomains);
+        } catch (error) {
+          issues.loginDomains = error instanceof Error ? error.message : '登录域名无效';
+        }
       }
     }
     setErrors(issues);
     if (Object.keys(issues).length) return;
-    next.generateUrl = migrateGenerationUrl(next.generateUrl);
     onSave(next);
     setDraft(next);
     onDirtyChange(false);
@@ -76,7 +73,7 @@ export function ServiceSettings({
     <form className="settings-page settings-form" onSubmit={submit} noValidate>
       <div>
         <h1>配置内网服务</h1>
-        <p>填写请求来源标识及各服务地址。</p>
+        <p>请手动填写请求来源标识及实际服务地址，应用不预设内网地址。</p>
       </div>
       {fields.map(([key, label]) => (
         <label className="settings-row form-field" key={key} htmlFor={key}>
@@ -87,7 +84,7 @@ export function ServiceSettings({
             type="text"
             spellCheck={false}
             autoComplete="off"
-            placeholder={key === 'generateUrl' ? DEFAULT_TASKS_URL : `请输入 ${label}`}
+            placeholder={`请输入 ${label}`}
             value={draft[key] ?? ''}
             aria-invalid={Boolean(errors[key])}
             aria-describedby={errors[key] ? `${key}-error` : undefined}
@@ -110,9 +107,9 @@ export function ServiceSettings({
         <textarea
           id="loginDomains"
           aria-labelledby="login-domains-label"
-          rows={2}
+          rows={3}
           value={draft.loginDomains ?? ''}
-          placeholder="统一登录跳转经过的域名，每行一个"
+          placeholder="请输入登录跳转经过的域名，每行一个"
           spellCheck={false}
           autoComplete="off"
           aria-invalid={Boolean(errors.loginDomains)}
@@ -125,7 +122,7 @@ export function ServiceSettings({
           }}
         />
         <small id="login-domains-help">
-          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名。平台自身域名自动允许。
+          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名，每行一个（也可用逗号分隔）。平台自身域名自动允许。
         </small>
         {errors.loginDomains && <small className="error-text">{errors.loginDomains}</small>}
       </label>

@@ -2,11 +2,25 @@
 
 最后更新：2026-10-22
 
+## 0.2.4 发布（2026-10-22）
+
+- 最终地址清理版本发布前完整 Electron/模拟服务回归 84/84（3.1m）通过；此前该版本的 pnpm check、pnpm build、相关回归 14/14、版本一致性和 diff 检查均通过。
+
+- 用户先暂停发布，要求移除真实服务地址；当时的提交和强推未执行。地址修复完成后，用户明确要求全部修改一起提交并继续发布 0.2.4，恢复本轮提交、功能分支署名同步、PR 合并、标签与云端发布授权。
+- 地址修改前，本机检查、构建、完整 Electron 回归 83/83（3.2m）及发布工具回归 7/7 通过；地址修改后的验证单独记录，不沿用之前结果。
+
+- 用户明确要求提交改过署名的版本并发布新版本，授权同步功能分支、PR 合入 develop/main、新版本标签及云端发布。包含 `9800c50`、`662de2b` 两个提交，Author/Committer 均为 `QianYu <qianyuzhao.ai@gmail.com>`，无 Claude 联合署名。
+- 远端核对最新版本为 v0.2.3，无开放 PR；origin/develop 为 b1df41e，功能分支远端仍为原 5fda514。仅使用精确旧 SHA 的 force-with-lease 同步该功能分支，不覆盖新增远端提交。版本准备仍留在本地为 0.2.4；地址修复已通过检查、构建及相关回归 14/14，现已恢复发布，最终结果待回读。
+
 ## 0.2.3 发布（2026-10-22）
 
 - 用户明确要求发布新版本，授权本次提交、推送、PR 合并、版本标签与云端发布，替代下方统一登录功能此前的仅本地开发边界。纳入统一登录功能和此前 Windows 自动更新实机验证文档。
 - 当前 feature/generation-login 起点与最新 origin/develop 一致；远端最新版本为 0.2.2，无开放 PR。根包、桌面包、README 源码版本与变更记录统一为 0.2.3，继续 feature → develop → main PR 和新版本标签流程，不移动旧标签或覆盖旧资产。
-- 功能已通过完整回归 82/82 与最终相关复测 5/5；本轮发布检查与双平台产物结果待回读。真实公司统一登录和生成服务由用户在内网设备联调。
+- 发布前 pnpm check、构建、版本与 diff 检查通过，发布工具回归 7/7 通过；功能已通过完整回归 82/82 与最终相关复测 5/5。真实公司统一登录和生成服务由用户在内网设备联调。
+- 实现提交 bb94bc7 经 [PR #56](https://github.com/qianyuzhao-ai/Jarvis/pull/56) 合入 develop（2e0f6b8），[PR #57](https://github.com/qianyuzhao-ai/Jarvis/pull/57) 合入 main（5ec8e0230bde4daa350458772c3aed2bc360259f），集成树与已验证实现一致。v0.2.3 标签对象 7337e7b7d33b50abed5f8d329896d849c217041f，剥离后指向该 main 提交。
+- 唯一标签运行 [39774871216](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39774871216) 的 Windows、macOS 和统一发布三作业均 success；[v0.2.3 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.3) 于 2026-10-22 20:06:32（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。未重试构建、移动标签或覆盖旧资产。
+- Windows 作业 119811171332、macOS 作业 119811171800 均通过 360 项必需依赖及实际打包应用启动、ASAR 页面和更新桥接检查，版本 0.2.3。macOS 目录包及 ZIP/DMG 内应用均通过签名、公证票据和 Gatekeeper（accepted / Notarized Developer ID）；Windows 安装器保持未签名。
+- 两端云端校验更新文件名、版本、大小和 SHA-512；线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，清单目标及文件大小匹配已发布资产。中文发布说明与登录使用步骤已保留原自动生成记录并回读确认。真实公司统一登录及内网生成仍由用户在目标设备验收。
 
 ## 生成平台统一登录开发（2026-10-22）
 
@@ -190,6 +204,8 @@
 - `main` 保持初始基线；尚无发布，不建立 release/hotfix 分支或版本标签，不推送。实际提交与合并结果以 `git log --graph --oneline --all` 为准。
 
 ## 变更记录
+
+- 2026-10-22：用户要求将 `feature/login-window-frames` 最近两个提交署名改为本人。按本仓库 Git 配置将 Author/Committer 改为 `QianYu <qianyuzhao.ai@gmail.com>`，移除 Claude 联合作者标记；`31ba0f2` → `9800c50`，`5fda514` → `662de2b`。逐提交核对 tree 完全一致，保留原提交说明及作者/提交时间。仅重写本地历史，未推送；本记录留在工作区，未追加第三个提交。
 
 - 2026-10-21：用户要求增加 Windows x64 未签名 NSIS 安装包，与 macOS arm64 DMG/ZIP 由同一版本标签触发，构建全部成功后发布至同一 Release。保留标签/手动重试入口与不覆盖已有 Release 的规则；首次使用需包含配置的新版本标签。实现位于 `feature/windows-release`，用户随后授权提交、PR 合入 develop 并发布 v0.1.4；Windows 功能由用户验收。
 
