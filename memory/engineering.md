@@ -6,7 +6,17 @@
 
 - 用户要求发布新版本，以便在另一台可访问内网的设备上测试，授权本次提交、推送、PR 合并、版本标签和云端发布。此次授权替代下方任务接口改造原先的仅本地实现边界。
 - 远端核对最新版本为 v0.2.1，无开放 PR；feature/generation-tasks 起点与 origin/develop 一致。根包/桌面包、README 源码版本和变更记录更新为 0.2.2，按 feature → develop → main PR 集成，随后在 main 合并提交打新标签，不移动旧标签、不覆盖旧资产。
-- 代码已通过完整回归 79/79 及最终相关复测 8/8；本次继续执行版本、检查、构建与发布工具回归。真实内网不在本机验证范围，云端发布结果待回读。
+- 发布前版本、pnpm check、构建及 diff 检查通过，发布工具回归 7/7 通过；已有完整 Electron 回归 79/79 和最终相关复测 8/8。真实内网由用户在其他设备联调。
+- 实现提交 c2e976e 经 [PR #53](https://github.com/qianyuzhao-ai/Jarvis/pull/53) 合入 develop（81db00f），[PR #54](https://github.com/qianyuzhao-ai/Jarvis/pull/54) 合入 main（8688f7626c952ddf0f8d8e11342d80ed10c8031f），集成树与已验证实现一致。v0.2.2 标签对象 2331d29e8bc95074a5c33037ebc5b3209877a86f，剥离后指向该 main 提交。
+- 唯一标签运行 [39764722806](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39764722806) 的 macOS、Windows 和统一发布三个作业均 success；[v0.2.2 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.2) 于 2026-10-22 18:46:43（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。未重试构建、移动标签或覆盖旧资产。
+- Windows 作业 119777222170、macOS 作业 119777221712 均通过 360 项必需依赖检查及实际打包应用启动、ASAR 页面/更新桥接验证，版本为 0.2.2。macOS 目录、ZIP/DMG 内应用均通过签名、公证票据及 Gatekeeper（accepted / Notarized Developer ID）；Windows 安装器仍未签名。
+- 两端云端均验证更新目标、文件大小与 SHA-512。线上 latest.yml / latest-mac.yml 已下载，SHA-256 匹配 GitHub asset digest，版本及目标文件大小与实际资产一致；中文发布说明保留自动生成记录并已回读。真实内网生成和用户设备上的安装/升级仍由用户验收。
+
+### 0.2.2 安装包资产回读
+
+- macOS arm64 DMG：241029304 字节，SHA-256 `b5fce6438467c8bcd3140cf02deb35dc8dd4f58128cf72ea63c117d836cc1e2c`。
+- macOS arm64 ZIP：239844100 字节，SHA-256 `d65fb63c40f0c71bd155df2af6e71f8ca944b46ee0bc9feec2ea5157abbe96e6`。
+- Windows x64 EXE：209919186 字节，SHA-256 `247ab36b19e66eab50923f38bdc49ba96d372f0b82e5ca360c9c373e0022a92d`。
 
 ## AIGC 新平台任务接口迁移（2026-10-22）
 
