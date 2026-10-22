@@ -13,7 +13,7 @@
 - 最终运行从 main d692428 的工作流构建原 v0.2.1 源码。Windows 作业 119623541003：360 项必需依赖、实际 win32 打包应用启动、ASAR 页面、设置/更新 IPC 和版本 0.2.1 通过；安装器保持未签名。macOS 作业 119623541301：钥匙串准备、Developer ID 签名、公证、目录/ZIP/DMG 内应用的票据及 Gatekeeper 均通过，三者均 accepted / Notarized Developer ID；360 项依赖和真实 darwin 打包启动同样通过。
 - Apple 只读查询 [39718367184](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39718367184) 确认公证 1f0283f9-3765-40c2-9ed4-fa5bd627e9fa 为 Accepted。两端均实际通过更新清单版本、目标、大小、SHA-512 校验；已上传 DMG/ZIP/EXE、latest-mac.yml / latest.yml 和三个 blockmap。
 - 本地修复源码完整回归 74/74；0.2.1 本地检查、构建、五项依赖/清单回归、360 项依赖及实际打包启动通过。原始 0.2.0 包被新增门禁拒绝。NSIS 完整安装、用户设备环境、真实第三方服务及两个可启动生产签名版本间的升级不在本次云端启动结论内；0.2.0 崩溃客户端需手动安装 0.2.1。
-- 收尾时本机 GitHub TLS/EOF 连接中断；额外下载线上清单比对未完成，补充发布说明的 PATCH 请求是否生效尚未回读。已保存实际成功日志和 Release API 资产结果，不将此网络问题误报为云端发布失败。
+- 收尾时短暂遇到本机 GitHub TLS/EOF 中断，随后恢复。两份线上更新清单已下载，SHA-256 与 GitHub asset digest 一致，版本 0.2.1、所有目标文件名和大小匹配实际发布资产；补充发布说明已回读确认。已保存成功日志与 Release API 结果。
 
 ### 0.2.1 资产回读
 
