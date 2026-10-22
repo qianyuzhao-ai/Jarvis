@@ -71,18 +71,39 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+      - name: Load macOS signing and verification tools from workflow commit
+        if: matrix.platform == 'macos'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: .release-tools
+          sparse-checkout: |
+            apps/desktop/scripts/verify-macos-release.sh
+            apps/desktop/scripts/apple-network-retry.sh
+            apps/desktop/scripts/apple-network-retry.test.sh
+            apps/desktop/scripts/prepare-macos-signing.mjs
+            apps/desktop/scripts/prepare-macos-signing.test.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Prepare macOS signing keychain
+        if: matrix.platform == 'macos'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node --test .release-tools/apps/desktop/scripts/prepare-macos-signing.test.mjs
+          node .release-tools/apps/desktop/scripts/prepare-macos-signing.mjs
       - name: Build signed and notarized DMG and ZIP
         if: matrix.platform == 'macos'
         working-directory: apps/desktop
         env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'true'
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+          for name in CSC_KEYCHAIN APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
             if [[ -z "${!name}" ]]; then
               echo "::error::Missing required secret: $name"
               exit 1
@@ -93,18 +114,6 @@ jobs:
             exit 1
           fi
           pnpm exec electron-builder --mac --arm64 --publish never --config electron-builder.release.yml
-      - name: Load macOS verification tools from workflow commit
-        if: matrix.platform == 'macos'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          path: .release-tools
-          sparse-checkout: |
-            apps/desktop/scripts/verify-macos-release.sh
-            apps/desktop/scripts/apple-network-retry.sh
-            apps/desktop/scripts/apple-network-retry.test.sh
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
       - name: Test Apple network retry policy
         if: matrix.platform == 'macos'
         run: bash .release-tools/apps/desktop/scripts/apple-network-retry.test.sh
