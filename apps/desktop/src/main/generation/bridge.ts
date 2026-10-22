@@ -14,6 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { GenerationJobs } from './jobs';
+import { GenerationSessions } from './platform-session';
+import { platformLoginSchema } from '../../shared/generation-login';
 import { UploadHistory } from './upload-history';
 import { createProjectWorkbook, exportFileName } from './export-project';
 import { downloadMedia } from './download-media';
@@ -54,8 +56,11 @@ export async function registerGeneration(file: string) {
   } catch {
     preferencesError = true;
   }
-  const jobs = new GenerationJobs(file);
-  runningJobs = () => jobs.isBusy;
+  const sessions: GenerationSessions = new GenerationSessions(
+    (origin): Promise<void> => jobs.resumeAfterLogin(origin),
+  );
+  const jobs = new GenerationJobs(file, undefined, sessions.fetch);
+  runningJobs = () => jobs.isBusy || sessions.isBusy;
   const uploads = new UploadHistory(join(dirname(file), 'upload-history.json'));
   let uploadHistoryError = false;
   try {
@@ -106,6 +111,24 @@ export async function registerGeneration(file: string) {
       }
     });
   }
+  handle('generation:login-status', (endpoint) => sessions.status(httpUrl.parse(endpoint)), false);
+  handle(
+    'generation:login-open',
+    (config, event) => {
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      if (!owner) throw new Error('登录窗口不可用');
+      return sessions.open(platformLoginSchema.parse(config), owner);
+    },
+    false,
+  );
+  handle('generation:login-verify', (endpoint) => sessions.verify(httpUrl.parse(endpoint)), false);
+  handle(
+    'generation:login-logout',
+    (endpoint) => {
+      return sessions.logout(httpUrl.parse(endpoint));
+    },
+    false,
+  );
   handle(
     'generation:upload',
     (request) => {

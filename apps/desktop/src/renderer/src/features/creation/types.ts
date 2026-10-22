@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Edge, Node } from '@xyflow/react';
 import { DEFAULT_TASKS_URL, httpUrl } from '../../../../shared/generation';
+import { loginFields } from '../../../../shared/generation-login';
 
 export const assetSchema = z.object({
   kind: z.enum(['image', 'video', 'audio']),
@@ -47,6 +48,7 @@ export const mediaSchema = z.object({
       remoteTaskId: z.string().optional(),
       remoteStatus: z.string().optional(),
       quotaPending: z.boolean().optional(),
+      authRequired: z.boolean().optional(),
     })
     .optional(),
   result: z.object({ requestId: z.string(), url: z.string() }).optional(),
@@ -85,6 +87,7 @@ export const projectSchema = z.object({
     .default([]),
 });
 export const settingsSchema = z.object({
+  ...loginFields,
   reqFrom: z.string().max(100),
   generateUrl: z.string(),
   imageUploadUrl: z.string(),

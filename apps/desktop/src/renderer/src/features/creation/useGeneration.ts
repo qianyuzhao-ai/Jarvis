@@ -28,6 +28,7 @@ export function useGeneration(
 ) {
   const starting = useRef(new Set<string>());
   const notified = useRef(new Set<string>());
+  const authNotified = useRef(new Set<string>());
   const [notices, setNotices] = useState<{ id: string; text: string }[]>([]);
   const dismissNotice = useCallback(
     (id: string) => setNotices((items) => items.filter((item) => item.id !== id)),
@@ -69,6 +70,7 @@ export function useGeneration(
                 remoteTaskId: job.remoteTaskId,
                 remoteStatus: job.remoteStatus,
                 quotaPending: job.quotaPending,
+                authRequired: job.authRequired,
               },
               result:
                 job.status === 'succeeded' && job.resultUrl
@@ -76,6 +78,24 @@ export function useGeneration(
                   : d.result,
             },
       );
+      if (!job.authRequired && authNotified.current.delete(job.requestId))
+        setNotices((items) => items.filter((item) => item.id !== `login-${job.requestId}`));
+      if (
+        node?.type === 'media' &&
+        node.data.generation?.requestId === job.requestId &&
+        job.status === 'running' &&
+        job.authRequired &&
+        !authNotified.current.has(job.requestId)
+      ) {
+        authNotified.current.add(job.requestId);
+        setNotices((items) => [
+          ...items,
+          {
+            id: `login-${job.requestId}`,
+            text: `${project?.name} · ${mediaName(node.data)}：需要重新登录生成平台。任务已保留，请到设置中登录并验证连接。`,
+          },
+        ]);
+      }
       if (
         node?.type === 'media' &&
         node.data.generation?.requestId === job.requestId &&
@@ -274,6 +294,7 @@ export function useGeneration(
                 response.value.status !== 'running' ||
                 generation.status !== 'running' ||
                 response.value.remoteStatus !== generation.remoteStatus ||
+                response.value.authRequired !== generation.authRequired ||
                 response.value.warning !== generation.warning ||
                 generation.warning
               )

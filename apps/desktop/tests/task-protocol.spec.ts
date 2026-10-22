@@ -1,6 +1,12 @@
 import { createServer } from 'node:http';
+import { ReadableStream } from 'node:stream/web';
 import { expect, test } from '@playwright/test';
-import { getQuota, getTask, submitTask } from '../src/main/generation/task-protocol';
+import {
+  getQuota,
+  getTask,
+  submitTask,
+  type TaskFetch,
+} from '../src/main/generation/task-protocol';
 
 test('task protocol preserves the body, follows task identity and reads quota by model family', async () => {
   let mode = 'running';
@@ -90,4 +96,52 @@ test('task protocol preserves the body, follows task identity and reads quota by
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+});
+
+test('authentication failures are explicit and redirect or HTML submissions remain uncertain', async () => {
+  for (const status of [401, 403, 302, 200]) {
+    let canceled = false;
+    const fetchTask: TaskFetch = async (_url, init) => {
+      expect(init.redirect).toBe('manual');
+      return {
+        ok: status === 200,
+        status,
+        headers: {
+          get: (key: string) =>
+            key === 'content-type'
+              ? status === 200
+                ? 'text/html; charset=utf-8'
+                : 'application/json'
+              : null,
+        },
+        body: new ReadableStream<Uint8Array>({
+          cancel() {
+            canceled = true;
+          },
+        }),
+      };
+    };
+    await expect(
+      submitTask('https://platform.invalid/api/mr/tasks', '{}', fetchTask),
+    ).rejects.toMatchObject({ authRequired: true, unknown: [200, 302].includes(status) });
+    expect(canceled).toBe(true);
+    await expect(
+      getTask('https://platform.invalid/api/mr/tasks', 'task-123', fetchTask),
+    ).rejects.toMatchObject({ authRequired: true, unknown: false });
+  }
+});
+
+test('an HTML gateway failure does not pause a task for login', async () => {
+  const fetchTask: TaskFetch = async () => ({
+    ok: false,
+    status: 502,
+    headers: { get: () => 'text/html' },
+    body: null,
+  });
+  await expect(
+    submitTask('https://platform.invalid/api/mr/tasks', '{}', fetchTask),
+  ).rejects.toMatchObject({ unknown: true, authRequired: false });
+  await expect(
+    getTask('https://platform.invalid/api/mr/tasks', 'task-123', fetchTask),
+  ).rejects.toMatchObject({ authRequired: false });
 });
