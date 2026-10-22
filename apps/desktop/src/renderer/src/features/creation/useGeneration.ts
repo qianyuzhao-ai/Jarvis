@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   generationInputSchema,
   httpUrl,
@@ -9,7 +9,13 @@ import {
 import { numberReferences } from './reference-order';
 import { submittedPrompt } from './prompt-mentions';
 import { linkedReferences, validateReferences } from './connections';
-import type { AssetData, MediaData, MediaNode, WorkspaceData } from './types';
+import {
+  mediaName,
+  type AssetData,
+  type MediaData,
+  type MediaNode,
+  type WorkspaceData,
+} from './types';
 import type { ChangeWorkspace } from './useWorkspace';
 
 export const generationBusy = (data: MediaData | AssetData) =>
@@ -21,6 +27,12 @@ export function useGeneration(
   getCurrent: () => WorkspaceData,
 ) {
   const starting = useRef(new Set<string>());
+  const notified = useRef(new Set<string>());
+  const [notices, setNotices] = useState<{ id: string; text: string }[]>([]);
+  const dismissNotice = useCallback(
+    (id: string) => setNotices((items) => items.filter((item) => item.id !== id)),
+    [],
+  );
   const patch = useCallback(
     (projectId: string, nodeId: string, change: (data: MediaData) => MediaData) =>
       commit((s) => ({
@@ -40,8 +52,10 @@ export function useGeneration(
     [commit],
   );
   const finish = useCallback(
-    (job: GenerationJob) =>
-      patch(job.projectId, job.nodeId, (d) =>
+    async (job: GenerationJob) => {
+      const project = getCurrent().projects.find((item) => item.id === job.projectId);
+      const node = project?.nodes.find((item) => item.id === job.nodeId);
+      await patch(job.projectId, job.nodeId, (d) =>
         d.generation?.requestId !== job.requestId
           ? d
           : {
@@ -52,14 +66,40 @@ export function useGeneration(
                 startedAt: job.startedAt,
                 error: job.error,
                 warning: job.warning,
+                remoteTaskId: job.remoteTaskId,
+                remoteStatus: job.remoteStatus,
+                quotaPending: job.quotaPending,
               },
               result:
                 job.status === 'succeeded' && job.resultUrl
                   ? { requestId: job.requestId, url: job.resultUrl }
                   : d.result,
             },
-      ),
-    [patch],
+      );
+      if (
+        node?.type === 'media' &&
+        node.data.generation?.requestId === job.requestId &&
+        job.status !== 'running' &&
+        !job.quotaPending &&
+        !notified.current.has(job.requestId)
+      ) {
+        notified.current.add(job.requestId);
+        const outcome =
+          job.status === 'succeeded'
+            ? '生成完成'
+            : job.status === 'failed'
+              ? '生成失败'
+              : '生成结果未知';
+        setNotices((items) => [
+          ...items,
+          {
+            id: job.requestId,
+            text: `${project?.name} · ${mediaName(node.data)}：${outcome}。${job.error ?? ''}${job.quotaNotice ?? ''}`,
+          },
+        ]);
+      }
+    },
+    [patch, getCurrent],
   );
   const generate = useCallback(
     async (projectId: string, nodeId: string) => {
@@ -196,7 +236,10 @@ export function useGeneration(
   const pending = data.projects
     .flatMap((p) =>
       p.nodes
-        .filter((n): n is MediaNode => n.type === 'media' && generationBusy(n.data))
+        .filter(
+          (n): n is MediaNode =>
+            n.type === 'media' && (generationBusy(n.data) || !!n.data.generation?.quotaPending),
+        )
         .map((n) => `${p.id}:${n.id}:${n.data.generation?.requestId}`),
     )
     .join('|');
@@ -210,7 +253,7 @@ export function useGeneration(
           if (stopped) return;
           if (
             n.type !== 'media' ||
-            !generationBusy(n.data) ||
+            (!generationBusy(n.data) && !n.data.generation?.quotaPending) ||
             starting.current.has(p.id + ':' + n.id)
           )
             continue;
@@ -230,6 +273,8 @@ export function useGeneration(
               if (
                 response.value.status !== 'running' ||
                 generation.status !== 'running' ||
+                response.value.remoteStatus !== generation.remoteStatus ||
+                response.value.warning !== generation.warning ||
                 generation.warning
               )
                 await finish(response.value);
@@ -264,5 +309,5 @@ export function useGeneration(
       clearTimeout(timer);
     };
   }, [pending, getCurrent, finish, patch]);
-  return generate;
+  return { generate, notice: notices[0], dismissNotice };
 }

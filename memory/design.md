@@ -2,6 +2,14 @@
 
 最后更新：2026-10-22
 
+### AIGC 任务接口与完成提醒（2026-10-22）
+
+- 用户确认全模型迁移新平台任务接口，轮询为 5 秒；模型参数、上传与 Prompt 引用不变。额度不在项目里常驻展示，只在生成结束后查询并轻提示；真实内网由用户测试。
+- 内网设置原“aigc 地址”改为“生成任务地址”，新工作台默认 `https://atlas-dh.baidu-int.com/api/mr/tasks`；旧 `/aigc` 或空地址迁入新地址，其他自定义地址保留，上传地址及 req_from 不变。
+- 沿用原生成信息折叠区，增加平台任务 ID，pending 显示“任务已提交，正在排队…”。成功结果仍先显示于节点；quota 查询不会把成功改成失败。
+- 新增全局右下角完成提醒，显示项目/节点、生成成功或失败和本次额度说明；并发完成按队列展示，支持明确的关闭按钮和按文字长度自动消失。浅深色沿用当前主题 token、系统字体与 Lucide，额度不加入节点常驻字段。
+- 检查、构建和完整回归 **79/79** 通过，最终相关复测 **8/8** 通过。浅色与深色视频完成提醒截图已查看，文字可读、关闭操作可用；最终截图在 `apps/desktop/test-results/c1a87f25-f4cc-40ad-8a6c-7a016d05d2e8/generation-Electron-upload-fac85--video-and-restores-results/`（`generation-notice-image.png` / `generation-notice-video.png`）。设置回归验证旧地址迁移且 req_from/上传地址保留。未修改 Figma，既有节点 ID 保持不变，本轮界面变化尚未同步 Figma。
+
 ### 应用内自动更新（2026-10-22）
 
 - 最终代码检查/构建及完整 Electron 回归 **70/70（1.8m）** 通过，包含原生确认取消后的焦点恢复、真实 HTTP 下载坏哈希拦截、写作保存后交接和交接失败恢复窗口。浅色进度、900×640 深色完成页已检查，设置页不重复显示顶部提醒；截图位于 `apps/desktop/test-results/de12538f-b51d-472e-b664-f76c87b1000f/updates-automatic-and-manu-3f630-ation-work-in-a-real-window/`。

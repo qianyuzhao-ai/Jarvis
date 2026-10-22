@@ -2,6 +2,19 @@ import { z } from 'zod';
 
 export const REFERENCE_LIMITS = { image: 9, audio: 3, video: 3 } as const;
 export const UPLOAD_LIMIT_MIB = { image: 32, video: 200, audio: 64 } as const;
+export const TASK_POLL_INTERVAL_MS = 5000;
+export const DEFAULT_TASKS_URL = 'https://atlas-dh.baidu-int.com/api/mr/tasks';
+
+export function migrateGenerationUrl(value: string): string {
+  if (!value.trim()) return DEFAULT_TASKS_URL;
+  try {
+    const url = new URL(value);
+    if (url.pathname.replace(/\/+$/, '').endsWith('/aigc')) return DEFAULT_TASKS_URL;
+  } catch {
+    return value;
+  }
+  return value;
+}
 
 export const serviceSettingsSchema = z.object({
   reqFrom: z.string().trim().min(1, '请在设置中填写 req_from').max(100),
@@ -78,6 +91,10 @@ export const jobSchema = z.object({
   resultUrl: z.string().optional(),
   error: z.string().optional(),
   warning: z.string().optional(),
+  remoteTaskId: z.string().optional(),
+  remoteStatus: z.string().optional(),
+  quotaNotice: z.string().optional(),
+  quotaPending: z.boolean().optional(),
 });
 export const requestRecordSchema = z.object({
   requestId: z.uuid(),
@@ -96,6 +113,7 @@ export const requestRecordSchema = z.object({
   fileName: z.string().optional(),
   error: z.string().optional(),
   warning: z.string().optional(),
+  remoteTaskId: z.string().optional(),
 });
 export type RequestRecord = z.infer<typeof requestRecordSchema>;
 export const exportProjectSchema = z.object({

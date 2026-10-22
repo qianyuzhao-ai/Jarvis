@@ -24,11 +24,10 @@ const sizes: Record<string, string> = {
   auto: 'auto',
 };
 export class ServiceError extends Error {
-  constructor(
-    message: string,
-    readonly unknown = false,
-  ) {
-    super(message);
+  readonly unknown: boolean;
+  constructor(message: string, options: ErrorOptions & { unknown?: boolean } = {}) {
+    super(message, options);
+    this.unknown = options.unknown ?? false;
   }
 }
 export function payload(raw: GenerationInput, reqFrom: string) {
@@ -92,7 +91,7 @@ export function payload(raw: GenerationInput, reqFrom: string) {
     },
   };
 }
-function message(error: unknown): string {
+export function message(error: unknown): string {
   if (typeof error === 'string') return error.slice(0, 300);
   if (error && typeof error === 'object')
     for (const key of ['message', 'msg', 'error', 'detail', 'reason']) {
@@ -101,7 +100,7 @@ function message(error: unknown): string {
     }
   return JSON.stringify(error)?.slice(0, 300) || '服务未返回结果';
 }
-async function json(response: Response): Promise<unknown> {
+export async function json(response: Response): Promise<unknown> {
   const reader = response.body?.getReader();
   let size = 0;
   const chunks: Uint8Array[] = [];
@@ -125,7 +124,7 @@ async function json(response: Response): Promise<unknown> {
     throw new ServiceError('服务返回了无效 JSON');
   }
 }
-function networkFailure(error: unknown, generating: boolean): never {
+function uploadFailure(error: unknown): never {
   if (error instanceof ServiceError) throw error;
   const cause = error instanceof Error ? error.cause : undefined;
   const code = cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : '';
@@ -138,49 +137,9 @@ function networkFailure(error: unknown, generating: boolean): never {
     'UND_ERR_CONNECT_TIMEOUT',
   ].includes(code);
   throw new ServiceError(
-    beforeConnect
-      ? '连不上服务，请检查网络与地址'
-      : generating
-        ? '等待生成响应时连接中断，结果未知；请核实后再决定是否重新生成'
-        : '素材上传中断，请手动重试',
-    generating && !beforeConnect,
+    beforeConnect ? '连不上服务，请检查网络与地址' : '素材上传中断，请手动重试',
+    { cause: error },
   );
-}
-export async function generate(
-  url: string,
-  input: GenerationInput,
-  reqFrom: string,
-  requestJson?: string,
-): Promise<string> {
-  const endpoint = httpUrl.parse(url);
-  const body = requestJson ?? JSON.stringify(payload(input, reqFrom));
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      dispatcher,
-      redirect: 'error',
-    });
-    const raw = await json(response);
-    const parsed = z
-      .object({
-        result: z.object({
-          status: z.string(),
-          content: z.array(z.string()).optional(),
-          error: z.unknown().optional(),
-        }),
-      })
-      .safeParse(raw);
-    if (!parsed.success) throw new ServiceError('服务响应缺少 result 或格式不正确');
-    if (parsed.data.result.status !== 'success')
-      throw new ServiceError(message(parsed.data.result.error));
-    const result = httpUrl.safeParse(parsed.data.result.content?.[0]);
-    if (!result.success) throw new ServiceError('服务返回成功，但没有有效的结果地址');
-    return result.data;
-  } catch (error) {
-    networkFailure(error, true);
-  }
 }
 export function uploadDescription(request: UploadRequest) {
   const { file, settings } = request;
@@ -220,6 +179,6 @@ export async function upload(request: UploadRequest): Promise<{ url: string }> {
       throw new ServiceError('上传响应中没有 files[0].url');
     return { url: parsed.data.files[0].url };
   } catch (error) {
-    networkFailure(error, false);
+    uploadFailure(error);
   }
 }

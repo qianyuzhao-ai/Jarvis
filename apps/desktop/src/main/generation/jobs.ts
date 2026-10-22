@@ -6,17 +6,21 @@ import {
   jobSchema,
   httpUrl,
   requestRecordSchema,
+  TASK_POLL_INTERVAL_MS,
+  migrateGenerationUrl,
   type GenerationJob,
   type StartRequest,
   type RequestRecord,
 } from '../../shared/generation';
-import { generate, payload, ServiceError } from './protocol';
+import { payload, ServiceError } from './protocol';
+import { getQuota, getTask, submitTask } from './task-protocol';
 
 const storedJob = jobSchema.extend({
   fingerprint: z.string(),
   requestJson: z.string().optional(),
   endpoint: z.string().optional(),
   model: z.string().optional(),
+  modelName: z.string().optional(),
   duration: z.number().optional(),
   finishedAt: z.number().optional(),
 });
@@ -25,10 +29,20 @@ export class GenerationJobs {
   private jobs = new Map<string, StoredJob>();
   private writes = Promise.resolve();
   private starts = Promise.resolve();
+  private timers = new Map<string, ReturnType<typeof setTimeout>>();
+  private closed = false;
   get isBusy() {
     return [...this.jobs.values()].some((job) => job.status === 'running');
   }
-  constructor(private readonly file: string) {}
+  constructor(
+    private readonly file: string,
+    private readonly pollInterval = TASK_POLL_INTERVAL_MS,
+  ) {}
+  dispose() {
+    this.closed = true;
+    for (const timer of this.timers.values()) clearTimeout(timer);
+    this.timers.clear();
+  }
   async initialize() {
     let raw: string;
     try {
@@ -40,7 +54,7 @@ export class GenerationJobs {
     const records = z.array(storedJob).parse(JSON.parse(raw));
     let changed = false;
     for (const record of records) {
-      if (record.status === 'running') {
+      if (record.status === 'running' && !(record.remoteTaskId && record.endpoint)) {
         record.status = 'unknown';
         record.error = '应用已重启，无法确认上次生成结果。请核实后再重新生成。';
         changed = true;
@@ -48,6 +62,10 @@ export class GenerationJobs {
       this.jobs.set(record.requestId, record);
     }
     if (changed) await this.persist();
+    for (const job of this.jobs.values()) {
+      if (job.status === 'running') this.schedule(job);
+      else if (job.quotaPending) void this.refreshQuota(job);
+    }
   }
   get(requestId: string): GenerationJob | null {
     const job = this.jobs.get(requestId);
@@ -70,7 +88,7 @@ export class GenerationJobs {
   }
   start(request: StartRequest): Promise<GenerationJob> {
     const pending = this.starts.then(async () => {
-      httpUrl.parse(request.settings.generateUrl);
+      const endpoint = httpUrl.parse(migrateGenerationUrl(request.settings.generateUrl));
       const body = payload(request.input, request.settings.reqFrom);
       const fingerprint = createHash('sha256')
         .update(
@@ -96,6 +114,7 @@ export class GenerationJobs {
         )
       )
         throw new Error('该节点已有进行中的生成任务');
+      const requestJson = JSON.stringify(body);
       const job: StoredJob = {
         requestId: request.requestId,
         projectId: request.projectId,
@@ -104,9 +123,10 @@ export class GenerationJobs {
         status: 'running',
         startedAt: Date.now(),
         fingerprint,
-        requestJson: JSON.stringify(body),
-        endpoint: request.settings.generateUrl,
+        requestJson,
+        endpoint,
         model: request.input.model,
+        modelName: body.model_name,
         duration: 'duration' in body.config ? body.config.duration : undefined,
       };
       this.jobs.set(job.requestId, job);
@@ -116,7 +136,7 @@ export class GenerationJobs {
         this.jobs.delete(job.requestId);
         throw new Error('无法保存任务记录，生成请求未发送');
       }
-      void this.perform(request, job);
+      void this.perform(job, endpoint, requestJson);
       return jobSchema.parse(job);
     });
     this.starts = pending.then(
@@ -125,20 +145,65 @@ export class GenerationJobs {
     );
     return pending;
   }
-  private async perform(request: StartRequest, job: StoredJob) {
+  private async perform(job: StoredJob, endpoint: string, requestJson: string) {
     try {
-      job.resultUrl = await generate(
-        request.settings.generateUrl,
-        request.input,
-        request.settings.reqFrom,
-        job.requestJson,
-      );
-      job.status = 'succeeded';
+      const submitted = await submitTask(endpoint, requestJson);
+      job.remoteTaskId = submitted.task_id;
+      job.remoteStatus = submitted.status;
     } catch (error) {
       job.status = error instanceof ServiceError && error.unknown ? 'unknown' : 'failed';
       job.error = error instanceof Error ? error.message : '生成失败';
+      job.finishedAt = Date.now();
     }
-    job.finishedAt = Date.now();
+    await this.saveStatus(job);
+    if (job.status === 'running') this.schedule(job);
+  }
+  private schedule(job: StoredJob) {
+    if (this.closed || this.timers.has(job.requestId)) return;
+    const timer = setTimeout(() => {
+      this.timers.delete(job.requestId);
+      void this.poll(job);
+    }, this.pollInterval);
+    timer.unref();
+    this.timers.set(job.requestId, timer);
+  }
+  private async poll(job: StoredJob) {
+    try {
+      if (!job.endpoint || !job.remoteTaskId) throw new Error('本地记录缺少平台任务地址或 ID');
+      // Persist the remote ID before any query, including after a failed initial write.
+      await this.persist();
+      if (this.closed) return;
+      const remote = await getTask(job.endpoint, job.remoteTaskId);
+      if (this.closed) return;
+      job.remoteStatus = remote.status;
+      job.warning = undefined;
+      if (remote.status === 'success' || remote.status === 'failed') {
+        job.status = remote.status === 'success' ? 'succeeded' : 'failed';
+        job.resultUrl = remote.resultUrl;
+        job.error = remote.error;
+        job.finishedAt = Date.now();
+        job.quotaPending = true;
+      }
+    } catch (error) {
+      job.warning = `${error instanceof Error ? error.message : '任务查询失败'}；稍后继续查询，不会重新提交。`;
+    }
+    await this.saveStatus(job);
+    if (job.status === 'running') this.schedule(job);
+    else if (job.quotaPending && !this.closed) void this.refreshQuota(job);
+  }
+  private async refreshQuota(job: StoredJob) {
+    try {
+      job.quotaNotice =
+        job.endpoint && job.modelName
+          ? await getQuota(job.endpoint, job.modelName)
+          : '额度详情请到平台查看。';
+    } catch {
+      job.quotaNotice = '额度查询暂不可用，请到平台查看。';
+    }
+    job.quotaPending = false;
+    await this.saveStatus(job);
+  }
+  private async saveStatus(job: StoredJob) {
     try {
       await this.persist();
     } catch {

@@ -1,4 +1,6 @@
-import { _electron as electron, expect, test, type Page } from '@playwright/test';
+import { TaskService } from './helpers/task-service';
+import { _electron as electron, expect as baseExpect, test, type Page } from '@playwright/test';
+
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -326,6 +328,9 @@ test('generation resolves only direct upstream URLs and blocks unready or excess
   ).toThrow('超限');
 });
 
+const expect = baseExpect.configure({ timeout: 12_000 });
+test.setTimeout(60_000);
+
 const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=',
   'base64',
@@ -384,23 +389,23 @@ async function fixture(page: Page, imageName = 'source.png') {
   audio.writeUInt16LE(16, 34);
   audio.write('data', 36);
   audio.writeUInt32LE(audio.length - 44, 40);
+  const tasks = new TaskService();
   const server = createServer(async (req, res) => {
+    if (tasks.query(req, res)) return;
     if (req.method === 'POST') {
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(Buffer.from(chunk));
       const body = JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>;
       calls.push(body);
       res.setHeader('Content-Type', 'application/json');
-      res.end(
-        JSON.stringify({
-          result: {
-            status: 'success',
-            content: [
-              base + (body.model_name === 'seedance' ? '/result.webm' : '/image.png?generated=1'),
-            ],
-          },
-        }),
-      );
+      tasks.submit(res, {
+        result: {
+          status: 'success',
+          content: [
+            base + (body.model_name === 'seedance' ? '/result.webm' : '/image.png?generated=1'),
+          ],
+        },
+      });
       return;
     }
     const isVideo = req.url?.includes('.webm');

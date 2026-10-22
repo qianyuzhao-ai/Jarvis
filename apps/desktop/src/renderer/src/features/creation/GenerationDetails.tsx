@@ -52,7 +52,14 @@ export function GenerationDetails({
         <ChevronRight size={14} aria-hidden="true" />
       </summary>
       <div className="editor-notice generation-details-content" role="status">
-        <p>{task ? labels[task.status] : '暂无生成记录'}</p>
+        <p>
+          {task?.status === 'running' && task.remoteStatus === 'pending'
+            ? '任务已提交，正在排队…'
+            : task
+              ? labels[task.status]
+              : '暂无生成记录'}
+        </p>
+        {task?.remoteTaskId && <p>平台任务 ID：{task.remoteTaskId}</p>}
         {task?.error && <p className="error-text">{task.error}</p>}
         {task?.warning && <p className="error-text">{task.warning}</p>}
         {task?.status === 'unknown' && (
