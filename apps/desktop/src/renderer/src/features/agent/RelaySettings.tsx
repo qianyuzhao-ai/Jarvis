@@ -4,12 +4,15 @@ import {
   agentValue,
   relayInputSchema,
   relayModelsInputSchema,
+  DEEPSEEK_BASE_URL,
+  DEEPSEEK_MODELS,
   type RelayConfig,
   type RelayView,
 } from '../../../../shared/agent';
 import { IconButton } from '../../components/IconButton';
 
 const empty: RelayConfig = {
+  provider: 'relay',
   name: '我的中转站',
   baseUrl: '',
   api: 'openai-completions',
@@ -21,10 +24,16 @@ export function RelaySettings({
   value,
   onSaved,
   onDirtyChange,
+  modelId,
+  create = false,
+  onBack,
 }: {
   value: RelayView;
   onSaved: (value: RelayView) => void;
   onDirtyChange: (dirty: boolean) => void;
+  modelId?: string;
+  create?: boolean;
+  onBack?: () => void;
 }) {
   const [config, setConfig] = useState(value.config ?? empty);
   const [key, setKey] = useState('');
@@ -36,6 +45,11 @@ export function RelaySettings({
   const [error, setError] = useState('');
   const mounted = useRef(true);
   const locked = useRef(false);
+  const official = config.provider === 'deepseek';
+  const hasSavedKey =
+    value.hasKey &&
+    config.baseUrl === value.config?.baseUrl &&
+    (config.provider ?? 'relay') === (value.config?.provider ?? 'relay');
   const dirty =
     JSON.stringify(config) !== JSON.stringify(value.config ?? empty) || !!key || clearKey;
   useEffect(() => {
@@ -57,6 +71,8 @@ export function RelaySettings({
     if (locked.current || !window.desktop?.agent) return;
     const parsed = (action === 'models' ? relayModelsInputSchema : relayInputSchema).safeParse({
       config,
+      ...(modelId ? { modelId } : {}),
+      ...(create ? { create: true } : {}),
       apiKey: key,
       clearKey,
     });
@@ -98,18 +114,63 @@ export function RelaySettings({
   }
   return (
     <form
-      className="relay-settings"
+      className="settings-page relay-settings"
       onSubmit={(event) => {
         event.preventDefault();
         void perform('save');
       }}
     >
       <div className="relay-content">
-        <h1>连接中转站</h1>
-        <p>使用你的中转站 API，在首页与模型对话。</p>
+        {onBack && (
+          <button
+            className="model-library-back"
+            type="button"
+            onClick={() => {
+              if (!dirty || window.confirm('放弃未保存的模型配置并返回？')) onBack();
+            }}
+          >
+            返回我的模型
+          </button>
+        )}
+        <h1>{create ? '添加模型' : '编辑模型'}</h1>
+        <p>选择服务来源并配置连接。</p>
         <fieldset disabled={!!busy}>
-          <div className="relay-row">
-            <label htmlFor="relay-name">连接名称</label>
+          <div className="settings-row relay-row">
+            <label htmlFor="model-provider">服务来源</label>
+            <select
+              id="model-provider"
+              value={config.provider ?? 'relay'}
+              onChange={(event) => {
+                const provider = event.target.value === 'deepseek' ? 'deepseek' : 'relay';
+                setConfig(
+                  (value.config?.provider ?? 'relay') === provider && value.config
+                    ? value.config
+                    : provider === 'deepseek'
+                      ? {
+                          provider,
+                          name: 'DeepSeek 官方',
+                          baseUrl: DEEPSEEK_BASE_URL,
+                          api: 'openai-completions',
+                          model: DEEPSEEK_MODELS[0],
+                          contextWindow: 1_000_000,
+                          maxTokens: 4096,
+                        }
+                      : empty,
+                );
+                setKey('');
+                setClearKey(false);
+                setVisible(false);
+                setModels([]);
+                setError('');
+                setNotice('尚未测试当前配置');
+              }}
+            >
+              <option value="relay">自定义中转站</option>
+              <option value="deepseek">DeepSeek 官方</option>
+            </select>
+          </div>
+          <div className="settings-row relay-row">
+            <label htmlFor="relay-name">模型名称</label>
             <input
               id="relay-name"
               value={config.name}
@@ -118,22 +179,27 @@ export function RelaySettings({
               required
             />
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-url">API 地址</label>
             <div>
               <input
                 id="relay-url"
                 type="url"
+                readOnly={official}
                 value={config.baseUrl}
                 onChange={(e) => change('baseUrl', e.target.value)}
                 placeholder="https://relay.example.com/v1"
                 required
                 spellCheck={false}
               />
-              <small>填写中转站提供的基础地址，无需追加 /chat/completions。</small>
+              <small>
+                {official
+                  ? '直接连接 DeepSeek 官方 API。'
+                  : '填写中转站提供的基础地址，无需追加 /chat/completions。'}
+              </small>
             </div>
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-key">API Key</label>
             <div>
               <div className="relay-secret">
@@ -146,7 +212,13 @@ export function RelaySettings({
                     setClearKey(false);
                     setNotice('尚未测试当前配置');
                   }}
-                  placeholder={value.hasKey ? '已保存，留空保留原 Key' : '输入中转站 API Key'}
+                  placeholder={
+                    hasSavedKey
+                      ? '已保存，留空保留原 Key'
+                      : official
+                        ? '输入 DeepSeek API Key'
+                        : '输入中转站 API Key'
+                  }
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -157,8 +229,12 @@ export function RelaySettings({
                   {visible ? <EyeOff size={16} /> : <Eye size={16} />}
                 </IconButton>
               </div>
-              <small>Key 加密保存在此设备；读取配置不会返回明文。无鉴权的本地中转可留空。</small>
-              {value.hasKey && (
+              <small>
+                {official
+                  ? 'Key 加密保存在此设备；请使用 DeepSeek 开放平台的 API Key。'
+                  : 'Key 加密保存在此设备；读取配置不会返回明文。无鉴权的本地中转可留空。'}
+              </small>
+              {hasSavedKey && !official && (
                 <label className="relay-clear">
                   <input
                     type="checkbox"
@@ -174,48 +250,69 @@ export function RelaySettings({
               )}
             </div>
           </div>
-          <div className="relay-row">
+          <div className="settings-row relay-row">
             <label htmlFor="relay-api">接口协议</label>
             <div>
               <select
                 id="relay-api"
+                disabled={official}
                 value={config.api}
                 onChange={(e) => change('api', e.target.value as RelayConfig['api'])}
               >
                 <option value="openai-completions">Chat Completions（OpenAI 兼容）</option>
                 <option value="openai-responses">Responses（OpenAI 兼容）</option>
               </select>
-              <small>按中转站文档选择；这里只配置中转站连接。</small>
+              <small>
+                {official ? '官方接入使用此协议，无需修改。' : '按中转站文档选择连接协议。'}
+              </small>
             </div>
           </div>
-          <div className="relay-row">
-            <label htmlFor="relay-model">默认模型</label>
+          <div className="settings-row relay-row">
+            <label htmlFor="relay-model">模型 ID</label>
             <div>
               <div className="relay-model">
-                <input
-                  id="relay-model"
-                  list="relay-models"
-                  value={config.model}
-                  onChange={(e) => change('model', e.target.value)}
-                  placeholder="获取模型或填写模型 ID"
-                  required
-                  spellCheck={false}
-                />
-                <button type="button" onClick={() => void perform('models')}>
-                  {busy === 'models' ? '正在获取…' : '获取模型'}
-                </button>
+                {official ? (
+                  <select
+                    id="relay-model"
+                    value={config.model}
+                    onChange={(e) => change('model', e.target.value)}
+                  >
+                    {DEEPSEEK_MODELS.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="relay-model"
+                    list="relay-models"
+                    value={config.model}
+                    onChange={(e) => change('model', e.target.value)}
+                    placeholder="获取模型或填写模型 ID"
+                    required
+                    spellCheck={false}
+                  />
+                )}
+                {!official && (
+                  <button type="button" onClick={() => void perform('models')}>
+                    {busy === 'models' ? '正在获取…' : '获取模型'}
+                  </button>
+                )}
               </div>
               <datalist id="relay-models">
                 {models.map((m) => (
                   <option key={m} value={m} />
                 ))}
               </datalist>
-              <small>列表不可用时可手动填写；默认模型只影响新对话。</small>
+              <small>
+                {official ? 'Flash 支持图片，Pro 仅支持文字。' : '列表不可用时可手动填写模型 ID。'}
+              </small>
             </div>
           </div>
           <details className="relay-advanced">
             <summary>上下文与输出限制</summary>
-            <div className="relay-row">
+            <div className="settings-row relay-row">
               <label htmlFor="relay-context">上下文容量</label>
               <input
                 id="relay-context"
@@ -229,7 +326,7 @@ export function RelaySettings({
                 }
               />
             </div>
-            <div className="relay-row">
+            <div className="settings-row relay-row">
               <label htmlFor="relay-output">输出上限</label>
               <input
                 id="relay-output"
@@ -257,7 +354,7 @@ export function RelaySettings({
             {error}
           </p>
         )}
-        <small>连接测试会发送一条简短请求，费用由中转站计收。测试不会自动保存。</small>
+        <small>连接测试会发送一条简短请求，费用由所选服务计收。测试不会自动保存。</small>
       </div>
       <footer className="relay-footer">
         <span>{dirty ? '更改尚未保存' : value.config ? '配置已保存' : '尚未配置'}</span>
@@ -266,6 +363,10 @@ export function RelaySettings({
             type="button"
             disabled={!!busy}
             onClick={() => {
+              if (onBack) {
+                onBack();
+                return;
+              }
               setConfig(value.config ?? empty);
               setKey('');
               setClearKey(false);

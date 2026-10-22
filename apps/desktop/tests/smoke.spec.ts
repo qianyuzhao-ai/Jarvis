@@ -211,6 +211,10 @@ test('settings validate, cancel, save and restore without requests', async () =>
     });
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
+    );
+    await expect(page.locator('.settings-form')).toHaveCSS('width', '700px');
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '返回工作台' }).click();
@@ -237,6 +241,11 @@ test('settings validate, cancel, save and restore without requests', async () =>
       'https://example.invalid/generate',
     );
     await page.screenshot({ path: test.info().outputPath('settings.png') });
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
+    await expect
+      .poll(() => page.locator('.settings-form').evaluate((n) => n.scrollWidth - n.clientWidth))
+      .toBe(0);
+    await page.screenshot({ path: test.info().outputPath('settings-compact.png') });
     expect(requests).toEqual([]);
   } finally {
     await app.close();

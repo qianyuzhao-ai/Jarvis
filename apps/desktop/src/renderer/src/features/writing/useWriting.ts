@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useUpdateGuard } from '../updates/use-update-guard';
 import { z } from 'zod';
 import type {
   WritingEntry,
@@ -112,6 +113,10 @@ export function useWriting() {
     }
     return documentsRef.current.every((d) => d.content === d.savedContent);
   }, [save]);
+  useUpdateGuard(async () => {
+    if (restoring.current || loading) throw new Error('写作空间正在读取文件，请稍后重试安装。');
+    if (!(await flush())) throw new Error('写作文档尚未保存或存在冲突，请处理后再重启安装。');
+  });
   useEffect(() => {
     const timer = window.setTimeout(() => {
       for (const d of documentsRef.current) if (d.status === 'dirty') void save(d.id);

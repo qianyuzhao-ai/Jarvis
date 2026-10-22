@@ -1,19 +1,34 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 0.2.0 集成与发布（2026-10-22）
+
+- 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。
+- 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；完整集成验证和云端结果待回读。
+- 合并后使用 Node 22.23.3 验证：pnpm check、构建与完整 Electron 回归 74/74（2.2m）通过；更新清单 3/3 和 Apple 网络有限重试 7/7 通过，git diff --check 通过。真实 DeepSeek 服务及两个签名版本间的生产自动升级仍未验证。
+- 当前状态：本地集成提交 4d21362、验证记录 0b3c00f 已完成；原 UI worktree 和集成 worktree 均干净，所有待发布实现已包含。推送多次遇到 GitHub TLS SSL_ERROR_SYSCALL，REST 为 EOF，连接器也无法连接。尚未推送成功、创建 PR、合入 develop/main、创建 v0.2.0 标签或触发云端发布；网络恢复后从 feature/in-app-updates 继续，不重复创建版本或移动旧标签。
+
+## 应用内自动更新开发（2026-10-22）
+
+- 用户本轮要求接入 GitHub Releases 自动更新，并确认包含预发布版本。本轮只实现与验证，未执行提交、推送、PR、合并、标签或发布；根包/桌面包版本保留 0.1.8，已发布标签及资产不变。
+- 从刷新后的 origin/develop `004beb3` 创建 feature/in-app-updates，独立 worktree `/Users/hugo/Developer/my-jarvis-worktrees/in-app-updates`。保留原 feature/ui-style 的未提交设置、字体、样式与记忆改动，不在原分支覆盖或混合实现。
+- 新版本发布须包含 updater 运行时依赖、GitHub 发布配置、清单验证脚本和更新后的工作流；统一 Release 还需上传相应 yml 清单及 blockmap，builder 调试文件不得上传。已发布 0.1.8 无更新器，不能靠补改旧标签使现有客户端自动升级。
 
 ## 0.1.8 校验工具修复与同标签重试（2026-10-21）
 
 - 用户明确授权有限重试修复、Gitflow 提交/推送/合并，以及重试发布 v0.1.8。原运行的 Apple 公证已成功，失败发生于 DMG 内应用 stapler validate 的 Apple 网络 -1005/退出 68；Windows、目录包与 ZIP 内应用校验成功。
 - `feature/apple-network-retry` 从刷新后的 origin/develop `efbce12` 创建于独立 `/private/tmp/jarvis-apple-network-retry`，保留原工作区 feature/ui-style 未提交工作。仍经 feature → develop → main PR，不移动 v0.1.8（应继续指向 `caa4256e857957259f21518b772be24d5cc9d07f`），不覆盖已有 Release。
 - 合并后从最新 main 手动 dispatch 发布工作流、输入 v0.1.8。应用源码/配置来自原标签，macOS 校验工具来自工作流触发提交的独立稀疏 checkout；原运行的 rerun 不会读取后续脚本修复。此次授权只重试这一版本，最终运行/资产结果待回读。
+- 修复提交 `f3f2015` 经 [PR #39](https://github.com/qianyuzhao-ai/Jarvis/pull/39) 合入 develop（`35813f7`），[PR #40](https://github.com/qianyuzhao-ai/Jarvis/pull/40) 合入 main（`10490dc`）。唯一手动重试运行 [39621901772](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39621901772) 已触发；远端标签对象仍为 `5070c56792b0428b79ce0785fb50b14e363b644e`，剥离后仍为原 main 合并提交 `caa4256e857957259f21518b772be24d5cc9d07f`。
+- 本次签名公证及三种包内应用校验已通过；三种形态均实际遇到一次 Apple 网络 -1005，有限重试第 2 次恢复，Gatekeeper 均 accepted。运行 `39621901772` 的 macOS、Windows 与统一发布全部成功；[v0.1.8 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.1.8) 已回读为非草稿预发布，DMG/ZIP/EXE 三个资产均 uploaded。原 v0.1.8 标签未变；结果说明通过独立文档 PR 回到 develop，不再触发构建。
 
 ## 0.1.8 发布验证（2026-10-21）
 
 - 用户授权按 Gitflow 提交、推送、合并、发布 0.1.8 并验证 macOS 签名公证。实现提交 `23c96d4` 经 [PR #34](https://github.com/qianyuzhao-ai/Jarvis/pull/34) 合入 develop（`5447840`），[PR #35](https://github.com/qianyuzhao-ai/Jarvis/pull/35) 合入 main（`caa4256`）。`v0.1.8` 指向该 main 合并提交，远端标签已回读；没有移动旧标签或覆盖已有 Release。
-- 唯一标签构建 [39613181833](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39613181833) 已触发。Windows 构建、产物校验和 Artifact 上传成功（4m44s）；macOS 已使用 Developer ID Application 身份签名并提交 Apple，公证及统一发布待完成。
+- 首次标签构建 [39613181833](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39613181833) 的 Windows 构建、产物校验和 Artifact 上传成功（4m44s）；macOS 签名公证成功，但 DMG 内应用票据校验遇 Apple 网络 -1005/退出 68，统一发布跳过。后续通过顶部有限重试修复并成功发布，不再是当前阻塞。
 - 为区分签名等待与公证排队，诊断提交 `52f0027` 经 [PR #36](https://github.com/qianyuzhao-ai/Jarvis/pull/36) → develop（`593b982`）、[PR #37](https://github.com/qianyuzhao-ai/Jarvis/pull/37) → main（`13bd2d6`）集成。独立手动诊断 [39615732424](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39615732424) 成功查询：Apple 于 `2026-10-21T14:09:14.028Z` 收到 `Jarvis.zip`，提交 ID `71055590-e096-4ee7-974c-6e75244c9610`，查询时为 `In Progress`。诊断不构建、不上传、不重提公证，没有改动 v0.1.8。
-- 第二次只读诊断 [39616937355](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39616937355) 的历史查询作业成功，同一提交仍为 `In Progress`。本轮尚未取得 Apple Accepted、公证票据、Gatekeeper 或 Release 成功结果；不能把完成 Gitflow 和签名描述为发布成功。原标签构建继续等待 Apple，作业上限 60 分钟；后续先回读原运行与同一提交的状态，不移动标签或盲目重复上传。
+- 第二次只读诊断 [39616937355](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39616937355) 当时返回同一提交 `In Progress`，为早期等待快照；后续原公证 Accepted，首次运行因 Apple 网络票据校验失败。顶部同标签手动重试现已完整成功并创建 Release；保留此历史以区分首次等待、公证成功、网络校验失败与修复后发布成功。
 
 ## macOS 签名公证发布配置（2026-10-21）
 
@@ -69,7 +84,7 @@
 | `feature/<主题>` | `develop` | 独立功能开发，可跨越多个发布周期 | `develop` |
 | `hotfix/<版本或主题>` | `main` | 已发布版本的线上紧急缺陷修复 | `main` 和 `develop` |
 
-当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端流程，分别构建 macOS arm64 签名公证包和 Windows x64 未签名包，全部成功后统一预发布。签名公证配置本轮待集成及首次云端验证；0.1.7 及之前版本均未签名。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，手动输入该标签重试同一工作流。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
+当前正常发版顺序：所有新功能通过 PR 进入 `develop` → 在 `develop` 定版本和记录 → `develop` PR 到 `main` → 合并后在 `main` 合并提交创建 `v<版本号>` 标签 → 标签只触发一次 GitHub 云端流程，分别构建 macOS arm64 签名公证包和 Windows x64 未签名包，全部成功后统一预发布。签名公证及 Apple 网络错误有限重试已在 0.1.8 完成云端验证；0.1.7 及之前版本均未签名。PR 和普通分支推送不触发云端构建。已有标签的任务失败或被取消时，从最新 main 手动输入该标签重试同一工作流，应用源码保持标签版本，校验工具从工作流提交独立读取。正常发版不再创建 `release/*` 分支；0.1.0/0.1.1 曾使用的 release 分支保留为历史，不自动删除。
 
 旧参考图的原始 release 分支流程（历史，不再用于正常发版）：
 

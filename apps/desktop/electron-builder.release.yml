@@ -1,6 +1,11 @@
 extends: ./electron-builder.yml
 directories:
   output: ../../release/github-${version}
+publish:
+  provider: github
+  owner: qianyuzhao-ai
+  repo: Jarvis
+  releaseType: prerelease
 mac:
   artifactName: Jarvis-${version}-macos-${arch}.${ext}
   type: distribution

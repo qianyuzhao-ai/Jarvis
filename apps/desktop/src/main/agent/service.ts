@@ -94,7 +94,8 @@ export class AgentService {
   create(projectId?: string) {
     return this.exclusive(async () => {
       this.idle();
-      const id = await this.store.create(this.config.resolve().config, projectId);
+      const selected = this.config.resolve();
+      const id = await this.store.create(selected.config, projectId, selected.modelId);
       this.emit();
       return id;
     });
@@ -103,6 +104,18 @@ export class AgentService {
     return this.exclusive(async () => {
       this.idle();
       return this.config.save(input);
+    });
+  }
+  removeModel(id: string) {
+    return this.exclusive(async () => {
+      this.idle();
+      return this.config.remove(id);
+    });
+  }
+  setDefaultModel(id: string) {
+    return this.exclusive(async () => {
+      this.idle();
+      return this.config.setDefault(id);
     });
   }
   rename(id: string, title: string) {
@@ -147,8 +160,17 @@ export class AgentService {
       this.idle();
       const r = this.store.record(id);
       const before = structuredClone(r);
-      r.config.model = model;
-      r.view.model = model;
+      const selected = this.config.resolveModel(model);
+      if (
+        selected.config.provider === 'deepseek' &&
+        selected.config.model === 'deepseek-v4-pro' &&
+        r.view.messages.some((message) => message.visionAssets?.length)
+      )
+        throw new Error('DeepSeek Pro 不支持当前对话中的图片，请使用 Flash 或新建文字对话');
+      r.config = selected.config;
+      r.view.model = selected.config.model;
+      r.view.modelId = model;
+      r.view.contextWindow = selected.config.contextWindow;
       r.view.contextTokens = null;
       try {
         await this.store.save();
@@ -191,12 +213,27 @@ export class AgentService {
       }
       this.idle();
       const record = this.store.record(id),
-        current = this.config.resolve();
+        current = record.view.modelId
+          ? this.config.resolveModel(record.view.modelId)
+          : this.config.resolve();
       if (
-        record.config.baseUrl !== current.config.baseUrl ||
-        record.config.api !== current.config.api
+        !record.view.modelId &&
+        (record.config.baseUrl !== current.config.baseUrl ||
+          record.config.api !== current.config.api ||
+          (record.config.provider ?? 'relay') !== (current.config.provider ?? 'relay'))
       )
-        throw new Error('此对话使用原来的中转站配置；请新建对话以使用当前连接');
+        throw new Error('此对话使用旧配置，请重新选择一个已保存的模型');
+      if (record.view.modelId) {
+        record.config = current.config;
+        record.view.model = current.config.model;
+        record.view.contextWindow = current.config.contextWindow;
+      }
+      if (
+        record.config.provider === 'deepseek' &&
+        record.config.model === 'deepseek-v4-pro' &&
+        (images.length || record.view.messages.some((message) => message.visionAssets?.length))
+      )
+        throw new Error('DeepSeek Pro 不支持图片，请使用 Flash 或新建文字对话');
       if (record.view.messages.reduce((sum, m) => sum + m.text.length, 0) + text.length > 60000)
         throw new Error('这段对话较长，请新建对话后继续，历史不会删除');
       const run = { id: randomUUID(), sessionId: id, owner, cancelled: false };
@@ -344,7 +381,7 @@ export class AgentService {
         last && ['stop', 'length'].includes(last.stopReason) && tokens > 0 ? tokens : null;
     } catch {
       output.status = run.cancelled ? 'cancelled' : 'failed';
-      output.error ??= '模型连接失败或回复中断，请检查中转站后重新发送';
+      output.error ??= '模型连接失败或回复中断，请检查模型服务后重新发送';
     } finally {
       output.completedAt = Date.now();
       clearTimeout(timeout);

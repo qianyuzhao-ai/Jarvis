@@ -25,6 +25,9 @@ export class GenerationJobs {
   private jobs = new Map<string, StoredJob>();
   private writes = Promise.resolve();
   private starts = Promise.resolve();
+  get isBusy() {
+    return [...this.jobs.values()].some((job) => job.status === 'running');
+  }
   constructor(private readonly file: string) {}
   async initialize() {
     let raw: string;
