@@ -218,8 +218,14 @@
 ## 0.2.0 集成与发布（2026-10-22）
 
 - 用户新授权检查全部本地修改并提交、推送、合并、发布 0.2.0；本节替代此前仅本地开发/提交的授权状态。纳入 feature/ui-style 的 11 个提交和自动更新提交 21e0c80，保留历史分支及旧设计 stash。
-- 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；完整集成验证和云端结果待回读。
+- 根包、桌面包与变更记录统一 0.2.0。按 feature → develop → main PR 和 main 合并提交标签发布；本地集成及云端发布验证全部通过。
 - 合并后使用 Node 22.23.3 验证：pnpm check、构建与完整 Electron 回归 74/74（2.2m）通过；更新清单 3/3 和 Apple 网络有限重试 7/7 通过，git diff --check 通过。真实 DeepSeek 服务及两个签名版本间的生产自动升级仍未验证。
+- [PR #42](https://github.com/qianyuzhao-ai/Jarvis/pull/42) 合入 develop（6286015）；[PR #43](https://github.com/qianyuzhao-ai/Jarvis/pull/43) 合入 main（5a191aa507e9e27a7d455c171c439c21c12d32b6），两者与已验证集成树一致。注释标签 v0.2.0 指向该 main 提交，标签对象 9d7fd3f84de5a2ec5f745ae24002abf137510e0b；唯一标签运行 [39709911615](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39709911615) 已触发，未修改旧标签。发布运行 macOS、Windows、统一发布三个作业均 success；[v0.2.0 Release](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.0) 于 2026-10-22 10:28:00（UTC+8）发布，非草稿、预发布，8 个资产均 uploaded。
+
+- Apple 只读查询 [39711114877](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39711114877) 确认本次公证 288cecf8-f672-46de-bbe7-4d5b58f9a5ce 为 Accepted；正式打包及目录/ZIP/DMG 内应用的签名、票据、Gatekeeper 均通过，三者均 accepted / Notarized Developer ID。本次无需重试发布。
+- 发布资产包含 macOS arm64 DMG/ZIP、Windows x64 未签名 EXE、latest-mac.yml / latest.yml、三个 blockmap。两端云端校验更新目标、版本、大小及 SHA-512；线上清单已下载回读，其 SHA-256 与 GitHub digest 相同，所有目标名称/大小匹配实际发布资产，未发布 builder 调试文件。
+- 0.1.8 没有更新器，需手动安装一次 0.2.0；后续生产签名版本之间的真实升级仍需更高版本验证。真实 DeepSeek 服务和 Windows 实机功能不在本次云端签名/清单验证结论内。
+
 
 ## 应用图标（2026-10-21）
 
