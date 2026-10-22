@@ -1,5 +1,4 @@
 import { emptyWorkspace, workspaceSchema, type WorkspaceData } from './types';
-import { migrateGenerationUrl } from '../../../../shared/generation';
 
 const database = new Promise<IDBDatabase>((resolve, reject) => {
   const request = indexedDB.open('jarvis-workspace', 1);
@@ -20,7 +19,6 @@ export async function loadWorkspace(): Promise<WorkspaceData> {
       if (request.result === undefined) return resolve(emptyWorkspace);
       const parsed = workspaceSchema.safeParse(request.result);
       if (parsed.success) {
-        parsed.data.settings.generateUrl = migrateGenerationUrl(parsed.data.settings.generateUrl);
         for (const project of parsed.data.projects)
           for (const node of project.nodes)
             if (node.type === 'asset' && node.data.upload.status === 'uploading')

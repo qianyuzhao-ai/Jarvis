@@ -2,6 +2,18 @@
 
 最后更新：2026-10-22
 
+## 0.2.4 发布（2026-10-22）
+
+- 最终地址清理版本发布前完整 Electron/模拟服务回归 84/84（3.1m）通过；此前该版本的 pnpm check、pnpm build、相关回归 14/14、版本一致性和 diff 检查均通过。
+
+- 用户先暂停发布，要求移除真实服务地址；当时的提交和强推未执行。地址修复完成后，用户明确要求全部修改一起提交并继续发布 0.2.4，恢复本轮提交、功能分支署名同步、PR 合并、标签与云端发布授权。
+- 地址修改前，本机检查、构建、完整 Electron 回归 83/83（3.2m）及发布工具回归 7/7 通过；地址修改后的验证单独记录，不沿用之前结果。
+
+- 用户明确要求提交改过署名的版本并发布新版本，授权同步功能分支、PR 合入 develop/main、新版本标签及云端发布。包含 `9800c50`、`662de2b` 两个提交，Author/Committer 均为 `QianYu <qianyuzhao.ai@gmail.com>`，无 Claude 联合署名。
+- 远端核对最新版本为 v0.2.3，无开放 PR；origin/develop 为 b1df41e，功能分支远端仍为原 5fda514。仅使用精确旧 SHA 的 force-with-lease 同步该功能分支，不覆盖新增远端提交。版本准备为 0.2.4；本地验证与双平台发布结果待后续记录。
+
+- 地址修复完成：移除真实任务 URL 常量、读取/保存/提交时自动迁移和登录域名真实占位提示；新配置全部留空，用户已保存配置原样保留，缺失任务地址时拒绝提交。当前跟踪文本文件与本轮构建入口扫描均无原真实服务域名；历史 Git 提交及旧构建产物未重写或删除。pnpm check、pnpm build、git diff --check 通过，设置/登录/任务相关 Electron 与模拟服务回归 14/14（36.1s）通过。
+
 ## 0.2.3 发布（2026-10-22）
 
 - 用户明确要求发布新版本，授权本次提交、推送、PR 合并、版本标签与云端发布，替代下方统一登录功能此前的仅本地开发边界。纳入统一登录功能和此前 Windows 自动更新实机验证文档。
@@ -21,13 +33,13 @@
 ## 统一登录实机失败排查（2026-10-22）
 
 - 用户在 Windows 实机反馈登录后“验证连接”始终不通过。只读检查本机 userData：最新任务错误为“平台要求登录”（Session.fetch 手动重定向被取消的分支），说明接口仍被重定向到 SSO。
-- 登录窗口 HTTP 缓存显示真实链路：`https://atlas-dh.baidu-int.com/` → `uuap.baidu.com/authorize`，回调 service 为零信任网关 `https://l.baidu-int.com/zt_callback?service=https://atlas-dh.baidu-int.com/…`。UUAP 扫码成功后用 `<img>` 同步 erp/fusion 域 Cookie，再 `location.replace` 跳到网关回调。
-- 专用会话 Cookie 只有 .baidu.com / .uuap.baidu.com / .erp / .fusion 域，没有任何 baidu-int.com Cookie，网关回调未完成。判断为 `l.baidu-int.com` 未加入统一登录域名，跳转被登录窗口拦截。设置需包含 `uuap.baidu.com` 与 `l.baidu-int.com`；待用户按此配置复测确认。
+- 登录窗口 HTTP 缓存显示平台经企业统一登录跳到零信任网关回调。扫码成功后用 `<img>` 同步关联域 Cookie，再 `location.replace` 跳到网关回调。真实主机名已按用户要求从仓库移除。
+- 专用会话只有认证与关联域 Cookie，缺少平台网关 Cookie，网关回调未完成。判断为网关主机未加入允许的统一登录域名，跳转被登录窗口拦截。实际认证与网关域名需由用户在设置中填写；待用户复测确认。
 - 代码层另发现：`will-frame-navigate` / `will-redirect` 未区分主 frame，UUAP 如流认证使用的隐藏 iframe 跳到未登记域名时会直接关闭整个登录窗口；拦截报错在点击“验证连接”后被清空，用户难以看到被拦域名。
 - 用户授权后在 `feature/login-window-frames`（从 develop b1df41e）修复：未登记域名的子 frame 导航只静默拦截，主 frame 才关闭窗口并报错；`GenerationSessions` 记住最近一次登录窗口失败原因，验证返回需登录时显示“上次登录未完成，<被拦域名>”，正常完成登录或退出后清除。登录测试的模拟 SSO 页增加指向未登记 loopback 源的隐藏 iframe，断言窗口不被关闭、该请求未发出，并断言验证后仍显示被拦域名。
 - 验证（Windows，Node 22.23.4）：`pnpm check`、`pnpm build` 通过；登录与任务协议相关 Electron 回归 9/9 通过。Windows 上子 frame 被拦截后 `clearStorageData` 实测约 5 秒，退出登录断言等待放宽到 20 秒（仅测试等待，未改实现）。未运行完整回归；`pnpm format` 在 autocrlf=true 的检出上把全部文件改写为 LF，仅为换行差异，git 内容 diff 只有 4 个文件。未提交、未推送；真实 UUAP 链路待用户按域名配置复测。
 - 用户 dev 实测反馈“允许的统一登录域名”只能填一个：textarea 被 `#loginDomains` 样式固定为 36px 高，看似单行输入框（解析本身已支持换行/逗号分隔）。改为最小 64px、可纵向拉伸、占位示例两行、说明注明每行一个或逗号分隔；登录测试改为填写两行域名并断言可见高度至少两行、保存后回读两行。check、build、登录测试 2/2 通过。
-- 用户继续实测：设置不接受 `http://` 域名（只允许 HTTPS），但登录过程中主页面跳到 `http://atlas-dh.baidu-int.com` 被拦截。新增 `secureLoginHop`：主 frame 跳到已允许主机的明文 HTTP（同主机、默认端口、无账号密码）时阻止原请求并改用 HTTPS 重新加载同一地址，不放宽 HTTP、不明文发送票据；其他 HTTP 仍按未配置域名拦截。纯函数用例覆盖升级、未登记主机、非默认端口、带账号、HTTPS 未登记。check、build、登录与任务协议回归 9/9 通过；真实 UUAP 链路待用户复测。
+- 用户继续实测：设置不接受 `http://` 域名（只允许 HTTPS），但登录过程中主页面跳到平台的 HTTP 地址被拦截。新增 `secureLoginHop`：主 frame 跳到已允许主机的明文 HTTP（同主机、默认端口、无账号密码）时阻止原请求并改用 HTTPS 重新加载同一地址，不放宽 HTTP、不明文发送票据；其他 HTTP 仍按未配置域名拦截。纯函数用例覆盖升级、未登记主机、非默认端口、带账号、HTTPS 未登记。check、build、登录与任务协议回归 9/9 通过；真实 UUAP 链路待用户复测。
 - 用户要求图像/视频/音频素材上传也走登录会话，其余上传方式不变。`upload()` 接受可注入的 `UploadFetch`（默认仍为原 undici 直连）；`GenerationSessions.upload(generateUrl)` 用生成任务地址对应的专用会话 Session.fetch 发送同样的 multipart（req_from + files），带 Cookie、拒绝重定向；401/403/HTML 返回明确“平台要求登录”。上传地址、类型/大小校验、账本与响应解析不变。用户明确要求测试不得向真实服务发送请求：全部验证仅使用本机模拟服务。check、build、登录（含上传带 Cookie 与过期拒绝）及导出回归 6/6 通过。canvas-assets 三类拖入与 generation 窗口用例在本机 Windows 卡在媒体 readyState（上传本身成功），改回直连路径同样失败，未在原始 HEAD 上单独复核，待确认是否为本机媒体环境问题。未提交。
 
 ## 生成平台统一登录（2026-10-22）
@@ -63,7 +75,7 @@
 - 用户确认旧平台迁入新平台：全部图像/视频模型共用任务接口，模型参数、参考素材、上传与 Prompt 引用 `<<<image_1>>>` 等保持不变。查询周期最终明确为 **5 秒**，替代讨论中的 30 秒；真实内网联调由用户执行，本轮只做本机模拟服务与真实 Electron 窗口验证。
 - 主进程 `generation/task-protocol.ts` 提交现有 JSON 到 `/api/mr/tasks`，保存返回 `task_id` 后每 5 秒 GET 同一路径下的任务。`pending/running` 对应本地 running，`success` 从 `response.result.content[0]` 取 HTTP(S) URL，`failed` 保留具体错误码和说明。校验任务 ID，查询异常不重发 POST；提交断线、5xx、408、无有效 task_id 均保持结果未知。
 - `generation-jobs.json` 新增独立 remoteTaskId、remoteStatus、modelName 与完成额度查询状态；本地 UUID、幂等去重、原始请求 JSON 与统计保留。已取得远端 ID 的进行中任务重启后恢复查询；旧同步进行中记录和未取得 ID 的提交继续标为 unknown。先写入本地记录再提交、先保存远端 ID 再查询；任务地址固定为提交时的地址，不随当前设置改变。
-- 全新工作台默认任务地址 `https://atlas-dh.baidu-int.com/api/mr/tasks`；空地址和以 `/aigc`（可带尾斜杠）结尾的旧地址迁入该地址，其他自定义地址保留供用户指定任务服务。设置名称改为“生成任务地址”，req_from 和上传地址不改。历史账本不改写旧端点。导出明细增加“平台任务 ID”。
+- 0.2.2 曾预设真实任务服务，并将空地址或旧 `/aigc` 地址自动迁入。2026-10-22 用户要求移除真实地址，当前源码改为所有内网地址手动填写、读取及提交时保留已保存的地址，不再自动迁移。设置名称为“生成任务地址”，历史账本不改写旧端点。导出明细包含“平台任务 ID”。
 - 已接单任务成功/失败后查询一次同级 `/model-quota?model_name=...`，使用真实 payload 模型家族（如 seedance、nano-banana）。生成结果先落盘并显示，额度查询独立结束；失败只提示到平台查看，不改变生成成败。额度不常驻项目；全局完成提醒按队列展示、可关闭，随文字长度自动消失，不重复提醒已处理结果。
 - 验证完成：`pnpm check`、`pnpm build`、`git diff --check` 通过，完整 Electron/本机模拟服务回归 **79/79（2.7m）** 通过，最终代码清理及深色提醒补充后相关复测 **8/8（32.7s）** 通过。覆盖全部 7 模型的任务路由/原始 payload/额度模型家族、重启恢复、真实 5 秒间隔、查询断网和不确定提交不重发、旧地址迁移、图像/视频窗口、引用/连线、下载/复制和导出。浅深提醒截图已检查；最终截图在 `apps/desktop/test-results/c1a87f25-f4cc-40ad-8a6c-7a016d05d2e8/generation-Electron-upload-fac85--video-and-restores-results/`。未发送真实内网生成请求、未提交/推送/发布，版本保持 0.2.1。
 

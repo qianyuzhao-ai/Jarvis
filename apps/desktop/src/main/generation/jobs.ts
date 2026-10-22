@@ -7,7 +7,6 @@ import {
   httpUrl,
   requestRecordSchema,
   TASK_POLL_INTERVAL_MS,
-  migrateGenerationUrl,
   type GenerationJob,
   type StartRequest,
   type RequestRecord,
@@ -104,7 +103,8 @@ export class GenerationJobs {
   }
   start(request: StartRequest): Promise<GenerationJob> {
     const pending = this.starts.then(async () => {
-      const endpoint = httpUrl.parse(migrateGenerationUrl(request.settings.generateUrl));
+      if (!request.settings.generateUrl.trim()) throw new Error('请在设置中填写生成任务地址');
+      const endpoint = httpUrl.parse(request.settings.generateUrl);
       const body = payload(request.input, request.settings.reqFrom);
       const fingerprint = createHash('sha256')
         .update(
