@@ -57,9 +57,9 @@ pnpm dev
 
 打包每次输出到新的 `release/<唯一标识>/`，测试结果在 `apps/desktop/test-results/<唯一标识>/`，构建不自动清空旧输出。需要清理时遵守 `AGENTS.md` 的删除限制。修改依赖后主动执行 `pnpm install`，命令运行前不自动重装依赖。
 
-[0.2.1 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.1) 已发布。Windows x64 和 macOS arm64 均已在云端实际启动打包应用，ASAR 页面、设置/更新桥接及 360 项必需依赖检查通过；macOS 正式签名、公证、目录及 ZIP/DMG 内应用的票据和 Gatekeeper 也已通过。Windows 安装器仍未签名，真实第三方服务和跨版本自动升级仍需后续验收。
+[0.2.2 安装包](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.2) 已发布，包含新平台生成任务接口、5 秒轮询和重启续查。Windows x64 和 macOS arm64 均已在云端实际启动打包应用，ASAR 页面、设置/更新桥接及 360 项必需依赖检查通过；macOS 正式签名、公证、目录及 ZIP/DMG 内应用的票据和 Gatekeeper 也已通过。Windows 安装器仍未签名，真实第三方服务和跨版本自动升级仍需后续验收。
 
-**0.2.0 用户请手动安装 0.2.1：** 0.2.0 因遗漏 debug 等运行时依赖可能启动即崩溃，无法通过应用内更新自救。0.2.1 已修复依赖收集，并加入发布前实际启动门禁。
+**0.2.0 用户请手动安装 0.2.2：** 0.2.0 因遗漏 debug 等运行时依赖可能启动即崩溃，无法通过应用内更新自救。0.2.1 已修复依赖收集，并加入发布前实际启动门禁。
 
 ## 应用内更新
 
