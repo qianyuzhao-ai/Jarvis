@@ -19,11 +19,16 @@ import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
 import { RelaySettings } from './features/agent/RelaySettings';
 import './features/agent/agent.css';
+import { useAppUpdates } from './features/updates/use-app-updates';
+import { useUpdateGuard } from './features/updates/use-update-guard';
+import { UpdateStatus } from './features/updates/UpdateStatus';
+import './features/updates/updates.css';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
 );
 
 function Workbench({ initial }: { initial: WorkspaceData }) {
+  const updates = useAppUpdates();
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const generate = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
@@ -48,6 +53,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     requestAnimationFrame(() => collapseButton.current?.focus());
   }
   const [settingsDirty, setSettingsDirty] = useState(false);
+  useUpdateGuard(() => {
+    if (settingsDirty) throw new Error('设置尚未保存，请先保存或取消更改，再重启安装。');
+  });
   const changeProject = useCallback(
     (change: (project: Project) => Project) =>
       update((previous) => ({
@@ -92,7 +100,10 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     openProject(next.id);
   }
   return (
-    <div className="theme-root" data-theme={theme}>
+    <div className="theme-root" data-theme={theme} inert={updates.state?.phase === 'installing'}>
+      {(route !== 'settings' || settingsSection !== 'general') && (
+        <UpdateStatus updates={updates} />
+      )}
       {saveError && (
         <div role="alert" className="save-error">
           {saveError}
@@ -201,6 +212,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           </header>
           {route === 'settings' && settingsSection === 'general' ? (
             <GeneralSettings
+              updates={updates}
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />

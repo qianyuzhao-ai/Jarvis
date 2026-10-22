@@ -143,6 +143,10 @@ jobs:
               throw "Expected unsigned file: $file"
             }
           }
+      - name: Verify update metadata
+        run: |
+          version="$(node -p 'require("./apps/desktop/package.json").version')"
+          node apps/desktop/scripts/verify-update-metadata.mjs "release/github-${version}" "${{ matrix.platform }}"
       - uses: actions/upload-artifact@v4
         with:
           name: Jarvis-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}
@@ -150,6 +154,9 @@ jobs:
             release/github-*/*.dmg
             release/github-*/*.zip
             release/github-*/*-setup.exe
+            release/github-*/*.yml
+            !release/github-*/builder-*.yml
+            release/github-*/*.blockmap
           if-no-files-found: error
           overwrite: true
 
@@ -184,6 +191,16 @@ jobs:
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done
+          shopt -s nullglob
+          metadata=(release-assets/github-${version}/*.yml)
+          mac_metadata=(release-assets/github-${version}/*-mac.yml)
+          test "${#metadata[@]}" -ge 2
+          test "${#mac_metadata[@]}" -ge 1
+          blockmaps=(release-assets/github-${version}/*.blockmap)
+          for asset in "${metadata[@]}" "${blockmaps[@]}"; do
+            test -s "$asset"
+          done
+          assets+=("${metadata[@]}" "${blockmaps[@]}")
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             echo "GitHub Release already exists for $RELEASE_TAG"
             exit 1

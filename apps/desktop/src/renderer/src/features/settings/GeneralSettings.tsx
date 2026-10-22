@@ -1,5 +1,7 @@
 import type { ThemePreference } from './theme';
 import { DownloadSettings } from './DownloadSettings';
+import { UpdateStatus } from '../updates/UpdateStatus';
+import type { AppUpdates } from '../updates/use-app-updates';
 const choices = [
   ['system', '跟随系统'],
   ['light', 'Light Mode'],
@@ -8,9 +10,11 @@ const choices = [
 export function GeneralSettings({
   value,
   onChange,
+  updates,
 }: {
   value: ThemePreference;
   onChange: (value: ThemePreference) => void;
+  updates: AppUpdates;
 }) {
   return (
     <section className="general-settings" aria-labelledby="general-heading">
@@ -35,6 +39,7 @@ export function GeneralSettings({
         </div>
       </div>
       <DownloadSettings />
+      <UpdateStatus updates={updates} settings />
     </section>
   );
 }

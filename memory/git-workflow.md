@@ -1,6 +1,12 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 应用内自动更新开发（2026-10-22）
+
+- 用户本轮要求接入 GitHub Releases 自动更新，并确认包含预发布版本。本轮只实现与验证，未执行提交、推送、PR、合并、标签或发布；根包/桌面包版本保留 0.1.8，已发布标签及资产不变。
+- 从刷新后的 origin/develop `004beb3` 创建 feature/in-app-updates，独立 worktree `/Users/hugo/Developer/my-jarvis-worktrees/in-app-updates`。保留原 feature/ui-style 的未提交设置、字体、样式与记忆改动，不在原分支覆盖或混合实现。
+- 新版本发布须包含 updater 运行时依赖、GitHub 发布配置、清单验证脚本和更新后的工作流；统一 Release 还需上传相应 yml 清单及 blockmap，builder 调试文件不得上传。已发布 0.1.8 无更新器，不能靠补改旧标签使现有客户端自动升级。
 
 ## 0.1.8 校验工具修复与同标签重试（2026-10-21）
 

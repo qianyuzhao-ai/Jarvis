@@ -10,6 +10,8 @@ import {
 import { WritingConflict, WritingFiles } from './files';
 
 const trusted = new Map<number, string>();
+let activeWrites = 0;
+export const isWritingBusy = () => activeWrites > 0;
 export function trustWritingWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, new URL(url).href);
   contents.once('destroyed', () => trusted.delete(contents.id));
@@ -47,6 +49,8 @@ export async function registerWriting() {
   };
   for (const channel of [...Object.keys(handlers), 'writing:choose']) {
     ipcMain.handle(channel, async (event, request): Promise<WritingResult<unknown>> => {
+      const writing = ['writing:save', 'writing:create', 'writing:choose'].includes(channel);
+      if (writing) activeWrites++;
       try {
         if (
           event.senderFrame !== event.sender.mainFrame ||
@@ -83,6 +87,8 @@ export async function registerWriting() {
                 ? error.message
                 : '文件操作失败',
         };
+      } finally {
+        if (writing) activeWrites--;
       }
     });
   }

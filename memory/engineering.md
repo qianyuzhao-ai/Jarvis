@@ -1,6 +1,22 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-21
+最后更新：2026-10-22
+
+## 应用内自动更新（2026-10-22）
+
+- 持久目录迁移后，修复了 14 个自动生成的 pnpm 启动脚本中的旧绝对路径。登录 shell 的 Node 22.17.0 在 Playwright 加载 ExcelJS 时出现内部模块错误，未跳过回归；改用项目固定 Node 22.23.3 后，持久目录最终检查/构建和完整 **70/70（1.8m）**、3 项清单测试均通过。隔离 Node 位于 `/Users/hugo/Developer/my-jarvis-worktrees/node-v22.23.3-darwin-arm64/bin/node`，官方分发 SHA-256 已核验，未改全局 Node。运行测试时临时将该 bin 加入 PATH；未关闭供应链或 TLS 检查、未删除缓存。
+- 本地 ASAR 已检查，包含 electron-updater 6.8.9 及全部直接运行时依赖。最终文案区分“本次检查未完成”和“当前已是最新版本”，时间标为上次成功检查，已有成功记录不能掩盖后续网络失败。
+
+- **最终验证**：`pnpm check`、构建及完整 Electron 回归 **70/70（1.8m）** 通过；3 项 Node 清单回归、实际 ZIP 更新源/清单哈希、工作流 YAML/Bash、发布 schema 和 debug 排除检查通过。追加原生交接失败后恢复窗口的回归已纳入同一轮。浅色进度和 900×640 深色下载完成截图均已查看；截图位于 `apps/desktop/test-results/de12538f-b51d-472e-b664-f76c87b1000f/updates-automatic-and-manu-3f630-ation-work-in-a-real-window/`。
+
+- 用户要求自动/手动检查、下载进度、确认后重启安装，并明确选择包含 GitHub 预发布版本。从刷新后的 origin/develop `004beb3` 创建 `feature/in-app-updates`，位于 `/Users/hugo/Developer/my-jarvis-worktrees/in-app-updates`；原 `feature/ui-style` 工作区及未提交修改未触碰。本轮仅实现，未提交、推送或发布，版本号保持 0.1.8。
+- 运行时依赖 `electron-updater 6.8.9`，开发依赖 `yaml 2.9.0`，均固定版本。npm 查询临时失败后从 pnpm 缓存成功安装，锁文件同步。更新逻辑只在主进程，preload 仅提供状态、检查、下载、安装和保存回执接口，没有任意 URL/文件/Shell 能力；sandbox/contextIsolation/CSP 保持。
+- 正式 macOS/Windows 包且存在资源 app-update.yml 才启用。启动 15 秒后及每 4 小时自动检查，包含预发布、拒绝降级、不自动下载、不在普通退出时安装。检查/下载/安装防重复，状态带 revision 防止旧 IPC 回包覆盖新进度；后台无新版本或检查失败不弹窗。
+- 主进程确认框默认稍后。重启前拒绝活跃 Agent、生成、上传、下载、导出和写作操作；renderer 以一次性 ID 确认保存，项目 IndexedDB 写入完成、写作文档 flush、无未保存设置后才交接。回执核对 owner/mainFrame/URL/ID，超时 15 秒不安装；窗口关闭等待上限 5 秒，收到 closed 后才 quitAndInstall。取消恢复焦点，交接失败恢复窗口/错误状态，普通退出不安装。
+- 正式发布配置覆盖基础 publish:null，GitHub provider 固定公开 qianyuzhao-ai/Jarvis；未向客户端打包 token。CI 校验更新清单版本、通道/平台文件名、目标 ZIP/EXE、真实大小与 SHA-512，上传清单和 blockmap，排除 builder 调试清单。保留签名公证及有限重试、双平台全成功后统一预发布的流程。
+- 已通过更新状态/确认单测、3 项清单回归及真实 Electron 更新交互；真实 electron-updater 通过本地 HTTP 下载到独立测试缓存，坏 SHA-512 被拒绝后重试成功。原生交接测试验证写作文件先保存、窗口先关闭、再调用模拟安装器；未运行真实替换安装。
+- 已生成本地独立目录未签名 ZIP：`release/updates-validation-2d0e73d8-d75a-4841-b4af-c0345a753b98/`，验证应用资源内 GitHub app-update.yml（无 token）及实际 latest-mac.yml 的版本/大小/SHA-512。发现并排除 builder-debug.yml；此包不发布、不作为签名升级验收。完整回归与截图结果见本节最终验证。
+- 已发布 0.1.8 仍无更新器。首次含更新器的新版本须手动安装一次；真实 A→B 签名升级、云端新清单发布及 Windows 更新实机验收尚未完成，不能据此宣称已发布或已验证跨版本升级。发布操作见 apps/desktop/RELEASING.md。
 
 ## Apple 票据校验网络错误有限重试（2026-10-21）
 
