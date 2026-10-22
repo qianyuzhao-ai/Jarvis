@@ -56,7 +56,7 @@ test('general settings persist download directory and only skip dialogs when don
     let page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    const checkbox = page.getByRole('checkbox', { name: '不再提醒，直接保存到默认位置' });
+    const checkbox = page.getByRole('checkbox', { name: '下载时不再询问' });
     await expect(checkbox).toBeDisabled();
     await app.evaluate(({ dialog }) => {
       dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] });
@@ -95,9 +95,7 @@ test('general settings persist download directory and only skip dialogs when don
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await expect(
-      page.getByRole('checkbox', { name: '不再提醒，直接保存到默认位置' }),
-    ).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: '下载时不再询问' })).toBeChecked();
     await expect(page.locator('.download-directory')).toHaveText(directory);
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => {
@@ -115,7 +113,7 @@ test('general settings persist download directory and only skip dialogs when don
     expect(downloaded.every((response) => response.ok && !response.value.canceled)).toBe(true);
     expect(await readFile(resolve(directory, 'photo.png'))).toEqual(png);
     expect(await readFile(resolve(directory, 'photo (1).png'))).toEqual(png);
-    await page.getByRole('checkbox', { name: '不再提醒，直接保存到默认位置' }).uncheck();
+    await page.getByRole('checkbox', { name: '下载时不再询问' }).uncheck();
     await expect(page.getByText('下载设置已保存', { exact: true })).toBeVisible();
     const prompted = await page.evaluate(
       (url) => window.desktop!.generation.downloadMedia({ url, kind: 'image' }),

@@ -122,7 +122,7 @@ export function ChatPage({
       >
         {!session?.messages.length ? (
           <div className="chat-welcome">
-            <h1>{configured ? '今天想做些什么？' : '先连接你的中转站'}</h1>
+            <h1>{configured ? '今天想做些什么？' : '先添加一个模型'}</h1>
             <p>
               {configured
                 ? '聊一个想法，读一份资料，或继续手头的工作。'

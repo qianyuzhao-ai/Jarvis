@@ -68,11 +68,12 @@ export class AgentStore {
       throw error;
     }
   }
-  async create(config: RelayConfig, projectId?: string) {
+  async create(config: RelayConfig, projectId?: string, modelId?: string) {
     const view: ChatSession = {
       id: randomUUID(),
       title: '新对话',
       model: config.model,
+      ...(modelId ? { modelId } : {}),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       messages: [],
@@ -81,7 +82,7 @@ export class AgentStore {
       contextWindow: config.contextWindow,
       ...(projectId ? { projectId } : {}),
     };
-    this.records.push({ view, config });
+    this.records.push({ view, config: structuredClone(config) });
     try {
       await this.save();
     } catch (error) {

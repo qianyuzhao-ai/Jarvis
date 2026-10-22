@@ -1,6 +1,77 @@
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 
+test('canvas assistant slides in and out, reverses, restores focus and respects reduced motion', async () => {
+  const app = await electron.launch({
+    args: [
+      resolve(import.meta.dirname, '..'),
+      `--user-data-dir=${test.info().outputPath('profile')}`,
+    ],
+    env: Object.fromEntries(
+      Object.entries(process.env).filter(
+        (e): e is [string, string] => e[1] !== undefined && e[0] !== 'ELECTRON_RUN_AS_NODE',
+      ),
+    ),
+  });
+  try {
+    const page = await app.firstWindow();
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    const sidebar = page.locator('.canvas-agent');
+    const offset = () =>
+      sidebar.evaluate((n) => new DOMMatrixReadOnly(getComputedStyle(n).transform).m41);
+    await expect(sidebar).toBeHidden();
+    const enter = await page.evaluate(async () => {
+      (document.querySelector('[aria-label="展开画布助手"]') as HTMLButtonElement).click();
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      const n = document.querySelector('.canvas-agent')!;
+      return {
+        offset: new DOMMatrixReadOnly(getComputedStyle(n).transform).m41,
+        width: n.clientWidth,
+      };
+    });
+    expect(enter.offset).toBeGreaterThan(0);
+    expect(enter.offset).toBeLessThan(enter.width);
+    await expect.poll(offset).toBe(0);
+    await expect(sidebar).not.toHaveAttribute('inert');
+    const exit = await sidebar.evaluate(async (n) => {
+      (
+        document.querySelector('.canvas-toolbar [aria-label="收起画布助手"]') as HTMLButtonElement
+      ).click();
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      return {
+        offset: new DOMMatrixReadOnly(getComputedStyle(n).transform).m41,
+        width: n.clientWidth,
+      };
+    });
+    expect(exit.offset).toBeGreaterThan(0);
+    expect(exit.offset).toBeLessThan(exit.width);
+    await expect(sidebar).toHaveAttribute('inert', '');
+    await expect(page.getByRole('button', { name: '展开画布助手', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect.poll(offset).toBe(0);
+    await expect(sidebar).toBeVisible();
+    await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
+    await expect(sidebar).toBeHidden();
+    await expect(page.locator('.canvas-agent-shell')).toHaveCSS('width', '0px');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const reduced = await page.evaluate(async () => {
+      (document.querySelector('[aria-label="展开画布助手"]') as HTMLButtonElement).click();
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      return new DOMMatrixReadOnly(
+        getComputedStyle(document.querySelector('.canvas-agent')!).transform,
+      ).m41;
+    });
+    expect(reduced).toBe(0);
+    await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
+    await expect(sidebar).toBeHidden();
+    await page.screenshot({ path: test.info().outputPath('canvas-assistant-closed.png') });
+  } finally {
+    await app.close();
+  }
+});
+
 test('sidebar resizes, persists width, animates and respects reduced motion', async () => {
   const app = await electron.launch({
     args: [

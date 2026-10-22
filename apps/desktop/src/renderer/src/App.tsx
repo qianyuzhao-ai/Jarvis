@@ -17,7 +17,8 @@ import { useGeneration } from './features/creation/useGeneration';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
-import { RelaySettings } from './features/agent/RelaySettings';
+import { ModelSettings } from './features/settings/ModelSettings';
+import { PluginSettings } from './features/settings/PluginSettings';
 import './features/agent/agent.css';
 import { useAppUpdates } from './features/updates/use-app-updates';
 import { useUpdateGuard } from './features/updates/use-update-guard';
@@ -35,9 +36,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   const [route, setRoute] = useState<'chat' | 'projects' | 'settings' | 'canvas' | 'writing'>(
     'chat',
   );
-  const [settingsSection, setSettingsSection] = useState<'general' | 'services' | 'models'>(
-    'general',
-  );
+  const [settingsSection, setSettingsSection] = useState<
+    'general' | 'services' | 'models' | 'plugins'
+  >('general');
   const agent = useAgent();
   const theme = useResolvedTheme(data.theme);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -66,7 +67,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       })),
     [projectId, update],
   );
-  function openSettings(section: 'general' | 'services' | 'models') {
+  function openSettings(section: 'general' | 'services' | 'models' | 'plugins') {
     if (
       settingsDirty &&
       section !== settingsSection &&
@@ -159,6 +160,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               onGeneral={() => openSettings('general')}
               onServices={() => openSettings('services')}
               onModels={() => openSettings('models')}
+              onPlugins={() => openSettings('plugins')}
               onNewChat={() => navigateChat(null)}
               onSelectChat={(id) => navigateChat(id)}
               chatSessions={agent.snapshot.sessions}
@@ -194,7 +196,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   ? '通用'
                   : settingsSection === 'models'
                     ? '模型服务'
-                    : '内网地址'
+                    : settingsSection === 'plugins'
+                      ? '插件'
+                      : '内网地址'
                 : route === 'chat'
                   ? '新对话'
                   : 'AIGC 创作空间'}
@@ -203,7 +207,11 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               <span
                 className="save-status"
                 role="status"
-                hidden={route === 'chat' || (route === 'settings' && settingsSection === 'models')}
+                hidden={
+                  route === 'chat' ||
+                  (route === 'settings' &&
+                    (settingsSection === 'models' || settingsSection === 'plugins'))
+                }
               >
                 {status}
               </span>
@@ -220,10 +228,19 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <RelaySettings
+              <ModelSettings
                 value={agent.configuration}
                 onSaved={agent.setConfiguration}
                 onDirtyChange={setSettingsDirty}
+              />
+            )
+          ) : route === 'settings' && settingsSection === 'plugins' ? (
+            agent.loading ? (
+              <p className="launch-message">正在读取插件…</p>
+            ) : (
+              <PluginSettings
+                skills={agent.snapshot.skills ?? []}
+                busy={!!agent.snapshot.busySessionId}
               />
             )
           ) : route === 'settings' ? (

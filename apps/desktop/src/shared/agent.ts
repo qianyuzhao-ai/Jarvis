@@ -8,8 +8,12 @@ import {
   type CanvasReply,
 } from './canvas-agent';
 
+export const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
+export const DEEPSEEK_MODELS = ['deepseek-flash', 'deepseek-v4-pro'] as const;
+
 export const relaySchema = z
   .object({
+    provider: z.enum(['relay', 'deepseek']).optional(),
     name: z.string().trim().min(1).max(100),
     baseUrl: z
       .string()
@@ -32,10 +36,23 @@ export const relaySchema = z
     contextWindow: z.number().int().min(8192).max(2_000_000).nullable().default(null),
     maxTokens: z.number().int().min(256).max(32768).default(4096),
   })
-  .refine((c) => c.maxTokens < (c.contextWindow ?? 32768), '输出上限必须小于上下文容量');
+  .refine((c) => c.maxTokens < (c.contextWindow ?? 32768), '输出上限必须小于上下文容量')
+  .refine(
+    (c) =>
+      c.provider !== 'deepseek' ||
+      (c.baseUrl === DEEPSEEK_BASE_URL && c.api === 'openai-completions'),
+    'DeepSeek 官方接入必须使用官方地址和 Chat Completions 协议',
+  )
+  .refine(
+    (c) =>
+      c.provider !== 'deepseek' || !c.model || DEEPSEEK_MODELS.some((model) => model === c.model),
+    '请选择当前版本支持的 DeepSeek 官方模型',
+  );
 export const relayInputSchema = z
   .object({
     config: relaySchema,
+    modelId: z.string().uuid().optional(),
+    create: z.boolean().optional(),
     apiKey: z
       .string()
       .trim()
@@ -44,11 +61,14 @@ export const relayInputSchema = z
       .default(''),
     clearKey: z.boolean().default(false),
   })
-  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key');
+  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key')
+  .refine((r) => !(r.create && r.modelId), '新增模型不能包含已有模型 ID');
 export const agentId = z.string().uuid();
 export const relayModelsInputSchema = z
   .object({
     config: relaySchema.safeExtend({ model: z.string().trim().max(200) }),
+    modelId: z.string().uuid().optional(),
+    create: z.boolean().optional(),
     apiKey: z
       .string()
       .trim()
@@ -104,6 +124,7 @@ export const chatSessionSchema = z.object({
   id: agentId,
   title: z.string().max(100),
   model: z.string().max(200),
+  modelId: agentId.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
   messages: z.array(chatMessageSchema),
@@ -118,6 +139,13 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type ChatSession = z.infer<typeof chatSessionSchema>;
 export interface RelayView {
   config: RelayConfig | null;
+  hasKey: boolean;
+  models?: ConfiguredModel[];
+  defaultModelId?: string | null;
+}
+export interface ConfiguredModel {
+  id: string;
+  config: RelayConfig;
   hasKey: boolean;
 }
 export interface AgentSnapshot {
@@ -136,6 +164,8 @@ export interface AgentBridge {
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getConfiguration(): Promise<AgentResult<RelayView>>;
   saveConfiguration(input: RelayInput): Promise<AgentResult<RelayView>>;
+  removeModel(id: string): Promise<AgentResult<RelayView>>;
+  setDefaultModel(id: string): Promise<AgentResult<RelayView>>;
   testConnection(input: RelayInput): Promise<AgentResult<string>>;
   listModels(input: RelayInput): Promise<AgentResult<string[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;

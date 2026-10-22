@@ -97,6 +97,7 @@ function CanvasContent({
   const [editorHeight, setEditorHeight] = useState(200);
   const container = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const agentToggle = useRef<HTMLButtonElement>(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [importNotice, setImportNotice] = useState('');
@@ -120,6 +121,7 @@ function CanvasContent({
   );
   useCanvasHost(project, onCommit, focusNodes, setConnectionNotice);
   function toggleAgent() {
+    if (agentOpen) agentToggle.current?.focus();
     setAgentOpen((value) => {
       localStorage.setItem('jarvis:canvas-agent-open', String(!value));
       return !value;
@@ -463,7 +465,9 @@ function CanvasContent({
           status={status}
         />
         <IconButton
+          ref={agentToggle}
           label={agentOpen ? '收起画布助手' : '展开画布助手'}
+          aria-controls="canvas-agent"
           aria-expanded={agentOpen}
           title={agentBusy ? '画布助手正在回复' : '画布助手'}
           onClick={toggleAgent}
@@ -720,7 +724,6 @@ function CanvasContent({
           project={project}
           selectedIds={selectedIds}
           open={agentOpen}
-          onClose={toggleAgent}
           focus={focusNodes}
           commit={onCommit}
           configure={onConfigureAgent}

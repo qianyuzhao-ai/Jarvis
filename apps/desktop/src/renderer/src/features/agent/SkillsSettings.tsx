@@ -1,28 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { BookOpen, FolderPlus, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { BookOpen, FolderPlus } from 'lucide-react';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { agentValue } from '../../../../shared/agent';
 
-export function SkillsDialog({
+export function SkillsSettings({
   skills,
   busy,
-  onClose,
+  actionTarget,
+  active,
 }: {
   skills: SkillInfo[];
   busy: boolean;
-  onClose: () => void;
+  actionTarget: HTMLElement | null;
+  active: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    const dialog = ref.current;
-    dialog?.showModal();
-    return () => dialog?.close();
-  }, []);
   async function change(action: 'import' | SkillInfo) {
     if (locked.current || busy) return;
     const bridge = window.desktop?.agent;
@@ -54,32 +51,29 @@ export function SkillsDialog({
     }
   }
   return (
-    <dialog
-      ref={ref}
-      className="skills-dialog"
-      aria-labelledby="skills-title"
-      onCancel={(e) => {
-        e.preventDefault();
-        if (!pending) onClose();
-      }}
-    >
+    <section className="skills-manager" aria-labelledby="skills-title">
       <header>
         <h2 id="skills-title">
           <BookOpen size={18} />
           技能
         </h2>
-        <button type="button" aria-label="关闭技能管理" disabled={pending} onClick={onClose}>
-          <X size={18} />
-        </button>
       </header>
       <p>输入 / 主动选择技能，或由 Agent 根据技能的适用规则自动加载。</p>
-      <div className="skills-import">
-        <button type="button" disabled={pending || busy} onClick={() => void change('import')}>
-          <FolderPlus size={16} />
-          {pending ? '处理中…' : '导入技能包'}
-        </button>
-        <small>选择包含 SKILL.md 的文件夹</small>
-      </div>
+      {active &&
+        actionTarget &&
+        createPortal(
+          <button
+            type="button"
+            className="plugins-add"
+            title="选择包含 SKILL.md 的文件夹"
+            disabled={pending || busy}
+            onClick={() => void change('import')}
+          >
+            <FolderPlus size={16} />
+            添加 skill
+          </button>,
+          actionTarget,
+        )}
       {busy && <p role="status">当前对话正在回复，完成或停止后可调整技能。</p>}
       {error && (
         <p className="agent-error" role="alert">
@@ -115,6 +109,6 @@ export function SkillsDialog({
         技能由 Jarvis 独立保存。支持说明与包内文本参考；不执行脚本。每包最多 100 个文件、2MB，单文件
         256KB。
       </footer>
-    </dialog>
+    </section>
   );
 }
