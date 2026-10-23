@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：23 Progress 初稿（2026-10-23）
+
+- 新 Section `23 Progress`（`378:32572`），总览 Index 已追加行 `379:33179`。第二批 14–23 全部完成初稿。
+- `Progress`（`378:32536`，8 个变体）：type=determinate × size（small 4 / regular 6）× tone（accent / success / danger），以及 type=indeterminate × size（tone=accent）。轨道 fill/pressed、胶囊圆角，宽度跟随容器。determinate 的轨道为 auto-layout、Indicator 填充，用实例 `paddingRight = 轨道宽 × (1 − 进度)` 表示进度（Figma 不支持覆盖实例内图层尺寸，已实测；padding 覆盖在嵌套实例中可用）。indeterminate 为 72px 指示段往返动画（约 1.2s，减少动态效果时改静态）。`role="progressbar"`，不确定时省略 aria-valuenow。
+- `Progress Field`（`378:32558`，3 个变体）：tone accent / success / danger；标签 body + 数值 callout，regular 进度条，可选提示行（剩余时间 / 大小 / 失败原因，失败时数值与提示为 danger）。属性 `label`、`value` + `showValue`、`hint` + `showHint`。
+- `Progress Ring`（`378:32571`，4 个变体）：size 16（stroke 2）/ 24（stroke 2.5）× tone accent / danger，12 点方向顺时针、圆头，调 Indicator arc 结束角表示进度；不确定进度用 Spinner。
+- 审阅板 `Progress / Review`（`379:32523`）：导出画布对话框（60% + 取消）、设置中模型下载（35% / 已完成 / 网络中断 42%）与“正在连接 ComfyUI”不确定进度、画布生成节点缩略图上的环形 60% 胶囊、生成列表行（small 条 + 环）。插件检查进度宽度与数值一致；未做截图复核（截图下载被代理拒绝）。初稿待用户确认。
+
 ### V1 第二批：22 Badge 初稿（2026-10-23）
 
 - 新 Section `22 Badge`（`376:32536`），总览 Index 已追加。
