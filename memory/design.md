@@ -10,6 +10,8 @@
 - 视觉：预览页第二批区域（macOS 基准与 Linux 实际渲染）浅深两套与 Figma 结构、颜色一致；插件 Tabs、写作右栏 Tabs 页面截图正常。
 - 小问题（不阻塞）：Toast 视口 `flex-col-reverse` 使最早一条在最下、新通知在上，设计为最新在下；导出“已取消”使用 success 对勾，建议用 info；预览页 DropdownMenu / Dialog 行残留状态读数文字（“false name”“false”），仅开发预览。
 - Codex 保留项（同意）：MediaEditor 不改 Dialog（共用 CodeMirror 实例，960×600 放大外壳）；ContextUsage 保留 hover + 点击混合提示。
+- 用户要求修复上述三个小问题并合并：提交 `8ad1224`（Toast 视口改 `flex-col`，最新在下；取消导出改 info；预览状态读数改 `sr-only`）。补充堆叠顺序与取消导出 `data-tone` 断言，预览 + 导出专项 10/10 通过（另 2 项为缺少 Linux 基准）。macOS 预览基准只把两处调试文字区域填为背景色；Linux 前后渲染差异仅限这两处文字（524 像素），布局不变，待用户在 macOS 跑一次预览截图测试确认。
+- [PR #69](https://github.com/qianyuzhao-ai/Jarvis/pull/69) 已按用户要求合并入 develop（merge commit `37a5db4`）。
 
 ### V1 第二批：23 Progress 初稿（2026-10-23）
 
