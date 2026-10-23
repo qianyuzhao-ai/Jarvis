@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 Input 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Input。组件集 `Input`（`340:28051`）位于 V1-Components 页，25 个变体：appearance=default × size（sm / default / lg，高度共用 control-h/small·regular·large）× state（empty / filled / hover / focus / disabled / readOnly / invalid）共 21 个；appearance=ghost（内联重命名）仅 default 尺寸 × filled / hover / focus / disabled 4 个。属性：`placeholder`、`value`（TEXT）。
+- 样式：surface 底 + 1px border；hover 描边 fg/tertiary；focus 为 accent 描边 + 3px focus-ring 外圈 + 光标；disabled 为 fill 底 + fg/disabled；readOnly 为 fill 底但文字 fg/default（可聚焦复制）；invalid 为 danger 描边 + danger/subtle 外圈。内边距 space/8·12，圆角 radius/small（sm）或 radius/control，文字超长省略。默认宽 240，可在布局中填充。图标、密码显隐与后缀操作留给 InputGroup。
+- 评审样张 `Input / Review`（`340:28052`）展示两套主题下 7 种状态、三档尺寸、ghost 状态与设置表单示例，截图检查通过。初稿待用户确认。
+
 ### V1 按钮新增圆形与胶囊形状（2026-10-23）
 
 - 用户询问 macOS 26/27 的圆形按钮，确认采用方案 1：只为常用组合增加形状，而不是全部组合翻倍。参考依据为 macOS 26 Liquid Glass 控件形状；macOS 27 的变化未核实。玻璃材质 Electron 无法复现，圆形/胶囊按钮沿用现有填充与 V1/shadow-control。
