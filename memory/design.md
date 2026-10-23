@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### 第一批组件代码实现验收（2026-10-23）
+
+- 用户将第一批组件改造交给 Codex，分支 `feature/ui-v1-foundation`（HEAD `483648c`，阶段 A `90cb20a` / B `2a51146` / C `2d2971b` / D `86cb31f`），实施记录在该分支 `memory/ui-v1-implementation.md`。
+- 验收（Linux 容器 + Xvfb）：`pnpm check`、`pnpm build` 通过；完整实窗回归 86/89，失败的 agent、canvas-agent、model-library 3 项均涉及保存 API Key，在未改动的 develop 上同样失败（容器无系统钥匙串），判定为环境问题；Codex 在 macOS 报告 89/89。组件预览截图基准仅有 darwin 版本。
+- 代码审查：tokens.css 数值与 Figma 完全一致；appearance 桥接只读并沿用主窗口 / 主 frame / URL 校验；无文件删除、无通用 IPC；测试 expect 927 → 978、用例 84 → 88，无删除行为断言；新增记忆已登记 AGENTS.md。
+- 截图对比 develop：Chat、项目列表、画布、写作逐像素差异 ≤ 8/255（不可见）；设置各页按设计变化。预览页与 Figma 评审样张结构、尺寸、颜色一致。
+- 待用户决定的差异：Button loading 为居中 Spinner 隐藏文字（保持宽度），Figma 为 Spinner + 文字；secondary 禁用为 fill 灰底，Figma 为白底 + 浅描边。其余：@fontsource/noto-sans-sc 依赖暂留；macOS 13/26 毛玻璃、强调色变化与 Windows 待实机验收。
+
 ### V1-Components 页面整理（2026-10-23）
 
 - 用户要求整理 V1-Components 页（`332:28013`）。整理前无游离节点，只有 Foundations、15 个组件集与 13 个评审样张分散在两列。
