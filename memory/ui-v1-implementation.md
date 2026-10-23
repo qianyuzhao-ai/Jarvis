@@ -2,6 +2,18 @@
 
 最后更新：2026-10-23
 
+## 交付状态
+
+A–D 已完成并通过各阶段门禁，分支 `feature/ui-v1-foundation` 已推送，远端分支回读包含全部四阶段提交。工作区代码保持版本 0.2.5，没有 PR、合并、标签或发布。
+
+| 阶段 | 提交 SHA | 说明 |
+| --- | --- | --- |
+| A | `90cb20a7d5ab7dd1ef1b72a0f65d7b704c5ee51a` | 工作区、变量、旧样式隔离、测试定位与打包门禁 |
+| B | `2a5114602f0276263129388578429329d861063d` | 系统强调色、原生侧栏与窗口焦点 |
+| C | `2d2971bb469e47d1b0ee8f755d459a7a79513a0e` | 12 个组件家族、开发预览与截图回归 |
+| D | `86cb31f38bac4c6a0bf214a7a6dcc5bfe3db76cd` | 设置试装、旧规则清理和最终回归 |
+
+
 任务依据：用户提供的 `codex-prompt-ui-v1.md`。当前授权覆盖 A–D 实现、阶段提交与功能分支推送，不包括 PR、合并或发布。从 origin/develop 创建 feature/ui-v1-foundation；设计分支只读参考，未合入。
 
 设计来源：[方案 v0.2](https://docs.google.com/document/d/1Z2vZyoCYf3dsKiBwbDrzSDeXsLjj6bJWfk6BwnTLd2M/edit)、[V1 Components](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=332-28013)。当前任务明确授权按初稿实施，替代旧设计笔记中本批组件“仅设计、待授权实现”的边界；不改变其他未确认设计的状态。
@@ -75,7 +87,7 @@ A–D 已实现；各阶段证据与最终验收见下文。
 | A | Biome 181 文件；类型任务 2/2，6.625s | 成功，0.766s | 84/84，3.1m |
 | B | Biome 186 文件；类型任务 2/2，6.253s | 成功，0.614s | 86/86，3.1m |
 | C | Biome 203 文件；类型任务 2/2，7.15s | 成功，1.101s | 89/89，3.2m |
-| D | Biome 204 文件；类型任务 2/2，6.307s | 成功，0.647s | 89/89，3.1m |
+| D | Biome 204 文件；类型任务 2/2，6.307s | 成功，0.696s | 89/89，3.1m |
 
 完整输出保存在 `apps/desktop/test-results/ui-v1/verification/`。早期失败均在上文记录并修复：A 为定位误迁移；B 为 Playwright 强制焦点模拟；C/D 为实际样式层级、字号合并和组合边界。没有通过删除业务断言绕过失败。
 
