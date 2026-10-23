@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：15 DropdownMenu 初稿（2026-10-23）
+
+- 用户要求继续设计 DropdownMenu。新 Section `15 DropdownMenu`（`360:31109`），概览索引已追加：
+  - `DropdownMenu Item`（`360:30989`，6 个变体）：kind（default / destructive）× state（default / highlighted / disabled）。高 24（control-h/small），内边距 space/8，radius/small，文字 body；highlighted 为 accent 底 + 白字，destructive 文字 danger、高亮为 danger 底。属性 `label`、`checkable`（保留 14px 对勾列，使未勾选项对齐）+ `checked`、`icon` + `iconSwap`（默认 file-plus）、`shortcut` + `showShortcut`、`submenu`（右箭头）。
+  - `DropdownMenu Separator`（`360:30990`，上下 4、左右 8 内缩的 1px separator）与 `DropdownMenu Label`（`360:30992`，subheadline 分组标题，属性 `text`）。
+  - `DropdownMenu`（`360:30994`）：surface-raised + 0.5px border + V1/shadow-popover，radius/panel，内边距 4，宽 220；含可选 Label、6 个公开菜单项与 2 条分隔线（`showLabel`、`item5`、`item6`、`separator2`）。
+- 评审样张 `DropdownMenu / Review`（`361:30926`）：写作文件夹菜单（图标、快捷键、未实现项禁用、高亮、危险项）、画布视图菜单（对勾列 + 子菜单）与危险项高亮，截图检查两套主题通过；已修正对勾列未保留导致错位、无图标项错位，以及对勾默认可见的问题。初稿待用户确认。
+
 ### V1 第二批：14 Popover · CandidateList 初稿（2026-10-23）
 
 - PR #67、#68 已合并；用户要求开始设计下一批（方案第三步：浮层与反馈）。计划顺序：14 Popover + CandidateList、15 DropdownMenu、16 Dialog、17 AlertDialog、18 Tabs、19 Collapsible、20 Alert、21 Toast、22 Badge、23 Progress。设计分支已按合并后规则从最新 develop 重建。
