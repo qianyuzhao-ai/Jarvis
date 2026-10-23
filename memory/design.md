@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：18 Tabs 初稿（2026-10-23）
+
+- 用户要求继续设计 Tabs。新 Section `18 Tabs`（`367:31908`），概览索引已追加。
+  - `Tabs Trigger`（`367:31760`，8 个变体）：appearance（segment / underline）× state（inactive / hover / active / disabled）。segment 高 24、内边距 12、radius/small，active 为 surface-raised + shadow-control；underline 高 32、内边距 8，inactive fg-secondary、hover fg、active fg + 2px accent 下划线。属性 `label`、`icon` + `iconSwap`（默认 file-text）、`closable`（12px 关闭图标，fg-tertiary）。
+  - `Tabs List`（`367:31907`，2 个变体）：segment（fill 轨道 + 2px 内边距，radius/control）/ underline（底部 1px separator，间距 4）；4 个公开 Tab，`tab3` / `tab4` 控制数量。
+- 对应 Radix Tabs，用于内容导航，与 ToggleGroup 偏好值单选区分；文档标签关闭是组合能力，代码中为独立按钮并有可访问名称。
+- 评审样张 `Tabs / Review`（`367:32340`）：插件页 MCP / Skill（segment + 内容区）、underline 四种状态、写作右侧栏大纲 / 助手（图标）、写作文档标签（closable），截图检查两套主题通过；已将关闭图标调浅为 fg-tertiary。初稿待用户确认。
+
 ### V1 第二批：17 AlertDialog 初稿（2026-10-23）
 
 - 用户要求继续设计 AlertDialog。新 Section `17 AlertDialog`（`363:31598`），概览索引已追加。
