@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：22 Badge 初稿（2026-10-23）
+
+- 新 Section `22 Badge`（`376:32536`），总览 Index 已追加。
+- `Badge`（`376:32522`，12 个变体）：tone（neutral / accent / success / warning / danger / info）× appearance（subtle / solid）。高 18，水平内边距 6，radius/small，文字 V1/subheadline 11px Semibold；subtle 为 *-subtle 浅底 + 语义色字（accent 浅底为 accent/default 15% 不透明度，neutral 为 fill/default + fg/secondary），solid 为语义色实底 + on-accent 白字（neutral 为 fg/secondary 底）。属性 `label`、`showIcon`（默认关）、`icon`（实例替换，12px）。只读，不可点击；可点击筛选用 Toggle / ToggleGroup。
+- `Badge Count`（`376:32529`，3 个变体）：tone accent / danger / neutral（neutral 为 fill/pressed + fg/secondary），高 16、最小宽 16 胶囊，内边距 4，V1/footnote 10px Semibold；属性 `count`，超过 99 显示 99+。对应现有 `reference-count`、`selection-download-count`。
+- `Status Dot`（`376:32535`，5 个变体）：8px 圆点，neutral（fg/tertiary）/ accent / success / warning / danger，必须配合文字使用。
+- 审阅板 `Badge / Review`（`376:32538`）：模型服务列表（默认 / 视频 / 实验标签 + 状态点：已连接、需登录、连接失败、未配置）、全部 subtle 用法、带图标与 solid 示例、数量角标（下载所选 4、引用 2、任务 12、99+）。插件几何检查通过（行高统一 34，角标 16–28 宽）；本次未做截图复核（截图下载被代理拒绝）。初稿待用户确认。
+
 ### V1 第二批：21 Toast 初稿（2026-10-23）
 
 - `V1-Components`（`332:28013`）新增 Section `21 Toast`（`371:32326`），组件集 `Toast`（`371:32325`）5 个变体：`tone=info|success|warning|error|loading`；属性 `title` / `description` / `showDescription` / `showAction`（默认关）/ `showClose`。
