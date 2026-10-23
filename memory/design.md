@@ -2,6 +2,15 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：14 Popover · CandidateList 初稿（2026-10-23）
+
+- PR #67、#68 已合并；用户要求开始设计下一批（方案第三步：浮层与反馈）。计划顺序：14 Popover + CandidateList、15 DropdownMenu、16 Dialog、17 AlertDialog、18 Tabs、19 Collapsible、20 Alert、21 Toast、22 Badge、23 Progress。设计分支已按合并后规则从最新 develop 重建。
+- 新 Section `14 Popover · CandidateList`（`358:30799`）位于 13 Tooltip 下方，概览索引已追加该行：
+  - `Popover`（组件 `358:30609`）：点击触发、无箭头；surface-raised + 0.5px border + V1/shadow-popover，radius/panel，内边距 12，宽 280。属性 `title` / `showTitle` / `body` / `showFooter`，底部为公开的 secondary / default sm Button。
+  - `CandidateList Item`（`358:30729`，4 个变体）：media（icon 16 / thumbnail 28 带 separator 描边）× state（default / active）。active 为 accent 底 + 白字。属性 `title`、`description` + `showDescription`、`meta` + `showMeta`、`iconSwap`。
+  - `CandidateList`（`358:30798`，2 个变体）：content（default / empty）。surface 浮层内边距 4，可选分组标题，3–5 项（`item4` / `item5`），每项为公开实例；`emptyText`。combobox + listbox 语义，自有实现。
+- 评审样张 `Popover · CandidateList / Review`（`359:30654`）：两种 Popover、/ 技能选择浮在输入框上方、@ 素材引用缩略图列表与无匹配，截图检查两套主题通过；已将缩略图由 32 调为 28 并加描边。初稿待用户确认。
+
 ### 第一批组件 PR（2026-10-23）
 
 - 用户要求创建 PR：[PR #67](https://github.com/qianyuzhao-ai/Jarvis/pull/67)，`feature/ui-v1-foundation`（`edbae7d`）→ `develop`，已由用户合并（develop `3c9ab2b`）。随后本设计分支合入 develop，`memory/design.md` 顶部冲突已手动合并，两边记录全部保留。
