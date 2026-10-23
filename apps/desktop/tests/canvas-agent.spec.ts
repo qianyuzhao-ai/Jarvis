@@ -252,7 +252,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     ).not.toHaveCount(0);
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

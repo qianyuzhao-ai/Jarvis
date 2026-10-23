@@ -263,7 +263,7 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await page.getByRole('button', { name: '展开左侧栏' }).click();
     await page.getByRole('button', { name: '返回工作台', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台', exact: true }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

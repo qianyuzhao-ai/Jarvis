@@ -168,7 +168,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: /画布交互测试/ }).click();
     await nodes.last().click();

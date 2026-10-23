@@ -73,8 +73,8 @@ export function Button({
       {...props}
       type={asChild ? undefined : type}
       disabled={asChild ? undefined : disabled || loading}
-      aria-disabled={disabled || loading || undefined}
-      aria-busy={loading || undefined}
+      aria-disabled={disabled || loading || props['aria-disabled']}
+      aria-busy={loading || props['aria-busy']}
       data-ui="button"
       data-variant={variant}
       data-size={size}

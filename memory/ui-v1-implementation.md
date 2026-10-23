@@ -20,7 +20,7 @@
 
 ## 后续阶段
 
-B、C 已实现，D 尚未实施。最终报告在各阶段验证后补齐。
+A–D 已实现；各阶段证据与最终验收见下文。
 
 ## B：原生外观能力
 
@@ -52,3 +52,46 @@ B、C 已实现，D 尚未实施。最终报告在各阶段验证后补齐。
 5. 测试截图基准由当前 macOS 主机生成；Windows 字体与菜单需在对应平台另建基准并验收。
 
 - C 最终验证：pnpm check、pnpm build、完整实窗回归 **89/89（3.2m）** 通过，包含两个已提交截图基准和组件交互；最终生产 renderer 扫描仍无预览入口标记。根目录工程检查包含 UI 包 strict 类型检查与变量门禁。
+
+## D：设置页试装
+
+- 通用：主题改为必选的 segmented ToggleGroup（跟随系统 / Light / Dark），保留系统监听、即时保存和重载恢复；下载“不再询问”改为 Radix Checkbox，选择目录与错误重试继续走原桥接。
+- 模型：ModelSettings / RelaySettings 使用 Button、Field、Input、InputGroup、NativeSelect、Checkbox、Spinner；保留模型来源、协议、Key 加密存储/留空保留/显隐/清除、未保存提示、获取模型与测试连接逻辑。
+- 内网：ServiceSettings 使用 Field + Input，登录域名使用自动增高 Textarea；保留地址校验、保存/取消和登录边界。PlatformLoginControls 同步替换 Button。
+- 插件/技能：保留现有 Tab 语义、键盘行为和 Portal 操作区，按钮换 Button、启停换 Checkbox。UpdateStatus 仅在 settings 模式使用新 Button，其他页面更新提示仍沿用旧样式。
+- ModelPicker 实际仅被 ChatComposer 调用，没有设置页调用点，本轮未迁移聊天模型选择器。全部 window.confirm 和业务存储格式保持原有实现。
+- 清理 legacy.css 60 个、agent.css 42 个、updates.css 4 个过时选择器。混合文件剩余非设置页面的 51 个颜色字面量原值提升为 legacy-static-color 兼容变量，移除这三个 CSS 文件的白名单；没有把未迁移的聊天/画布换成 V1 配色。白名单只保留 canvas-vision.ts、canvas-agent.css、writing.css。
+- 集成补充：Textarea autoResize 默认单行，28px 起始高度随内容和宽度增高，关闭自动增高时释放内联高度；保留固定 96px 模式。修正空 FieldError 不应使 Field 失效、NativeSelect 无受控值时的占位、ghost Input 的 invalid 焦点描边、InputGroup 仅外壳显示错误圈。对应预览断言与两张基准已更新，未删行为断言。
+- 专项回归：通用/下载 2/2（4.1s），模型/聊天/画布 Agent 3/3（19.6s），内网/登录/技能/既有画布 7/7（33.0s），最终组件预览 3/3（5.9s）通过。最终 pnpm check、pnpm build 与完整实窗回归 **89/89（3.1m）** 通过。
+- 最终目录包：`release/63791817-5fd2-4c62-a484-87332fccc4fa`；再次通过 360 项生产依赖、darwin arm64 真实启动、ASAR、版本 0.2.5 与更新 bridge。目录包未签名，未发布。
+- 最终截图目录 `apps/desktop/test-results/ui-v1/phase-d/` 共 24 张：原八个页面 × Light/Dark，另加 model-form、model-deepseek、plugins-mcp、services-narrow 各两张。已检查通用、模型表单、内网、插件及窄窗口，未见横向溢出。原生透明区域在 PNG 中保留 alpha，不代表已完成桌面壁纸下的材质观感验收。
+
+## 检查结果汇总
+
+耗时为命令输出的 Turbo 任务耗时与 Playwright 套件耗时，不含工具调度时间。
+
+| 阶段 | pnpm check | pnpm build | pnpm test:smoke |
+| --- | --- | --- | --- |
+| A | Biome 181 文件；类型任务 2/2，6.625s | 成功，0.766s | 84/84，3.1m |
+| B | Biome 186 文件；类型任务 2/2，6.253s | 成功，0.614s | 86/86，3.1m |
+| C | Biome 203 文件；类型任务 2/2，7.15s | 成功，1.101s | 89/89，3.2m |
+| D | Biome 204 文件；类型任务 2/2，6.307s | 成功，0.647s | 89/89，3.1m |
+
+完整输出保存在 `apps/desktop/test-results/ui-v1/verification/`。早期失败均在上文记录并修复：A 为定位误迁移；B 为 Playwright 强制焦点模拟；C/D 为实际样式层级、字号合并和组合边界。没有通过删除业务断言绕过失败。
+
+## 主要文件
+
+- A：`packages/ui/package.json`、`src/styles/tokens.css`、`src/lib/utils.ts`；renderer `styles.css` / `legacy.css` / `App.tsx` / `PromptMentionMenu.tsx`；`scripts/check-tokens.mjs`、`token-legacy-allowlist.json`、`capture-ui.mjs`；原有 Electron 测试及稳定 data-testid。
+- B：`apps/desktop/src/main/appearance/bridge.ts`、`shared/appearance.ts`、`shared/desktop-info.ts`、`preload/index.ts`、main `index.ts`；renderer `features/settings/appearance.ts` / `appearance.css`；`tests/appearance.spec.ts`。
+- C：`packages/ui/src/components/` 的 12 个家族、`hooks/use-textarea-resize.ts`、`styles/base.css`；renderer `dev/UiPreview.tsx`；`tests/ui-preview.spec.ts`、安全预览 fixture 与截图基准。
+- D：GeneralSettings / DownloadSettings / ModelSettings / RelaySettings / ServiceSettings / PlatformLoginControls / PluginSettings / SkillsSettings / UpdateStatus；`settings.css`、旧规则清理与兼容变量；主题测试的新 radiogroup 语义及集成边界回归。
+
+## 待实机验收与范围
+
+- 当前自动化主机 macOS 27.0.1；macOS 13/26 材质观感、真实系统强调色设置变化，以及 Windows 强调色通知和字体/原生菜单仍待目标机器验收。
+- 对接真实公司登录、模型与生成服务不属于本轮视觉迁移；测试使用既有模拟服务与隔离配置。
+- 未创建 PR、合并、打标签或发布；Figma 只读核对，未修改设计。
+
+- 字体取舍：新控件与设置使用指定系统字体栈，README 已纠正旧 Noto Sans SC 描述；未引用的 @fontsource/noto-sans-sc 旧依赖暂保留，优先满足主实施说明要求的生产依赖清单不变（360 项）。Google Doc 中提到的依赖清理未在本批执行。
+
+- D 全量首次 88/89，通过设置与组件全部用例；既有侧栏动画固定两帧采样偶发仍在起点，单独复跑又出现末次拖动更新未完成的时序波动。测试改为在有界 RAF 窗口等待真实中间位移、鼠标释放前等待最后宽度，不修改应用侧栏逻辑；保留中间位移、宽度、持久化、反向动画、焦点恢复和减少动态效果全部断言。专项 2/2（5.4s）通过，最终全量结果见汇总。

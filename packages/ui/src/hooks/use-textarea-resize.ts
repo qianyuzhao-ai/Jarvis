@@ -6,7 +6,11 @@ export function useTextareaResize(
 ) {
   const resize = useCallback(() => {
     const element = node.current;
-    if (!enabled || !element) return;
+    if (!element) return;
+    if (!enabled) {
+      element.style.removeProperty('height');
+      return;
+    }
     element.style.height = 'auto';
     element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`;
   }, [enabled, node]);

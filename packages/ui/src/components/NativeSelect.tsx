@@ -40,6 +40,9 @@ export function NativeSelect({
       )}
       <select
         {...control}
+        defaultValue={
+          props.defaultValue ?? (props.value === undefined && placeholder ? '' : undefined)
+        }
         data-ui="select"
         data-size={size}
         data-appearance={appearance}

@@ -268,3 +268,60 @@
     --ui-spacing: var(--spacing);
   }
 }
+
+@layer theme {
+  :root {
+    /* Compatibility colors for pages that have not migrated to V1. */
+    --legacy-static-color-1: #fdfdfc;
+    --legacy-static-color-2: #f0f1f2;
+    --legacy-static-color-3: #ffffff;
+    --legacy-static-color-4: #25282d;
+    --legacy-static-color-5: #666b73;
+    --legacy-static-color-6: #e2e4e7;
+    --legacy-static-color-7: #1769e0;
+    --legacy-static-color-8: #a3a6aa;
+    --legacy-static-color-9: #fff;
+    --legacy-static-color-10: #dde9fb;
+    --legacy-static-color-11: #fafaf9;
+    --legacy-static-color-12: #f0f0ef;
+    --legacy-static-color-13: #d3d3d0;
+    --legacy-static-color-14: #d0d0cd;
+    --legacy-static-color-15: #f2f2f0;
+    --legacy-static-color-16: #f7f7f5;
+    --legacy-static-color-17: #dadad6;
+    --legacy-static-color-18: #e9e9e7;
+    --legacy-static-color-19: #fafaf980;
+    --legacy-static-color-20: #686b70;
+    --legacy-static-color-21: #202020;
+    --legacy-static-color-22: #292929;
+    --legacy-static-color-23: #2b2b2b;
+    --legacy-static-color-24: #f3f4f6;
+    --legacy-static-color-25: #adb2ba;
+    --legacy-static-color-26: #4a4a4a;
+    --legacy-static-color-27: #263f61;
+    --legacy-static-color-28: #3a3a3a;
+    --legacy-static-color-29: #505050;
+    --legacy-static-color-30: #232323;
+    --legacy-static-color-31: #333;
+    --legacy-static-color-32: #484848;
+    --legacy-static-color-33: #20202080;
+    --legacy-static-color-34: #c64a4a;
+    --legacy-static-color-35: #00000014;
+    --legacy-static-color-36: #ffebeb;
+    --legacy-static-color-37: #8a2323;
+    --legacy-static-color-38: #0002;
+    --legacy-static-color-39: rgb(0 0 0 / 24%);
+    --legacy-static-color-40: rgb(0 0 0 / 3%);
+    --legacy-static-color-41: #00000006;
+    --legacy-static-color-42: #161617;
+    --legacy-static-color-43: #23733e;
+    --legacy-static-color-44: #ac2e42;
+    --legacy-static-color-45: #e6f5e9;
+    --legacy-static-color-46: #ffe8ed;
+    --legacy-static-color-47: #80d99e;
+    --legacy-static-color-48: #ff91a3;
+    --legacy-static-color-49: #193326;
+    --legacy-static-color-50: #421c26;
+    --legacy-static-color-51: #d94741;
+  }
+}

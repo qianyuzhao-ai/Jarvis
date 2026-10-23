@@ -85,9 +85,16 @@ for (const theme of ['light', 'dark']) {
     await expect(page.getByLabel('输入-invalid')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByLabel('输入-invalid')).toHaveAccessibleDescription('请输入完整地址');
     await expect(page.getByLabel('输入-readOnly')).toHaveAttribute('readonly', '');
+    await expect(page.getByLabel('单行自动')).toHaveCSS('height', '28px');
+    await expect(page.getByLabel('空错误字段')).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByLabel('选择占位')).toHaveValue('');
+    await expect(page.getByLabel('组错误')).toHaveCSS('outline-style', 'none');
   });
 }
 test('controls preserve keyboard, composition, refs, loading width, labels and tooltip dismissal', async () => {
+  const invalid = page.getByLabel('内联错误');
+  await invalid.focus();
+  await expect(invalid).toHaveCSS('border-top-color', 'rgb(255, 59, 48)');
   const primary = page.getByRole('button', { name: 'default-default', exact: true });
   await primary.hover();
   await page.mouse.down();

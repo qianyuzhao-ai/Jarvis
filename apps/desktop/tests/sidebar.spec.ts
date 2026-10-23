@@ -24,8 +24,13 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     await expect(sidebar).toBeHidden();
     const enter = await page.evaluate(async () => {
       (document.querySelector('[aria-label="展开画布助手"]') as HTMLButtonElement).click();
-      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
       const n = document.querySelector('[data-testid="canvas-agent"]')!;
+      const deadline = performance.now() + 1500;
+      while (performance.now() < deadline) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const x = new DOMMatrixReadOnly(getComputedStyle(n).transform).m41;
+        if (x > 0 && x < n.clientWidth) break;
+      }
       return {
         offset: new DOMMatrixReadOnly(getComputedStyle(n).transform).m41,
         width: n.clientWidth,
@@ -41,7 +46,12 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
           '[data-testid="canvas-toolbar"] [aria-label="收起画布助手"]',
         ) as HTMLButtonElement
       ).click();
-      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+      const deadline = performance.now() + 1500;
+      while (performance.now() < deadline) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const x = new DOMMatrixReadOnly(getComputedStyle(n).transform).m41;
+        if (x > 0 && x < n.clientWidth) break;
+      }
       return {
         offset: new DOMMatrixReadOnly(getComputedStyle(n).transform).m41,
         width: n.clientWidth,
@@ -94,6 +104,8 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     const handle = page.getByRole('separator', { name: '调整侧栏宽度' });
     await expect(handle).toHaveAttribute('aria-valuenow', '230');
     async function dragBy(delta: number) {
+      const initial = Number(await handle.getAttribute('aria-valuenow'));
+      const target = Math.min(320, Math.max(230, initial + delta));
       const bounds = await handle.boundingBox();
       if (!bounds) throw new Error('Missing resize handle');
       const x = bounds.x + bounds.width / 2,
@@ -101,6 +113,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
       await page.mouse.move(x, y);
       await page.mouse.down();
       await page.mouse.move(x + delta, y, { steps: 10 });
+      await expect(handle).toHaveAttribute('aria-valuenow', String(target));
       await page.mouse.up();
     }
     await dragBy(200);
@@ -122,8 +135,14 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const intermediate = await page.evaluate(async () => {
       (document.querySelector('[aria-label="收起侧栏"]') as HTMLButtonElement).click();
-      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-      return document.querySelector('[data-testid="sidebar-shell"]')!.getBoundingClientRect().x;
+      const node = document.querySelector('[data-testid="sidebar-shell"]')!;
+      const deadline = performance.now() + 1500;
+      while (performance.now() < deadline) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const x = node.getBoundingClientRect().x;
+        if (x < 0 && x > -node.clientWidth) break;
+      }
+      return node.getBoundingClientRect().x;
     });
     expect(intermediate).toBeLessThan(0);
     expect(intermediate).toBeGreaterThan(-230);

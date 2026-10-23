@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Search, Plus, Magnet, Grid2X2, List, X } from 'lucide-react';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Input } from '@jarvis/ui/components/Input';
-import { Field, FieldLabel, FieldDescription } from '@jarvis/ui/components/Field';
+import { Field, FieldLabel, FieldDescription, FieldError } from '@jarvis/ui/components/Field';
 import { InputGroup, InputGroupAddon } from '@jarvis/ui/components/InputGroup';
 import { Textarea } from '@jarvis/ui/components/Textarea';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
@@ -132,6 +132,14 @@ export default function UiPreview() {
           />
         </div>
       </section>
+      <div className="preview-grid">
+        <Input appearance="ghost" aria-label="内联错误" aria-invalid defaultValue="错误名称" />
+        <Field>
+          <FieldLabel>空错误字段</FieldLabel>
+          <Input />
+          <FieldError>{undefined}</FieldError>
+        </Field>
+      </div>
       <section aria-label="Field">
         <h2>Field</h2>
         <div className="preview-grid">
@@ -231,6 +239,7 @@ export default function UiPreview() {
               maxLength={2000}
             />
           ))}
+          <Textarea autoResize aria-label="单行自动" defaultValue="一行内容" />
           <Textarea
             autoResize
             aria-label="自动增高"

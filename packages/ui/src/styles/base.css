@@ -257,6 +257,7 @@
     resize: vertical;
   }
   .ui-textarea[data-auto='true'] {
+    padding-block: calc(var(--spacing) - var(--border-standard));
     height: auto;
     resize: none;
     overflow-y: hidden;
@@ -385,5 +386,21 @@
     .ui-checkbox {
       border-color: var(--color-fg-secondary);
     }
+  }
+}
+
+@layer utilities {
+  .ui-input[aria-invalid='true'][data-appearance] {
+    border-color: var(--color-danger);
+    outline: var(--focus-width) solid var(--color-danger-subtle);
+  }
+  .ui-button[data-variant='ghost'][data-disabled='true'] {
+    background: transparent;
+  }
+}
+@layer utilities {
+  .ui-input-group .ui-input[aria-invalid='true'][data-appearance] {
+    border: 0;
+    outline: none;
   }
 }

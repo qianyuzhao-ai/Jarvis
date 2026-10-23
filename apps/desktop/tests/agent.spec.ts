@@ -190,7 +190,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     );
 
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '模型服务', exact: true }).click();
     await page.screenshot({ path: test.info().outputPath('relay-dark.png') });
     await page

@@ -26,6 +26,7 @@ export function Textarea({
       <textarea
         {...control}
         ref={node}
+        rows={props.rows ?? (autoResize ? 1 : undefined)}
         data-ui="textarea"
         data-auto={autoResize}
         data-count={showCount}

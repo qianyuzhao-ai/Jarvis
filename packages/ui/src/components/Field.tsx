@@ -22,7 +22,8 @@ function contains(children: ReactNode, type: ElementType): boolean {
   return Children.toArray(children).some(
     (child) =>
       isValidElement<{ children?: ReactNode }>(child) &&
-      (child.type === type || contains(child.props.children, type)),
+      ((child.type === type && Boolean(child.props.children)) ||
+        contains(child.props.children, type)),
   );
 }
 export function Field({

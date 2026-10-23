@@ -1,0 +1,23 @@
+@layer components {
+  .v1-login-row {
+    grid-template-columns: var(--field-label-width) minmax(0, 1fr);
+  }
+  .v1-login-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: var(--control-h-regular);
+    text-align: right;
+  }
+  .v1-settings [role='tabpanel']:focus-visible {
+    outline: var(--focus-width) solid var(--color-focus-ring);
+    outline-offset: var(--spacing);
+  }
+}
+@layer utilities {
+  .v1-plugin-tab[aria-selected='true'] {
+    background: var(--color-surface-raised);
+    color: var(--color-fg);
+    box-shadow: var(--shadow-control);
+  }
+}

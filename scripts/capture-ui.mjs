@@ -47,6 +47,26 @@ for (const theme of ['light', 'dark']) {
     ]) {
       await page.getByRole('button', { name: label, exact: true }).click();
       await snap(name);
+      if (phase === 'phase-d' && name === 'models') {
+        await page.getByRole('button', { name: '添加模型', exact: true }).click();
+        await snap('model-form');
+        await page.getByLabel('服务来源').selectOption('deepseek');
+        await snap('model-deepseek');
+        await page.getByRole('button', { name: '取消', exact: true }).click();
+      }
+      if (phase === 'phase-d' && name === 'plugins') {
+        await page.getByRole('tab', { name: 'MCP', exact: true }).click();
+        await snap('plugins-mcp');
+      }
+      if (phase === 'phase-d' && name === 'services') {
+        await app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].setSize(900, 640),
+        );
+        await snap('services-narrow');
+        await app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].setSize(1280, 820),
+        );
+      }
     }
   } finally {
     await app.close();
