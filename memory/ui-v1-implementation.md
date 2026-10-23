@@ -57,7 +57,7 @@ A–D 已实现；各阶段证据与最终验收见下文。
 
 ### 与 Figma / 说明的差异与取舍
 
-1. Button loading 按实施说明保持原宽度、保留可访问名称，以居中 Spinner 替代可见内容；Figma 样张是 Spinner 与文字并排，会增加宽度。此处优先用户明确的“宽度稳定”。
+1. Button loading 保持原宽度、保留可访问名称，以居中 Spinner 替代可见内容。根据用户 2026-10-23 跟进修复文档确认，Figma 已同步为 `state=loading`，本次不改 loading 实现。
 2. Figma 字体为 SF Pro，中文存在回退；实现使用指定系统字体栈，中文为设备实际字体。原生 select 菜单和字体栅格化会随平台变化，未把 Figma 静态菜单/字形作为图片复刻。
 3. 预览按组件家族和可操作状态排列，不复刻 Figma 的整张评审画板坐标；颜色、高度、圆角、间距、阴影和图标依照参数。Figma 的 hover/pressed/focus 为静态展示，代码由真实交互产生。
 4. Radix 当前单选 ToggleGroup 输出 radiogroup/radio；方向键移动焦点、Space/Enter 选择。设置页保留必选逻辑，不允许取消到空值。
@@ -107,3 +107,17 @@ A–D 已实现；各阶段证据与最终验收见下文。
 - 字体取舍：新控件与设置使用指定系统字体栈，README 已纠正旧 Noto Sans SC 描述；未引用的 @fontsource/noto-sans-sc 旧依赖暂保留，优先满足主实施说明要求的生产依赖清单不变（360 项）。Google Doc 中提到的依赖清理未在本批执行。
 
 - D 全量首次 88/89，通过设置与组件全部用例；既有侧栏动画固定两帧采样偶发仍在起点，单独复跑又出现末次拖动更新未完成的时序波动。测试改为在有界 RAF 窗口等待真实中间位移、鼠标释放前等待最后宽度，不修改应用侧栏逻辑；保留中间位移、宽度、持久化、反向动画、焦点恢复和减少动态效果全部断言。专项 2/2（5.4s）通过，最终全量结果见汇总。
+
+
+## 推按钮禁用态跟进修复（2026-10-23）
+
+- 依据用户 `codex-prompt-ui-v1-fix-disabled.md`，在 feature/ui-v1-foundation、483648c 基础上修复。修改集中在 packages/ui/src/styles/base.css；没有改组件业务或 loading 实现。
+- secondary Button（含图标、capsule / circle）、default NativeSelect、outline Toggle off 禁用时使用 surface-raised + hairline separator 边框，去阴影，文字/图标用 fg-disabled；outline Toggle on 禁用保留 fill 背景并补 separator 边框。Select 箭头单独随禁用状态变色。
+- 专用禁用规则覆盖 hover / pressed，Button 明确排除 data-loading=true；default/destructive/ghost Button、Input/Textarea/InputGroup、compact Select、default Toggle 的原禁用规则保持。
+- 测试在 Light/Dark 分别精确检查四种禁用态的背景/边框/文字/阴影、实际鼠标 hover/按下、箭头/图标颜色、全部 Button 尺寸及 capsule/circle，并保留 loading 与未变控件断言。预览新增两个禁用 outline Toggle 样张，不移动其他组件布局。
+- 复现证据：修复前 secondary 禁用背景实际为 rgba(0,0,0,0.05)，与期望白底断言不符。修复后预览 3/3（6.6s）、变量门禁通过；pnpm check 检查 204 个文件、两个类型任务通过（7.684s），pnpm build 通过（0.703s），pnpm test:smoke 完整 **89/89（3.1m）** 通过。
+- macOS 27.0.1 已重生成 `tests/ui-preview.spec.ts-snapshots/preview-light-darwin.png` / `preview-dark-darwin.png`。有意的样式变化仅在禁用相关区域；原已提交基准还包含上一轮 InputGroup 错误圈的过时像素，本次原 CSS 同环境重采已证实这不是禁用修复造成的变化。新基准如实反映当前 UI，不作人工像素拼接。
+- 同环境原 CSS / 新 CSS 对比：Light 12222、Dark 12355 个不同像素；四个禁用区域（含阴影边缘）以外分别仅 15 / 157 个零散栅格化像素。原始基准、即时前后截图、差异图和区域坐标均在 `apps/desktop/test-results/ui-v1/fix-disabled/`，详见 fresh-snapshot-diff.json；不能将整张图称为非禁用区域逐像素完全一致。
+- 设置截图：`node scripts/capture-ui.mjs fix-disabled-settings` 生成 `apps/desktop/test-results/ui-v1/fix-disabled-settings/` 共 16 张浅深截图；已核对通用“检查更新”和内网平台登录按钮的禁用外观。截图保留原生透明区域 alpha。
+
+- 本次修改文件：`packages/ui/src/styles/base.css`、`apps/desktop/src/renderer/src/dev/UiPreview.tsx`、`apps/desktop/tests/ui-preview.spec.ts`、两张 macOS 预览基准、`memory/design.md` 与本报告。完整检查日志保存于 `apps/desktop/test-results/ui-v1/fix-disabled/verification/`。

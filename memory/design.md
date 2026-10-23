@@ -1,6 +1,13 @@
 # Jarvis 设计记忆
 
-最后更新：2026-10-22
+最后更新：2026-10-23
+
+## UI V1 推按钮禁用态对齐（2026-10-23）
+
+- 用户确认 secondary Button、default NativeSelect、outline Toggle off 禁用保留 surface-raised 底、separator 细边框且无阴影；outline Toggle on 禁用保留 fill 底并补边框。代码按此修复，保留其他控件禁用外观。
+- 用户跟进文档确认 Figma 已同步 `state=loading`，居中 Spinner、隐藏文字但保持宽度的现有实现继续保留。本轮没有写入 Figma。
+- 检查、构建及完整实窗回归 89/89（3.1m）通过。浅深精确断言、macOS 截图基准、设置页截图与原基准差异说明见 [UI V1 实施报告](ui-v1-implementation.md) 的跟进修复节。
+
 
 ## UI V1 阶段 D 设置试装（2026-10-23）
 

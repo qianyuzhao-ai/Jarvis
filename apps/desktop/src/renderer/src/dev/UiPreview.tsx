@@ -308,6 +308,14 @@ export default function UiPreview() {
           )}
           <Toggle disabled>禁用</Toggle>
           <Toggle defaultPressed>已选中</Toggle>
+          <Toggle variant="outline" disabled aria-label="推按钮禁用-off">
+            <Magnet />
+            禁用推按钮
+          </Toggle>
+          <Toggle variant="outline" disabled defaultPressed aria-label="推按钮禁用-on">
+            <Magnet />
+            禁用已选
+          </Toggle>
         </div>
         <div className="preview-row">
           {(['segmented', 'default'] as const).flatMap((variant) =>

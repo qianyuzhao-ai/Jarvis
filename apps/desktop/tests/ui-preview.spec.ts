@@ -1,3 +1,4 @@
+import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
   _electron as electron,
@@ -5,6 +6,7 @@ import {
   test,
   type ElectronApplication,
   type Page,
+  type Locator,
 } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -52,6 +54,27 @@ for (const theme of ['light', 'dark']) {
     if (theme === 'dark') await page.getByRole('button', { name: '切换预览主题' }).click();
     await page.getByRole('button', { name: '固定提示' }).scrollIntoViewIfNeeded();
     await page.mouse.move(5, 5);
+    await writeFile(
+      test.info().outputPath('disabled-regions.json'),
+      JSON.stringify({
+        theme,
+        regions: await page
+          .locator(
+            '[data-ui="button"][data-variant="secondary"][data-disabled="true"], [data-ui="select-wrapper"][data-appearance="default"]:has(select:disabled), [data-ui="toggle"][data-variant="outline"]:disabled',
+          )
+          .evaluateAll((elements) =>
+            elements.map((element) => {
+              const rect = element.getBoundingClientRect();
+              return {
+                x: rect.x + window.scrollX,
+                y: rect.y + window.scrollY,
+                width: rect.width,
+                height: rect.height,
+              };
+            }),
+          ),
+      }),
+    );
     await expect(page).toHaveScreenshot(`preview-${theme}.png`, {
       fullPage: true,
       animations: 'disabled',
@@ -89,6 +112,104 @@ for (const theme of ['light', 'dark']) {
     await expect(page.getByLabel('空错误字段')).not.toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByLabel('选择占位')).toHaveValue('');
     await expect(page.getByLabel('组错误')).toHaveCSS('outline-style', 'none');
+    const palette =
+      theme === 'light'
+        ? {
+            raised: 'rgb(255, 255, 255)',
+            separator: 'rgba(0, 0, 0, 0.1)',
+            disabled: 'rgba(0, 0, 0, 0.25)',
+            fill: 'rgba(0, 0, 0, 0.05)',
+          }
+        : {
+            raised: 'rgb(58, 58, 60)',
+            separator: 'rgba(255, 255, 255, 0.1)',
+            disabled: 'rgba(255, 255, 255, 0.25)',
+            fill: 'rgba(255, 255, 255, 0.1)',
+          };
+    async function expectDisabled(control: Locator, background = palette.raised) {
+      await expect(control).toBeDisabled();
+      await expect(control).toHaveCSS('background-color', background);
+      await expect(control).toHaveCSS('border-top-color', palette.separator);
+      await expect(control).toHaveCSS('color', palette.disabled);
+      await expect(control).toHaveCSS('box-shadow', 'none');
+    }
+    const secondary = page.locator(
+      '[data-ui="button"][data-variant="secondary"][data-disabled="true"]',
+    );
+    const select = page.getByLabel('选择禁用');
+    const off = page.getByRole('button', { name: '推按钮禁用-off' });
+    const on = page.getByRole('button', { name: '推按钮禁用-on' });
+    for (const [control, background] of [
+      [secondary, palette.raised],
+      [select, palette.raised],
+      [off, palette.raised],
+      [on, palette.fill],
+    ] as const) {
+      await expectDisabled(control, background);
+      await control.hover();
+      await page.mouse.down();
+      try {
+        await expectDisabled(control, background);
+      } finally {
+        await page.mouse.up();
+      }
+    }
+    await expect(select.locator('..').locator('[data-ui="select-chevron"]')).toHaveCSS(
+      'color',
+      palette.disabled,
+    );
+    await expect(off.locator('svg')).toHaveCSS('color', palette.disabled);
+    await expect(on.locator('svg')).toHaveCSS('color', palette.disabled);
+    for (const size of ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg']) {
+      const control = page.getByRole('button', { name: `secondary-${size}`, exact: true });
+      await control.evaluate((node: HTMLButtonElement) => {
+        node.disabled = true;
+      });
+      await expectDisabled(control);
+      if (size.startsWith('icon'))
+        await expect(control.locator('svg')).toHaveCSS('color', palette.disabled);
+    }
+    for (const name of ['胶囊按钮', '圆形添加']) {
+      const control = page.getByRole('button', { name, exact: true });
+      await control.evaluate((node: HTMLButtonElement) => {
+        node.disabled = true;
+      });
+      await expectDisabled(control);
+    }
+    const compact = page.getByLabel('紧凑选择');
+    await compact.evaluate((node: HTMLSelectElement) => {
+      node.disabled = true;
+    });
+    await expect(compact).toHaveCSS('background-color', palette.fill);
+    await expect(compact).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+    const defaultToggle = page
+      .getByRole('region', { name: 'Toggle', exact: true })
+      .getByRole('button', { name: '禁用', exact: true });
+    await expect(defaultToggle).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(defaultToggle).toHaveCSS('color', palette.disabled);
+    const loading = page.locator(
+      '[data-ui="button"][data-variant="secondary"][data-loading="true"]',
+    );
+    await expect(loading).toHaveCSS('background-color', palette.raised);
+    await expect(loading).not.toHaveCSS('box-shadow', 'none');
+    for (const variant of ['default', 'destructive', 'ghost']) {
+      const control = page.locator(
+        `[data-ui="button"][data-variant="${variant}"][data-disabled="true"]`,
+      );
+      await expect(control).toHaveCSS(
+        'background-color',
+        variant === 'ghost' ? 'rgba(0, 0, 0, 0)' : palette.fill,
+      );
+      await expect(control).toHaveCSS('color', palette.disabled);
+    }
+    for (const control of [
+      page.getByLabel('输入-disabled'),
+      page.getByLabel('多行-disabled'),
+      page.getByLabel('组禁用').locator('..'),
+    ]) {
+      await expect(control).toHaveCSS('background-color', palette.fill);
+      await expect(control).toHaveCSS('border-top-color', palette.separator);
+    }
   });
 }
 test('controls preserve keyboard, composition, refs, loading width, labels and tooltip dismissal', async () => {
