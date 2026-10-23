@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 InputGroup 组件初稿（2026-10-23）
+
+- 用户要求继续设计 InputGroup。组件集 `InputGroup`（`342:28595`）位于 V1-Components 页 Field 下方，21 个变体：size（sm / default / lg）× state（同 Input 7 种）。外壳样式、尺寸与 Input 一致，左内边距同 Input、右内边距 space/4，元素间距 space/4。
+- 插槽属性：`startIcon` + `startIconSwap`（默认 Lucide search，fg/tertiary）；`suffix` + `suffixText`（单位等后缀，fg/secondary，外包 space/4 右边距）；`endButton`（公开的 ghost `Icon Button` 实例，默认 x 清除，sm/default 用 icon-xs、lg 用 icon-sm，可在面板换成 eye 显示密码）。另有 `placeholder`、`value`。
+- 评审样张 `InputGroup / Review`（`342:28596`）展示 7 种状态、三档尺寸以及搜索 + 清除、API Key 显隐、时长单位后缀、仅前置图标四种组合，截图检查两套主题通过；已修正后缀颜色过浅和贴边问题。初稿待用户确认。
+
 ### V1 Field 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Field。组件集 `Field`（`341:28088`）位于 V1-Components 页，6 个变体：orientation（vertical / horizontal）× state（default / invalid / disabled）。属性：`label`、`description`、`showDescription`、`error`。
