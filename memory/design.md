@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 Button 组件初稿（2026-10-23）
+
+- 用户要求开始设计 Button。组件集 `Button`（`336:27571`）位于 V1-Components 页，64 个变体：variant（default / secondary / ghost / destructive）× size（xs / sm / default / lg，对应 macOS mini / small / regular / large）× state（default / hover / pressed / disabled）。属性与代码 props 同名：`label`、`leadingIcon` + `leadingIconSwap`（默认 Lucide plus `26:334`）、`trailingIcon` + `trailingIconSwap`（默认 chevron-down `26:420`）、`loading`（loader-circle `107:3883`）、`focusVisible`（3px focus-ring 外圈）。
+- 样式全部绑定 V1 变量：高度 control-h/*，内边距 space/8·12·16，圆角 radius/small（xs/sm）或 radius/control，字体 V1/subheadline·callout·body；secondary 为推按钮（surface-raised + 0.5px border + V1/shadow-control，hover/pressed 叠加 fill）。新增 `color/danger/hover`、`color/danger/pressed`（`VariableID:336:28759/28760`）修正深色下危险按钮按压态变亮的问题。
+- 评审样张 `Button / Review`（`336:27572`）展示两套主题下各 variant 的状态、focusVisible、loading、四档尺寸、图标与长文本；截图检查通过。
+- 已知限制：替换图标后，新图标的描边颜色需重新设置（覆盖按图层名保留）；变体矩阵 64 个超过常规 30 的建议值，用户确认前保持单组件集。图标按钮（纯图标尺寸）尚未设计。初稿待用户确认。
+
 ### V1 基础变量与文字样式（第零步设计侧，2026-10-23）
 
 - 用户提供 V1 页面 `V1-视觉换新`（`319:27345`）与组件页 `V1-Components`（`332:28013`），要求先做设计稿、按方案开始第一步。两页此前为空。
