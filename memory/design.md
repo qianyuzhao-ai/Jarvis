@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### 验收差异的处理决定（2026-10-23）
+
+- 用户确认：Button loading 保留代码版本（Spinner 居中、文字隐藏保留宽度）；推按钮类控件禁用改为白底，以 Figma 为准。
+- Figma 已同步：`Button`（`336:27571`）删除 `loading` 布尔属性，新增 `state=loading` 20 个变体（共 100 个）：Spinner 绝对居中，Label 与图标透明度 0 保留占位；评审样张与 Spinner 样张中原 loading 实例（16 个）已切换为 state=loading；01 Button 分区随组件集变宽调整，截图检查通过。
+- 代码修复交给 Codex（跟进 prompt）：Button secondary、NativeSelect default、Toggle outline 的禁用态改为 surface-raised + 0.5px separator 边框 + fg-disabled（outline on 保留 fill 底），需在 macOS 更新预览截图基准；完成后再验收。
+
 ### 第一批组件代码实现验收（2026-10-23）
 
 - 用户将第一批组件改造交给 Codex，分支 `feature/ui-v1-foundation`（HEAD `483648c`，阶段 A `90cb20a` / B `2a51146` / C `2d2971b` / D `86cb31f`），实施记录在该分支 `memory/ui-v1-implementation.md`。
