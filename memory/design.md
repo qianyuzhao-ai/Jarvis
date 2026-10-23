@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 按钮新增圆形与胶囊形状（2026-10-23）
+
+- 用户询问 macOS 26/27 的圆形按钮，确认采用方案 1：只为常用组合增加形状，而不是全部组合翻倍。参考依据为 macOS 26 Liquid Glass 控件形状；macOS 27 的变化未核实。玻璃材质 Electron 无法复现，圆形/胶囊按钮沿用现有填充与 V1/shadow-control。
+- `Icon Button`（`337:27595`）新增变体属性 `shape`：square（原有 64 个）/ circle（ghost、secondary × icon、icon-lg × 4 状态，16 个），共 80 个。`Button`（`336:27571`）新增 `shape`：rounded（原有 64 个）/ capsule（ghost、secondary × default、lg × 4 状态，16 个，内边距加大为 space/16、space/20），共 80 个。新形状圆角绑定 radius/full。
+- 复制变体会丢失组件属性引用，已为 32 个新变体重新绑定 label / 图标 / loading / focusVisible；评审样张已移位，避免与变大的组件集重叠，并新增胶囊、圆形及浮动工具栏示例行，截图检查两套主题通过。
+- 修复旧组件页 24 个 `Lucide / *` 图标内层 Frame 约束（MIN → SCALE），缩放时不再溢出；原尺寸外观不变。主色（default）与 destructive 暂无圆形/胶囊，如需圆形发送按钮等再补。
+
 ### V1 Icon Button 组件初稿（2026-10-23）
 
 - 用户要求继续设计纯图标按钮。组件集 `Icon Button`（`337:27595`）位于 V1-Components 页，64 个变体：variant（同 Button 四种）× size（icon-xs / icon-sm / icon / icon-lg，方形 20/24/28/32，宽高绑定 control-h/*）× state（default / hover / pressed / disabled）。属性：`icon`（INSTANCE_SWAP，默认 Lucide ellipsis `26:411`）、`focusVisible`。图标 12 / icon/14 / icon/16 / icon/18。
