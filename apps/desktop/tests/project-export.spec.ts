@@ -279,6 +279,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     });
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('已取消导出');
+    await expect(page.getByTestId('canvas-export-feedback')).toHaveAttribute('data-tone', 'info');
     const emptyPath = test.info().outputPath('empty-project.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });

@@ -448,6 +448,9 @@ test('toast limits visible items, queues, pauses on hover and updates loading in
   await page.getByRole('button', { name: '通知堆叠', exact: true }).click();
   const cards = page.locator('[data-ui="toast"]');
   await expect(cards).toHaveCount(3);
+  const oldest = await cards.first().boundingBox();
+  const newest = await cards.last().boundingBox();
+  expect(newest!.y).toBeGreaterThan(oldest!.y);
   await captureOverlay('preview-toast-stack');
   await page.getByRole('button', { name: '切换预览主题' }).click();
   await captureOverlay('preview-toast-stack');

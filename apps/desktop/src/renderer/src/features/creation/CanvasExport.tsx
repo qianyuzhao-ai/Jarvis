@@ -39,7 +39,7 @@ export function CanvasExport({
       });
       if (!result.ok) throw new Error(result.error);
       toast.update(id, {
-        tone: 'success',
+        tone: result.value.canceled ? 'info' : 'success',
         title: result.value.canceled ? '已取消导出' : 'Excel 已导出',
       });
     } catch (error) {

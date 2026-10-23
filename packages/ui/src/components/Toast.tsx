@@ -106,7 +106,7 @@ export function Toaster() {
         })}
         <Primitive.Viewport
           data-ui="toast-viewport"
-          className="ui-toast-viewport flex flex-col-reverse gap-2"
+          className="ui-toast-viewport flex flex-col gap-2"
           label="通知（F8）"
         />
       </>

@@ -159,7 +159,7 @@ function Examples() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <output aria-label="菜单选择">{`${menuChecked} ${radio}`}</output>
+        <output className="sr-only" aria-label="菜单选择">{`${menuChecked} ${radio}`}</output>
       </section>
       <section aria-label="Dialog AlertDialog">
         <h2>Dialog / AlertDialog</h2>
@@ -220,8 +220,12 @@ function Examples() {
           >
             确认排队
           </Button>
-          <output aria-label="确认结果">{answer}</output>
-          <output aria-label="不再询问结果">{String(checked)}</output>
+          <output className="sr-only" aria-label="确认结果">
+            {answer}
+          </output>
+          <output className="sr-only" aria-label="不再询问结果">
+            {String(checked)}
+          </output>
         </div>
       </section>
       <section aria-label="Tabs">
