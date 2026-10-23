@@ -2,6 +2,11 @@
 
 最后更新：2026-10-23
 
+### V1 Separator 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Separator。组件集 `Separator`（`350:30303`）位于 V1-Components 页 Spinner 下方，2 个变体：orientation（horizontal 默认 240×1，布局中填充宽度 / vertical 默认 1×16，可拉伸）。填充绑定 color/separator，对应 Radix Separator；拖动分隔条另归 Resizable。
+- 评审样张 `Separator / Review`（`350:30304`）展示内缩 16 的列表分组、工具栏竖向分组（ghost Icon Button 之间）与设置分区全宽分隔，截图检查两套主题通过。初稿待用户确认。
+
 ### V1 Spinner 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Spinner。组件集 `Spinner`（`348:29919`）位于 V1-Components 页 ToggleGroup 下方，6 个变体：size（sm 12 / default 16 / lg 24）× tone（default = fg/secondary / onAccent = fg/on-accent）。采用 macOS 12 辐条活动指示器（圆角辐条，透明度 1 → 0.18 递减），Figma 为静态帧，代码中旋转；减少动态效果时改为缓慢淡入淡出。仅用于未知时长，确定进度用 Progress。
