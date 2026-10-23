@@ -5,7 +5,7 @@
 ### V1 第三批暂停（2026-10-24）
 
 - 用户决定：第三批（布局模板层：窗口外框 / 顶栏、AppSidebar、Toolbar、SettingsRow、列表行、EmptyState）不按本计划设计，用户将自行重新做样式设计。不再继续 25 及以后的组件。
-- 已完成的 `24 Window · TitleBar`（Section `382:33089`）仅作参考保留，未被采纳；其中“顶栏 60 → 52”等提议作废，代码不做对应修改。是否删除该 Section 待用户决定。
+- 已完成的 `24 Window · TitleBar`（Section `382:33089`）未被采纳；其中“顶栏 60 → 52”等提议作废，代码不做对应修改。用户要求删除：已确认无外部实例引用后，删除该 Section（含 Traffic Lights / TitleBar / Window 组件集与审阅板）及总览 Index 行 `382:33914`；V1-Components 现以 `23 Progress` 结尾。下文 24 的初稿记录仅作历史。
 
 ### V1 第三批：24 Window · TitleBar 初稿（2026-10-24，未采纳）
 
