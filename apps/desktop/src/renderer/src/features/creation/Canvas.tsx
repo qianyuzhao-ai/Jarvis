@@ -1,3 +1,4 @@
+import { Alert } from '@jarvis/ui/components/Alert';
 import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
@@ -673,10 +674,15 @@ function CanvasContent({
             </div>
           )}
           {connectionNotice && (
-            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
+            <Alert
+              tone="error"
+              data-testid="canvas-import-notice"
+              className="canvas-import-notice"
+              onDismiss={() => setConnectionNotice('')}
+              closeLabel="关闭"
+            >
               {connectionNotice}
-              <button onClick={() => setConnectionNotice('')}>关闭</button>
-            </div>
+            </Alert>
           )}
           {dragging && (
             <div data-testid="canvas-drop-hint" className="canvas-drop-hint" role="status">
@@ -685,10 +691,15 @@ function CanvasContent({
             </div>
           )}
           {importNotice && (
-            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
+            <Alert
+              tone="error"
+              data-testid="canvas-import-notice"
+              className="canvas-import-notice"
+              onDismiss={() => setImportNotice('')}
+              closeLabel="关闭"
+            >
               {importNotice}
-              <button onClick={() => setImportNotice('')}>关闭</button>
-            </div>
+            </Alert>
           )}
           {active && (
             <motion.div

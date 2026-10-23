@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
   _electron as electron,
@@ -14,6 +14,12 @@ import tailwindcss from '@tailwindcss/vite';
 let server: ViteDevServer;
 let app: ElectronApplication;
 let page: Page;
+async function captureOverlay(name: string) {
+  const dir = resolve(import.meta.dirname, '../test-results/ui-v1/phase-h');
+  await mkdir(dir, { recursive: true });
+  const theme = await page.locator('html').getAttribute('data-theme');
+  await page.screenshot({ animations: 'disabled', path: resolve(dir, `${name}-${theme}.png`) });
+}
 test.beforeAll(async () => {
   server = await createServer({
     configFile: false,
@@ -300,11 +306,13 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(popover).toHaveCSS('background-color', raised);
     expect(await popover.evaluate((node) => node.closest('html')?.dataset.theme)).toBe(theme);
     await expect(popover.getByRole('button', { name: '知道了' })).toBeFocused();
+    await captureOverlay('preview-popover');
     await page.keyboard.press('Escape');
     await expect(trigger).toBeFocused();
     await trigger.click();
     await page.getByRole('heading', { name: 'Popover / CandidateList', exact: true }).click();
     await expect(popover).toHaveCount(0);
+    await expect(trigger).toBeFocused();
     const input = page.getByLabel('候选输入');
     await input.focus();
     const candidate = page.getByRole('listbox', { name: '预览候选' }).getByRole('option').nth(1);
@@ -312,24 +320,37 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(candidate).toHaveAttribute('aria-selected', 'true');
     await expect(candidate).toHaveCSS('background-color', accent);
     await expect(candidate).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await captureOverlay('preview-candidates');
     await candidate.click();
     await expect(input).toBeFocused();
     const tabs = page.getByRole('tablist', { name: '预览标签 segment' });
     await expect(tabs.getByRole('tab', { name: '第一页' })).toHaveCSS('background-color', raised);
     const badge = page.locator('[data-ui="badge"].ui-tone-accent.ui-badge-subtle');
     const badgeColor = await badge.evaluate((node) => getComputedStyle(node).backgroundColor);
-    expect(badgeColor).toContain('/ 0.15');
+    expect(badgeColor).toBe(
+      theme === 'light'
+        ? 'color(srgb 0 0.478431 1 / 0.15)'
+        : 'color(srgb 0.0392157 0.517647 1 / 0.15)',
+    );
     const dialogTrigger = page.getByRole('button', { name: '打开对话框 default' });
     await dialogTrigger.click();
     const dialog = page.getByRole('dialog', { name: '重命名项目' });
     await expect(dialog.getByRole('button', { name: '关闭', exact: true })).toBeFocused();
     expect((await dialog.boundingBox())?.width).toBe(560);
+    await captureOverlay('preview-dialog');
     await expect(page.locator('[data-ui="dialog-overlay"]')).toHaveCSS(
       'background-color',
       theme === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.5)',
     );
     await page.keyboard.press('Escape');
     await expect(dialogTrigger).toBeFocused();
+    await dialogTrigger.click();
+    await page.mouse.click(5, 5);
+    await expect(dialog).toHaveCount(0);
+    await page.getByRole('button', { name: '确认 destructive', exact: true }).click();
+    await captureOverlay('preview-confirm');
+    await page.keyboard.press('Escape');
+
     await page.getByRole('button', { name: '打开预览菜单' }).click();
     const menu = page.getByRole('menu', { name: '预览菜单' });
     await page.keyboard.press('ArrowDown');
@@ -337,6 +358,7 @@ for (const theme of ['light', 'dark'] as const) {
     await expect(first).toBeFocused();
     await expect(first).toHaveCSS('background-color', accent);
     await expect(first.locator('svg')).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await captureOverlay('preview-menu');
     await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitemcheckbox')).toBeFocused();
     await page.keyboard.press('Enter');
@@ -362,6 +384,7 @@ test('confirmation defaults to cancel, ignores scrim, returns values and seriali
   await trigger.click();
   const alert = page.getByRole('alertdialog');
   await expect(alert.getByRole('button', { name: '取消', exact: true })).toBeFocused();
+  await captureOverlay('preview-confirm');
   await page.mouse.click(5, 5);
   await expect(alert).toBeVisible();
   await page.keyboard.press('Escape');
@@ -375,10 +398,12 @@ test('confirmation defaults to cancel, ignores scrim, returns values and seriali
   await page.getByRole('button', { name: '确认排队' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(1);
   await expect(page.getByRole('alertdialog')).toHaveAccessibleName('队列一');
+  await expect(page.getByLabel('确认结果')).toHaveText('已排队');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('alertdialog')).toHaveAccessibleName('队列二');
   await page.keyboard.press('Escape');
   await expect(page.getByLabel('确认结果')).toHaveText('二false');
+  await expect(page.getByRole('button', { name: '确认排队' })).toBeFocused();
 });
 
 test('tabs, disclosure and progress expose keyboard and size semantics', async () => {
@@ -397,10 +422,14 @@ test('tabs, disclosure and progress expose keyboard and size semantics', async (
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('Space');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await trigger.hover();
+    await expect(trigger).toHaveCSS('color', 'rgba(0, 0, 0, 0.85)');
+    await expect(trigger).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.05)');
   }
   const count = page.locator('[data-ui="badge-count"]').first();
   await expect(count).toHaveText('99+');
   expect((await count.boundingBox())?.height).toBe(16);
+  await expect(count).toHaveCSS('font-weight', '600');
   expect((await page.locator('[data-ui="badge"]').first().boundingBox())?.height).toBe(18);
   for (const [size, height] of [
     ['small', 4],
@@ -419,7 +448,11 @@ test('toast limits visible items, queues, pauses on hover and updates loading in
   await page.getByRole('button', { name: '通知堆叠', exact: true }).click();
   const cards = page.locator('[data-ui="toast"]');
   await expect(cards).toHaveCount(3);
-  await page.waitForTimeout(900);
+  await captureOverlay('preview-toast-stack');
+  await page.getByRole('button', { name: '切换预览主题' }).click();
+  await captureOverlay('preview-toast-stack');
+  await page.getByRole('button', { name: '切换预览主题' }).click();
+  await page.waitForTimeout(5200);
   await expect(cards).toHaveCount(3);
   await cards.first().getByRole('button', { name: '关闭通知' }).click();
   await expect(cards).toHaveCount(3);

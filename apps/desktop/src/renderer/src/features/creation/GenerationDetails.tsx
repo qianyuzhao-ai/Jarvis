@@ -1,3 +1,4 @@
+import { Alert } from '@jarvis/ui/components/Alert';
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -47,7 +48,7 @@ export function GenerationDetails({
     }
   }
   return (
-    <Collapsible appearance="card" data-testid="generation-details">
+    <Collapsible appearance="card" data-testid="generation-details" className="mx-5 mb-3 min-w-0">
       <CollapsibleTrigger aria-label="生成信息">
         <span>
           {connectedCount > 0
@@ -58,7 +59,7 @@ export function GenerationDetails({
       <CollapsibleContent>
         <div
           data-testid="editor-notice"
-          className="editor-notice generation-details-content"
+          className="max-h-45 overflow-y-auto text-callout text-fg-secondary"
           role="status"
         >
           <p>
@@ -71,8 +72,8 @@ export function GenerationDetails({
                   : '暂无生成记录'}
           </p>
           {task?.remoteTaskId && <p>平台任务 ID：{task.remoteTaskId}</p>}
-          {task?.error && <p className="error-text">{task.error}</p>}
-          {task?.warning && <p className="error-text">{task.warning}</p>}
+          {task?.error && <Alert tone="error">{task.error}</Alert>}
+          {task?.warning && <Alert tone="warning">{task.warning}</Alert>}
           {task?.status === 'unknown' && (
             <p>不会自动重发。再次点击生成会创建新任务，可能产生重复费用。</p>
           )}
@@ -86,11 +87,7 @@ export function GenerationDetails({
               </button>
             </div>
           )}
-          {error && (
-            <p className="error-text" role="alert">
-              {error}
-            </p>
-          )}
+          {error && <Alert tone="error">{error}</Alert>}
         </div>
       </CollapsibleContent>
     </Collapsible>

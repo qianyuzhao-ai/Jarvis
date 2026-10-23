@@ -14,7 +14,12 @@ import { cn } from '../lib/utils';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
 export const AlertDialog = Primitive.Root;
-export const AlertDialogTrigger = Primitive.Trigger;
+export function AlertDialogTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof Primitive.Trigger>) {
+  return <Primitive.Trigger {...props} className={cn('cursor-default', className)} />;
+}
 export const AlertDialogCancel = Primitive.Cancel;
 export const AlertDialogAction = Primitive.Action;
 export function AlertDialogContent({
@@ -170,7 +175,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           id: ++nextId.current,
           options,
           resolve,
-          focus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+          focus:
+            queue.current[0]?.focus ??
+            (document.activeElement instanceof HTMLElement ? document.activeElement : null),
         };
         queue.current.push(request);
         if (queue.current.length === 1) setCurrent(request);

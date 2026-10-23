@@ -448,7 +448,7 @@
   .ui-popover {
     width: var(--popover-width);
   }
-  .ui-floating,
+  .ui-floating[data-state],
   .ui-modal,
   .ui-toast {
     overflow-wrap: anywhere;
@@ -568,6 +568,9 @@
     height: var(--icon-regular);
   }
   .ui-candidate-media[data-thumbnail='true'] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: var(--control-h-regular);
     height: var(--control-h-regular);
     border: var(--border-hairline) solid var(--color-separator);
@@ -607,7 +610,7 @@
     height: calc(var(--spacing) / 2);
     background: var(--color-accent);
   }
-  .ui-tab:disabled {
+  .ui-tab[data-appearance]:disabled {
     color: var(--color-fg-disabled);
     background: transparent;
     box-shadow: none;
@@ -623,7 +626,7 @@
     font-size: var(--text-callout);
     line-height: var(--text-callout--line-height);
   }
-  .ui-collapse-trigger:hover {
+  .ui-collapsible .ui-collapse-trigger:hover {
     background: var(--color-fill);
     color: var(--color-fg);
   }
@@ -729,12 +732,12 @@
   .ui-progress-ring {
     width: var(--icon-regular);
     height: var(--icon-regular);
-    stroke-width: 3;
+    stroke-width: var(--progress-ring-stroke-small);
   }
   .ui-progress-ring[data-size='24'] {
     width: var(--icon-hero);
     height: var(--icon-hero);
-    stroke-width: 2.5;
+    stroke-width: var(--progress-ring-stroke-regular);
   }
   .ui-ring-track {
     stroke: var(--color-fill-pressed);
@@ -803,7 +806,7 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ui-floating,
+    .ui-floating[data-state],
     .ui-modal,
     .ui-toast {
       animation: ui-fade-in var(--duration-fast) var(--ease-standard);
@@ -826,5 +829,17 @@
 @layer utilities {
   .ui-collapse-content[data-state='closed'] {
     display: none;
+  }
+}
+
+@layer utilities {
+  .ui-menu-item svg,
+  .ui-candidate-media svg,
+  .ui-tab svg,
+  .ui-collapse-chevron,
+  .ui-toast-icon,
+  [data-ui='alert'] > svg,
+  .ui-alert-icon svg {
+    stroke-width: var(--icon-stroke);
   }
 }

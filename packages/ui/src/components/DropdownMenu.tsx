@@ -3,7 +3,12 @@ import { Check, ChevronRight, Circle } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/utils';
 export const DropdownMenu = Primitive.Root;
-export const DropdownMenuTrigger = Primitive.Trigger;
+export function DropdownMenuTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof Primitive.Trigger>) {
+  return <Primitive.Trigger {...props} className={cn('cursor-default', className)} />;
+}
 export const DropdownMenuGroup = Primitive.Group;
 export const DropdownMenuSub = Primitive.Sub;
 export const DropdownMenuRadioGroup = Primitive.RadioGroup;

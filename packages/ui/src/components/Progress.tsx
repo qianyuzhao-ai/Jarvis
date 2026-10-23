@@ -54,7 +54,7 @@ export function ProgressField({
     <div
       data-ui="progress-field"
       data-tone={tone}
-      className={cn('ui-progress-field grid gap-1.5', className)}
+      className={cn('ui-progress-field grid gap-1.5 text-fg', className)}
     >
       <div className="flex justify-between gap-2">
         <span id={`${id}-label`} className="text-body">

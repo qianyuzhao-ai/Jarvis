@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { cva } from 'class-variance-authority';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';
-const variants = cva('ui-collapsible', {
+const variants = cva('ui-collapsible text-fg', {
   variants: { appearance: { plain: '', card: 'ui-hairline rounded-panel bg-surface' } },
   defaultVariants: { appearance: 'plain' },
 });

@@ -77,9 +77,16 @@ export function CandidateListItem({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate">{children}</span>
+        <span data-ui="candidate-title" className="block truncate">
+          {children}
+        </span>
         {description && (
-          <span className="block truncate text-callout text-fg-secondary">{description}</span>
+          <span
+            data-ui="candidate-description"
+            className="block truncate text-callout text-fg-secondary"
+          >
+            {description}
+          </span>
         )}
       </span>
       {meta && <span className="shrink-0 text-callout text-fg-tertiary">{meta}</span>}

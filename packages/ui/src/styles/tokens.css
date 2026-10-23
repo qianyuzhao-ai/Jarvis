@@ -8,6 +8,9 @@
     --toast-width: 340px;
     --badge-height: 18px;
     --progress-height: 6px;
+    --icon-stroke: 1.75;
+    --progress-ring-stroke-small: 3;
+    --progress-ring-stroke-regular: 2.5;
     --border-hairline: 0.5px;
     --border-standard: 1px;
     --focus-width: 3px;

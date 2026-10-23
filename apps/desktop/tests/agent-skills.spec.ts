@@ -116,7 +116,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
       '暂未接入',
     );
     await expect(page.getByRole('button', { name: '添加 skill', exact: true })).toBeHidden();
-    await page.screenshot({ path: test.info().outputPath('plugins-mcp.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('plugins-mcp.png'),
+    });
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'Skill', exact: true })).toBeFocused();
     await expect(page.getByRole('tabpanel', { name: 'Skill', exact: true })).toBeVisible();
@@ -138,7 +141,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
         }),
       ).toBeChecked();
     }
-    await page.screenshot({ path: test.info().outputPath('skills-manager.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-manager.png'),
+    });
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).uncheck();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).not.toBeChecked();
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).check();
@@ -153,7 +159,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await expect(input).toHaveValue('/skill:manual-plan ');
     expect(requests).toHaveLength(0);
     await input.fill('/manual');
-    await page.screenshot({ path: test.info().outputPath('skills-slash-search.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-slash-search.png'),
+    });
     await input.press('Tab');
     await input.press('End');
     await page.keyboard.insertText('三个镜头');
@@ -176,7 +185,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
       ),
     ).toContainText('已按技能');
     await expect(page.getByTestId('chat-activities')).toContainText('自动匹配');
-    await page.screenshot({ path: test.info().outputPath('skills-auto-loaded.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-auto-loaded.png'),
+    });
     await input.fill('保留这份草稿');
     const beforeManager = requests.length;
     await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -186,7 +198,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await expect(page.getByRole('checkbox', { name: '启用 manual-plan' })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).toBeChecked();
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.screenshot({ path: test.info().outputPath('skills-settings-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-settings-dark.png'),
+    });
     await page.emulateMedia({ colorScheme: 'light' });
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
@@ -211,7 +226,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.screenshot({ path: test.info().outputPath('skills-canvas-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-canvas-dark.png'),
+    });
     await canvasInput.press('Enter');
     await canvasInput.press('End');
     await page.keyboard.insertText('为当前画布规划镜头');
@@ -227,7 +245,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await canvasInput.fill('/');
     await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
     await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
-    await page.screenshot({ path: test.info().outputPath('skills-canvas-picker-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-canvas-picker-dark.png'),
+    });
   } finally {
     await app.close();
     await new Promise<void>((r) => server.close(() => r()));

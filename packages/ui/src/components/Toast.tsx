@@ -30,12 +30,12 @@ function subscribe(listener: () => void) {
 function snapshot() {
   return entries;
 }
-function dismiss(id: string) {
+function dismiss(id: string, notify = true) {
   const entry = entries.find((item) => item.id === id);
   if (!entry) return;
   entries = entries.filter((item) => item.id !== id);
   emit();
-  entry.onDismiss?.();
+  if (notify) entry.onDismiss?.();
 }
 function update(id: string, options: Partial<ToastOptions>) {
   entries = entries.map((item) => (item.id === id ? { ...item, ...options } : item));

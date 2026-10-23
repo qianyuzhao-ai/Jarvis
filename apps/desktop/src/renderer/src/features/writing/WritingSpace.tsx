@@ -1,3 +1,13 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Alert } from '@jarvis/ui/components/Alert';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuShortcut,
+} from '@jarvis/ui/components/DropdownMenu';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
@@ -112,7 +122,6 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
   const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
-  const folderArea = useRef<HTMLDivElement>(null);
   const active = writing.documents.find(
     (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
   );
@@ -181,13 +190,6 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
     if (creation) dialog.current?.showModal();
     else dialog.current?.close();
   }, [creation]);
-  useEffect(() => {
-    const close = (e: PointerEvent) => {
-      if (e.target instanceof Node && !folderArea.current?.contains(e.target)) setFolderMenu(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -298,49 +300,43 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
             <ArrowLeft size={14} />
             返回工作台
           </button>
-          <div className="writing-folder-area" ref={folderArea}>
-            <button
-              className="writing-folder-picker"
-              aria-expanded={folderMenu}
-              aria-haspopup="menu"
-              disabled={writing.loading}
-              onClick={() => setFolderMenu((open) => !open)}
-            >
-              <Folder size={20} />
-              <strong>{writing.root?.name ?? '打开文件夹'}</strong>
-              <ChevronDown size={14} />
-            </button>
-            {folderMenu && (
-              <div className="writing-folder-menu" role="menu" aria-label="切换文件夹">
-                <p>切换文件夹</p>
+          <div className="writing-folder-area">
+            <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
+              <DropdownMenuTrigger asChild>
+                <button className="writing-folder-picker" disabled={writing.loading}>
+                  <Folder size={20} />
+                  <strong>{writing.root?.name ?? '打开文件夹'}</strong>
+                  <ChevronDown size={14} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent aria-label="切换文件夹" align="start">
+                <DropdownMenuLabel>切换文件夹</DropdownMenuLabel>
                 {writing.roots.map((root) => (
-                  <button
+                  <DropdownMenuItem
                     key={root.id}
-                    role="menuitem"
                     title={root.directory}
-                    onClick={() => {
-                      setFolderMenu(false);
+                    onSelect={() => {
                       setQuery('');
                       void writing.switchRoot(root);
                     }}
                   >
-                    <Folder size={16} />
+                    <Folder />
                     <span>{root.name}</span>
-                    {writing.root?.id === root.id && <small>当前</small>}
-                  </button>
+                    {writing.root?.id === root.id && (
+                      <DropdownMenuShortcut>当前</DropdownMenuShortcut>
+                    )}
+                  </DropdownMenuItem>
                 ))}
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setFolderMenu(false);
+                <DropdownMenuItem
+                  onSelect={() => {
                     void writing.chooseDirectory();
                   }}
                 >
-                  <FolderPlus size={16} />
+                  <FolderPlus />
                   打开其他文件夹…
-                </button>
-              </div>
-            )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           {writing.root && (
             <>
@@ -373,27 +369,25 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
                   >
                     <FolderPlus size={18} />
                   </IconButton>
-                  <IconButton
-                    label="更多文件操作"
-                    aria-expanded={moreMenu}
-                    onClick={() => setMoreMenu((open) => !open)}
-                  >
-                    <MoreHorizontal size={18} />
-                  </IconButton>
+                  <DropdownMenu open={moreMenu} onOpenChange={setMoreMenu}>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton label="更多文件操作">
+                        <MoreHorizontal size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent aria-label="更多文件操作" align="end">
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          void writing.refresh();
+                          for (const path of writing.expanded) void writing.refresh(path);
+                        }}
+                      >
+                        刷新文件列表
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-              {moreMenu && (
-                <button
-                  className="writing-refresh"
-                  onClick={() => {
-                    setMoreMenu(false);
-                    void writing.refresh();
-                    for (const path of writing.expanded) void writing.refresh(path);
-                  }}
-                >
-                  刷新文件列表
-                </button>
-              )}
               {searchOpen && (
                 <div className="writing-search">
                   <Search size={16} />
@@ -500,22 +494,43 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
           )}
         </div>
         {writing.notice && (
-          <div className="writing-notice" role="alert">
-            <span>{writing.notice}</span>
-            <IconButton label="关闭提示" onClick={() => writing.setNotice('')}>
-              <X size={14} />
-            </IconButton>
-          </div>
+          <Alert tone="error" onDismiss={() => writing.setNotice('')}>
+            {writing.notice}
+          </Alert>
         )}
         {active?.error && (
-          <div className="writing-notice" role="alert">
-            <span>{active.error}</span>
-            {active.status !== 'conflict' && (
-              <button onClick={() => void writing.save(active.id)}>重试保存</button>
-            )}
-            <button onClick={() => void writing.reload(active.id)}>重新读取</button>
-            <button onClick={() => void writing.saveCopy(active.id)}>另存副本</button>
-          </div>
+          <Alert
+            tone="error"
+            action={
+              <div className="flex flex-wrap gap-2">
+                {active.status !== 'conflict' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void writing.save(active.id)}
+                  >
+                    重试保存
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void writing.reload(active.id)}
+                >
+                  重新读取
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void writing.saveCopy(active.id)}
+                >
+                  另存副本
+                </Button>
+              </div>
+            }
+          >
+            {active.error}
+          </Alert>
         )}
         {active ? (
           <MarkdownEditor

@@ -5,7 +5,9 @@ import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 export const Dialog = Primitive.Root;
-export const DialogTrigger = Primitive.Trigger;
+export function DialogTrigger({ className, ...props }: ComponentProps<typeof Primitive.Trigger>) {
+  return <Primitive.Trigger {...props} className={cn('cursor-default', className)} />;
+}
 export const DialogClose = Primitive.Close;
 const sizes = cva(
   'ui-dialog ui-modal flex flex-col rounded-window bg-content text-fg shadow-dialog',

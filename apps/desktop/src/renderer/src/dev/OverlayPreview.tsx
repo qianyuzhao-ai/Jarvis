@@ -211,9 +211,11 @@ function Examples() {
           ))}
           <Button
             variant="secondary"
-            onClick={() => {
+            onClick={async () => {
               void confirm({ title: '队列一', message: '第一项' }).then((v) => setAnswer(`一${v}`));
+              await new Promise((resolve) => setTimeout(resolve, 100));
               void confirm({ title: '队列二', message: '第二项' }).then((v) => setAnswer(`二${v}`));
+              setAnswer('已排队');
             }}
           >
             确认排队

@@ -265,7 +265,10 @@ test('mixed media selection connects to video and downloads image, audio and vid
     await expect(download).toHaveText('3');
     await expect(download.locator('svg')).toHaveCount(1);
     await expect(download).toHaveAttribute('title', '下载 3 个可用文件');
-    await page.screenshot({ path: test.info().outputPath('selection-download-count.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('selection-download-count.png'),
+    });
     await download.click();
     await expect(page.getByText('批量下载：已下载 3 个，跳过 0 个，失败 0 个')).toBeVisible();
     expect((await readFile(paths[0]!)).subarray(0, 8)).toEqual(png.subarray(0, 8));
@@ -619,10 +622,16 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     expect(
       await node(page, ids.imageA).evaluate((element) => Number(getComputedStyle(element).zIndex)),
     ).toBe(10);
-    await page.screenshot({ path: test.info().outputPath('workflow-light.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('workflow-light.png'),
+    });
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
     await expect(active).toHaveCSS('animation-name', 'none');
-    await page.screenshot({ path: test.info().outputPath('workflow-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('workflow-dark.png'),
+    });
     await clickBlankPane(page);
     await connect(page, ids.audio, ids.imageA);
     await expect(page.getByTestId('canvas-import-notice')).toContainText('仅接收图像');
@@ -734,6 +743,16 @@ test('connected references preview upstream media and keep long mention rows on 
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
     const preview = page.getByTestId('reference-stack');
     await expect(preview.getByLabel('共 4 个参考素材')).toHaveText('4');
+    expect(
+      await preview.getByLabel('共 4 个参考素材').evaluate((badge) => {
+        const rect = badge.getBoundingClientRect();
+        return (
+          document
+            .elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+            ?.closest('[data-ui="badge-count"]') === badge
+        );
+      }),
+    ).toBe(true);
     await expect(preview.getByAltText(longName)).toHaveAttribute('src', /^jarvis-media:/);
     await expect
       .poll(() =>
@@ -748,7 +767,7 @@ test('connected references preview upstream media and keep long mention rows on 
     await expect(longOption).toHaveAttribute('title', `图片 3 · ${longName}`);
     const layout = await longOption.evaluate((row) => {
       const label = row.querySelector('[data-testid="prompt-mention-label"]')!;
-      const name = row.querySelector('small')!;
+      const name = row.querySelector('[data-ui="candidate-title"]')!;
       return {
         labelHeight: label.getBoundingClientRect().height,
         nameHeight: name.getBoundingClientRect().height,
@@ -764,7 +783,10 @@ test('connected references preview upstream media and keep long mention rows on 
     expect(layout.truncated).toBe(true);
     expect(layout.ellipsis).toBe('ellipsis');
     expect(layout.fits).toBe(true);
-    await page.screenshot({ path: test.info().outputPath('connected-mentions-light.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('connected-mentions-light.png'),
+    });
     await longOption.click();
     await expect(page.getByLabel('视频提示词')).toHaveText('@image_3 ');
     await preview.click();
@@ -774,6 +796,7 @@ test('connected references preview upstream media and keep long mention rows on 
     ).toHaveText(['图片 1', '图片 2', '图片 3', '音频 1']);
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.screenshot({
+      animations: 'disabled',
       path: test.info().outputPath('connected-references-expanded-dark.png'),
     });
     await page.getByRole('button', { name: '还原面板' }).click();

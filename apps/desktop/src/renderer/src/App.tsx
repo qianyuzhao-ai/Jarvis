@@ -1,3 +1,4 @@
+import { Toaster } from '@jarvis/ui/components/Toast';
 import { ConfirmProvider, useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { subscribeAccentColor, observeWindowFocus } from './features/settings/appearance';
 import { lazy, Suspense, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
@@ -340,6 +341,7 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <ConfirmProvider>
         <Workbench initial={initial} />
+        <Toaster />
       </ConfirmProvider>
     </MotionConfig>
   );
