@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 Tooltip 组件初稿（2026-10-23，第一批基础组件设计完成）
+
+- 用户要求继续设计 Tooltip。组件集 `Tooltip`（`351:30351`）位于 V1-Components 页 Separator 下方，2 个变体：lines（single 自适应宽度 / multi 最大宽 240 换行）。属性：`label`、`shortcut` + `showShortcut`（fg/secondary）。
+- macOS 风格无箭头小浮层：surface-raised + 0.5px border + V1/shadow-popover，文字 V1/subheadline（11），内边距 space/8 × space/4，圆角 radius/small。side（top / right / bottom / left）、6px 间距与碰撞翻转由 Radix 定位，不做方向变体；悬停约 500ms 或键盘聚焦显示，Esc 关闭；替代原生 title，点击切换的信息浮层归 Popover。
+- 评审样张 `Tooltip / Review`（`351:30352`）展示四个方向、快捷键、多行换行与键盘聚焦触发，截图检查两套主题通过；已修正多行示例沿用共享默认文字的问题。
+- 至此方案第二步的 12 个基础组件家族（Button / Icon Button、Input、Field、InputGroup、Textarea、NativeSelect、Checkbox、Toggle、ToggleGroup、Spinner、Separator、Tooltip）均已在 Figma 完成初稿，均待用户确认；尚未实现代码。
+
 ### V1 Separator 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Separator。组件集 `Separator`（`350:30303`）位于 V1-Components 页 Spinner 下方，2 个变体：orientation（horizontal 默认 240×1，布局中填充宽度 / vertical 默认 1×16，可拉伸）。填充绑定 color/separator，对应 Radix Separator；拖动分隔条另归 Resizable。
