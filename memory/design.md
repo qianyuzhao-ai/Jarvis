@@ -1,6 +1,15 @@
 # Jarvis 设计记忆
 
-最后更新：2026-10-23
+最后更新：2026-10-24
+
+### 第二批组件代码实现验收（2026-10-24）
+
+- Codex 按 `codex-prompt-ui-v1-batch2.md` 在 `feature/ui-v1-overlays` 实现（E `157ce2d` / F `a73903a` / G `d7ed150` / H `3487102`，文档 `49ac988`），实施记录在该分支 `memory/ui-v1-implementation.md`“第二批”章节。
+- 复验（Linux 容器 + Xvfb）：`pnpm check`、`pnpm build` 通过；完整回归 90/95，失败为 agent / canvas-agent / model-library 保存 API Key（容器无系统钥匙串，与第一批及 develop 相同）和 2 项缺少 Linux 预览基准，均为环境问题。Codex 在 macOS 报告 95/95。
+- 代码审查：无删除文件、无 main / preload / IPC 改动；测试 expect 997 → 1068、用例 88 → 93，移除的 8 条断言均有等价替换（details open → data-state、progress value → aria-valuenow、数量文本 → 可访问名称）。ConfirmProvider 排队与结果只回传一次正确，9 处确认均加等待锁；重新生成确认后重读节点；Toast 与 GenerationNotice 保留原队列。
+- 视觉：预览页第二批区域（macOS 基准与 Linux 实际渲染）浅深两套与 Figma 结构、颜色一致；插件 Tabs、写作右栏 Tabs 页面截图正常。
+- 小问题（不阻塞）：Toast 视口 `flex-col-reverse` 使最早一条在最下、新通知在上，设计为最新在下；导出“已取消”使用 success 对勾，建议用 info；预览页 DropdownMenu / Dialog 行残留状态读数文字（“false name”“false”），仅开发预览。
+- Codex 保留项（同意）：MediaEditor 不改 Dialog（共用 CodeMirror 实例，960×600 放大外壳）；ContextUsage 保留 hover + 点击混合提示。
 
 ### V1 第二批：23 Progress 初稿（2026-10-23）
 
