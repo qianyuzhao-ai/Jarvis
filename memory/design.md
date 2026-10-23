@@ -2,6 +2,94 @@
 
 最后更新：2026-10-24
 
+### 第二批组件代码实现验收（2026-10-24）
+
+- Codex 按 `codex-prompt-ui-v1-batch2.md` 在 `feature/ui-v1-overlays` 实现（E `157ce2d` / F `a73903a` / G `d7ed150` / H `3487102`，文档 `49ac988`），实施记录在该分支 `memory/ui-v1-implementation.md`“第二批”章节。
+- 复验（Linux 容器 + Xvfb）：`pnpm check`、`pnpm build` 通过；完整回归 90/95，失败为 agent / canvas-agent / model-library 保存 API Key（容器无系统钥匙串，与第一批及 develop 相同）和 2 项缺少 Linux 预览基准，均为环境问题。Codex 在 macOS 报告 95/95。
+- 代码审查：无删除文件、无 main / preload / IPC 改动；测试 expect 997 → 1068、用例 88 → 93，移除的 8 条断言均有等价替换（details open → data-state、progress value → aria-valuenow、数量文本 → 可访问名称）。ConfirmProvider 排队与结果只回传一次正确，9 处确认均加等待锁；重新生成确认后重读节点；Toast 与 GenerationNotice 保留原队列。
+- 视觉：预览页第二批区域（macOS 基准与 Linux 实际渲染）浅深两套与 Figma 结构、颜色一致；插件 Tabs、写作右栏 Tabs 页面截图正常。
+- 小问题（不阻塞）：Toast 视口 `flex-col-reverse` 使最早一条在最下、新通知在上，设计为最新在下；导出“已取消”使用 success 对勾，建议用 info；预览页 DropdownMenu / Dialog 行残留状态读数文字（“false name”“false”），仅开发预览。
+- Codex 保留项（同意）：MediaEditor 不改 Dialog（共用 CodeMirror 实例，960×600 放大外壳）；ContextUsage 保留 hover + 点击混合提示。
+- 用户要求修复上述三个小问题并合并：提交 `8ad1224`（Toast 视口改 `flex-col`，最新在下；取消导出改 info；预览状态读数改 `sr-only`）。补充堆叠顺序与取消导出 `data-tone` 断言，预览 + 导出专项 10/10 通过（另 2 项为缺少 Linux 基准）。macOS 预览基准只把两处调试文字区域填为背景色；Linux 前后渲染差异仅限这两处文字（524 像素），布局不变，待用户在 macOS 跑一次预览截图测试确认。
+- [PR #69](https://github.com/qianyuzhao-ai/Jarvis/pull/69) 已按用户要求合并入 develop（merge commit `37a5db4`）。
+
+### V1 第二批：23 Progress 初稿（2026-10-23）
+
+- 新 Section `23 Progress`（`378:32572`），总览 Index 已追加行 `379:33179`。第二批 14–23 全部完成初稿。
+- `Progress`（`378:32536`，8 个变体）：type=determinate × size（small 4 / regular 6）× tone（accent / success / danger），以及 type=indeterminate × size（tone=accent）。轨道 fill/pressed、胶囊圆角，宽度跟随容器。determinate 的轨道为 auto-layout、Indicator 填充，用实例 `paddingRight = 轨道宽 × (1 − 进度)` 表示进度（Figma 不支持覆盖实例内图层尺寸，已实测；padding 覆盖在嵌套实例中可用）。indeterminate 为 72px 指示段往返动画（约 1.2s，减少动态效果时改静态）。`role="progressbar"`，不确定时省略 aria-valuenow。
+- `Progress Field`（`378:32558`，3 个变体）：tone accent / success / danger；标签 body + 数值 callout，regular 进度条，可选提示行（剩余时间 / 大小 / 失败原因，失败时数值与提示为 danger）。属性 `label`、`value` + `showValue`、`hint` + `showHint`。
+- `Progress Ring`（`378:32571`，4 个变体）：size 16（stroke 2）/ 24（stroke 2.5）× tone accent / danger，12 点方向顺时针、圆头，调 Indicator arc 结束角表示进度；不确定进度用 Spinner。
+- 审阅板 `Progress / Review`（`379:32523`）：导出画布对话框（60% + 取消）、设置中模型下载（35% / 已完成 / 网络中断 42%）与“正在连接 ComfyUI”不确定进度、画布生成节点缩略图上的环形 60% 胶囊、生成列表行（small 条 + 环）。插件检查进度宽度与数值一致；未做截图复核（截图下载被代理拒绝）。初稿待用户确认。
+
+### V1 第二批：22 Badge 初稿（2026-10-23）
+
+- 新 Section `22 Badge`（`376:32536`），总览 Index 已追加。
+- `Badge`（`376:32522`，12 个变体）：tone（neutral / accent / success / warning / danger / info）× appearance（subtle / solid）。高 18，水平内边距 6，radius/small，文字 V1/subheadline 11px Semibold；subtle 为 *-subtle 浅底 + 语义色字（accent 浅底为 accent/default 15% 不透明度，neutral 为 fill/default + fg/secondary），solid 为语义色实底 + on-accent 白字（neutral 为 fg/secondary 底）。属性 `label`、`showIcon`（默认关）、`icon`（实例替换，12px）。只读，不可点击；可点击筛选用 Toggle / ToggleGroup。
+- `Badge Count`（`376:32529`，3 个变体）：tone accent / danger / neutral（neutral 为 fill/pressed + fg/secondary），高 16、最小宽 16 胶囊，内边距 4，V1/footnote 10px Semibold；属性 `count`，超过 99 显示 99+。对应现有 `reference-count`、`selection-download-count`。
+- `Status Dot`（`376:32535`，5 个变体）：8px 圆点，neutral（fg/tertiary）/ accent / success / warning / danger，必须配合文字使用。
+- 审阅板 `Badge / Review`（`376:32538`）：模型服务列表（默认 / 视频 / 实验标签 + 状态点：已连接、需登录、连接失败、未配置）、全部 subtle 用法、带图标与 solid 示例、数量角标（下载所选 4、引用 2、任务 12、99+）。插件几何检查通过（行高统一 34，角标 16–28 宽）；本次未做截图复核（截图下载被代理拒绝）。初稿待用户确认。
+
+### V1 第二批：21 Toast 初稿（2026-10-23）
+
+- `V1-Components`（`332:28013`）新增 Section `21 Toast`（`371:32326`），组件集 `Toast`（`371:32325`）5 个变体：`tone=info|success|warning|error|loading`；属性 `title` / `description` / `showDescription` / `showAction`（默认关）/ `showClose`。
+- 外观：`color/surface-raised` + 0.5px `color/border` + `V1/shadow-popover`，`radius/panel`，宽 340，内边距 12（右 8），间距 8；图标 16 用对应语义色（error 用 danger），loading 用 Spinner 实例；标题 `V1/headline`、说明 `V1/callout` + `fg/secondary`；操作为 Button secondary sm，关闭为 Icon Button ghost icon-xs + x。
+- 行为约定（待确认）：窗口右下角距边 16，自下向上堆叠、间距 8，最多 3 条；info/success 约 5 秒自动消失，悬停或聚焦时暂停；error 与 loading 不自动消失；`role="status"`，error 用 `role="alert"`；业务队列与时机留在功能层（GenerationNotice、CanvasExport）。持续性提示用 Alert。
+- 审阅板 `Toast / Review`（`372:32138`）：Light/Dark 各含 5 条单条示例和一个 560×300 窗口右下角堆叠示例；总览 Index 新增行 `372:33354`。
+- 验证：插件几何检查通过（有说明 58px、单行 41–45px，无溢出）；`get_screenshot` 图片下载被网络代理拒绝，本次未做截图像素复核。
+
+### V1 第二批：20 Alert 初稿（2026-10-23）
+
+- 用户要求继续设计 Alert。新 Section `20 Alert`（`370:32085`），概览索引已追加。
+- `Alert`（`370:32084`，4 个变体）：tone（info / success / warning / error，error 使用 danger 色）。底色为对应 *-subtle，16px 图标（info、check、circle-alert）为对应强调色，标题 headline + 说明 callout fg-secondary；可选公开操作按钮（secondary sm）与关闭按钮（ghost icon-xs）。radius/control，内边距 12 × 8，间距 8，默认宽 440、高度随内容。属性 `title` + `showTitle`、`description` + `showDescription`、`showAction`、`showClose`。
+- 页面内持续提示，不自动消失；error / warning 用 role="alert"，其余 role="status"；临时反馈用 Toast。
+- 评审样张 `Alert / Review`（`370:32517`）：content 底上的开发模式 / 连接成功（可关闭）/ 登录已过期（重新登录）/ 保存失败（重试 + 关闭），以及仅说明的聊天 401 错误（打开设置），截图检查两套主题通过；已修正高度被固定的问题。success 图标暂用 Lucide check（本地无 circle-check），待确认。
+
+### V1 第二批：19 Collapsible 初稿（2026-10-23）
+
+- 用户要求继续设计 Collapsible。新 Section `19 Collapsible`（`369:31918`），概览索引已追加。
+- `Collapsible`（`369:31917`，8 个变体）：appearance（plain / card）× open（false / true）× state（default / hover）。plain：标题 callout fg-secondary（hover 为 fg + fill 底），内容缩进 20，用于聊天活动、设置高级选项；card：surface + 0.5px border、radius/panel，标题 headline，展开后内容区上方 separator、缩进 24，用于节点生成详情。chevron 12px，收起向右、展开向下；可选右侧摘要 meta（callout fg-tertiary）。属性 `title`、`meta` + `showMeta`；`Content slot` 在实例中替换。
+- 评审样张 `Collapsible / Review`（`369:32350`）：生成详情卡片收起 / 展开（模型、参数、任务 ID、复制结果链接）、聊天活动“已编辑 2 个文件”（增删数分别为 success / danger）、模型服务“高级设置”收起悬停，截图检查两套主题通过；已修正变体高度被固定的问题。初稿待用户确认。
+
+### V1 第二批：18 Tabs 初稿（2026-10-23）
+
+- 用户要求继续设计 Tabs。新 Section `18 Tabs`（`367:31908`），概览索引已追加。
+  - `Tabs Trigger`（`367:31760`，8 个变体）：appearance（segment / underline）× state（inactive / hover / active / disabled）。segment 高 24、内边距 12、radius/small，active 为 surface-raised + shadow-control；underline 高 32、内边距 8，inactive fg-secondary、hover fg、active fg + 2px accent 下划线。属性 `label`、`icon` + `iconSwap`（默认 file-text）、`closable`（12px 关闭图标，fg-tertiary）。
+  - `Tabs List`（`367:31907`，2 个变体）：segment（fill 轨道 + 2px 内边距，radius/control）/ underline（底部 1px separator，间距 4）；4 个公开 Tab，`tab3` / `tab4` 控制数量。
+- 对应 Radix Tabs，用于内容导航，与 ToggleGroup 偏好值单选区分；文档标签关闭是组合能力，代码中为独立按钮并有可访问名称。
+- 评审样张 `Tabs / Review`（`367:32340`）：插件页 MCP / Skill（segment + 内容区）、underline 四种状态、写作右侧栏大纲 / 助手（图标）、写作文档标签（closable），截图检查两套主题通过；已将关闭图标调浅为 fg-tertiary。初稿待用户确认。
+
+### V1 第二批：17 AlertDialog 初稿（2026-10-23）
+
+- 用户要求继续设计 AlertDialog。新 Section `17 AlertDialog`（`363:31598`），概览索引已追加。
+- `AlertDialog`（`363:31597`，2 个变体）：tone（default / destructive）。macOS 26 警告框风格：宽 280，surface-raised + 0.5px border + V1/shadow-dialog，radius/window，内边距 16 / 20，元素间距 12；顶部 40px 圆形图标（circle-alert，default 为 warning、destructive 为 danger 的 subtle 底）；标题 headline 居中、说明 callout 居中；可选公开 Checkbox“不再询问”；底部两个等宽公开 Button（取消 secondary + 确认 default / destructive）。属性 `title`、`message`、`showIcon`、`showCheckbox`。
+- 用途：替代 9 处 window.confirm。默认焦点在取消，Esc 等于取消，点击遮罩不关闭；与 Dialog Overlay 搭配。
+- 评审样张 `AlertDialog / Review`（`363:32030`）：窗口内遮罩 + 删除模型确认，以及放弃未保存更改、删除对话、重启并安装更新（带“不再询问”），截图检查两套主题通过；已修正变体高度固定为 200 的问题。初稿待用户确认。
+
+### V1 第二批：16 Dialog 初稿（2026-10-23）
+
+- 用户要求继续设计 Dialog。新 Section `16 Dialog`（`362:31496`），概览索引已追加。
+- 新增语义变量 `color/scrim`（Light alpha/black-25 / Dark alpha/black-50，代码名 `--color-scrim`），代码实现时需补入 tokens.css。
+- `Dialog`（`362:31494`，3 个变体）：size（sm 400 / default 560 / lg 800）。content 底 + 0.5px border + V1/shadow-dialog，radius/window；头部 title-3 标题、可选 callout 说明与 ghost icon-sm 关闭按钮（内边距 20 / 16 / 12）；`Content slot` 为虚线占位内容区（在实例中分离替换）；底部 separator 上边线，右对齐公开的 secondary / default Button，可选左侧说明。属性 `title`、`description` + `showDescription`、`showClose`、`showFooter`、`footerNote` + `showFooterNote`。
+- `Dialog Overlay`（`362:31495`）：color/scrim 全窗遮罩。
+- 评审样张 `Dialog / Review`（`362:31498`）：窗口模型中遮罩 + 居中“重命名项目”（Field + Input），sm“新建文件夹”与 lg“编辑视频节点”（媒体预览、左侧说明），截图检查两套主题通过；已修正分离后的示例高度不随内容的问题。初稿待用户确认。
+
+### V1 第二批：15 DropdownMenu 初稿（2026-10-23）
+
+- 用户要求继续设计 DropdownMenu。新 Section `15 DropdownMenu`（`360:31109`），概览索引已追加：
+  - `DropdownMenu Item`（`360:30989`，6 个变体）：kind（default / destructive）× state（default / highlighted / disabled）。高 24（control-h/small），内边距 space/8，radius/small，文字 body；highlighted 为 accent 底 + 白字，destructive 文字 danger、高亮为 danger 底。属性 `label`、`checkable`（保留 14px 对勾列，使未勾选项对齐）+ `checked`、`icon` + `iconSwap`（默认 file-plus）、`shortcut` + `showShortcut`、`submenu`（右箭头）。
+  - `DropdownMenu Separator`（`360:30990`，上下 4、左右 8 内缩的 1px separator）与 `DropdownMenu Label`（`360:30992`，subheadline 分组标题，属性 `text`）。
+  - `DropdownMenu`（`360:30994`）：surface-raised + 0.5px border + V1/shadow-popover，radius/panel，内边距 4，宽 220；含可选 Label、6 个公开菜单项与 2 条分隔线（`showLabel`、`item5`、`item6`、`separator2`）。
+- 评审样张 `DropdownMenu / Review`（`361:30926`）：写作文件夹菜单（图标、快捷键、未实现项禁用、高亮、危险项）、画布视图菜单（对勾列 + 子菜单）与危险项高亮，截图检查两套主题通过；已修正对勾列未保留导致错位、无图标项错位，以及对勾默认可见的问题。初稿待用户确认。
+
+### V1 第二批：14 Popover · CandidateList 初稿（2026-10-23）
+
+- PR #67、#68 已合并；用户要求开始设计下一批（方案第三步：浮层与反馈）。计划顺序：14 Popover + CandidateList、15 DropdownMenu、16 Dialog、17 AlertDialog、18 Tabs、19 Collapsible、20 Alert、21 Toast、22 Badge、23 Progress。设计分支已按合并后规则从最新 develop 重建。
+- 新 Section `14 Popover · CandidateList`（`358:30799`）位于 13 Tooltip 下方，概览索引已追加该行：
+  - `Popover`（组件 `358:30609`）：点击触发、无箭头；surface-raised + 0.5px border + V1/shadow-popover，radius/panel，内边距 12，宽 280。属性 `title` / `showTitle` / `body` / `showFooter`，底部为公开的 secondary / default sm Button。
+  - `CandidateList Item`（`358:30729`，4 个变体）：media（icon 16 / thumbnail 28 带 separator 描边）× state（default / active）。active 为 accent 底 + 白字。属性 `title`、`description` + `showDescription`、`meta` + `showMeta`、`iconSwap`。
+  - `CandidateList`（`358:30798`，2 个变体）：content（default / empty）。surface 浮层内边距 4，可选分组标题，3–5 项（`item4` / `item5`），每项为公开实例；`emptyText`。combobox + listbox 语义，自有实现。
+- 评审样张 `Popover · CandidateList / Review`（`359:30654`）：两种 Popover、/ 技能选择浮在输入框上方、@ 素材引用缩略图列表与无匹配，截图检查两套主题通过；已将缩略图由 32 调为 28 并加描边。初稿待用户确认。
+
 ### UI V1 第二批实施（2026-10-24）
 
 用户已授权第二批初稿进入 E–H 实现。阶段 E 完成 scrim 浅深语义变量和 Tailwind 映射、Radix 依赖、asChild secondary 禁用态修复；检查与构建通过，完整回归 89/89（3.1m）通过。Figma 只读，未修改节点。阶段 F 组件与浅深预览已实现，新增交互专项 8/8 通过，完整回归 94/94（3.3m）通过。组件来源及阶段证据统一记录在 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。
