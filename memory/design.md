@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：17 AlertDialog 初稿（2026-10-23）
+
+- 用户要求继续设计 AlertDialog。新 Section `17 AlertDialog`（`363:31598`），概览索引已追加。
+- `AlertDialog`（`363:31597`，2 个变体）：tone（default / destructive）。macOS 26 警告框风格：宽 280，surface-raised + 0.5px border + V1/shadow-dialog，radius/window，内边距 16 / 20，元素间距 12；顶部 40px 圆形图标（circle-alert，default 为 warning、destructive 为 danger 的 subtle 底）；标题 headline 居中、说明 callout 居中；可选公开 Checkbox“不再询问”；底部两个等宽公开 Button（取消 secondary + 确认 default / destructive）。属性 `title`、`message`、`showIcon`、`showCheckbox`。
+- 用途：替代 9 处 window.confirm。默认焦点在取消，Esc 等于取消，点击遮罩不关闭；与 Dialog Overlay 搭配。
+- 评审样张 `AlertDialog / Review`（`363:32030`）：窗口内遮罩 + 删除模型确认，以及放弃未保存更改、删除对话、重启并安装更新（带“不再询问”），截图检查两套主题通过；已修正变体高度固定为 200 的问题。初稿待用户确认。
+
 ### V1 第二批：16 Dialog 初稿（2026-10-23）
 
 - 用户要求继续设计 Dialog。新 Section `16 Dialog`（`362:31496`），概览索引已追加。
