@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：20 Alert 初稿（2026-10-23）
+
+- 用户要求继续设计 Alert。新 Section `20 Alert`（`370:32085`），概览索引已追加。
+- `Alert`（`370:32084`，4 个变体）：tone（info / success / warning / error，error 使用 danger 色）。底色为对应 *-subtle，16px 图标（info、check、circle-alert）为对应强调色，标题 headline + 说明 callout fg-secondary；可选公开操作按钮（secondary sm）与关闭按钮（ghost icon-xs）。radius/control，内边距 12 × 8，间距 8，默认宽 440、高度随内容。属性 `title` + `showTitle`、`description` + `showDescription`、`showAction`、`showClose`。
+- 页面内持续提示，不自动消失；error / warning 用 role="alert"，其余 role="status"；临时反馈用 Toast。
+- 评审样张 `Alert / Review`（`370:32517`）：content 底上的开发模式 / 连接成功（可关闭）/ 登录已过期（重新登录）/ 保存失败（重试 + 关闭），以及仅说明的聊天 401 错误（打开设置），截图检查两套主题通过；已修正高度被固定的问题。success 图标暂用 Lucide check（本地无 circle-check），待确认。
+
 ### V1 第二批：19 Collapsible 初稿（2026-10-23）
 
 - 用户要求继续设计 Collapsible。新 Section `19 Collapsible`（`369:31918`），概览索引已追加。
