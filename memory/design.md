@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 NativeSelect 组件初稿（2026-10-23）
+
+- 用户要求继续设计 NativeSelect。组件集 `NativeSelect`（`344:29267`）位于 V1-Components 页 Textarea 下方，22 个变体：appearance=default（macOS 弹出按钮：surface-raised + 0.5px border + V1/shadow-control + chevrons-up-down）× size（sm / default / lg）× state（placeholder / filled / hover / focus / disabled / invalid）18 个；appearance=compact（无边框，hover 显 fill，callout 字号 + chevron-down 12，高 24）× filled / hover / focus / disabled 4 个。
+- 属性：`placeholder`、`value`、`leadingIcon` + `leadingIconSwap`（默认 cpu）。default 宽 200 可填充，compact 宽度随内容。展开后使用系统原生菜单，不在 Figma 中设计；不同于 Popover / 候选列表。
+- 评审样张 `NativeSelect / Review`（`344:29698`）展示六种状态、三档尺寸、compact 四种状态，以及画布参数栏、首页模型选择（brain 图标）和 Field 水平行“协议”示例，截图检查两套主题通过。初稿待用户确认。
+
 ### V1 Textarea 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Textarea。组件集 `Textarea`（`343:28775`）位于 V1-Components 页 InputGroup 下方，14 个变体：behavior（fixed 固定高度 96 + 右下角调整手柄 / auto 随内容增高）× state（同 Input 7 种）。属性：`placeholder`、`value`、`showCount` + `countText`（右下字数，footnote）。
