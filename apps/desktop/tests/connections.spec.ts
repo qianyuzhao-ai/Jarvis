@@ -589,22 +589,25 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     }
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await clickBlankPane(page);
-    await expect(page.locator('.workflow-edge-active')).toHaveCount(0);
-    await expect(page.locator('.workflow-edge .react-flow__edge-path').first()).toHaveCSS(
+    await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(0);
+    await expect(page.locator('.react-flow__edge .react-flow__edge-path').first()).toHaveCSS(
       'stroke',
       'rgb(163, 166, 170)',
     );
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
-    await expect(page.locator('.workflow-edge-active')).toHaveCount(2);
-    await expect(node(page, ids.imageA).locator('.media-placeholder')).toHaveCSS(
+    await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(2);
+    await expect(node(page, ids.imageA).getByTestId('media-placeholder')).toHaveCSS(
       'outline-width',
       '3px',
     );
     for (const id of [ids.imageAsset, ids.imageB, ids.video, ids.sibling]) {
-      await expect(node(page, id).locator('.media-placeholder')).toHaveCSS('outline-style', 'none');
+      await expect(node(page, id).getByTestId('media-placeholder')).toHaveCSS(
+        'outline-style',
+        'none',
+      );
       await expect(node(page, id)).not.toHaveClass(/selected/);
     }
-    const active = page.locator('.workflow-edge-active .react-flow__edge-path').first();
+    const active = page.locator('[aria-description="highlighted"] .react-flow__edge-path').first();
     await expect(active).toHaveCSS('animation-name', 'workflow-ants');
     const layers = await page
       .locator('.react-flow__edges > svg:has(.react-flow__edge)')
@@ -622,17 +625,17 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await page.screenshot({ path: test.info().outputPath('workflow-dark.png') });
     await clickBlankPane(page);
     await connect(page, ids.audio, ids.imageA);
-    await expect(page.locator('.canvas-import-notice')).toContainText('仅接收图像');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('仅接收图像');
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await connect(page, ids.imageB, ids.imageA);
-    await expect(page.locator('.canvas-import-notice')).toContainText('循环');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('循环');
     await connect(page, ids.imageAsset, ids.imageA);
-    await expect(page.locator('.canvas-import-notice')).toContainText('已连接');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('已连接');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /连线验证/ }).click();
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
-    await expect(page.locator('.workflow-edge-active')).toHaveCount(0);
+    await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(0);
     await node(page, ids.imageA)
       .getByRole('button', { name: '输出连接', exact: true })
       .press('Enter');
@@ -684,14 +687,14 @@ test('connected asset and generated URLs enter the request without reuploading s
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
-    await expect(node(page, ids.imageA).locator('.node-task-status')).toHaveCount(0);
+    await expect(node(page, ids.imageA).getByTestId('node-task-status')).toHaveCount(0);
     expect(mock.calls[0]).toMatchObject({ image_list: [base + '/image.png?asset=1'] });
     await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await page.getByLabel('生成信息', { exact: true }).click();
     await expect(page.getByText('生成完成', { exact: true })).toBeVisible();
-    await expect(node(page, ids.video).locator('.node-task-status')).toHaveCount(0);
+    await expect(node(page, ids.video).getByTestId('node-task-status')).toHaveCount(0);
     expect(mock.calls[1]).toMatchObject({
       image_list: [base + '/image.png?generated=B'],
       video_list: [base + '/reference.webm'],
@@ -703,7 +706,9 @@ test('connected asset and generated URLs enter the request without reuploading s
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await page.getByLabel('生成信息', { exact: true }).click();
-    await expect(page.locator('.editor-notice').filter({ hasText: '尚无可用 URL' })).toBeVisible();
+    await expect(
+      page.getByTestId('editor-notice').filter({ hasText: '尚无可用 URL' }),
+    ).toBeVisible();
     expect(mock.calls).toHaveLength(2);
   } finally {
     await app.close();
@@ -727,7 +732,7 @@ test('connected references preview upstream media and keep long mention rows on 
       await connect(page, source, ids.video);
     }
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
-    const preview = page.locator('.reference-stack');
+    const preview = page.getByTestId('reference-stack');
     await expect(preview).toContainText('共 4');
     await expect(preview.getByAltText(longName)).toHaveAttribute('src', /^jarvis-media:/);
     await expect
@@ -742,7 +747,7 @@ test('connected references preview upstream media and keep long mention rows on 
     const longOption = options.filter({ hasText: longName });
     await expect(longOption).toHaveAttribute('title', `图片 3 · ${longName}`);
     const layout = await longOption.evaluate((row) => {
-      const label = row.querySelector('.prompt-mention-label')!;
+      const label = row.querySelector('[data-testid="prompt-mention-label"]')!;
       const name = row.querySelector('small')!;
       return {
         labelHeight: label.getBoundingClientRect().height,
@@ -763,13 +768,10 @@ test('connected references preview upstream media and keep long mention rows on 
     await longOption.click();
     await expect(page.getByLabel('视频提示词')).toHaveText('@image_3 ');
     await preview.click();
-    await expect(page.locator('.reference-item')).toHaveCount(4);
-    await expect(page.locator('.reference-item .reference-index')).toHaveText([
-      '图片 1',
-      '图片 2',
-      '图片 3',
-      '音频 1',
-    ]);
+    await expect(page.getByTestId('reference-item')).toHaveCount(4);
+    await expect(
+      page.locator('[data-testid="reference-item"] [data-testid="reference-index"]'),
+    ).toHaveText(['图片 1', '图片 2', '图片 3', '音频 1']);
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.screenshot({
       path: test.info().outputPath('connected-references-expanded-dark.png'),
@@ -781,7 +783,7 @@ test('connected references preview upstream media and keep long mention rows on 
     await edge.press('Enter');
     await edge.press('Delete');
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
-    await expect(page.locator('.reference-stack')).toContainText('共 3');
+    await expect(page.getByTestId('reference-stack')).toContainText('共 3');
   } finally {
     await app.close();
     await mock.close();

@@ -41,7 +41,11 @@ export function NodeDownload({ url, kind, fileName }: DownloadMedia) {
         {busy ? <LoaderCircle size={16} /> : <Download size={16} />}
       </IconButton>
       {notice && (
-        <div className="node-download-notice" role={notice.error ? 'alert' : 'status'}>
+        <div
+          data-testid="node-download-notice"
+          className="node-download-notice"
+          role={notice.error ? 'alert' : 'status'}
+        >
           <span>{notice.message}</span>
           {!busy && (
             <IconButton

@@ -274,7 +274,7 @@ export function PromptEditor({
   }, [menu, listId]);
   return (
     <div className="prompt-field">
-      <div ref={host} className="prompt-code-editor" />
+      <div ref={host} data-testid="prompt-code-editor" className="prompt-code-editor" />
       {menu && position && (
         <PromptMentionMenu
           id={listId}

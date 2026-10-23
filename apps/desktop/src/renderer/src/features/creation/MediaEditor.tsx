@@ -147,7 +147,7 @@ export function MediaEditor({
           </IconButton>
         </div>
         {referenceError && (
-          <p className="editor-notice error-text" role="alert">
+          <p data-testid="editor-notice" className="editor-notice error-text" role="alert">
             {referenceError}
           </p>
         )}

@@ -28,7 +28,7 @@ export function UrlMedia({
   }, [url, retry]);
   if (source.error)
     return (
-      <div className="result-error" role="alert">
+      <div data-testid="result-error" className="result-error" role="alert">
         <span>媒体暂时无法加载：{source.error}</span>
         <button
           className="nodrag nopan"

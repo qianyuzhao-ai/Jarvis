@@ -51,7 +51,12 @@ export function ProjectList({
             <span>最后编辑</span>
           </div>
           {filtered.map((project) => (
-            <button key={project.id} className="project-row" onClick={() => onOpen(project.id)}>
+            <button
+              key={project.id}
+              data-testid="project-row"
+              className="project-row"
+              onClick={() => onOpen(project.id)}
+            >
               <span className="project-info">
                 <span className="project-thumbnail">
                   <Workflow size={28} />

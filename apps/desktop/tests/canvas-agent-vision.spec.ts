@@ -145,35 +145,41 @@ test('selected images and sampled video frames reach the vision model; failed as
     );
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.locator('.project-row').filter({ hasText: '视觉资产项目' }).click();
+    await page.getByTestId('project-row').filter({ hasText: '视觉资产项目' }).click();
     for (const id of ['asset-a', 'asset-b', 'asset-c'])
       await page
         .locator(`.react-flow__node[data-id="${id}"]`)
         .click({ modifiers: ['Shift'], position: { x: 10, y: 10 } });
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     const sidebar = page.getByRole('complementary', { name: '画布助手' });
-    await expect(sidebar.locator('.canvas-context-scope')).toContainText('3 个选中节点');
+    await expect(sidebar.getByTestId('canvas-context-scope')).toContainText('3 个选中节点');
     await sidebar.getByRole('button', { name: '添加选中画布资产' }).click();
-    await expect(sidebar.locator('.canvas-attachment[data-status="ready"]')).toHaveCount(3, {
+    await expect(
+      sidebar.locator('[data-testid="canvas-attachment"][data-status="ready"]'),
+    ).toHaveCount(3, {
       timeout: 20000,
     });
-    await expect(sidebar.locator('.canvas-attachments')).toContainText('视频 · 3 帧');
+    await expect(sidebar.getByTestId('canvas-attachments')).toContainText('视频 · 3 帧');
     await sidebar.getByRole('button', { name: '移除待发送资产：参考图二.png' }).click();
-    await expect(sidebar.locator('.canvas-attachment')).toHaveCount(2);
+    await expect(sidebar.getByTestId('canvas-attachment')).toHaveCount(2);
     await sidebar.getByRole('button', { name: '添加选中画布资产' }).click();
-    await expect(sidebar.locator('.canvas-attachment[data-status="ready"]')).toHaveCount(3);
+    await expect(
+      sidebar.locator('[data-testid="canvas-attachment"][data-status="ready"]'),
+    ).toHaveCount(3);
     await page.screenshot({ path: test.info().outputPath('canvas-vision-attachments.png') });
     await sidebar.getByLabel('消息', { exact: true }).fill('比较这些图片和视频帧');
     await sidebar.getByRole('button', { name: '发送消息' }).click();
-    await expect(sidebar.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '已查看两张图片',
-    );
+    await expect(
+      sidebar.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('已查看两张图片');
     const serialized = JSON.stringify(requests[0]);
     expect(serialized.match(/data:image\/jpeg;base64/g)).toHaveLength(5);
     expect(serialized).toContain('video-frame');
     expect(serialized).not.toContain(origin + '/clip.mp4');
-    await expect(sidebar.locator('.chat-vision-assets img')).toHaveCount(5);
-    await expect(sidebar.locator('.canvas-attachments')).toHaveCount(0);
+    await expect(sidebar.locator('[data-testid="chat-vision-assets"] img')).toHaveCount(5);
+    await expect(sidebar.getByTestId('canvas-attachments')).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath('canvas-vision-sent.png') });
     const snapshot = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     const user = snapshot?.ok ? snapshot.value.snapshot.sessions[0]?.messages[0] : undefined;
@@ -187,7 +193,9 @@ test('selected images and sampled video frames reach the vision model; failed as
       .locator('.react-flow__node[data-id="asset-bad"]')
       .click({ position: { x: 10, y: 10 } });
     await sidebar.getByRole('button', { name: '添加选中画布资产' }).click();
-    await expect(sidebar.locator('.canvas-attachment[data-status="failed"]')).toHaveCount(1);
+    await expect(
+      sidebar.locator('[data-testid="canvas-attachment"][data-status="failed"]'),
+    ).toHaveCount(1);
     await sidebar.getByLabel('消息', { exact: true }).fill('不能发送失败的附件');
     await expect(sidebar.getByRole('button', { name: '发送消息' })).toBeDisabled();
     await sidebar.getByRole('button', { name: '移除待发送资产：失效图片.png' }).click();
@@ -195,8 +203,10 @@ test('selected images and sampled video frames reach the vision model; failed as
     expect(requests).toHaveLength(1);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.locator('.project-row').filter({ hasText: '视觉资产项目' }).click();
-    await expect(page.locator('.canvas-agent .chat-vision-assets img')).toHaveCount(5);
+    await page.getByTestId('project-row').filter({ hasText: '视觉资产项目' }).click();
+    await expect(
+      page.locator('[data-testid="canvas-agent"] [data-testid="chat-vision-assets"] img'),
+    ).toHaveCount(5);
   } finally {
     await app.close();
     server.closeAllConnections();

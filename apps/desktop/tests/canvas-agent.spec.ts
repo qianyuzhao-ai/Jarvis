@@ -142,16 +142,20 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     let sidebar = page.getByRole('complementary', { name: '画布助手' });
     await expect(sidebar).toBeVisible();
-    await expect(sidebar.locator('.canvas-agent-header strong')).toHaveText('新聊天');
+    await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
+      '新聊天',
+    );
     await expect(sidebar.getByRole('button', { name: '新建画布对话' })).toHaveText('新聊天');
     await expect(sidebar.getByRole('button', { name: '收起画布助手' })).toHaveCount(0);
-    await expect(sidebar.locator('.canvas-context-scope')).toContainText('1 个选中节点');
+    await expect(sidebar.getByTestId('canvas-context-scope')).toContainText('1 个选中节点');
     await sidebar.getByLabel('消息', { exact: true }).fill('修改提示词，创建和连接视频节点');
     await sidebar.getByRole('button', { name: '发送消息' }).click();
-    await expect(sidebar.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '已创建视频节点',
-    );
-    await expect(sidebar.locator('.canvas-agent-header strong')).toHaveText(
+    await expect(
+      sidebar.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('已创建视频节点');
+    await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
       '修改提示词，创建和连接视频节点',
     );
     const graph = (await workspace(page)).projects[0];
@@ -159,13 +163,15 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     expect(graph?.edges).toHaveLength(1);
     expect(graph?.agentEdits).toHaveLength(1);
     expect(graph?.nodes.find((n) => n.id === 'agent-video')?.position.y).toBe(300);
-    await expect(sidebar.locator('.canvas-message-references')).toContainText('图像生成');
-    await sidebar.locator('.canvas-change-details > summary').first().click();
+    await expect(sidebar.getByTestId('canvas-message-references')).toContainText('图像生成');
+    await sidebar.locator('[data-testid="canvas-change-details"] > summary').first().click();
     await expect(
-      sidebar.locator('.canvas-change-details ins').filter({ hasText: 'Agent 新提示词' }),
+      sidebar
+        .locator('[data-testid="canvas-change-details"] ins')
+        .filter({ hasText: 'Agent 新提示词' }),
     ).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('canvas-agent-changes.png') });
-    await sidebar.locator('.canvas-change-details > summary').first().click();
+    await sidebar.locator('[data-testid="canvas-change-details"] > summary').first().click();
     const current = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     const sessionId = current?.ok
       ? current.value.snapshot.sessions.find((s) => s.projectId)?.id
@@ -205,14 +211,18 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await sidebar.getByRole('button', { name: '新建画布对话' }).click();
     await sidebar.getByLabel('消息', { exact: true }).fill('持续等待');
     await sidebar.getByRole('button', { name: '发送消息' }).click();
-    await expect(sidebar.locator('.is-replying')).toHaveCount(1);
+    await expect(sidebar.locator('[data-replying="true"]')).toHaveCount(1);
     await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
     const running = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     expect(running?.ok && running.value.snapshot.busySessionId).toBeTruthy();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     await sidebar.getByRole('button', { name: '停止回复' }).click();
-    await expect(sidebar.locator('.chat-message.assistant[data-status="cancelled"]')).toBeVisible();
+    await expect(
+      sidebar.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="cancelled"]',
+      ),
+    ).toBeVisible();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     const bounds = await sidebar.boundingBox();
     expect(bounds?.width).toBeLessThanOrEqual(540);
@@ -221,32 +231,38 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await expect(page.getByRole('log', { name: '画布对话消息' })).toHaveCount(0);
     await page.getByRole('button', { name: '返回项目列表' }).click();
-    await page.locator('.project-row').filter({ hasText: '画布 Agent 项目' }).click();
+    await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await page.getByRole('button', { name: '画布对话历史' }).click();
     await page
       .getByRole('navigation', { name: '当前项目对话' })
       .getByRole('button')
       .first()
       .click();
-    await expect(page.locator('.canvas-agent .chat-message')).not.toHaveCount(0);
+    await expect(
+      page.locator('[data-testid="canvas-agent"] [data-testid="chat-message"]'),
+    ).not.toHaveCount(0);
     await app.close();
     app = await launch();
     page = await app.firstWindow();
     sidebar = page.getByRole('complementary', { name: '画布助手' });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.locator('.project-row').filter({ hasText: '画布 Agent 项目' }).click();
-    await expect(page.locator('.canvas-agent .chat-message')).not.toHaveCount(0);
+    await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
+    await expect(
+      page.locator('[data-testid="canvas-agent"] [data-testid="chat-message"]'),
+    ).not.toHaveCount(0);
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
-    await page.locator('.project-row').filter({ hasText: '画布 Agent 项目' }).click();
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('canvas-agent-dark.png') });
     await sidebar.getByLabel('消息', { exact: true }).fill('保留的聊天草稿');
     await page.getByRole('button', { name: '画布对话历史' }).click();
     const history = page.getByRole('navigation', { name: '当前项目对话' });
-    await expect(sidebar.locator('.canvas-agent-header strong')).toHaveText('历史对话');
+    await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
+      '历史对话',
+    );
     await expect(sidebar.getByLabel('消息', { exact: true })).toBeHidden();
     await expect(sidebar.getByRole('log', { name: '画布对话消息' })).toHaveCount(0);
     await expect(history.locator('time')).toHaveCount(2);
@@ -257,7 +273,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     expect(Date.parse(times[0]!)).toBeGreaterThanOrEqual(Date.parse(times[1]!));
     const record = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     const targetTitle = await history
-      .locator('.canvas-conversation-summary > span')
+      .locator('[data-testid="canvas-conversation-summary"] > span')
       .first()
       .textContent();
     const deletedId = record?.ok
@@ -273,27 +289,31 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await expect(history).toContainText('已重命名的画布会话');
     await page.screenshot({ path: test.info().outputPath('canvas-agent-history.png') });
     await sidebar.getByRole('button', { name: '返回当前聊天' }).click();
-    await expect(sidebar.locator('.canvas-agent-header strong')).toHaveText('已重命名的画布会话');
+    await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
+      '已重命名的画布会话',
+    );
     await expect(sidebar.getByLabel('消息', { exact: true })).toHaveValue('保留的聊天草稿');
     await expect(history).toHaveCount(0);
     await page.getByRole('button', { name: '画布对话历史' }).click();
-    const count = await history.locator('.canvas-conversation-row').count();
+    const count = await history.getByTestId('canvas-conversation-row').count();
     page.once('dialog', (d) => void d.dismiss());
     await history.getByRole('button', { name: '删除画布对话：已重命名的画布会话' }).click();
-    await expect(history.locator('.canvas-conversation-row')).toHaveCount(count);
+    await expect(history.getByTestId('canvas-conversation-row')).toHaveCount(count);
     const userData = await app.evaluate(({ app }) => app.getPath('userData'));
     await expect(
       readFile(resolve(userData, 'agent', 'sessions', deletedId + '.jsonl')),
     ).resolves.toBeDefined();
     page.once('dialog', (d) => void d.accept());
     await history.getByRole('button', { name: '删除画布对话：已重命名的画布会话' }).click();
-    await expect(history.locator('.canvas-conversation-row')).toHaveCount(count - 1);
+    await expect(history.getByTestId('canvas-conversation-row')).toHaveCount(count - 1);
     await expect(
       readFile(resolve(userData, 'agent', 'sessions', deletedId + '.jsonl')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
     await sidebar.getByRole('button', { name: '新建画布对话' }).click();
     await expect(history).toHaveCount(0);
-    await expect(sidebar.locator('.canvas-agent-header strong')).toHaveText('新聊天');
+    await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
+      '新聊天',
+    );
     await expect(sidebar.getByLabel('消息', { exact: true })).toBeVisible();
     expect(
       (await workspace(page)).projects.find((p) => p.name === '画布 Agent 项目')?.nodes,

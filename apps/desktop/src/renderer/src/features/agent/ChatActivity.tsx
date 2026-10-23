@@ -39,7 +39,7 @@ export function ChatActivity({
 }) {
   if (!activities?.length) return null;
   return (
-    <div className="chat-activities">
+    <div data-testid="chat-activities" className="chat-activities">
       {activities.map((activity) => (
         <details className="chat-activity" key={activity.id} open>
           <summary>{activity.label}</summary>
@@ -60,7 +60,7 @@ export function ChatActivity({
             </div>
           ) : null}
           {!!activity.changes?.length && (
-            <details className="canvas-change-details">
+            <details data-testid="canvas-change-details" className="canvas-change-details">
               <summary>查看 {activity.changes.length} 项变更</summary>
               {activity.changes.map((change, index) => (
                 <div key={`${change.nodeId}-${index}`}>
@@ -74,25 +74,45 @@ export function ChatActivity({
           {activity.files.length > 0 && (
             <div className="chat-files">
               {activity.files.map((file, index) => (
-                <details className="chat-file" key={`${file.path}-${index}`}>
+                <details
+                  data-testid="chat-file"
+                  className="chat-file"
+                  key={`${file.path}-${index}`}
+                >
                   <summary>
                     <span>{{ created: '创建', edited: '修改', deleted: '删除' }[file.action]}</span>
                     <span className="chat-file-name">{file.path.split(/[\\/]/).at(-1)}</span>
                     <span className="diff-added">+{file.added}</span>
                     <span className="diff-removed">−{file.removed}</span>
                   </summary>
-                  <div className="chat-file-path">{file.path}</div>
-                  <pre className="chat-diff" tabIndex={0} aria-label={`${file.path} 文件差异`}>
+                  <div data-testid="chat-file-path" className="chat-file-path">
+                    {file.path}
+                  </div>
+                  <pre
+                    data-testid="chat-diff"
+                    className="chat-diff"
+                    tabIndex={0}
+                    aria-label={`${file.path} 文件差异`}
+                  >
                     <code>
                       {diffLines(file.diff).map((line, index) => (
                         <span
                           key={`${index}-${line.text}`}
+                          data-diff-kind={line.kind || 'header'}
                           className={`diff-${line.kind || 'header'}`}
                         >
-                          <span className="diff-line-number" aria-hidden="true">
+                          <span
+                            data-testid="diff-line-number"
+                            className="diff-line-number"
+                            aria-hidden="true"
+                          >
                             {line.before}
                           </span>
-                          <span className="diff-line-number" aria-hidden="true">
+                          <span
+                            data-testid="diff-line-number"
+                            className="diff-line-number"
+                            aria-hidden="true"
+                          >
                             {line.after}
                           </span>
                           <span>{line.text || ' '}</span>

@@ -42,12 +42,18 @@ export function ChatMessageItem({
   }
   return (
     <article
+      data-testid="chat-message"
+      data-message-role={m.role}
       className={`chat-message ${m.role}`}
       data-status={m.status}
       aria-label={m.role === 'user' ? '用户消息' : 'Jarvis 回复'}
     >
       {!!m.visionAssets?.length && (
-        <div className="chat-vision-assets" aria-label="已发送视觉资产">
+        <div
+          data-testid="chat-vision-assets"
+          className="chat-vision-assets"
+          aria-label="已发送视觉资产"
+        >
           {m.visionAssets.map((asset, index) => (
             <div key={`${asset.nodeId}-${index}`}>
               <img
@@ -69,7 +75,7 @@ export function ChatMessageItem({
         </div>
       )}
       {!!m.canvasReferences?.length && (
-        <div className="canvas-message-references">
+        <div data-testid="canvas-message-references" className="canvas-message-references">
           {m.canvasReferences.map((node) => (
             <button
               type="button"
@@ -84,7 +90,7 @@ export function ChatMessageItem({
       )}
       {m.role === 'assistant' && <ChatActivity activities={m.activities} canvas={canvas} />}
       <div className="chat-bubble">
-        <div className="chat-text">
+        <div data-testid="chat-text" className="chat-text">
           {m.text || (m.status === 'running' ? '正在等待模型回复…' : '未收到回复内容')}
           {m.status === 'running' && m.text && (
             <span className="chat-cursor" aria-hidden="true">
@@ -104,7 +110,7 @@ export function ChatMessageItem({
       {m.role === 'assistant' && (
         <>
           {m.status !== 'running' && (
-            <div className="chat-reply-meta">
+            <div data-testid="chat-reply-meta" className="chat-reply-meta">
               {m.text && (
                 <button
                   type="button"
@@ -131,6 +137,8 @@ export function ChatMessageItem({
           )}
           <img
             src={logo}
+            data-testid="chat-reply-logo"
+            data-replying={m.status === 'running'}
             className={`chat-reply-logo ${m.status === 'running' ? 'is-replying' : ''}`}
             alt={m.status === 'running' ? 'Jarvis 正在回复' : 'Jarvis'}
             width={28}

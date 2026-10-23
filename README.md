@@ -4,7 +4,7 @@
 
 当前源码版本：`0.2.5`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
-0.2.5 准备发布：新增 macOS Intel x64，并将 macOS 最低系统目标调整为 13.0。0.2.4 已于 2026-10-23（北京时间）发布，替代此前 runner 容量阻塞状态。
+[0.2.5 已发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.5)：包含 macOS arm64、Intel x64 和 Windows x64，macOS 最低系统目标为 13.0。三个平台均通过云端打包应用启动验证，两种 macOS 包均通过签名、公证和 Gatekeeper；macOS 13 实机仍待验收。
 
 ## 启动
 
@@ -21,7 +21,7 @@ pnpm dev
 
 - Electron + electron-vite + React + TypeScript strict。
 - pnpm workspace + Turborepo，共享 TypeScript 配置。
-- Tailwind CSS v4、Lucide 图标、Noto Sans SC 字体、可调宽侧栏和浅深主题。主题在「设置 → 通用」中选择跟随系统、Light Mode 或 Dark Mode，新用户默认跟随系统。
+- Tailwind CSS v4、Lucide 图标、系统字体、可调宽侧栏和浅深主题。主题在「设置 → 通用」中选择跟随系统、Light Mode 或 Dark Mode，新用户默认跟随系统。
 - Motion 侧栏展开/收起动画；拖动边缘可调整到 230–320px，双击恢复默认，宽度自动保存，支持减少动态效果。
 - React Flow 项目画布：添加/拖拽/删除图像与视频节点，独立编辑面板、参考素材、模型参数。
 - 缩放、适应视图、缩略图、点阵显示和 24px 网格吸附。
@@ -106,3 +106,9 @@ memory/          项目决策与设计记忆
 `pnpm test:smoke` 使用本地模拟 HTTP 服务验证上传、参数映射、结果加载与播放、失败处理和恢复，不调用真实服务。真实服务由用户自行联调；部分标记为待验证的模型尚未验证，首尾帧模式暂不开放。
 
 参考素材：图像节点仅接受图片，最多 9 张；视频节点最多 9 张图片、3 个音频和 3 个视频。普通面板以固定叠卡显示，点击叠卡放大后可横向浏览和移除素材。
+
+## UI V1 基础控件
+
+仓库内部 `@jarvis/ui` 提供基础按钮、表单、选择与提示控件，通用、模型、内网、下载和插件设置已迁移。系统强调色通过只读桥接同步，macOS 侧栏启用原生材质；平台实机验收边界见 [实施报告](memory/ui-v1-implementation.md)。
+
+运行 `pnpm dev` 后可在开发服务打开 `http://127.0.0.1:5173/#/ui-preview` 查看浅深控件预览。生产构建不包含预览入口；`pnpm check` 检查设计变量与包边界，`pnpm test:smoke` 包含组件截图及键盘交互回归。

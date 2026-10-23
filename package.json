@@ -23,7 +23,7 @@
     "lint": "biome lint . --error-on-warnings",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "check": "biome check . --error-on-warnings && pnpm typecheck",
+    "check": "node scripts/check-tokens.mjs && biome check . --error-on-warnings && pnpm typecheck",
     "test:smoke": "pnpm build && pnpm --filter @jarvis/desktop test:smoke",
     "package:dir": "pnpm build && pnpm --filter @jarvis/desktop package:dir"
   },

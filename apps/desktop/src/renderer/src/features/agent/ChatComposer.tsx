@@ -88,6 +88,7 @@ export function ChatComposer({
   return (
     <form
       ref={form}
+      data-testid="agent-composer"
       className="agent-composer"
       aria-label="Agent 输入框"
       onSubmit={(e) => {
