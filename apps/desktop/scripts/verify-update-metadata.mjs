@@ -5,9 +5,20 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
-export async function verifyUpdateMetadata(directory, platform, version) {
+export async function verifyUpdateMetadata(
+  directory,
+  platform,
+  version,
+  arch = platform === 'macos' ? 'arm64' : 'x64',
+  combined = false,
+) {
+  if (!['arm64', 'x64'].includes(arch) || (platform === 'windows' && arch !== 'x64'))
+    throw new Error(`Unsupported update architecture: ${arch}`);
   const manifests = (await readdir(directory)).filter(
-    (name) => name.endsWith('.yml') && name !== 'builder-debug.yml',
+    (name) =>
+      name.endsWith('.yml') &&
+      !name.startsWith('builder-') &&
+      (!combined || name.endsWith('-mac.yml') === (platform === 'macos')),
   );
   if (!manifests.length) throw new Error('Missing update metadata');
   const withoutBuild = version.split('+')[0];
@@ -18,7 +29,7 @@ export async function verifyUpdateMetadata(directory, platform, version) {
     throw new Error(`Missing platform update metadata: ${manifest}`);
   const expected =
     platform === 'macos'
-      ? `Jarvis-${version}-macos-arm64.zip`
+      ? `Jarvis-${version}-macos-${arch}.zip`
       : `Jarvis-${version}-windows-x64-unsigned-setup.exe`;
   let found = false;
   for (const name of manifests) {
@@ -51,12 +62,12 @@ export async function verifyUpdateMetadata(directory, platform, version) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [directory, platform] = process.argv.slice(2);
+  const [directory, platform, arch] = process.argv.slice(2);
   if (!directory || !['macos', 'windows'].includes(platform))
-    throw new Error('Usage: verify-update-metadata.mjs <directory> <macos|windows>');
+    throw new Error('Usage: verify-update-metadata.mjs <directory> <macos|windows> [arm64|x64]');
   const { version } = JSON.parse(
     await readFile(new URL('../package.json', import.meta.url), 'utf8'),
   );
-  await verifyUpdateMetadata(resolve(directory), platform, version);
+  await verifyUpdateMetadata(resolve(directory), platform, version, arch);
   console.log(`Verified ${platform} update metadata: version, target, size and SHA-512`);
 }
