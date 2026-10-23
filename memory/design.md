@@ -4,7 +4,7 @@
 
 ### UI V1 第二批实施（2026-10-24）
 
-用户已授权第二批初稿进入 E–H 实现。当前阶段 E：scrim 浅深语义变量和 Tailwind 映射、Radix 依赖、asChild secondary 禁用态修复；检查与构建通过，完整回归 89/89（3.1m）通过。Figma 只读，未修改节点。组件来源及阶段证据统一记录在 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。
+用户已授权第二批初稿进入 E–H 实现。阶段 E 完成 scrim 浅深语义变量和 Tailwind 映射、Radix 依赖、asChild secondary 禁用态修复；检查与构建通过，完整回归 89/89（3.1m）通过。Figma 只读，未修改节点。阶段 F 组件与浅深预览已实现，新增交互专项 8/8 通过，完整回归 94/94（3.3m）通过。组件来源及阶段证据统一记录在 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。
 
 ### 第一批组件 PR（2026-10-23）
 

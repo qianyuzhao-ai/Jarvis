@@ -135,3 +135,11 @@ A–D 已实现；各阶段证据与最终验收见下文。
 ### 第二批设计来源
 
 Figma 文件 `mIwnyR5nAlECFMam1NvmER`、V1-Components 页 `332:28013`。本轮只读核对 Popover `358:30609`、DropdownMenu `360:30994`、Dialog `362:31494`、AlertDialog Review `363:32030`、Tabs Trigger `367:31760`、Collapsible `369:31917`、Alert `370:32084`、Toast `371:32325`、Badge `376:32522`、Progress `378:32536`。以用户任务数值优先于初稿局部差异（如 Tabs 字号、AlertDialog 图标尺寸及 Collapsible 内边距）。
+
+### F：组件与预览
+
+- E 提交：`157ce2d`。F 新增 Popover/CandidateList、DropdownMenu、Dialog、AlertDialog/ConfirmProvider、Tabs、Collapsible、Alert、Toast、Badge、Progress 家族。组件可透传 ref/className/ARIA；复杂结构采用组合 API，样式状态放 utilities 层，未增加 token 白名单。
+- `#/ui-preview` 追加第二批全部家族，含各尺寸/语义色、候选空态/长文本、可操作浮层、菜单复选/单选/子菜单、独立文档关闭按钮、通知队列与加载更新。
+- 预览专项 8/8（23.5s），检查 216 文件、类型 2/2（6.373s），构建成功（633ms）。完整回归 94/94（3.3m）通过。
+- macOS 基准由 1280×2137 扩展为 1280×3780。第一批内容区 y<2070 与旧基准相比 Light 110 / Dark 76 个不同像素，属于少量字形栅格化差异；含旧底部留白/Tooltip 阴影的全旧画布范围分别 1339 / 1305 像素。未改第一批布局与组件规则。浅深整图已目视检查。
+- 取舍：Progress 用 ARIA 和百分比宽度，圆环使用 SVG；没有 Radix Progress 依赖。Collapsible 使用状态切换和 chevron 旋转，未引入高度动画；减少动态效果时去掉旋转过渡。MediaEditor 是否替换在 H 评估。

@@ -1,5 +1,13 @@
 @layer theme {
   :root {
+    --popover-width: 280px;
+    --menu-min-width: 220px;
+    --dialog-sm: 400px;
+    --dialog-width: 560px;
+    --dialog-lg: 800px;
+    --toast-width: 340px;
+    --badge-height: 18px;
+    --progress-height: 6px;
     --border-hairline: 0.5px;
     --border-standard: 1px;
     --focus-width: 3px;

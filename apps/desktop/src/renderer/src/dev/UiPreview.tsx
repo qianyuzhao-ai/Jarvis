@@ -19,6 +19,7 @@ import {
   TooltipContent,
 } from '@jarvis/ui/components/Tooltip';
 import './ui-preview.css';
+import { OverlayPreview } from './OverlayPreview';
 const variants = ['default', 'secondary', 'ghost', 'destructive'] as const;
 const sizes = ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'] as const;
 const fieldStates = ['empty', 'filled', 'disabled', 'readOnly', 'invalid'] as const;
@@ -400,6 +401,7 @@ export default function UiPreview() {
           </TooltipProvider>
         </div>
       </section>
+      <OverlayPreview />
     </main>
   );
 }
