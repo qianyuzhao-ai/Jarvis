@@ -4,6 +4,8 @@
 
 ## 交付状态
 
+第二批 E–H 已完成，`feature/ui-v1-overlays` 已推送并回读验证；完整回归 95/95，最终浮层复验 8/8。详见下方“第二批”章节。
+
 A–D 已完成并通过各阶段门禁，分支 `feature/ui-v1-foundation` 已推送，远端分支回读包含全部四阶段提交。工作区代码保持版本 0.2.5，没有 PR、合并、标签或发布。
 
 | 阶段 | 提交 SHA | 说明 |
@@ -191,7 +193,7 @@ Figma 文件 `mIwnyR5nAlECFMam1NvmER`、V1-Components 页 `332:28013`。本轮�
 3. 系统字体、动态系统强调色沿用第一批。Figma 静态 SF Pro 与当前 macOS 字形栅格化存在差异。候选缩略图取真实素材，Lucide 图标复用已安装库；未引用临时 Figma URL。
 4. 预览按家族排列而非复制评审画板坐标；Dialog、Popover、菜单和确认框用真实触发器打开。截图补充打开状态，行为通过实窗测试验证。
 5. 当前主机 macOS 27.0.1；macOS 13/26、Windows 字体、系统强调色及浮层表现仍需目标设备人工验收。真实内网/第三方生成服务不在本轮验证范围。
-6. 未创建 PR、合并、打标签或发布。最终提交与推送核验待收尾记录。
+6. 未创建 PR、合并、打标签或发布。四阶段功能提交已推送并回读验证，后附提交表。
 
 ### 第二批检查与文件索引
 
@@ -215,4 +217,16 @@ H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.
 
 `node scripts/capture-ui.mjs phase-h` 成功。目录共 **36 张 PNG**：八个页面 × 两主题（16）、真实设置确认/写作菜单打开（4）、组件候选/确认/对话框/菜单/Popover/Toast 三条堆叠 × 两主题（12）、真实技能与 @ 引用两主题（4）。已目视检查浅深组件、确认框、菜单、Toast 堆叠、技能候选和引用菜单。`flow-screenshot-sources.json` 记录四张业务截图来源与校验值；`batch2-verification/preview-diff.json` 记录第一批内容区域与 E 提交基准的像素差异。
 
-本批授权范围内没有未完成的必做实现或自动化验收；MediaEditor / ContextUsage 的评估保留项及目标系统人工验收见上表。源码版本维持 0.2.5，无文件删除、无新增原生接口、无真实服务请求。
+本批授权范围内没有未完成的必做实现或自动化验收；MediaEditor / ContextUsage 的评估保留项及目标系统人工验收见上表。源码版本维持 0.2.5，无文件删除、无新增原生接口、无真实模型/生成服务请求。
+
+
+### 第二批提交与推送
+
+| 阶段 | 提交 SHA | 说明 |
+| --- | --- | --- |
+| E | `157ce2dd4740180480c5667da15b5e4651bf41b1` | scrim、精确依赖、asChild 禁用修复 |
+| F | `a73903a088ab74d3b89f91ef8844cb492a41be86` | 全部第二批组件、浅深预览与交互回归 |
+| G | `d7ed1503792d8ae04a5bdb005ab02e5d81ae2155` | 九处确认与低风险页面接入 |
+| H | `34871025f309e643d988ead219624d77feac7b7e` | 菜单、候选、Toast、Alert、旧规则清理与最终验收 |
+
+`git push -u origin feature/ui-v1-overlays` 成功；`git ls-remote --heads origin feature/ui-v1-overlays` 回读为阶段 H 完整 SHA。其后仅追加本验收索引和工程/Git 记忆的文档提交，并随同一功能分支推送。没有 PR、合并、版本标签或发布。
