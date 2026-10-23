@@ -2,7 +2,12 @@
 
 最后更新：2026-10-24
 
-### V1 第三批：24 Window · TitleBar 初稿（2026-10-24）
+### V1 第三批暂停（2026-10-24）
+
+- 用户决定：第三批（布局模板层：窗口外框 / 顶栏、AppSidebar、Toolbar、SettingsRow、列表行、EmptyState）不按本计划设计，用户将自行重新做样式设计。不再继续 25 及以后的组件。
+- 已完成的 `24 Window · TitleBar`（Section `382:33089`）仅作参考保留，未被采纳；其中“顶栏 60 → 52”等提议作废，代码不做对应修改。是否删除该 Section 待用户决定。
+
+### V1 第三批：24 Window · TitleBar 初稿（2026-10-24，未采纳）
 
 - PR #69（第二批代码）、#70（设计记录）已合并；用户要求开始设计第三批。按方案第十二节第四步“布局模板层”，计划顺序：24 Window · TitleBar、25 AppSidebar、26 Toolbar、27 SettingsRow、28 列表行（ListRow）、29 EmptyState（Card / Resizable 拖动条视需要并入）。设计分支已从合并后的 develop 重建。
 - 现状（develop 代码）：macOS `titleBarStyle: hiddenInset`、`trafficLightPosition {16, 23}`、vibrancy=sidebar；内容区 `.workspace` 左侧 16 圆角，顶栏 `.workspace-toolbar` 最小高 60，侧栏收起时左让 96；侧栏 230–320 可拖动。
