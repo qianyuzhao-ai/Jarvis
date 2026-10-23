@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1-Components 页面整理（2026-10-23）
+
+- 用户要求整理 V1-Components 页（`332:28013`）。整理前无游离节点，只有 Foundations、15 个组件集与 13 个评审样张分散在两列。
+- 现在自上而下为：概览框 `V1 Components / 概览`（`353:30429`，说明 + 分区 / 组件集 / 变体数 / 状态索引，均标“初稿 · 待确认”），以及 14 个 Section：`00 Foundations`（`353:30508`）、`01 Button`（`353:30510`）、`02 Icon Button`（`353:30512`）、`03 Input`（`353:30514`）、`04 Field`（`353:30516`）、`05 InputGroup`（`353:30518`）、`06 Textarea`（`353:30520`）、`07 NativeSelect`（`353:30522`）、`08 Checkbox`（`353:30524`）、`09 Toggle`（`353:30526`）、`10 ToggleGroup`（`353:30528`，含 ToggleGroup 与 ToggleGroup Item 两个组件集）、`11 Spinner`（`353:30530`）、`12 Separator`（`353:30532`）、`13 Tooltip`（`353:30534`）。
+- 每个 Section 内：顶部一行用途说明，左侧组件集，右侧 Light / Dark 评审样张；宽组件集（Input、Field、InputGroup、Textarea、NativeSelect）改为组件集在上、样张在下。仅移动位置，组件、实例与 ID 不变，截图检查通过。
+
 ### V1 Tooltip 组件初稿（2026-10-23，第一批基础组件设计完成）
 
 - 用户要求继续设计 Tooltip。组件集 `Tooltip`（`351:30351`）位于 V1-Components 页 Separator 下方，2 个变体：lines（single 自适应宽度 / multi 最大宽 240 换行）。属性：`label`、`shortcut` + `showShortcut`（fg/secondary）。
