@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 Field 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Field。组件集 `Field`（`341:28088`）位于 V1-Components 页，6 个变体：orientation（vertical / horizontal）× state（default / invalid / disabled）。属性：`label`、`description`、`showDescription`、`error`。
+- vertical：标签 V1/body 在上，控件与说明全宽，间距 space/8，默认宽 320。horizontal：设置页行，标签列 120 宽、右对齐并按 control-h/regular 垂直居中，控件列填充，列间距 space/16，默认宽 480。
+- 内含公开的嵌套实例 `Control`（默认 Input default/filled，invalid 用 Input invalid，disabled 用 Input disabled），可在右侧面板直接改 value / placeholder / state，或替换为其他控件。invalid 时以带 circle-alert 图标的 danger 错误信息替换说明；disabled 时标签与说明为 fg/disabled。
+- 评审样张 `Field / Review`（`341:28089`）展示两种布局三种状态及模型服务设置示例（名称、错误接口地址、只读 API Key、空模型 ID），截图检查两套主题通过；已修正 horizontal 标签偏上约 2px。初稿待用户确认。
+
 ### V1 Input 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Input。组件集 `Input`（`340:28051`）位于 V1-Components 页，25 个变体：appearance=default × size（sm / default / lg，高度共用 control-h/small·regular·large）× state（empty / filled / hover / focus / disabled / readOnly / invalid）共 21 个；appearance=ghost（内联重命名）仅 default 尺寸 × filled / hover / focus / disabled 4 个。属性：`placeholder`、`value`（TEXT）。
