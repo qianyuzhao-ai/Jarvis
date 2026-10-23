@@ -116,7 +116,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
         .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label'))),
     ).toEqual(['选择模型', '视频时长', '宽高比', '分辨率']);
     const tops = await videoControls
-      .locator('.parameter-control')
+      .getByTestId('parameter-control')
       .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().top));
     expect(new Set(tops).size).toBe(1);
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.0');
@@ -173,7 +173,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: /画布交互测试/ }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
-    await expect(page.locator('.canvas-status')).toContainText('已保存到本机');
+    await expect(page.getByTestId('canvas-status')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /画布交互测试/ }).click();
@@ -214,7 +214,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
     );
-    await expect(page.locator('.settings-form')).toHaveCSS('width', '700px');
+    await expect(page.getByTestId('settings-form')).toHaveCSS('width', '700px');
     for (const label of [
       '生成任务地址',
       'upload 地址',
@@ -227,7 +227,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await expect(page.getByRole('button', { name: '验证连接', exact: true })).toBeDisabled();
     await page.getByLabel('req_from', { exact: true }).fill('empty-address-test');
     await page.getByRole('button', { name: '保存更改' }).click();
-    await expect(page.locator('.form-actions')).toContainText('已保存到本机');
+    await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
@@ -256,7 +256,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
       .getByLabel('upload-media 地址', { exact: true })
       .fill('https://example.invalid/media');
     await page.getByRole('button', { name: '保存更改' }).click();
-    await expect(page.locator('.form-actions')).toContainText('已保存到本机');
+    await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -268,7 +268,7 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await page.screenshot({ path: test.info().outputPath('settings.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await expect
-      .poll(() => page.locator('.settings-form').evaluate((n) => n.scrollWidth - n.clientWidth))
+      .poll(() => page.getByTestId('settings-form').evaluate((n) => n.scrollWidth - n.clientWidth))
       .toBe(0);
     await page.screenshot({ path: test.info().outputPath('settings-compact.png') });
     await page.evaluate(async () => {
@@ -338,7 +338,7 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
     await expect(page.getByRole('alert')).toContainText('最多 9 张');
     await expect(page.getByRole('alert')).toContainText('只支持参考图片');
     await page.getByRole('button', { name: '查看 9 个参考素材' }).click();
-    await expect(page.locator('.reference-item')).toHaveCount(9);
+    await expect(page.getByTestId('reference-item')).toHaveCount(9);
     await page.getByRole('button', { name: '关闭编辑面板' }).click();
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
@@ -357,8 +357,10 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
     await expect(page.getByRole('alert')).toContainText('参考音频最多 3 个');
     await expect(page.getByRole('alert')).toContainText('参考视频最多 3 个');
     await page.getByRole('button', { name: '查看 15 个参考素材' }).click();
-    await expect(page.locator('.reference-item')).toHaveCount(15);
-    await expect(page.locator('.reference-item .reference-index')).toHaveText([
+    await expect(page.getByTestId('reference-item')).toHaveCount(15);
+    await expect(
+      page.locator('[data-testid="reference-item"] [data-testid="reference-index"]'),
+    ).toHaveText([
       ...Array.from({ length: 9 }, (_, i) => `图片 ${i + 1}`),
       '音频 1',
       '音频 2',
@@ -368,13 +370,13 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
       '视频 3',
     ]);
     const layout = await page.getByRole('dialog', { name: '视频编辑面板' }).evaluate((panel) => {
-      const refs = panel.querySelector('.references')!,
-        prompt = panel.querySelector('.prompt-code-editor .cm-content')!;
+      const refs = panel.querySelector('[data-testid="references"]')!,
+        prompt = panel.querySelector('[data-testid="prompt-code-editor"] .cm-content')!;
       return {
         promptY: prompt.getBoundingClientRect().top,
         refsBottom: refs.getBoundingClientRect().bottom,
         scrollable: refs.scrollWidth > refs.clientWidth,
-        rows: Array.from(refs.querySelectorAll('.reference-item')).map(
+        rows: Array.from(refs.querySelectorAll('[data-testid="reference-item"]')).map(
           (n) => n.getBoundingClientRect().top,
         ),
       };
@@ -384,11 +386,10 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
     expect(layout.promptY).toBeGreaterThan(layout.refsBottom);
     await page.screenshot({ path: test.info().outputPath('references-expanded.png') });
     await page.getByRole('button', { name: '移除 audio-0', exact: true }).click();
-    await expect(page.locator('.reference-item')).toHaveCount(14);
-    await expect(page.locator('[data-reference-type="audio"] .reference-index')).toHaveText([
-      '音频 1',
-      '音频 2',
-    ]);
+    await expect(page.getByTestId('reference-item')).toHaveCount(14);
+    await expect(
+      page.locator('[data-reference-type="audio"] [data-testid="reference-index"]'),
+    ).toHaveText(['音频 1', '音频 2']);
     await expect(page.locator('[data-reference-type="audio"]').first()).toHaveAttribute(
       'title',
       '音频 1 · audio-1',

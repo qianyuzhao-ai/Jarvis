@@ -12,6 +12,8 @@ export function AssetNode({ id, data, selected, isConnectable }: NodeProps<Asset
   const Icon = data.kind === 'image' ? Image : data.kind === 'video' ? Video : Music;
   return (
     <div
+      data-testid="media-placeholder"
+      data-node-kind="asset"
       className="media-placeholder asset-node"
       data-selected={selected}
       data-ready={data.upload.status === 'ready'}
@@ -20,7 +22,7 @@ export function AssetNode({ id, data, selected, isConnectable }: NodeProps<Asset
       {data.upload.status === 'ready' ? (
         <UrlMedia key={data.upload.url} url={data.upload.url} kind={data.kind} label={data.name} />
       ) : data.upload.status === 'failed' ? (
-        <div className="result-error" role="alert">
+        <div data-testid="result-error" className="result-error" role="alert">
           <CircleAlert size={24} />
           <span>{data.upload.error}</span>
           <span>请重新拖入文件上传</span>

@@ -183,10 +183,13 @@ function CanvasContent({
           selected: edge.id === selectedEdge,
           animated: highlighted,
           className: `workflow-edge${highlighted ? ' workflow-edge-active' : ''}`,
+          domAttributes: {
+            'aria-description': highlighted ? 'highlighted' : 'idle',
+          },
           zIndex: 0,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: highlighted ? 'var(--color-accent)' : 'var(--workflow-edge)',
+            color: highlighted ? 'var(--legacy-color-accent)' : 'var(--workflow-edge)',
             width: 14,
             height: 14,
           },
@@ -413,7 +416,11 @@ function CanvasContent({
   );
   return (
     <main className="canvas-page" data-testid="canvas-page">
-      <header className="canvas-toolbar window-drag" data-platform={window.desktop?.platform}>
+      <header
+        data-testid="canvas-toolbar"
+        className="canvas-toolbar window-drag"
+        data-platform={window.desktop?.platform}
+      >
         <div className="canvas-title">
           <IconButton label="返回项目列表" onClick={onBack}>
             <ChevronLeft size={18} />
@@ -478,6 +485,7 @@ function CanvasContent({
       </header>
       <div className="canvas-workspace">
         <div
+          data-testid="canvas-body"
           className="canvas-body"
           ref={container}
           onDragEnter={(e) => {
@@ -588,6 +596,7 @@ function CanvasContent({
                 <Minus size={18} />
               </IconButton>
               <button
+                data-testid="zoom-value"
                 className="zoom-value"
                 title="重置为 100%"
                 onClick={() => void flow.zoomTo(1)}
@@ -661,19 +670,19 @@ function CanvasContent({
             </div>
           )}
           {connectionNotice && (
-            <div className="canvas-import-notice" role="alert">
+            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
               {connectionNotice}
               <button onClick={() => setConnectionNotice('')}>关闭</button>
             </div>
           )}
           {dragging && (
-            <div className="canvas-drop-hint" role="status">
+            <div data-testid="canvas-drop-hint" className="canvas-drop-hint" role="status">
               <Upload size={24} />
               <span>松开以上传图片、视频或音频</span>
             </div>
           )}
           {importNotice && (
-            <div className="canvas-import-notice" role="alert">
+            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
               {importNotice}
               <button onClick={() => setImportNotice('')}>关闭</button>
             </div>

@@ -78,6 +78,7 @@ export function Sidebar({
         {settings ? (
           <>
             <button
+              data-testid="side-link"
               className={`side-link ${section === 'general' ? 'selected' : ''}`}
               onClick={onGeneral}
               aria-current={section === 'general' ? 'page' : undefined}
@@ -86,6 +87,7 @@ export function Sidebar({
               通用
             </button>
             <button
+              data-testid="side-link"
               className={`side-link ${section === 'models' ? 'selected' : ''}`}
               onClick={onModels}
               aria-current={section === 'models' ? 'page' : undefined}
@@ -94,6 +96,7 @@ export function Sidebar({
               模型服务
             </button>
             <button
+              data-testid="side-link"
               className={`side-link ${section === 'services' ? 'selected' : ''}`}
               onClick={onServices}
               aria-current={section === 'services' ? 'page' : undefined}
@@ -101,11 +104,12 @@ export function Sidebar({
               <Plug />
               内网地址
             </button>
-            <button className="side-link" disabled>
+            <button data-testid="side-link" className="side-link" disabled>
               <Folder />
               文件与权限
             </button>
             <button
+              data-testid="side-link"
               className={`side-link ${section === 'plugins' ? 'selected' : ''}`}
               onClick={onPlugins}
               aria-current={section === 'plugins' ? 'page' : undefined}
@@ -113,11 +117,11 @@ export function Sidebar({
               <Puzzle />
               插件
             </button>
-            <button className="side-link" disabled>
+            <button data-testid="side-link" className="side-link" disabled>
               <Database />
               数据与隐私
             </button>
-            <button className="side-link" disabled>
+            <button data-testid="side-link" className="side-link" disabled>
               <Info />
               关于 Jarvis
             </button>
@@ -129,6 +133,7 @@ export function Sidebar({
               <span>新对话</span>
             </button>
             <button
+              data-testid="side-link"
               className={`side-link ${currentRoute === 'projects' ? 'selected' : ''}`}
               onClick={onProjects}
               aria-current={currentRoute === 'projects' ? 'page' : undefined}
@@ -136,7 +141,7 @@ export function Sidebar({
               <LayoutGrid />
               AIGC 创作空间
             </button>
-            <button className="side-link" onClick={onWriting}>
+            <button data-testid="side-link" className="side-link" onClick={onWriting}>
               <FileText />
               写作空间
             </button>
@@ -144,7 +149,7 @@ export function Sidebar({
         )}
       </nav>
       {!settings && (
-        <div className="chat-history" aria-label="聊天记录">
+        <div data-testid="chat-history" className="chat-history" aria-label="聊天记录">
           <small>最近对话</small>
           {chatSessions.length ? (
             [...chatSessions]
@@ -152,6 +157,7 @@ export function Sidebar({
               .map((s) => (
                 <button
                   key={s.id}
+                  data-testid="side-link"
                   className={`side-link ${currentRoute === 'chat' && currentChatId === s.id ? 'selected' : ''}`}
                   onClick={() => onSelectChat(s.id)}
                   aria-label={`打开对话：${s.title}`}

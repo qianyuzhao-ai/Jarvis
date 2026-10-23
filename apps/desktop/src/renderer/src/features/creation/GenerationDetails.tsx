@@ -42,7 +42,7 @@ export function GenerationDetails({
     }
   }
   return (
-    <details className="generation-details">
+    <details data-testid="generation-details" className="generation-details">
       <summary aria-label="生成信息">
         <span>
           {connectedCount > 0
@@ -51,7 +51,11 @@ export function GenerationDetails({
         </span>
         <ChevronRight size={14} aria-hidden="true" />
       </summary>
-      <div className="editor-notice generation-details-content" role="status">
+      <div
+        data-testid="editor-notice"
+        className="editor-notice generation-details-content"
+        role="status"
+      >
         <p>
           {task?.status === 'running' && task.authRequired
             ? '等待重新登录，任务已保留'

@@ -31,6 +31,8 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 
 当前记忆文件：
 
+- [memory/ui-v1-implementation.md](memory/ui-v1-implementation.md)：UI V1 基础组件分阶段实施、设计来源与验收证据。
+
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。
 - [memory/design.md](memory/design.md)：设计要求、Figma 页面和组件位置、设计变更、验证结果、环境限制及未决事项。

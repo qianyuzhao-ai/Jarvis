@@ -49,11 +49,13 @@ export function PromptMentionMenu({
           </span>
           <div>
             <small>{item.name}</small>
-            <span className="prompt-mention-label">{item.label}</span>
+            <span data-testid="prompt-mention-label" className="prompt-mention-label">
+              {item.label}
+            </span>
           </div>
         </button>
       ))}
     </div>,
-    document.querySelector('.theme-root') ?? document.body,
+    document.body,
   );
 }

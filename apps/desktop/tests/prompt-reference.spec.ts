@@ -70,9 +70,9 @@ test('caret menu has thumbnails and keyboard selection; tags delete, undo, cut a
     await input.press('Backspace');
     await input.press('Backspace');
     await expect(input).toHaveText('使用参考');
-    await expect(page.locator('.prompt-tag')).toHaveCount(0);
+    await expect(page.getByTestId('prompt-tag')).toHaveCount(0);
     await input.press('ControlOrMeta+z');
-    await expect(page.locator('.prompt-tag')).toHaveCount(1);
+    await expect(page.getByTestId('prompt-tag')).toHaveCount(1);
     await input.fill('a @image_1 b');
     await input.press('Home');
     await input.press('ArrowRight');
@@ -116,12 +116,12 @@ test('caret menu has thumbnails and keyboard selection; tags delete, undo, cut a
     await videoInput.fill('第一行\n第二行引用@');
     await expect(menu).toBeVisible();
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(menu).toHaveCSS('background-color', 'rgb(43, 43, 43)');
     await page.screenshot({ path: test.info().outputPath('prompt-mention-expanded-dark.png') });
     await videoInput.dispatchEvent('compositionstart', { data: '' });
     await videoInput.dispatchEvent('keydown', { key: 'Enter', keyCode: 229, isComposing: true });
-    await expect(page.locator('.prompt-tag')).toHaveCount(0);
+    await expect(page.getByTestId('prompt-tag')).toHaveCount(0);
     await videoInput.dispatchEvent('compositionend', { data: '' });
     await expect(menu).toBeVisible();
     await videoInput.press('Enter');

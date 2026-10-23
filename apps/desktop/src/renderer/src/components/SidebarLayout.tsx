@@ -40,6 +40,7 @@ export function SidebarLayout({
       style={{ '--sidebar-width': `${width}px` } as CSSProperties}
     >
       <motion.div
+        data-testid="sidebar-shell"
         className="sidebar-shell"
         initial={false}
         animate={{ x: open ? 0 : -width, opacity: open ? 1 : 0 }}
@@ -105,6 +106,7 @@ export function SidebarLayout({
         />
       </motion.div>
       <motion.main
+        data-testid="workspace"
         className="workspace"
         initial={false}
         layout={!resizing && !reduced}

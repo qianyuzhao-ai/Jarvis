@@ -114,13 +114,14 @@ export function RelaySettings({
   }
   return (
     <form
+      data-testid="relay-settings"
       className="settings-page relay-settings"
       onSubmit={(event) => {
         event.preventDefault();
         void perform('save');
       }}
     >
-      <div className="relay-content">
+      <div data-testid="relay-content" className="relay-content">
         {onBack && (
           <button
             className="model-library-back"
@@ -310,7 +311,7 @@ export function RelaySettings({
               </small>
             </div>
           </div>
-          <details className="relay-advanced">
+          <details data-testid="relay-advanced" className="relay-advanced">
             <summary>上下文与输出限制</summary>
             <div className="settings-row relay-row">
               <label htmlFor="relay-context">上下文容量</label>
@@ -356,7 +357,7 @@ export function RelaySettings({
         )}
         <small>连接测试会发送一条简短请求，费用由所选服务计收。测试不会自动保存。</small>
       </div>
-      <footer className="relay-footer">
+      <footer data-testid="relay-footer" className="relay-footer">
         <span>{dirty ? '更改尚未保存' : value.config ? '配置已保存' : '尚未配置'}</span>
         <div>
           <button

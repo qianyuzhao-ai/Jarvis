@@ -70,7 +70,12 @@ export function ServiceSettings({
     onDirtyChange(false);
   }
   return (
-    <form className="settings-page settings-form" onSubmit={submit} noValidate>
+    <form
+      data-testid="settings-form"
+      className="settings-page settings-form"
+      onSubmit={submit}
+      noValidate
+    >
       <div>
         <h1>配置内网服务</h1>
         <p>请手动填写请求来源标识及实际服务地址，应用不预设内网地址。</p>
@@ -127,7 +132,7 @@ export function ServiceSettings({
         {errors.loginDomains && <small className="error-text">{errors.loginDomains}</small>}
       </label>
       <PlatformLoginControls settings={value} dirty={dirty} />
-      <div className="form-actions">
+      <div data-testid="form-actions" className="form-actions">
         <span role="status">{dirty ? '更改尚未保存' : status}</span>
         <button
           className="secondary-button"

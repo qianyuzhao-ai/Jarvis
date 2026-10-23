@@ -13,7 +13,7 @@ export function SkillPicker({
   onSelect: (skill: SkillInfo) => void;
 }) {
   return (
-    <div className="skill-picker">
+    <div data-testid="skill-picker" className="skill-picker">
       <div className="skill-picker-heading">技能</div>
       <div role="listbox" id={listId} aria-label="选择技能" className="skill-picker-list">
         {skills.length ? (

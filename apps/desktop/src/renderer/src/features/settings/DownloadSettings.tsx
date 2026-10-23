@@ -91,7 +91,9 @@ export function DownloadSettings() {
           }
         >
           <FolderOpen size={16} />
-          <span className="download-directory">{preferences?.directory || '选择文件夹'}</span>
+          <span data-testid="download-directory" className="download-directory">
+            {preferences?.directory || '选择文件夹'}
+          </span>
           <ChevronDown size={14} />
         </button>
       </div>

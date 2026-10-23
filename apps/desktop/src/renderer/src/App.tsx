@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState, useRef } from 'react';
+import { lazy, Suspense, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
 import { PanelLeftOpen, Workflow } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
 import { SidebarLayout } from './components/SidebarLayout';
@@ -20,11 +20,9 @@ import { useAgent } from './features/agent/use-agent';
 import { ChatPage } from './features/agent/ChatPage';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
-import './features/agent/agent.css';
 import { useAppUpdates } from './features/updates/use-app-updates';
 import { useUpdateGuard } from './features/updates/use-update-guard';
 import { UpdateStatus } from './features/updates/UpdateStatus';
-import './features/updates/updates.css';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
 );
@@ -42,6 +40,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   >('general');
   const agent = useAgent();
   const theme = useResolvedTheme(data.theme);
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const expandButton = useRef<HTMLButtonElement>(null);
@@ -102,7 +103,11 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     openProject(next.id);
   }
   return (
-    <div className="theme-root" data-theme={theme} inert={updates.state?.phase === 'installing'}>
+    <div
+      data-testid="theme-root"
+      className="theme-root"
+      inert={updates.state?.phase === 'installing'}
+    >
       <GenerationNotice notice={notice} onDismiss={dismissNotice} />
       {(route !== 'settings' || settingsSection !== 'general') && (
         <UpdateStatus updates={updates} />
@@ -207,6 +212,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             </span>
             <div className="toolbar-end">
               <span
+                data-testid="save-status"
                 className="save-status"
                 role="status"
                 hidden={

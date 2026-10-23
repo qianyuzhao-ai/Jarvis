@@ -1,92 +1,94 @@
-.update-settings {
-  border-top: 1px solid var(--color-border);
-  padding-top: 24px;
-}
-.update-settings h2 {
-  margin: 0;
-  font-size: 15px;
-}
-.update-settings p {
-  margin: 6px 0;
-  color: var(--color-secondary);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.update-notice {
-  flex: 0 0 auto;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  font-size: 13px;
-}
-.update-notice p {
-  margin: 0;
-  line-height: 1.5;
-}
-.update-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 44px;
-}
-.update-heading > div:first-child {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.update-heading [role='status'] {
-  font-variant-numeric: tabular-nums;
-}
-.update-actions .secondary-button {
-  min-height: 44px;
-}
-.update-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-shrink: 0;
-}
-.update-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--color-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.update-progress progress {
-  width: 100%;
-  height: 6px;
-  accent-color: var(--color-accent);
-  appearance: none;
-  border: 0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.update-progress progress::-webkit-progress-bar {
-  background: var(--color-border);
-}
-.update-progress progress::-webkit-progress-value {
-  background: var(--color-accent);
-}
-.update-settings [role='alert'],
-.update-notice [role='alert'] {
-  margin-top: 8px;
-  color: var(--color-ink);
-}
-.theme-root {
-  display: flex;
-  flex-direction: column;
-}
-.theme-root > .app-shell,
-.theme-root > .canvas-page,
-.theme-root > .writing-shell {
-  flex: 1 1 0;
-  min-height: 0;
-  height: 0;
-}
-.update-notice[data-platform='darwin'] {
-  padding-left: 96px;
-  min-height: 60px;
+@layer legacy {
+  .update-settings {
+    border-top: 1px solid var(--legacy-color-border);
+    padding-top: 24px;
+  }
+  .update-settings h2 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .update-settings p {
+    margin: 6px 0;
+    color: var(--color-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .update-notice {
+    flex: 0 0 auto;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--legacy-color-border);
+    background: var(--legacy-color-surface);
+    font-size: 13px;
+  }
+  .update-notice p {
+    margin: 0;
+    line-height: 1.5;
+  }
+  .update-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+  }
+  .update-heading > div:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .update-heading [role='status'] {
+    font-variant-numeric: tabular-nums;
+  }
+  .update-actions .secondary-button {
+    min-height: 44px;
+  }
+  .update-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .update-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--color-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .update-progress progress {
+    width: 100%;
+    height: 6px;
+    accent-color: var(--legacy-color-accent);
+    appearance: none;
+    border: 0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .update-progress progress::-webkit-progress-bar {
+    background: var(--legacy-color-border);
+  }
+  .update-progress progress::-webkit-progress-value {
+    background: var(--legacy-color-accent);
+  }
+  .update-settings [role='alert'],
+  .update-notice [role='alert'] {
+    margin-top: 8px;
+    color: var(--color-ink);
+  }
+  .theme-root {
+    display: flex;
+    flex-direction: column;
+  }
+  .theme-root > .app-shell,
+  .theme-root > .canvas-page,
+  .theme-root > .writing-shell {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 0;
+  }
+  .update-notice[data-platform='darwin'] {
+    padding-left: 96px;
+    min-height: 60px;
+  }
 }

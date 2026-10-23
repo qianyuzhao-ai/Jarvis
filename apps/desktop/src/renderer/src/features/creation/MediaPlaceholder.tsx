@@ -12,13 +12,19 @@ export function MediaPlaceholder({ id, data, selected, isConnectable }: NodeProp
   const Icon = data.kind === 'image' ? Image : Video;
   return (
     <div
+      data-testid="media-placeholder"
       className="media-placeholder"
       data-selected={selected}
       data-ready={Boolean(data.result) && !busy}
     >
       <NodePorts input enabled={isConnectable} />
       {busy ? (
-        <div className="node-generating" role="status" aria-live="polite">
+        <div
+          data-testid="node-generating"
+          className="node-generating"
+          role="status"
+          aria-live="polite"
+        >
           <LoaderCircle size={32} strokeWidth={1.75} aria-hidden="true" />
           <span>正在生成…</span>
         </div>
@@ -46,7 +52,7 @@ export function MediaPlaceholder({ id, data, selected, isConnectable }: NodeProp
         </div>
       )}
       {data.generation && ['failed', 'unknown'].includes(data.generation.status) && (
-        <span className="node-task-status" role="status">
+        <span data-testid="node-task-status" className="node-task-status" role="status">
           {data.generation.status === 'failed' ? '失败' : '结果未知'}
         </span>
       )}

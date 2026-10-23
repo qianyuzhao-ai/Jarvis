@@ -79,7 +79,7 @@ export function ModelSettings({
       )}
       {value.models?.length ? (
         value.models.map((model) => (
-          <article className="configured-model" key={model.id}>
+          <article data-testid="configured-model" className="configured-model" key={model.id}>
             <div>
               <strong>{model.config.name}</strong>
               <p>

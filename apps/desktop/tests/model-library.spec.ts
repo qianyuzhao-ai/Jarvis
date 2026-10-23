@@ -71,7 +71,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     page = await app.firstWindow();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '模型服务', exact: true }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(1);
+    await expect(page.getByTestId('configured-model')).toHaveCount(1);
     expect(JSON.parse(await readFile(file, 'utf8')).version).toBe(2);
     await app.evaluate((_electron, origin) => {
       const originalFetch = globalThis.fetch;
@@ -99,17 +99,17 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     await expect(page.getByRole('status').filter({ hasText: '连接成功' })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('deepseek-settings.png') });
     await page.getByRole('button', { name: '保存更改', exact: true }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(2);
+    await expect(page.getByTestId('configured-model')).toHaveCount(2);
     await page.getByRole('button', { name: '添加模型', exact: true }).click();
     await page.getByLabel('模型名称').fill('中转 Beta');
     await page.getByLabel('API 地址', { exact: true }).fill(origin + '/v1');
     await page.getByLabel('API Key', { exact: true }).fill('relay-beta-key');
     await page.getByLabel('模型 ID', { exact: true }).fill('beta');
     await page.getByRole('button', { name: '保存更改', exact: true }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(3);
+    await expect(page.getByTestId('configured-model')).toHaveCount(3);
     await page.getByRole('button', { name: '设为默认：DeepSeek 官方' }).click();
     await expect(
-      page.locator('.configured-model').filter({ hasText: 'DeepSeek 官方' }),
+      page.getByTestId('configured-model').filter({ hasText: 'DeepSeek 官方' }),
     ).toContainText('默认模型');
     await page.screenshot({ path: test.info().outputPath('my-models.png') });
     const configured = await page.evaluate(async () => window.desktop!.agent.getConfiguration());
@@ -135,9 +135,11 @@ test('my models migrates legacy credentials, persists multiple providers and swi
       await page.getByRole('combobox', { name: '聊天模型' }).selectOption(profile.id);
       await page.getByLabel('消息', { exact: true }).fill(text);
       await page.getByRole('button', { name: '发送消息', exact: true }).click();
-      await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toHaveCount(
-        ++count,
-      );
+      await expect(
+        page.locator(
+          '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+        ),
+      ).toHaveCount(++count);
     }
     expect(calls.map((c) => c.body.model)).toEqual([
       'deepseek-flash',
@@ -163,7 +165,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     page = await app.firstWindow();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '模型服务', exact: true }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(3);
+    await expect(page.getByTestId('configured-model')).toHaveCount(3);
     await page.getByRole('button', { name: '编辑模型：中转 Beta' }).click();
     await expect(page.getByLabel('API Key', { exact: true })).toHaveAttribute(
       'placeholder',
@@ -171,17 +173,17 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     );
     await page.getByLabel('模型名称').fill('Beta 新名称');
     await page.getByRole('button', { name: '保存更改', exact: true }).click();
-    await expect(page.locator('.configured-model')).toContainText([
+    await expect(page.getByTestId('configured-model')).toContainText([
       '旧中转站',
       'DeepSeek 官方',
       'Beta 新名称',
     ]);
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '删除模型：Beta 新名称' }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(3);
+    await expect(page.getByTestId('configured-model')).toHaveCount(3);
     page.once('dialog', (dialog) => void dialog.accept());
     await page.getByRole('button', { name: '删除模型：Beta 新名称' }).click();
-    await expect(page.locator('.configured-model')).toHaveCount(2);
+    await expect(page.getByTestId('configured-model')).toHaveCount(2);
     if (!snapshot.ok || !snapshot.value.snapshot.sessions[0]) throw new Error('Missing chat');
     const sessionId = snapshot.value.snapshot.sessions[0].id;
     const rejected = await page.evaluate(
@@ -287,7 +289,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     app = await launch();
     page = await app.firstWindow();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue('');
-    await expect(page.locator('.model-trigger option:checked')).toHaveText('beta');
+    await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText('beta');
     await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
   } finally {

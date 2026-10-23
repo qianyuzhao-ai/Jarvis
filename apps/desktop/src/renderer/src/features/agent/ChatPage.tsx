@@ -55,7 +55,7 @@ export function ChatPage({
   }
   const suggestions = ['梳理一份资料', '推敲一个想法', '把讨论变成计划'];
   return (
-    <section className="chat-page" aria-label="首页 Chat">
+    <section data-testid="chat-page" className="chat-page" aria-label="首页 Chat">
       {agent.error && (
         <div className="agent-error chat-error" role="alert">
           <CircleAlert size={16} />
@@ -110,6 +110,7 @@ export function ChatPage({
         </form>
       )}
       <div
+        data-testid="chat-scroll"
         className={`chat-scroll ${session?.messages.length ? '' : 'chat-empty-scroll'}`}
         ref={viewport}
         onScroll={() => {
@@ -167,7 +168,7 @@ export function ChatPage({
           </div>
         )}
       </div>
-      <div className="chat-dock">
+      <div data-testid="chat-dock" className="chat-dock">
         {!atBottom && !!session?.messages.length && (
           <button
             className="chat-latest"

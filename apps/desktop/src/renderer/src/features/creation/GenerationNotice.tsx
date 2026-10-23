@@ -18,7 +18,7 @@ export function GenerationNotice({
   }, [notice, onDismiss]);
   if (!notice) return null;
   return (
-    <div className="generation-notice">
+    <div data-testid="generation-notice" className="generation-notice">
       <p role="status">{notice.text}</p>
       <button type="button" aria-label="关闭生成提醒" onClick={() => onDismiss(notice.id)}>
         <X size={16} aria-hidden="true" />

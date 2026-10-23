@@ -101,7 +101,7 @@ test('writing reads real directories, edits, creates, searches and restores tabs
       page
         .getByRole('navigation', { name: '文件列表' })
         .getByRole('button', { name: '初稿.md', exact: true }),
-    ).toHaveClass(/selected/);
+    ).toHaveAttribute('aria-current', 'page');
     await page.screenshot({ path: test.info().outputPath('writing-light.png') });
     expect(errors).toEqual([]);
     await app.close();
@@ -254,7 +254,7 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await expect(page.getByRole('button', { name: '展开左侧栏' })).toBeFocused();
     await page.getByRole('button', { name: '收起右侧栏' }).click();
     await expect(page.getByRole('complementary', { name: '写作辅助面板' })).toBeHidden();
-    const bounds = await page.locator('.writing-main').boundingBox();
+    const bounds = await page.getByTestId('writing-main').boundingBox();
     expect(bounds?.width).toBe(1440);
     const documentWidth = await page.locator('.cm-content').boundingBox();
     expect(documentWidth?.width).toBe(680);
@@ -266,7 +266,7 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台', exact: true }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('writing-dark.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));

@@ -15,7 +15,7 @@ test('general settings offer system, light and dark preferences with persistence
   });
   try {
     const page = await app.firstWindow();
-    const root = page.locator('.theme-root');
+    const root = page.locator('html');
     await page.emulateMedia({ colorScheme: 'light' });
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await expect(page.getByRole('heading', { name: '通用设置' })).toBeVisible();
@@ -37,7 +37,7 @@ test('general settings offer system, light and dark preferences with persistence
     await page.getByRole('button', { name: 'Dark Mode', exact: true }).click();
     await page.emulateMedia({ colorScheme: 'light' });
     await expect(root).toHaveAttribute('data-theme', 'dark');
-    await expect(page.locator('.save-status')).toHaveText('已保存到本机');
+    await expect(page.getByTestId('save-status')).toHaveText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Dark Mode', exact: true })).toHaveAttribute(
@@ -50,7 +50,7 @@ test('general settings offer system, light and dark preferences with persistence
     await expect(root).toHaveAttribute('data-theme', 'light');
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect(root).toHaveAttribute('data-theme', 'dark');
-    await expect(page.locator('.save-status')).toHaveText('已保存到本机');
+    await expect(page.getByTestId('save-status')).toHaveText('已保存到本机');
     await page.reload();
     await expect(root).toHaveAttribute('data-theme', 'dark');
     await page.getByRole('button', { name: '设置', exact: true }).click();

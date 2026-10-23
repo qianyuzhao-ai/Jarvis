@@ -24,7 +24,6 @@ import { IconButton } from '../../components/IconButton';
 import { MarkdownEditor } from './MarkdownEditor';
 import { unwrap, useWriting } from './useWriting';
 import type { Heading } from './markdown';
-import './writing.css';
 
 function ResizeHandle({
   side,
@@ -240,6 +239,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
     return (writing.directories[path] ?? []).map((entry) => (
       <div key={entry.path}>
         <button
+          aria-current={entry.kind === 'file' && active?.path === entry.path ? 'page' : undefined}
           className={`writing-file ${entry.kind === 'file' && active?.path === entry.path ? 'selected' : ''} ${entry.kind === 'directory' && writing.selectedDirectory === entry.path ? 'current-folder' : ''}`}
           style={{ paddingLeft: 8 + depth * 16 }}
           title={entry.path}
@@ -437,7 +437,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
           <ResizeHandle side="left" width={leftWidth} onChange={setLeftWidth} />
         </aside>
       )}
-      <main className="writing-main">
+      <main data-testid="writing-main" className="writing-main">
         <header className="writing-tabs window-drag">
           {!leftOpen && (
             <div className="writing-collapsed-controls">

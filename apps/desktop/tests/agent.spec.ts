@@ -75,17 +75,17 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
     );
-    await expect(page.locator('.relay-settings')).toHaveCSS('width', '700px');
+    await expect(page.getByTestId('relay-settings')).toHaveCSS('width', '700px');
     await page.getByLabel('API 地址', { exact: true }).fill(`http://127.0.0.1:${address.port}/v1`);
     await page.getByLabel('API Key', { exact: true }).fill('local-test-key');
     await page.getByRole('button', { name: '获取模型', exact: true }).click();
     await expect.poll(() => modelsRequests).toBe(1);
     await page.getByLabel('模型 ID', { exact: true }).fill('mock');
-    await page.locator('.relay-advanced summary').click();
+    await page.locator('[data-testid="relay-advanced"] summary').click();
     await page.getByLabel('上下文容量', { exact: true }).fill('1000000');
     await page.getByRole('button', { name: '测试连接', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: '连接成功' })).toBeVisible();
-    await expect(page.locator('.relay-footer > span')).toHaveText('更改尚未保存');
+    await expect(page.locator('[data-testid="relay-footer"] > span')).toHaveText('更改尚未保存');
     await page.getByRole('button', { name: '保存更改', exact: true }).click();
     await expect(page.getByRole('heading', { name: '我的模型', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '编辑模型：我的中转站' }).click();
@@ -98,7 +98,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.screenshot({ path: test.info().outputPath('relay-light.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await expect
-      .poll(() => page.locator('.relay-content').evaluate((n) => n.scrollWidth - n.clientWidth))
+      .poll(() => page.getByTestId('relay-content').evaluate((n) => n.scrollWidth - n.clientWidth))
       .toBe(0);
     await page.screenshot({ path: test.info().outputPath('relay-compact.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
@@ -108,12 +108,12 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     const messageInput = page.getByLabel('消息', { exact: true });
     const dockGap = () =>
       page.evaluate(() => {
-        const shell = document.querySelector('.chat-page')?.getBoundingClientRect();
-        const dock = document.querySelector('.chat-dock')?.getBoundingClientRect();
+        const shell = document.querySelector('[data-testid="chat-page"]')?.getBoundingClientRect();
+        const dock = document.querySelector('[data-testid="chat-dock"]')?.getBoundingClientRect();
         return shell && dock ? Math.abs(shell.bottom - dock.bottom) : 999;
       });
     await expect.poll(dockGap).toBeLessThan(2);
-    await expect(page.locator('.chat-keyboard')).toHaveCount(0);
+    await expect(page.getByTestId('chat-keyboard')).toHaveCount(0);
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0]?.setSize(1280, 1000),
     );
@@ -136,16 +136,22 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByLabel('消息', { exact: true }).fill('本周工作安排');
     await page.getByLabel('消息', { exact: true }).press('Enter');
-    await expect(page.locator('.chat-message.assistant .chat-text')).toHaveText('你好🙂， ▍');
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"] [data-testid="chat-text"]',
+      ),
+    ).toHaveText('你好🙂， ▍');
     await expect(page.getByRole('button', { name: '停止回复' })).toBeVisible();
-    await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '这是流式回复。',
-    );
-    await expect(page.locator('.chat-speaker')).toHaveCount(0);
-    await expect(page.locator('.chat-reply-meta time')).toContainText('刚刚');
-    await expect(page.locator('.chat-reply-logo')).toBeVisible();
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('这是流式回复。');
+    await expect(page.getByTestId('chat-speaker')).toHaveCount(0);
+    await expect(page.locator('[data-testid="chat-reply-meta"] time')).toContainText('刚刚');
+    await expect(page.getByTestId('chat-reply-logo')).toBeVisible();
     const userWidth = await page
-      .locator('.chat-message.user')
+      .locator('[data-testid="chat-message"][data-message-role="user"]')
       .evaluate((n) => n.getBoundingClientRect().width);
     expect(userWidth).toBeLessThan(300);
     await page.getByRole('button', { name: '上下文占用', exact: true }).hover();
@@ -194,15 +200,15 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         if (!count) await page.getByRole('button', { name: '返回工作台' }).click();
       });
     await page.getByRole('button', { name: '打开对话：本周工作安排' }).click();
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     const historyColor = await page
-      .locator('.chat-history .side-link')
+      .locator('[data-testid="chat-history"] [data-testid="side-link"]')
       .first()
       .evaluate((n) => getComputedStyle(n).color);
     expect(historyColor).not.toBe('rgb(0, 0, 0)');
     await page.screenshot({ path: test.info().outputPath('chat-dark.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
-    const box = await page.locator('.agent-composer').boundingBox();
+    const box = await page.getByTestId('agent-composer').boundingBox();
     const viewport = await page.evaluate(() => innerWidth);
     expect(box && box.x + box.width <= viewport).toBeTruthy();
     await page.screenshot({ path: test.info().outputPath('chat-compact.png') });
@@ -232,24 +238,32 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await writeFile(indexPath, JSON.stringify(fixture));
     app = await launch();
     page = await app.firstWindow();
-    await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '这是流式回复。',
-    );
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('这是流式回复。');
     await expect(page.getByRole('button', { name: '打开对话：已保存的对话' })).toBeVisible();
-    await page.locator('.chat-file > summary').click();
-    await expect(page.locator('.chat-file-path')).toHaveText('Jarvis/preview.html');
-    await expect(page.locator('.chat-diff')).toBeVisible();
-    expect(await page.locator('.chat-diff').evaluate((n) => n.scrollHeight > n.clientHeight)).toBe(
-      true,
-    );
-    await expect(page.locator('.chat-diff div')).toHaveCount(0);
-    await expect(page.locator('.diff-add .diff-line-number').nth(1)).toHaveText('1');
+    await page.locator('[data-testid="chat-file"] > summary').click();
+    await expect(page.getByTestId('chat-file-path')).toHaveText('Jarvis/preview.html');
+    await expect(page.getByTestId('chat-diff')).toBeVisible();
+    expect(
+      await page.getByTestId('chat-diff').evaluate((n) => n.scrollHeight > n.clientHeight),
+    ).toBe(true);
+    await expect(page.locator('[data-testid="chat-diff"] div')).toHaveCount(0);
+    await expect(
+      page.locator('[data-diff-kind="add"] [data-testid="diff-line-number"]').nth(1),
+    ).toHaveText('1');
     await page.screenshot({ path: test.info().outputPath('chat-diff-dark.png') });
-    await page.locator('.chat-file > summary').click();
-    await expect(page.locator('.chat-diff')).not.toBeVisible();
+    await page.locator('[data-testid="chat-file"] > summary').click();
+    await expect(page.getByTestId('chat-diff')).not.toBeVisible();
     await page.getByLabel('消息', { exact: true }).fill('继续上次讨论');
     await page.getByRole('button', { name: '发送消息' }).click();
-    await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toHaveCount(2);
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toHaveCount(2);
     expect(JSON.stringify(requests.at(-1)?.messages)).toContain('本周工作安排');
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.evaluate(async (model) => {
@@ -270,29 +284,50 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       .selectOption({ label: 'slow · slow · 中转站' });
     await page.getByLabel('消息', { exact: true }).fill('停止验证');
     await page.getByRole('button', { name: '发送消息' }).click();
-    await expect(page.locator('.chat-message.assistant .chat-text')).toContainText('你好🙂');
-    await expect(page.locator('.is-replying')).toHaveCount(1);
-    await page.locator('.chat-scroll').evaluate((n) => {
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"] [data-testid="chat-text"]',
+      ),
+    ).toContainText('你好🙂');
+    await expect(page.locator('[data-replying="true"]')).toHaveCount(1);
+    await page.getByTestId('chat-scroll').evaluate((n) => {
       n.scrollTop = 0;
     });
     await expect(page.getByRole('button', { name: '回到最新' })).toBeVisible();
-    const length = (await page.locator('.chat-message.assistant .chat-text').innerText()).length;
+    const length = (
+      await page
+        .locator(
+          '[data-testid="chat-message"][data-message-role="assistant"] [data-testid="chat-text"]',
+        )
+        .innerText()
+    ).length;
     await expect
       .poll(
-        async () => (await page.locator('.chat-message.assistant .chat-text').innerText()).length,
+        async () =>
+          (
+            await page
+              .locator(
+                '[data-testid="chat-message"][data-message-role="assistant"] [data-testid="chat-text"]',
+              )
+              .innerText()
+          ).length,
       )
       .toBeGreaterThan(length);
-    expect(await page.locator('.chat-scroll').evaluate((n) => n.scrollTop)).toBe(0);
+    expect(await page.getByTestId('chat-scroll').evaluate((n) => n.scrollTop)).toBe(0);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(
-      await page.locator('.is-replying').evaluate((n) => getComputedStyle(n).animationName),
+      await page
+        .locator('[data-replying="true"]')
+        .evaluate((n) => getComputedStyle(n).animationName),
     ).toBe('none');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.getByRole('button', { name: '停止回复' }).click();
-    await expect(page.locator('.chat-message.assistant[data-status="cancelled"]')).toContainText(
-      '你好🙂',
-    );
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="cancelled"]',
+      ),
+    ).toContainText('你好🙂');
     const calls = requests.length;
     const invalid = await page.evaluate(async () => {
       const b = window.desktop?.agent;
@@ -323,9 +358,11 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       .selectOption({ label: 'broken · broken · 中转站' });
     await page.getByLabel('消息', { exact: true }).fill('断流验证');
     await page.getByRole('button', { name: '发送消息' }).click();
-    await expect(page.locator('.chat-message.assistant[data-status="failed"]')).toContainText(
-      '你好🙂',
-    );
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="failed"]',
+      ),
+    ).toContainText('你好🙂');
     expect(
       requests.every((r) => r.stream === true && (!r.tools || (r.tools as unknown[]).length === 0)),
     ).toBe(true);

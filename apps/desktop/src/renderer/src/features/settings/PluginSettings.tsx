@@ -13,9 +13,13 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   return (
-    <section className="settings-page plugins-settings" aria-labelledby="plugins-title">
+    <section
+      data-testid="plugins-settings"
+      className="settings-page plugins-settings"
+      aria-labelledby="plugins-title"
+    >
       <h1 id="plugins-title">插件</h1>
-      <div className="plugins-toolbar">
+      <div data-testid="plugins-toolbar" className="plugins-toolbar">
         <div className="plugins-tabs" role="tablist" aria-label="插件类型">
           {tabs.map(([id, label], index) => (
             <button
@@ -46,7 +50,7 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
             </button>
           ))}
         </div>
-        <div className="plugins-actions" ref={setActionTarget}>
+        <div data-testid="plugins-actions" className="plugins-actions" ref={setActionTarget}>
           {tab === 'mcp' && (
             <button type="button" className="plugins-add" disabled title="MCP 暂未接入">
               <Plus size={16} />
@@ -62,7 +66,11 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
         hidden={tab !== 'mcp'}
         tabIndex={0}
       >
-        <section className="plugins-mcp" aria-labelledby="plugins-mcp-title">
+        <section
+          data-testid="plugins-mcp"
+          className="plugins-mcp"
+          aria-labelledby="plugins-mcp-title"
+        >
           <h2 id="plugins-mcp-title">MCP</h2>
           <span>暂未接入</span>
         </section>
