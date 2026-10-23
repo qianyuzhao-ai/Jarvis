@@ -20,7 +20,7 @@
 
 ## 后续阶段
 
-B 已实现，C、D 尚未实施。最终报告在各阶段验证后补齐。
+B、C 已实现，D 尚未实施。最终报告在各阶段验证后补齐。
 
 ## B：原生外观能力
 
@@ -32,3 +32,23 @@ B 已实现，C、D 尚未实施。最终报告在各阶段验证后补齐。
 - 原生 API 已按版本类型声明核对；macOS 13 / 26 桌面壁纸透视观感、真实系统设置变更通知和 Windows 实机仍待人工验收。自动化不修改用户系统强调色。
 
 - 当前测试主机为 macOS 27.0.1。初轮完整回归 85/86 通过，仅 BrowserWindow.blur() 在单窗口下未触发失焦断言；改为第二个真实窗口取得焦点后切回，未改应用焦点逻辑。定位确认 Playwright 默认 Emulation.setFocusEmulationEnabled=true；测试关闭该模拟后使用第二个真实窗口验证，新增 2/2 通过。最终 pnpm check、pnpm build、完整实窗 **86/86（3.1m）** 通过。
+
+## C：12 个基础组件家族
+
+- @jarvis/ui 实现 Button（含 IconButton）、Input、Field、InputGroup、Textarea、NativeSelect、Checkbox、Toggle、ToggleGroup、Spinner、Separator、Tooltip；共享工具不引用应用目录或原生能力。
+- 依赖精确锁定：Radix slot 1.5.0、checkbox 1.4.1、toggle 1.2.1、toggle-group 1.2.1、separator 1.2.0、tooltip 1.4.1；cva 0.7.1；Lucide 1.60.0 与应用一致。
+- 读取并检查 Figma Light/Dark 评审样张：Button 336:27572（具体实例 336:27586）、Input 340:28052、Field 341:28089、InputGroup 342:28596、Textarea 343:28776、NativeSelect 344:29698、Checkbox 345:29178、Toggle 346:29445、ToggleGroup 347:30224、Spinner 349:29841、Separator 350:30304、Tooltip 351:30352。未改 Figma。
+- 按需开发入口 `#/ui-preview`；预览通过独立安全 Electron 窗口和临时 loopback Vite 服务测试，生产入口受 import.meta.env.DEV 控制。已扫描生产 renderer，未发现 UI V1 Preview / ui-preview / 切换预览主题。
+- 两张截图基准提交到 `apps/desktop/tests/ui-preview.spec.ts-snapshots/preview-{light,dark}-darwin.png`。覆盖全家族、所有尺寸/变体、长文字、图标、禁用/加载/只读/错误、三态复选框、分段单选与 tooltip；hover/pressed/focus 通过真实操作验证。
+- 预览回归 3/3（5.5s）通过：浅深 screenshot、精确默认/悬停颜色、20/24/28/32 高度和图标方形、按压颜色、3px 焦点环、失焦 default 按钮、标签/描述/错误关联、只读可聚焦、loading 宽度及重复提交拦截（含 asChild）、Checkbox 标签与 Space、ToggleGroup 方向键/Space、ref、原生选择、Textarea 自动增高和中文组合事件、Tooltip Esc、Tab 顺序。
+- 修复验证发现：tailwind-merge 默认会把 text-body 等当文字颜色，已扩展项目字号词表；状态规则纳入 utilities 层以免静态背景工具类盖过 disabled / readOnly。旧规则仍隔离在 legacy 层。
+
+### 与 Figma / 说明的差异与取舍
+
+1. Button loading 按实施说明保持原宽度、保留可访问名称，以居中 Spinner 替代可见内容；Figma 样张是 Spinner 与文字并排，会增加宽度。此处优先用户明确的“宽度稳定”。
+2. Figma 字体为 SF Pro，中文存在回退；实现使用指定系统字体栈，中文为设备实际字体。原生 select 菜单和字体栅格化会随平台变化，未把 Figma 静态菜单/字形作为图片复刻。
+3. 预览按组件家族和可操作状态排列，不复刻 Figma 的整张评审画板坐标；颜色、高度、圆角、间距、阴影和图标依照参数。Figma 的 hover/pressed/focus 为静态展示，代码由真实交互产生。
+4. Radix 当前单选 ToggleGroup 输出 radiogroup/radio；方向键移动焦点、Space/Enter 选择。设置页保留必选逻辑，不允许取消到空值。
+5. 测试截图基准由当前 macOS 主机生成；Windows 字体与菜单需在对应平台另建基准并验收。
+
+- C 最终验证：pnpm check、pnpm build、完整实窗回归 **89/89（3.2m）** 通过，包含两个已提交截图基准和组件交互；最终生产 renderer 扫描仍无预览入口标记。根目录工程检查包含 UI 包 strict 类型检查与变量门禁。

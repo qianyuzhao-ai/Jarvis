@@ -1,5 +1,18 @@
 @layer theme {
   :root {
+    --border-hairline: 0.5px;
+    --border-standard: 1px;
+    --focus-width: 3px;
+    --icon-mini: 12px;
+    --icon-small: 14px;
+    --icon-regular: 16px;
+    --icon-large: 18px;
+    --icon-hero: 24px;
+    --field-label-width: 120px;
+    --textarea-height: 96px;
+    --tooltip-max-width: 240px;
+    --duration-spinner: 1200ms;
+    --duration-pulse: 2400ms;
     --primitive-neutral-white: #ffffff;
     --primitive-neutral-50: #f7f7f8;
     --primitive-neutral-100: #efeff1;
