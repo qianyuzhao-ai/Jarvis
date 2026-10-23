@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：19 Collapsible 初稿（2026-10-23）
+
+- 用户要求继续设计 Collapsible。新 Section `19 Collapsible`（`369:31918`），概览索引已追加。
+- `Collapsible`（`369:31917`，8 个变体）：appearance（plain / card）× open（false / true）× state（default / hover）。plain：标题 callout fg-secondary（hover 为 fg + fill 底），内容缩进 20，用于聊天活动、设置高级选项；card：surface + 0.5px border、radius/panel，标题 headline，展开后内容区上方 separator、缩进 24，用于节点生成详情。chevron 12px，收起向右、展开向下；可选右侧摘要 meta（callout fg-tertiary）。属性 `title`、`meta` + `showMeta`；`Content slot` 在实例中替换。
+- 评审样张 `Collapsible / Review`（`369:32350`）：生成详情卡片收起 / 展开（模型、参数、任务 ID、复制结果链接）、聊天活动“已编辑 2 个文件”（增删数分别为 success / danger）、模型服务“高级设置”收起悬停，截图检查两套主题通过；已修正变体高度被固定的问题。初稿待用户确认。
+
 ### V1 第二批：18 Tabs 初稿（2026-10-23）
 
 - 用户要求继续设计 Tabs。新 Section `18 Tabs`（`367:31908`），概览索引已追加。
