@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 Toggle 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Toggle。组件集 `Toggle`（`346:29444`）位于 V1-Components 页 Checkbox 下方，24 个变体：appearance（default 无边框工具栏 / outline 推按钮）× pressed（off / on）× size（sm / default，高 24 / 28）× state（default / hover / disabled）。属性：`icon` + `iconSwap`（默认 magnet）、`label` + `showLabel`、`focusVisible`。
+- off：default 为透明 + fg/secondary，hover 显 fill；outline 为 surface-raised + 0.5px border + shadow-control。on：selection/default 底 + accent 文字与图标，outline 加 1px accent 描边；disabled 灰化。内边距 space/8、间距 space/4，仅图标时约 32×28。对应 Radix Toggle，与 Button 的瞬时按下区分。
+- 评审样张 `Toggle / Review`（`346:29445`）展示 2×2 外观/按下 × 状态与焦点、仅图标 / 仅文字 / sm，以及画布右下角开关（缩略图 / 点阵 / 吸附）和 Agent“包含所选资产”示例，截图检查两套主题通过。初稿待用户确认。
+
 ### V1 Checkbox 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Checkbox。组件集 `Checkbox`（`345:29177`）位于 V1-Components 页 NativeSelect 下方，12 个变体：checked（false / true / mixed）× state（default / pressed / focus / disabled；macOS 复选框无 hover 高亮）。属性：`label`、`showLabel`、`description`、`showDescription`。
