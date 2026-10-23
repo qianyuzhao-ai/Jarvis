@@ -1,6 +1,6 @@
 # macOS 签名与公证
 
-正式发布使用 `electron-builder.release.yml`：macOS arm64 产物要求 Developer ID Application 签名、Hardened Runtime 和 Apple 公证。`forceCodeSigning` 只在 macOS 启用，Windows x64 NSIS 仍未签名。
+正式发布使用 `electron-builder.release.yml`：macOS arm64 / x64 产物要求 Developer ID Application 签名、Hardened Runtime 和 Apple 公证。`forceCodeSigning` 只在 macOS 启用，Windows x64 NSIS 仍未签名。
 
 ## GitHub Actions Secrets
 
@@ -19,13 +19,13 @@
 ## 发布和验证
 
 1. 按 `memory/git-workflow.md` 完成 feature → develop → main，版本号和变更记录在发版前确定。仅在获得发布授权后创建新版本标签。
-2. 应用源码、版本号、打包配置和 entitlements 来自版本标签；macOS 校验脚本来自工作流触发提交，独立稀疏检出到 `.release-tools`，不混入应用。修复校验工具后，在 Actions 选择最新 main 手动输入旧标签重试；直接重跑原运行仍使用原工作流。旧标签不获得新的应用配置，不移动旧标签，也不覆盖已有 Release。
+2. 应用源码、版本号、打包配置和 entitlements 来自版本标签；macOS 校验脚本来自工作流触发提交，独立稀疏检出到 `.release-tools`，不混入应用。仅兼容旧标签的校验工具修复可选择最新 main 输入旧标签重试；本次 Intel/macOS 13 及清单合并流程需要包含相关脚本的新版本标签，不能套用到旧标签；直接重跑原运行仍使用原工作流。旧标签不获得新的应用配置，不移动旧标签，也不覆盖已有 Release。
 3. macOS 打包步骤先检查五项凭据是否齐全，再由 electron-builder 导入证书、签名、提交公证并附加票据。发布配置不允许缺失证书后降级为未签名包。
-4. `scripts/verify-macos-release.sh` 校验目录包，以及 ZIP 解压和 DMG 只读挂载后的实际应用：架构、版本、Bundle ID、签名完整性、Developer ID Application 身份、Team ID、Hardened Runtime、公证票据和 Gatekeeper。临时检查目录留在 runner，不执行批量删除；DMG 检查后卸载。
-5. 各平台运行 `scripts/verify-packaged-startup.mjs <产物目录>`：先用打包的 Electron 检查 ASAR 中全部必需依赖，再启动实际打包的 Jarvis（独立临时 profile，工作目录在仓库外），验证 packaged 状态、版本、ASAR 页面、设置页和更新桥接；禁止借用工作区 node_modules。依赖缺失或启动失败时不上传、不发布。
-6. 各平台运行 `scripts/verify-update-metadata.mjs <产物目录> <macos|windows>`，校验清单版本、平台文件名、更新目标、实际文件大小与 SHA-512。Windows 构建及校验也成功后，统一发布三个安装文件、更新清单和生成的 blockmap 到同一个 GitHub 预发布 Release。macOS 文件名不含 `unsigned`，Windows 文件名保留该标记；`builder-debug.yml` 及其他 builder 调试清单不上传到 Release。
+4. `scripts/verify-macos-release.sh` 校验目录包，以及 ZIP 解压和 DMG 只读挂载后的实际应用：架构、最低系统版本 13.0、版本、Bundle ID、签名完整性、Developer ID Application 身份、Team ID、Hardened Runtime、公证票据和 Gatekeeper。临时检查目录留在 runner，不执行批量删除；DMG 检查后卸载。
+5. 各平台运行 `scripts/verify-packaged-startup.mjs <产物目录> <arm64|x64>`：先用打包的 Electron 检查 ASAR 中全部必需依赖，再启动实际打包的 Jarvis（独立临时 profile，工作目录在仓库外），验证 packaged 状态、版本、ASAR 页面、设置页和更新桥接；禁止借用工作区 node_modules。依赖缺失或启动失败时不上传、不发布。
+6. 各平台运行 `scripts/verify-update-metadata.mjs <产物目录> <macos|windows> <arm64|x64>`，校验清单版本、平台文件名、更新目标、实际文件大小与 SHA-512。三个构建均成功后，分别下载 Artifact（禁止同名清单直接覆盖），由 `assemble-release-assets.mjs` 合并两份 macOS 清单的 files，保留 x64 的兼容 path/sha512，并重新校验两种架构的 ZIP、实际大小及 SHA-512。统一发布五个安装文件、更新清单和生成的 blockmap 到同一个 GitHub 预发布 Release。macOS 文件名不含 `unsigned`，Windows 文件名保留该标记；`builder-debug.yml` 及其他 builder 调试清单不上传到 Release。
 
-首次发布仍需回读 Actions 成功状态与 Release 资产，并在 Apple Silicon Mac 上通过实际下载的 DMG 安装、启动并检查核心功能。静态配置通过不等于 Apple 接受了本次公证，也不等于真实签名包可正常运行。
+首次发布仍需回读 Actions 成功状态与 Release 资产，并在 Apple Silicon 和 Intel Mac 上通过实际下载的 DMG 安装、启动并检查核心功能。静态配置通过不等于 Apple 接受了本次公证，也不等于真实签名包可正常运行。
 
 `stapler validate` 和 `spctl --assess` 仅对明确的 Apple 网络错误（NSURLErrorDomain/CFNetwork 的 -1001、-1003、-1004、-1005、-1006、-1009）最多执行 3 次，间隔 5 秒和 10 秒。明确 rejected/revoked、签名错误、无网络标识的票据失败立即停止；Error 68 本身不触发重试。最后一次失败仍返回原退出码，阻止发布，`codesign` 不重试也不跳过。回归脚本 `scripts/apple-network-retry.test.sh` 验证恢复、次数上限和真实拒绝边界，云端先运行回归再验证实际产物。
 
@@ -67,3 +67,11 @@
 app-builder-lib 26.15.3 的自动导入把证书密码传给 set-key-partition-list，而临时钥匙串使用另一随机密码；macOS 26 会因此报 SecKeychainUnlock。工作流从触发提交加载 prepare-macos-signing.mjs，使用 base64 CSC_LINK 和 CSC_KEY_PASSWORD 导入证书，单独生成钥匙串密码配置访问权限，并确认同一 Apple Team 的 Developer ID Application 身份。临时 p12 权限为 0600，导入后只删除这一明确路径的文件；钥匙串仅保存在临时 runner。
 
 构建步骤只接收 CSC_KEYCHAIN 和公证凭据，不再设置 CSC_LINK / CSC_KEY_PASSWORD，避免重复导入。仍要求正式签名、公证和全部校验通过。此准备脚本随工作流提交加载，允许在保持旧版本标签不变时修复 CI 签名工具。
+
+## Intel 与 macOS 13 支持（2026-10-23）
+
+- 最低系统目标改为 macOS 13.0，Electron 44.9.1 自身的 Info.plist 同样声明 13.0。不支持 macOS 12 及以下。
+- arm64 使用 `macos-26`，x64 使用 `macos-26-intel`，各自执行原生打包启动验证；构建系统为 26 不代表用户必须使用 26，也不能替代 macOS 13 实机验证。
+- arm64 目录包路径为 `mac-arm64/Jarvis.app`，x64 为 `mac/Jarvis.app`；Mach-O 架构分别为 arm64 / x86_64。
+- 两个 macOS 任务复用签名与公证凭据；任一架构构建、依赖、启动、签名、公证或清单失败均阻止统一发布。
+- macOS 13 两种架构的安装、登录、媒体播放与自动更新仍需目标设备验收；本地未签名目录包不等同于正式发布验证。
