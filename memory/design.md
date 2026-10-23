@@ -2,6 +2,11 @@
 
 最后更新：2026-10-22
 
+## UI V1 阶段 B 原生外观（2026-10-23）
+
+接入只读系统强调色 bridge、macOS sidebar vibrancy 与 html 窗口焦点状态；Windows / 降低透明度使用不透明侧栏。当前主机 macOS 27.0.1，13/26 与 Windows 材质及真实系统设置切换仍待实机验收。API 来源与回归结果见 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
 ## UI V1 阶段 A 基建（2026-10-23）
 
 按用户新实施文档建立 packages/ui 与固定浅深变量，旧样式隔离但外观不变；主题属性提升到 html。16 张改造前后截图逐像素一致。Figma 只读核对，未写入设计文件。详细来源、节点和验收见 [UI V1 实施记录](ui-v1-implementation.md)。

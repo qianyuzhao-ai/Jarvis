@@ -20,4 +20,15 @@
 
 ## 后续阶段
 
-B、C、D 尚未实施。最终报告在各阶段验证后补齐。
+B 已实现，C、D 尚未实施。最终报告在各阶段验证后补齐。
+
+## B：原生外观能力
+
+- 新增只读 appearance bridge（getAccentColor / onAccentColor），沿用主窗口、mainFrame、完整 URL 信任校验；没有通用 IPC、文件或系统执行入口。
+- 根据 [Electron systemPreferences 官方文档](https://www.electronjs.org/docs/latest/api/system-preferences) 和安装的 Electron 44.9.1 electron.d.ts 核对：macOS 订阅 AppleColorPreferencesChangedNotification，Windows 订阅 accent-color-changed；应用退出释放原生订阅，窗口销毁移除发送目标。
+- 只接受 RRGGBBAA；读取失败/非法值/浏览器环境回退 tokens 默认蓝，避免异步初始读取覆盖更新事件，卸载后不再写入。通过 color-mix 派生 hover、pressed、focus-ring、selection，浅深比例分别处理。
+- tokens 纳入 theme 层，使应用层系统外观覆盖和默认回退可按层级工作。html 监听 focus/blur，失焦 selection 使用 inactive 值；Button 中性外观将在 C 接入。
+- macOS 使用 vibrancy=sidebar、visualEffectState=followWindow 和透明 backgroundColor，ready-to-show 后显示；页面根透明、侧栏半透明、内容区不透明。Windows 和 prefers-reduced-transparency 使用不透明侧栏。
+- 原生 API 已按版本类型声明核对；macOS 13 / 26 桌面壁纸透视观感、真实系统设置变更通知和 Windows 实机仍待人工验收。自动化不修改用户系统强调色。
+
+- 当前测试主机为 macOS 27.0.1。初轮完整回归 85/86 通过，仅 BrowserWindow.blur() 在单窗口下未触发失焦断言；改为第二个真实窗口取得焦点后切回，未改应用焦点逻辑。定位确认 Playwright 默认 Emulation.setFocusEmulationEnabled=true；测试关闭该模拟后使用第二个真实窗口验证，新增 2/2 通过。最终 pnpm check、pnpm build、完整实窗 **86/86（3.1m）** 通过。

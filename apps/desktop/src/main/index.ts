@@ -1,3 +1,4 @@
+import { registerAppearance, trustAppearanceWindow } from './appearance/bridge';
 import { app, BrowserWindow, Menu, session, protocol } from 'electron';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -48,9 +49,14 @@ async function createWindow(): Promise<void> {
     minWidth: 900,
     minHeight: 640,
     show: false,
-    backgroundColor: '#f0f1f2',
+    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#f0f1f2',
     ...(process.platform === 'darwin'
-      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 23 } }
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: { x: 16, y: 23 },
+          vibrancy: 'sidebar' as const,
+          visualEffectState: 'followWindow' as const,
+        }
       : {}),
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
@@ -62,6 +68,7 @@ async function createWindow(): Promise<void> {
     },
   });
 
+  trustAppearanceWindow(window.webContents, trustedUrl);
   trustGenerationWindow(window.webContents, trustedUrl);
   trustWritingWindow(window.webContents, trustedUrl);
   trustAgentWindow(window.webContents, trustedUrl);
@@ -105,6 +112,7 @@ void app
     await registerWriting();
     await registerAgent();
     registerUpdates(createWindow);
+    registerAppearance();
     await createWindow();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

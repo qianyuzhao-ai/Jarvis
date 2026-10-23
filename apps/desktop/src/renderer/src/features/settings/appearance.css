@@ -1,0 +1,61 @@
+@layer components {
+  :root[data-system-accent='true'] {
+    --color-accent-hover: color-mix(
+      in srgb,
+      var(--color-accent) 88%,
+      var(--primitive-neutral-black)
+    );
+    --color-accent-pressed: color-mix(
+      in srgb,
+      var(--color-accent) 76%,
+      var(--primitive-neutral-black)
+    );
+    --color-focus-ring: color-mix(in srgb, var(--color-accent) 50%, transparent);
+    --color-selection: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+  :root[data-system-accent='true'][data-theme='dark'] {
+    --color-accent-hover: color-mix(
+      in srgb,
+      var(--color-accent) 80%,
+      var(--primitive-neutral-white)
+    );
+    --color-accent-pressed: color-mix(
+      in srgb,
+      var(--color-accent) 86%,
+      var(--primitive-neutral-black)
+    );
+    --color-selection: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  }
+  :root[data-window-active='false'][data-theme] {
+    --color-selection: var(--color-selection-inactive);
+  }
+  :root[data-platform='darwin'],
+  :root[data-platform='darwin'] body,
+  :root[data-platform='darwin'] .theme-root,
+  :root[data-platform='darwin'] .writing-shell {
+    background: transparent;
+  }
+  .sidebar-shell,
+  .writing-left,
+  .writing-right {
+    background: var(--color-window);
+  }
+  :root[data-platform='darwin'] .sidebar-shell,
+  :root[data-platform='darwin'] .writing-left,
+  :root[data-platform='darwin'] .writing-right {
+    background: var(--color-sidebar);
+  }
+  .workspace {
+    background: var(--color-content);
+  }
+  .writing-main {
+    background: var(--color-content);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    :root[data-platform='darwin'] .sidebar-shell,
+    :root[data-platform='darwin'] .writing-left,
+    :root[data-platform='darwin'] .writing-right {
+      background: var(--color-window);
+    }
+  }
+}

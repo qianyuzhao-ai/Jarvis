@@ -7,6 +7,7 @@
 @import './features/updates/updates.css';
 @import './features/creation/canvas-agent.css';
 @import './legacy.css';
+@import './features/settings/appearance.css';
 @import './features/writing/writing.css';
 @source '../../../../../packages/ui/src';
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));

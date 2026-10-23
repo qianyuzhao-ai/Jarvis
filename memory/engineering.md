@@ -2,6 +2,11 @@
 
 最后更新：2026-10-23
 
+## UI V1 阶段 B 原生外观（2026-10-23）
+
+接入只读系统强调色 bridge、macOS sidebar vibrancy 与 html 窗口焦点状态；Windows / 降低透明度使用不透明侧栏。当前主机 macOS 27.0.1，13/26 与 Windows 材质及真实系统设置切换仍待实机验收。API 来源与回归结果见 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
 ## UI V1 阶段 A 基建（2026-10-23）
 
 建立 @jarvis/ui 工作区、变量约束检查和稳定测试定位；目录打包、360 项生产依赖闭包及真实包启动通过。阶段实窗回归结果与截图证据集中于 [UI V1 实施记录](ui-v1-implementation.md)。

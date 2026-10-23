@@ -1,3 +1,4 @@
+import { subscribeAccentColor, observeWindowFocus } from './features/settings/appearance';
 import { lazy, Suspense, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
 import { PanelLeftOpen, Workflow } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
@@ -40,6 +41,16 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   >('general');
   const agent = useAgent();
   const theme = useResolvedTheme(data.theme);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.platform = window.desktop?.platform ?? 'browser';
+    const unsubscribe = subscribeAccentColor(window.desktop?.appearance, root);
+    const stopFocus = observeWindowFocus(root);
+    return () => {
+      unsubscribe();
+      stopFocus();
+    };
+  }, []);
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);

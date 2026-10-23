@@ -6,6 +6,16 @@ import type { UpdateState } from '../shared/updates';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
+  appearance: {
+    getAccentColor: () => ipcRenderer.invoke('appearance:accent'),
+    onAccentColor: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, color: string | null) => listener(color);
+      ipcRenderer.on('appearance:accent-changed', handle);
+      return () => {
+        ipcRenderer.removeListener('appearance:accent-changed', handle);
+      };
+    },
+  },
   updates: {
     getState: () => ipcRenderer.invoke('updates:state'),
     check: () => ipcRenderer.invoke('updates:check'),
