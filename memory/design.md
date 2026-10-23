@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 ToggleGroup 组件初稿（2026-10-23）
+
+- 用户要求继续设计 ToggleGroup。新增两个组件集，位于 V1-Components 页 Toggle 下方：
+  - `ToggleGroup Item`（`347:29672`，12 个变体）：selected（off / on）× size（sm 高 20 / default 高 24，绑定 control-h/mini·small）× state（default / hover / disabled）。on 为 surface-raised + shadow-control 的凸起项，off 为透明 + fg/secondary，hover 显 fill。属性 `label`、`icon` + `iconSwap`（默认 contrast）、`showLabel`、`focusVisible`。
+  - `ToggleGroup`（`347:29793`，4 个变体）：appearance（segmented = fill 轨道 + 2px 内边距的 macOS 分段控件 / default = 一组无边框 Toggle，间距 space/4）× size（sm / default）。内含 4 个公开嵌套项 `Item 1–4`，`item3`（默认开）/ `item4`（默认关）控制项数 2–4。
+- 对应 Radix ToggleGroup type="single"，用于偏好值单选，不是内容导航 Tab。
+- 评审样张 `ToggleGroup / Review`（`347:30224`）展示两档尺寸、hover / disabled / 焦点、四项、仅图标分段（列表 / 网格）、default 外观，以及 Field 水平行“外观：跟随系统 / Light / Dark”示例，截图检查两套主题通过。初稿待用户确认。
+
 ### V1 Toggle 组件初稿（2026-10-23）
 
 - 用户要求继续设计 Toggle。组件集 `Toggle`（`346:29444`）位于 V1-Components 页 Checkbox 下方，24 个变体：appearance（default 无边框工具栏 / outline 推按钮）× pressed（off / on）× size（sm / default，高 24 / 28）× state（default / hover / disabled）。属性：`icon` + `iconSwap`（默认 magnet）、`label` + `showLabel`、`focusVisible`。
