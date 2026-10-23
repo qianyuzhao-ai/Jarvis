@@ -6,10 +6,13 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, expect } from '@playwright/test';
 
 const directory = resolve(process.argv[2]);
+const arch = process.argv[3] ?? process.arch;
+assert(['arm64', 'x64'].includes(arch), 'Unsupported package architecture');
+assert.equal(process.arch, arch, 'Run with the matching process architecture');
 const mac = process.platform === 'darwin';
 assert(mac || process.platform === 'win32', 'Run on the packaged application platform');
 const application = mac
-  ? join(directory, 'mac-arm64/Jarvis.app/Contents')
+  ? join(directory, arch === 'arm64' ? 'mac-arm64' : 'mac', 'Jarvis.app/Contents')
   : join(directory, 'win-unpacked');
 const executable = join(application, mac ? 'MacOS/Jarvis' : 'Jarvis.exe');
 const archive = join(application, mac ? 'Resources/app.asar' : 'resources/app.asar');
@@ -50,11 +53,13 @@ try {
   await page.locator('.theme-root').waitFor({ timeout: 30_000 });
   await page.waitForLoadState('load');
   const info = await instance.evaluate(({ app }) => ({
+    arch: process.arch,
     packaged: app.isPackaged,
     version: app.getVersion(),
     path: app.getAppPath(),
     profile: app.getPath('userData'),
   }));
+  assert.equal(info.arch, arch);
   assert.equal(info.packaged, true);
   assert.equal(info.version, version);
   assert.equal(await realpath(info.path), await realpath(archive));
