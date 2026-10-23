@@ -4,7 +4,7 @@
 
 当前源码版本：`0.2.5`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
-0.2.5 准备发布：新增 macOS Intel x64，并将 macOS 最低系统目标调整为 13.0。0.2.4 已于 2026-10-23（北京时间）发布，替代此前 runner 容量阻塞状态。
+[0.2.5 已发布](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.5)：包含 macOS arm64、Intel x64 和 Windows x64，macOS 最低系统目标为 13.0。三个平台均通过云端打包应用启动验证，两种 macOS 包均通过签名、公证和 Gatekeeper；macOS 13 实机仍待验收。
 
 ## 启动
 
