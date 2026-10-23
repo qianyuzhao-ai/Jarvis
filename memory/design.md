@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：16 Dialog 初稿（2026-10-23）
+
+- 用户要求继续设计 Dialog。新 Section `16 Dialog`（`362:31496`），概览索引已追加。
+- 新增语义变量 `color/scrim`（Light alpha/black-25 / Dark alpha/black-50，代码名 `--color-scrim`），代码实现时需补入 tokens.css。
+- `Dialog`（`362:31494`，3 个变体）：size（sm 400 / default 560 / lg 800）。content 底 + 0.5px border + V1/shadow-dialog，radius/window；头部 title-3 标题、可选 callout 说明与 ghost icon-sm 关闭按钮（内边距 20 / 16 / 12）；`Content slot` 为虚线占位内容区（在实例中分离替换）；底部 separator 上边线，右对齐公开的 secondary / default Button，可选左侧说明。属性 `title`、`description` + `showDescription`、`showClose`、`showFooter`、`footerNote` + `showFooterNote`。
+- `Dialog Overlay`（`362:31495`）：color/scrim 全窗遮罩。
+- 评审样张 `Dialog / Review`（`362:31498`）：窗口模型中遮罩 + 居中“重命名项目”（Field + Input），sm“新建文件夹”与 lg“编辑视频节点”（媒体预览、左侧说明），截图检查两套主题通过；已修正分离后的示例高度不随内容的问题。初稿待用户确认。
+
 ### V1 第二批：15 DropdownMenu 初稿（2026-10-23）
 
 - 用户要求继续设计 DropdownMenu。新 Section `15 DropdownMenu`（`360:31109`），概览索引已追加：
