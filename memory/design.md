@@ -2,6 +2,17 @@
 
 最后更新：2026-10-24
 
+### V1 第三批：24 Window · TitleBar 初稿（2026-10-24）
+
+- PR #69（第二批代码）、#70（设计记录）已合并；用户要求开始设计第三批。按方案第十二节第四步“布局模板层”，计划顺序：24 Window · TitleBar、25 AppSidebar、26 Toolbar、27 SettingsRow、28 列表行（ListRow）、29 EmptyState（Card / Resizable 拖动条视需要并入）。设计分支已从合并后的 develop 重建。
+- 现状（develop 代码）：macOS `titleBarStyle: hiddenInset`、`trafficLightPosition {16, 23}`、vibrancy=sidebar；内容区 `.workspace` 左侧 16 圆角，顶栏 `.workspace-toolbar` 最小高 60，侧栏收起时左让 96；侧栏 230–320 可拖动。
+- 新 Section `24 Window · TitleBar`（`382:33089`），总览 Index 行 `382:33914`：
+  - `Traffic Lights`（`382:32613`，active true / false）：系统按钮示意，12px、间距 8，失焦为 fill/pressed 灰；代码不实现，仅用于页面稿避让左上 72×52。
+  - `TitleBar`（`382:32945`，6 个变体）：kind（page / back / tools）× sidebar（open / collapsed）。高 52、左 16（收起时 84 并显示侧栏开关）、右 12；标题 V1/headline，可选副标题 subheadline fg-tertiary；右侧状态 callout fg-tertiary + ghost icon 按钮（间距 4）；tools 的中间工具组绝对居中。属性 `title`、`showSubtitle`、`status` + `showStatus`、`showActions`。整条为拖动区，控件 no-drag；无底色，内容滚到下方时加 0.5px separator。
+  - `Window`（`382:33088`，4 个变体）：sidebar（open / collapsed）× active（true / false）。960×600，radius/window，底 color/sidebar；侧栏 240，交通灯 (20, 20)，侧栏开关在侧栏右上；内容区 color/content，展开时左两角 radius/window + 0.5px separator；失焦时交通灯灰、标题 fg-secondary。Sidebar / Content slot 为占位。
+- 提议（待确认）：顶栏由 60 改为 52（macOS 26 统一工具栏），交通灯垂直居中 → 代码需同步 `trafficLightPosition` 约 {x: 20, y: 20}、收起时左让 84。
+- 审阅板 `Window · TitleBar / Review`（`382:33521`）：Light / Dark 各含渐变壁纸上的窗口（展开、收起 + 失焦）与三种 TitleBar。插件几何检查通过（交通灯 (20, 20)、顶栏 52、工具组居中 360/720）；截图下载仍被代理拒绝，未做截图复核。初稿待用户确认。
+
 ### 第二批组件代码实现验收（2026-10-24）
 
 - Codex 按 `codex-prompt-ui-v1-batch2.md` 在 `feature/ui-v1-overlays` 实现（E `157ce2d` / F `a73903a` / G `d7ed150` / H `3487102`，文档 `49ac988`），实施记录在该分支 `memory/ui-v1-implementation.md`“第二批”章节。
