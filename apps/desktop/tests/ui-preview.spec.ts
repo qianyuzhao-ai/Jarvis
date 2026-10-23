@@ -136,6 +136,19 @@ for (const theme of ['light', 'dark']) {
     const secondary = page.locator(
       '[data-ui="button"][data-variant="secondary"][data-disabled="true"]',
     );
+    const slotted = page.getByRole('link', { name: '文本链接' });
+    await slotted.evaluate((node) => {
+      node.setAttribute('data-variant', 'secondary');
+      node.setAttribute('data-disabled', 'true');
+    });
+    await expect(slotted).toHaveCSS('background-color', palette.raised);
+    await expect(slotted).toHaveCSS('border-top-color', palette.separator);
+    await expect(slotted).toHaveCSS('color', palette.disabled);
+    await expect(slotted).toHaveCSS('box-shadow', 'none');
+    await slotted.evaluate((node) => {
+      node.setAttribute('data-variant', 'ghost');
+      node.removeAttribute('data-disabled');
+    });
     const select = page.getByLabel('选择禁用');
     const off = page.getByRole('button', { name: '推按钮禁用-off' });
     const on = page.getByRole('button', { name: '推按钮禁用-on' });

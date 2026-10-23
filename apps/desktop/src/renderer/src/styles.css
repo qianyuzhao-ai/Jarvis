@@ -36,6 +36,7 @@
   --color-selection: var(--ui-color-selection);
   --color-selection-inactive: var(--ui-color-selection-inactive);
   --color-shadow: var(--ui-color-shadow);
+  --color-scrim: var(--ui-color-scrim);
   --color-accent: var(--ui-color-accent);
   --color-accent-hover: var(--ui-color-accent-hover);
   --color-accent-pressed: var(--ui-color-accent-pressed);

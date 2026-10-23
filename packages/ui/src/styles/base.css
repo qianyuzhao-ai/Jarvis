@@ -101,9 +101,11 @@
   ) {
     background: transparent;
   }
-  .ui-button[data-variant='secondary']:is(:disabled, [aria-disabled='true']):not(
-    [data-loading='true']
-  ) {
+  .ui-button[data-variant='secondary']:is(
+    :disabled,
+    [aria-disabled='true'],
+    [data-disabled='true']
+  ):not([data-loading='true']) {
     background: var(--color-surface-raised);
     border: var(--border-hairline) solid var(--color-separator);
     color: var(--color-fg-disabled);

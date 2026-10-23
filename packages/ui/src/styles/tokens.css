@@ -142,6 +142,7 @@
     --color-selection: var(--primitive-blue-light-subtle);
     --color-selection-inactive: var(--primitive-alpha-black-10);
     --color-shadow: var(--primitive-alpha-black-15);
+    --color-scrim: var(--primitive-alpha-black-25);
     --color-accent: var(--primitive-blue-light);
     --color-accent-hover: var(--primitive-blue-light-hover);
     --color-accent-pressed: var(--primitive-blue-light-pressed);
@@ -176,6 +177,7 @@
     --color-selection: var(--primitive-blue-dark-subtle);
     --color-selection-inactive: var(--primitive-alpha-white-10);
     --color-shadow: var(--primitive-alpha-black-50);
+    --color-scrim: var(--primitive-alpha-black-50);
     --color-accent: var(--primitive-blue-dark);
     --color-accent-hover: var(--primitive-blue-dark-hover);
     --color-accent-pressed: var(--primitive-blue-dark-pressed);
@@ -212,6 +214,7 @@
     --ui-color-selection: var(--color-selection);
     --ui-color-selection-inactive: var(--color-selection-inactive);
     --ui-color-shadow: var(--color-shadow);
+    --ui-color-scrim: var(--color-scrim);
     --ui-color-accent: var(--color-accent);
     --ui-color-accent-hover: var(--color-accent-hover);
     --ui-color-accent-pressed: var(--color-accent-pressed);

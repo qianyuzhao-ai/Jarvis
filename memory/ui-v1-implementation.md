@@ -1,6 +1,6 @@
 # UI V1 实施与验收
 
-最后更新：2026-10-23
+最后更新：2026-10-24
 
 ## 交付状态
 
@@ -121,3 +121,17 @@ A–D 已实现；各阶段证据与最终验收见下文。
 - 设置截图：`node scripts/capture-ui.mjs fix-disabled-settings` 生成 `apps/desktop/test-results/ui-v1/fix-disabled-settings/` 共 16 张浅深截图；已核对通用“检查更新”和内网平台登录按钮的禁用外观。截图保留原生透明区域 alpha。
 
 - 本次修改文件：`packages/ui/src/styles/base.css`、`apps/desktop/src/renderer/src/dev/UiPreview.tsx`、`apps/desktop/tests/ui-preview.spec.ts`、两张 macOS 预览基准、`memory/design.md` 与本报告。完整检查日志保存于 `apps/desktop/test-results/ui-v1/fix-disabled/verification/`。
+
+## 第二批：浮层与反馈（2026-10-24）
+
+依据用户 `codex-prompt-ui-v1-batch2.md`，从最新 origin/develop 创建 `feature/ui-v1-overlays`。授权 E–H 独立提交与最终推送，不创建 PR、合并、标签或发布。设计分支只读参考，未合入；Google Docs v0.2 与 Figma 当前节点已读取。本任务明确授权实现第二批初稿。
+
+### E：变量与依赖
+
+- 新增 scrim 语义色及 bg-scrim 映射：Light black-25、Dark black-50；补齐 secondary Button 的 data-disabled 禁用选择器，浅深测试直接验证 asChild 链接的背景、描边、文字及阴影。
+- 精确依赖：Radix popover 1.3.1、dropdown-menu 2.2.1、dialog 1.3.1、alert-dialog 1.2.1、tabs 1.2.1、collapsible 1.2.1、toast 1.3.1。Progress 计划用原生 ARIA + 百分比宽度与 SVG，避免为无交互展示引入额外依赖。
+- 检查与构建通过；完整窗口回归 89/89（3.1m）通过。首轮 87/89，新增测试样例与旧选择器冲突；恢复样例属性后预览 3/3（6.4s），全量重跑通过。日志：`apps/desktop/test-results/ui-v1/batch2-verification/e-*.log`。
+
+### 第二批设计来源
+
+Figma 文件 `mIwnyR5nAlECFMam1NvmER`、V1-Components 页 `332:28013`。本轮只读核对 Popover `358:30609`、DropdownMenu `360:30994`、Dialog `362:31494`、AlertDialog Review `363:32030`、Tabs Trigger `367:31760`、Collapsible `369:31917`、Alert `370:32084`、Toast `371:32325`、Badge `376:32522`、Progress `378:32536`。以用户任务数值优先于初稿局部差异（如 Tabs 字号、AlertDialog 图标尺寸及 Collapsible 内边距）。
