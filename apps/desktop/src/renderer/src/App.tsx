@@ -1,3 +1,4 @@
+import { ConfirmProvider, useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { subscribeAccentColor, observeWindowFocus } from './features/settings/appearance';
 import { lazy, Suspense, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
 import { PanelLeftOpen, Workflow } from 'lucide-react';
@@ -29,6 +30,18 @@ const WritingSpace = lazy(() =>
 );
 
 function Workbench({ initial }: { initial: WorkspaceData }) {
+  const confirm = useConfirm();
+  const leaving = useRef(false);
+  async function mayLeave(message: string) {
+    if (leaving.current) return false;
+    if (!settingsDirty) return true;
+    leaving.current = true;
+    try {
+      return await confirm({ title: '放弃未保存的更改？', message });
+    } finally {
+      leaving.current = false;
+    }
+  }
   const updates = useAppUpdates();
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
@@ -80,11 +93,11 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       })),
     [projectId, update],
   );
-  function openSettings(section: 'general' | 'services' | 'models' | 'plugins') {
+  async function openSettings(section: 'general' | 'services' | 'models' | 'plugins') {
     if (
       settingsDirty &&
       section !== settingsSection &&
-      !window.confirm('更改尚未保存，确定放弃这些更改吗？')
+      !(await mayLeave('更改尚未保存，确定放弃这些更改吗？'))
     )
       return;
     if (section !== settingsSection) setSettingsDirty(false);
@@ -96,13 +109,14 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     setRoute('canvas');
   };
   const project = data.projects.find((p) => p.id === projectId);
-  function returnToProjects() {
-    if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改并返回工作台吗？')) return;
+  async function returnToProjects() {
+    if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改并返回工作台吗？')))
+      return;
     setSettingsDirty(false);
     setRoute('projects');
   }
-  function navigateChat(id: string | null) {
-    if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改吗？')) return;
+  async function navigateChat(id: string | null) {
+    if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改吗？'))) return;
     setSettingsDirty(false);
     if (id) agent.select(id);
     else agent.newChat();
@@ -184,8 +198,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               chatSessions={agent.snapshot.sessions}
               currentChatId={agent.session?.id ?? null}
               currentRoute={route}
-              onWriting={() => {
-                if (settingsDirty && !window.confirm('更改尚未保存，确定放弃这些更改吗？')) return;
+              onWriting={async () => {
+                if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改吗？')))
+                  return;
                 setSettingsDirty(false);
                 setRoute('writing');
               }}
@@ -323,7 +338,9 @@ export function App() {
     );
   return (
     <MotionConfig reducedMotion="user">
-      <Workbench initial={initial} />
+      <ConfirmProvider>
+        <Workbench initial={initial} />
+      </ConfirmProvider>
     </MotionConfig>
   );
 }

@@ -733,7 +733,7 @@ test('connected references preview upstream media and keep long mention rows on 
     }
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
     const preview = page.getByTestId('reference-stack');
-    await expect(preview).toContainText('共 4');
+    await expect(preview.getByLabel('共 4 个参考素材')).toHaveText('4');
     await expect(preview.getByAltText(longName)).toHaveAttribute('src', /^jarvis-media:/);
     await expect
       .poll(() =>
@@ -783,7 +783,7 @@ test('connected references preview upstream media and keep long mention rows on 
     await edge.press('Enter');
     await edge.press('Delete');
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });
-    await expect(page.getByTestId('reference-stack')).toContainText('共 3');
+    await expect(page.getByTestId('reference-stack').getByLabel('共 3 个参考素材')).toHaveText('3');
   } finally {
     await app.close();
     await mock.close();

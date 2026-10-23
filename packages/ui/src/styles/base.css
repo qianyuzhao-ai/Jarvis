@@ -822,3 +822,9 @@
     }
   }
 }
+
+@layer utilities {
+  .ui-collapse-content[data-state='closed'] {
+    display: none;
+  }
+}

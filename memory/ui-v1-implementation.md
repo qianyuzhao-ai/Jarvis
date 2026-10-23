@@ -143,3 +143,11 @@ Figma 文件 `mIwnyR5nAlECFMam1NvmER`、V1-Components 页 `332:28013`。本轮�
 - 预览专项 8/8（23.5s），检查 216 文件、类型 2/2（6.373s），构建成功（633ms）。完整回归 94/94（3.3m）通过。
 - macOS 基准由 1280×2137 扩展为 1280×3780。第一批内容区 y<2070 与旧基准相比 Light 110 / Dark 76 个不同像素，属于少量字形栅格化差异；含旧底部留白/Tooltip 阴影的全旧画布范围分别 1339 / 1305 像素。未改第一批布局与组件规则。浅深整图已目视检查。
 - 取舍：Progress 用 ARIA 和百分比宽度，圆环使用 SVG；没有 Radix Progress 依赖。Collapsible 使用状态切换和 chevron 旋转，未引入高度动画；减少动态效果时去掉旋转过渡。MediaEditor 是否替换在 H 评估。
+
+### G：低风险页面接入
+
+- F 提交：`a73903a`。App 根 ConfirmProvider 统一 9 处确认，保留原文案并拆出标题；设置导航、模型配置返回、模型删除、对话删除、重新生成、写作重新读取均在等待前加锁，取消不改变数据。生成确认后重新读取当前项目/节点，避免旧快照请求。
+- PluginSettings 使用 segment Tabs；WritingSpace 辅助栏使用 underline Tabs。ChatActivity 三类 details 与 GenerationDetails 改为 Collapsible；UpdateStatus 使用 ProgressField；References / Canvas 使用 BadgeCount。
+- 原生确认测试改为实际操作 AlertDialog；保留删除模型/对话的取消与确认断言，补齐设置离开、未知结果重新生成、写作冲突重新读取的两条路径。进度断言改用 aria-valuenow，数量用可访问名称与数字验证。
+- 集成发现 Radix 默认卸载关闭内容，与原生 details 语义不同：CollapsibleContent 默认 forceMount 并在关闭时 display:none，保留既有内容/组件状态及业务断言。首轮生成/导出失败源于这一差异，已修复；引用数量旧文本断言同步迁到新角标语义。
+- 最终门禁：检查 216 文件、类型 2/2（7.559s），构建成功（731ms），完整回归 95/95（3.3m）通过。写作专项 5/5（14.8s）。新增写作用例曾错误假设另存副本保留原标签，现独立验证冲突重新读取；原另存副本断言保留。未改数据、存储或原生接口。

@@ -164,14 +164,20 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     expect(graph?.agentEdits).toHaveLength(1);
     expect(graph?.nodes.find((n) => n.id === 'agent-video')?.position.y).toBe(300);
     await expect(sidebar.getByTestId('canvas-message-references')).toContainText('图像生成');
-    await sidebar.locator('[data-testid="canvas-change-details"] > summary').first().click();
+    await sidebar
+      .locator('[data-testid="canvas-change-details"] > [data-ui="collapsible-trigger"]')
+      .first()
+      .click();
     await expect(
       sidebar
         .locator('[data-testid="canvas-change-details"] ins')
         .filter({ hasText: 'Agent 新提示词' }),
     ).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('canvas-agent-changes.png') });
-    await sidebar.locator('[data-testid="canvas-change-details"] > summary').first().click();
+    await sidebar
+      .locator('[data-testid="canvas-change-details"] > [data-ui="collapsible-trigger"]')
+      .first()
+      .click();
     const current = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     const sessionId = current?.ok
       ? current.value.snapshot.sessions.find((s) => s.projectId)?.id
@@ -296,15 +302,18 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await expect(history).toHaveCount(0);
     await page.getByRole('button', { name: '画布对话历史' }).click();
     const count = await history.getByTestId('canvas-conversation-row').count();
-    page.once('dialog', (d) => void d.dismiss());
     await history.getByRole('button', { name: '删除画布对话：已重命名的画布会话' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(history.getByTestId('canvas-conversation-row')).toHaveCount(count);
     const userData = await app.evaluate(({ app }) => app.getPath('userData'));
     await expect(
       readFile(resolve(userData, 'agent', 'sessions', deletedId + '.jsonl')),
     ).resolves.toBeDefined();
-    page.once('dialog', (d) => void d.accept());
     await history.getByRole('button', { name: '删除画布对话：已重命名的画布会话' }).click();
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: '删除对话', exact: true })
+      .click();
     await expect(history.getByTestId('canvas-conversation-row')).toHaveCount(count - 1);
     await expect(
       readFile(resolve(userData, 'agent', 'sessions', deletedId + '.jsonl')),

@@ -1,3 +1,4 @@
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   ArrowLeft,
@@ -91,7 +92,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
   const [rightOpen, setRightOpen] = useState(true);
   const [leftWidth, setLeftWidth] = useState(260);
   const [rightWidth, setRightWidth] = useState(280);
-  const [rightTab, setRightTab] = useState<'outline' | 'assistant'>('outline');
+  const [rightTab, setRightTab] = useState('outline');
   const [source, setSource] = useState(false);
   const [folderMenu, setFolderMenu] = useState(false);
   const [moreMenu, setMoreMenu] = useState(false);
@@ -572,72 +573,64 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
         </footer>
       </main>
       {rightOpen && (
-        <aside className="writing-right" aria-label="写作辅助面板">
-          <div className="writing-right-tabs window-drag" role="tablist" aria-label="辅助功能">
-            <IconButton
-              label="文章大纲"
-              role="tab"
-              aria-selected={rightTab === 'outline'}
-              onClick={() => setRightTab('outline')}
+        <Tabs appearance="underline" value={rightTab} onValueChange={setRightTab} asChild>
+          <aside className="writing-right" aria-label="写作辅助面板">
+            <TabsList className="writing-right-tabs" aria-label="辅助功能">
+              <TabsTrigger value="outline" aria-label="文章大纲">
+                <ListTree />
+              </TabsTrigger>
+              <TabsTrigger value="assistant" aria-label="写作助手">
+                <MessageSquare />
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent
+              value={rightTab}
+              className="writing-right-content"
+              aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
             >
-              <ListTree size={18} />
-            </IconButton>
-            <IconButton
-              label="写作助手"
-              role="tab"
-              aria-selected={rightTab === 'assistant'}
-              onClick={() => setRightTab('assistant')}
-            >
-              <MessageSquare size={18} />
-            </IconButton>
-          </div>
-          <div
-            className="writing-right-content"
-            role="tabpanel"
-            aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
-          >
-            <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
-            {rightTab === 'outline' ? (
-              !active ? (
-                <p>打开文档后显示标题导航</p>
-              ) : outline.length ? (
-                <nav aria-label="文章标题">
-                  {outline.map((heading) => (
-                    <button
-                      key={heading.from}
-                      className={currentHeading === heading.from ? 'current' : ''}
-                      style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
-                      onClick={() => {
-                        const editor = view.current;
-                        if (editor) {
-                          editor.dispatch({
-                            selection: { anchor: heading.from },
-                            effects: EditorView.scrollIntoView(heading.from, {
-                              y: 'start',
-                              yMargin: 32,
-                            }),
-                          });
-                          editor.focus();
-                        }
-                      }}
-                    >
-                      {heading.title || '未命名标题'}
-                    </button>
-                  ))}
-                </nav>
+              <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
+              {rightTab === 'outline' ? (
+                !active ? (
+                  <p>打开文档后显示标题导航</p>
+                ) : outline.length ? (
+                  <nav aria-label="文章标题">
+                    {outline.map((heading) => (
+                      <button
+                        key={heading.from}
+                        className={currentHeading === heading.from ? 'current' : ''}
+                        style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
+                        onClick={() => {
+                          const editor = view.current;
+                          if (editor) {
+                            editor.dispatch({
+                              selection: { anchor: heading.from },
+                              effects: EditorView.scrollIntoView(heading.from, {
+                                y: 'start',
+                                yMargin: 32,
+                              }),
+                            });
+                            editor.focus();
+                          }
+                        }}
+                      >
+                        {heading.title || '未命名标题'}
+                      </button>
+                    ))}
+                  </nav>
+                ) : (
+                  <p>使用 # 标题组织文章结构。</p>
+                )
               ) : (
-                <p>使用 # 标题组织文章结构。</p>
-              )
-            ) : (
-              <div className="writing-ai-placeholder">
-                <MessageSquare size={24} />
-                <strong>AI 写作助手</strong>
-                <p>稍后接入，先专注写作。</p>
-              </div>
-            )}
-          </div>
-          <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
-        </aside>
+                <div className="writing-ai-placeholder">
+                  <MessageSquare size={24} />
+                  <strong>AI 写作助手</strong>
+                  <p>稍后接入，先专注写作。</p>
+                </div>
+              )}
+            </TabsContent>
+            <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
+          </aside>
+        </Tabs>
       )}
       <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>
         <form onSubmit={(e) => void submitCreation(e)}>

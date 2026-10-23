@@ -6,6 +6,8 @@
 
 用户已授权第二批初稿进入 E–H 实现。阶段 E 完成 scrim 浅深语义变量和 Tailwind 映射、Radix 依赖、asChild secondary 禁用态修复；检查与构建通过，完整回归 89/89（3.1m）通过。Figma 只读，未修改节点。阶段 F 组件与浅深预览已实现，新增交互专项 8/8 通过，完整回归 94/94（3.3m）通过。组件来源及阶段证据统一记录在 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。
 
+阶段 G 已接入全部 9 处确认、插件/写作辅助 Tabs、聊天/生成详情 Collapsible、更新 ProgressField 与参考/下载 BadgeCount；完整回归 95/95（3.3m）通过。原生 details 保留挂载行为继续保留，具体取舍见实施报告。
+
 ### 第一批组件 PR（2026-10-23）
 
 - 用户要求创建 PR：[PR #67](https://github.com/qianyuzhao-ai/Jarvis/pull/67)，`feature/ui-v1-foundation`（`edbae7d`）→ `develop`，已由用户合并（develop `3c9ab2b`）。随后本设计分支合入 develop，`memory/design.md` 顶部冲突已手动合并，两边记录全部保留。

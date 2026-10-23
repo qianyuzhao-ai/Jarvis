@@ -1,3 +1,4 @@
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   generationInputSchema,
@@ -26,6 +27,7 @@ export function useGeneration(
   commit: (change: ChangeWorkspace) => Promise<void>,
   getCurrent: () => WorkspaceData,
 ) {
+  const confirm = useConfirm();
   const starting = useRef(new Set<string>());
   const notified = useRef(new Set<string>());
   const authNotified = useRef(new Set<string>());
@@ -125,22 +127,30 @@ export function useGeneration(
     async (projectId: string, nodeId: string) => {
       const key = projectId + ':' + nodeId;
       if (starting.current.has(key)) return;
-      const snapshot = getCurrent();
-      const project = snapshot.projects.find((p) => p.id === projectId);
-      const node = project?.nodes.find((n) => n.id === nodeId);
+      let snapshot = getCurrent();
+      let project = snapshot.projects.find((p) => p.id === projectId);
+      let node = project?.nodes.find((n) => n.id === nodeId);
       const bridge = window.desktop?.generation;
       if (!project || !node || node.type !== 'media' || !bridge || generationBusy(node.data))
-        return;
-      if (
-        node.data.generation?.status === 'unknown' &&
-        !window.confirm('上次任务结果未知，上游可能已生成。重新生成可能产生重复费用，确定继续吗？')
-      )
         return;
       starting.current.add(key);
       const requestId = crypto.randomUUID(),
         startedAt = Date.now();
       let sent = false;
       try {
+        if (
+          node.data.generation?.status === 'unknown' &&
+          !(await confirm({
+            title: '仍要重新生成？',
+            message: '上次任务结果未知，上游可能已生成。重新生成可能产生重复费用，确定继续吗？',
+            confirmLabel: '仍要重新生成',
+          }))
+        )
+          return;
+        snapshot = getCurrent();
+        project = snapshot.projects.find((p) => p.id === projectId);
+        node = project?.nodes.find((n) => n.id === nodeId);
+        if (!project || !node || node.type !== 'media' || generationBusy(node.data)) return;
         const linked = linkedReferences(project, nodeId);
         validateReferences(node.data, linked);
         const settings = serviceSettingsSchema.parse(snapshot.settings);
@@ -251,7 +261,7 @@ export function useGeneration(
         starting.current.delete(key);
       }
     },
-    [getCurrent, patch, finish],
+    [getCurrent, patch, finish, confirm],
   );
   const pending = data.projects
     .flatMap((p) =>

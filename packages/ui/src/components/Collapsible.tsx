@@ -43,12 +43,14 @@ export function CollapsibleTrigger({
   );
 }
 export function CollapsibleContent({
+  forceMount = true,
   className,
   ...props
 }: ComponentProps<typeof Primitive.Content>) {
   return (
     <Primitive.Content
       {...props}
+      forceMount={forceMount}
       data-ui="collapsible-content"
       className={cn('ui-collapse-content', className)}
     />
