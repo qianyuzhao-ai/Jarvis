@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 Spinner 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Spinner。组件集 `Spinner`（`348:29919`）位于 V1-Components 页 ToggleGroup 下方，6 个变体：size（sm 12 / default 16 / lg 24）× tone（default = fg/secondary / onAccent = fg/on-accent）。采用 macOS 12 辐条活动指示器（圆角辐条，透明度 1 → 0.18 递减），Figma 为静态帧，代码中旋转；减少动态效果时改为缓慢淡入淡出。仅用于未知时长，确定进度用 Progress。
+- 将 `Button` 全部 80 个变体的 loading 图层由 Lucide loader-circle 替换为 Spinner：xs / sm 用 sm，default / lg 用 default；default、destructive（非 disabled）用 onAccent，其余用 default；保留 `loading` 属性绑定。Button 评审样张自动更新。
+- 评审样张 `Spinner / Review`（`349:29841`）展示三档尺寸、强调色上的 onAccent、四种按钮 loading、行内“正在获取模型列表…”与画布生成中占位，截图检查两套主题通过。初稿待用户确认。
+
 ### V1 ToggleGroup 组件初稿（2026-10-23）
 
 - 用户要求继续设计 ToggleGroup。新增两个组件集，位于 V1-Components 页 Toggle 下方：
