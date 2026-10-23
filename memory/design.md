@@ -2,6 +2,15 @@
 
 最后更新：2026-10-23
 
+### V1 基础变量与文字样式（第零步设计侧，2026-10-23）
+
+- 用户提供 V1 页面 `V1-视觉换新`（`319:27345`）与组件页 `V1-Components`（`332:28013`），要求先做设计稿、按方案开始第一步。两页此前为空。
+- 新建变量集合 `V1 / Primitives`（`VariableCollectionId:334:26739`，单模式 Value，75 个）：neutral/alpha/glass 与 macOS 系统色（blue/red/green/orange 的 light/dark 及 subtle）颜色原始值隐藏于选择器（alpha/black-* 仅 EFFECT_COLOR）；另含 space/4–64、radius/small·control·panel·window·full、control-h/mini·small·regular·large（20/24/28/32）、icon/14·16·18·24。
+- 新建 `V1 / Semantic`（`VariableCollectionId:334:26740`，Light `334:1` / Dark `334:2`，30 个颜色别名）：window、sidebar、content、surface、surface-raised、fg/*、fill/*、border、separator、focus-ring、selection/*、accent/*、success/warning/danger/info（default/subtle）、shadow。均设定作用域与 WEB 代码名（如 `color/fg/default` → `var(--color-fg)`）。
+- 新建 10 个 SF Pro 文字样式 `V1/large-title` … `V1/footnote`（含中文多行 `V1/body-relaxed` 13/20），3 个阴影样式 `V1/shadow-control|popover|dialog`，阴影颜色绑定 `color/shadow`。Figma 中无 PingFang SC，中文为 Figma 回退字体显示。
+- 规范样张 `V1 / Foundations`（`334:27289`，Light `334:27290` / Dark `334:27425`）位于 V1-Components 页，截图检查两套主题均正常，已修正阴影裁切。
+- 全部数值为基于 macOS 系统色的初稿，待用户在 Figma 中调整确认；V0 变量集合 `Jarvis / 首页` 与旧样式保持不变。未修改应用代码。
+
 ### 视觉换新方案 v0.2：方向已确认（2026-10-23）
 
 - 方案文档：[视觉换新-组件库设计系统](https://docs.google.com/document/d/1Z2vZyoCYf3dsKiBwbDrzSDeXsLjj6bJWfk6BwnTLd2M/edit)，已由 v0.1 更新为 v0.2；具体变量规范、macOS 映射与迁移顺序以文档为准。
