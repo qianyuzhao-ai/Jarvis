@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### 禁用态修复验收（2026-10-23）
+
+- Codex 在 `feature/ui-v1-foundation` 提交 `edbae7d`：base.css 新增 27 行，secondary Button、default NativeSelect（含箭头）、outline Toggle 禁用为 surface-raised + 0.5px separator + fg-disabled，outline on 保留 fill；预览补充两个 outline Toggle 禁用示例与浅深精确断言，未删除断言；macOS 截图基准已更新。
+- 复验（Linux + Xvfb）：`pnpm check`、`pnpm build` 通过；完整回归 84/89，失败为 3 项保存 API Key 的环境问题（develop 同样失败）及 2 项缺少 Linux 截图基准，新增禁用断言通过。裁切截图确认三类控件浅深禁用外观与 Figma 一致，禁用规则优先于 hover / pressed，loading 不受影响。
+- 小问题：`asChild` 的 secondary Button（`data-disabled`）未纳入白底规则，仍为灰底，影响很小。合并注意：该分支与本设计分支都修改了 `memory/design.md` 顶部，合入 develop 时需手动合并两份记录。
+
 ### 验收差异的处理决定（2026-10-23）
 
 - 用户确认：Button loading 保留代码版本（Spinner 居中、文字隐藏保留宽度）；推按钮类控件禁用改为白底，以 Figma 为准。
