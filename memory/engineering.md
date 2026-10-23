@@ -4,9 +4,17 @@
 
 ## 0.2.5 发布（2026-10-23）
 
+- 最终成功：修复 73a049a 经 PR #64 合入 develop、PR #65 合入 main（57365e88e2029c0b693a835d72450b4c2f4933a0）。从该工作流执行原 v0.2.5 标签的运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39936714410 四个作业全部 success；标签仍指向 3e58d1bb18b170c93dc4483be923373316a9a231，未移动或覆盖旧资产。
+- https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.5 已于北京时间 2026-10-23 18:21:02 发布，非草稿、预发布；12 个资产均 uploaded（4 个 macOS DMG/ZIP、Windows EXE、5 个 blockmap、2 个更新清单）。
+- arm64 作业 120357929200、Intel x64 作业 120357929538 和 Windows 作业 120357929515 均通过 360 项依赖、各自原生打包应用启动、ASAR 页面、设置/更新桥接及版本 0.2.5 验证。两种 macOS 的目录包、ZIP/DMG 内应用全部通过签名、公证票据、Gatekeeper accepted / Notarized Developer ID，以及最低系统 13.0 断言。
+- 统一发布作业 120363396414 合并并复验双架构清单成功。线上 latest-mac.yml / latest.yml 已下载，SHA-256 与 GitHub asset digest 一致；版本、引用文件名、大小与线上资产一致，两种 macOS ZIP 均存在。中文发布说明保留自动生成记录并回读一致。
+- 修复后 pnpm check 与 10 项 Node 发布工具测试通过。完整业务回归沿用发布源码 84/84；工作流修复未改应用源码。macOS 13 实机安装/登录/媒体/自动更新和真实内网仍待用户验收；Intel 原生启动已由本次 CI 结果替代此前 Rosetta 限制。
+- 验证日志、Release API 与线上清单保存在 /private/tmp/jarvis-025-release-verification；UI 设计笔记 memory/design.md 未纳入本次提交。
+
+
 - 首次运行 39934957130 的 Windows 已成功；复查发现 electron-builder 在 --mac 未指定目标时仍展开配置里的双架构，使每个 macOS 任务重复构建。主动取消原运行，改为 --mac dmg zip --<arch>；新增 release-targets.test.mjs 用实际 builder 解析函数复现旧行为并证明新命令只构建目标架构。仅修复工作流，原 v0.2.5 标签和应用源码不变；随后从修复后的 main 手动触发原标签。
 
-- 实现提交 755baf0 经 PR #62 合入 develop（1761e32），PR #63 合入 main（3e58d1bb18b170c93dc4483be923373316a9a231），两次合并树与已验证源码一致。新标签 v0.2.5 已推送，唯一发布运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39934957130 已启动，最终结果待回读。
+- 实现提交 755baf0 经 PR #62 合入 develop（1761e32），PR #63 合入 main（3e58d1bb18b170c93dc4483be923373316a9a231），两次合并树与已验证源码一致。新标签 v0.2.5 已推送，唯一发布运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39934957130 已启动，后续修复重试成功，见本节最终结果。
 
 - 发布前 pnpm check、构建、版本一致性及 diff 检查通过，完整 Electron/模拟服务回归 84/84（3.0m）、Node 发布工具回归 9/9 通过。
 
