@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 Checkbox 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Checkbox。组件集 `Checkbox`（`345:29177`）位于 V1-Components 页 NativeSelect 下方，12 个变体：checked（false / true / mixed）× state（default / pressed / focus / disabled；macOS 复选框无 hover 高亮）。属性：`label`、`showLabel`、`description`、`showDescription`。
+- 14px 方框（radius/small）置于 16px 槽内与 V1/body 首行对齐，间距 6；未选为 surface-raised + 1px border + shadow-control，选中/部分选中为 accent 底 + 白色对勾（Lucide check）/ 横线；pressed 用 fill/hover 叠加或 accent/pressed；disabled 灰化；focus 为方框外 3px focus-ring。对应 Radix Checkbox。
+- 评审样张 `Checkbox / Review`（`345:29178`）展示 3×4 矩阵、带标签与说明、禁用，以及技能启停列表（mixed 表示部分启用）示例，截图检查两套主题通过；已将未选边框从 0.5px 加粗为 1px，修正白底上不可见的问题。初稿待用户确认。
+
 ### V1 NativeSelect 组件初稿（2026-10-23）
 
 - 用户要求继续设计 NativeSelect。组件集 `NativeSelect`（`344:29267`）位于 V1-Components 页 Textarea 下方，22 个变体：appearance=default（macOS 弹出按钮：surface-raised + 0.5px border + V1/shadow-control + chevrons-up-down）× size（sm / default / lg）× state（placeholder / filled / hover / focus / disabled / invalid）18 个；appearance=compact（无边框，hover 显 fill，callout 字号 + chevron-down 12，高 24）× filled / hover / focus / disabled 4 个。
