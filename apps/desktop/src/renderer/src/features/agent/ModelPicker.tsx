@@ -17,6 +17,7 @@ export function ModelPicker({
   return (
     <div className="composer-model">
       <select
+        data-testid="model-trigger"
         className="model-trigger"
         aria-label="聊天模型"
         value={selected?.id ?? ''}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, Info, LoaderCircle } from 'lucide-react';
+import { Eye, EyeOff, Info } from 'lucide-react';
 import {
   agentValue,
   relayInputSchema,
@@ -9,7 +9,13 @@ import {
   type RelayConfig,
   type RelayView,
 } from '../../../../shared/agent';
-import { IconButton } from '../../components/IconButton';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
+import { Field, FieldLabel, FieldDescription } from '@jarvis/ui/components/Field';
+import { Input } from '@jarvis/ui/components/Input';
+import { InputGroup } from '@jarvis/ui/components/InputGroup';
+import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
+import { Checkbox } from '@jarvis/ui/components/Checkbox';
+import { Spinner } from '@jarvis/ui/components/Spinner';
 
 const empty: RelayConfig = {
   provider: 'relay',
@@ -114,30 +120,37 @@ export function RelaySettings({
   }
   return (
     <form
-      className="settings-page relay-settings"
+      data-testid="relay-settings"
+      className="v1-settings mx-auto flex w-full max-w-175 min-w-0 flex-1 flex-col font-sans text-body text-fg"
       onSubmit={(event) => {
         event.preventDefault();
         void perform('save');
       }}
     >
-      <div className="relay-content">
+      <div data-testid="relay-content" className="min-h-0 flex-1 overflow-y-auto px-10 py-6">
         {onBack && (
-          <button
-            className="model-library-back"
+          <Button
+            variant="secondary"
+            className="mb-4"
             type="button"
             onClick={() => {
               if (!dirty || window.confirm('放弃未保存的模型配置并返回？')) onBack();
             }}
           >
             返回我的模型
-          </button>
+          </Button>
         )}
-        <h1>{create ? '添加模型' : '编辑模型'}</h1>
-        <p>选择服务来源并配置连接。</p>
-        <fieldset disabled={!!busy}>
-          <div className="settings-row relay-row">
-            <label htmlFor="model-provider">服务来源</label>
-            <select
+        <h1 className="mb-3 text-title-1">{create ? '添加模型' : '编辑模型'}</h1>
+        <p className="text-body-relaxed text-fg-secondary">选择服务来源并配置连接。</p>
+        <fieldset disabled={!!busy} className="my-6 grid border-0 p-0">
+          <Field
+            orientation="horizontal"
+            controlId="model-provider"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="model-provider">服务来源</FieldLabel>
+            <NativeSelect
               id="model-provider"
               value={config.provider ?? 'relay'}
               onChange={(event) => {
@@ -167,22 +180,32 @@ export function RelaySettings({
             >
               <option value="relay">自定义中转站</option>
               <option value="deepseek">DeepSeek 官方</option>
-            </select>
-          </div>
-          <div className="settings-row relay-row">
-            <label htmlFor="relay-name">模型名称</label>
-            <input
+            </NativeSelect>
+          </Field>
+          <Field
+            orientation="horizontal"
+            controlId="relay-name"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="relay-name">模型名称</FieldLabel>
+            <Input
               id="relay-name"
               value={config.name}
               maxLength={100}
               onChange={(e) => change('name', e.target.value)}
               required
             />
-          </div>
-          <div className="settings-row relay-row">
-            <label htmlFor="relay-url">API 地址</label>
-            <div>
-              <input
+          </Field>
+          <Field
+            orientation="horizontal"
+            controlId="relay-url"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="relay-url">API 地址</FieldLabel>
+            <div className="grid min-w-0 gap-2">
+              <Input
                 id="relay-url"
                 type="url"
                 readOnly={official}
@@ -192,18 +215,23 @@ export function RelaySettings({
                 required
                 spellCheck={false}
               />
-              <small>
+              <FieldDescription>
                 {official
                   ? '直接连接 DeepSeek 官方 API。'
                   : '填写中转站提供的基础地址，无需追加 /chat/completions。'}
-              </small>
+              </FieldDescription>
             </div>
-          </div>
-          <div className="settings-row relay-row">
-            <label htmlFor="relay-key">API Key</label>
-            <div>
-              <div className="relay-secret">
-                <input
+          </Field>
+          <Field
+            orientation="horizontal"
+            controlId="relay-key"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="relay-key">API Key</FieldLabel>
+            <div className="grid min-w-0 gap-2">
+              <InputGroup>
+                <Input
                   id="relay-key"
                   type={visible ? 'text' : 'password'}
                   value={key}
@@ -223,37 +251,42 @@ export function RelaySettings({
                   spellCheck={false}
                 />
                 <IconButton
-                  label={visible ? '隐藏 API Key' : '显示新输入的 API Key'}
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={visible ? '隐藏 API Key' : '显示新输入的 API Key'}
                   onClick={() => setVisible(!visible)}
                 >
                   {visible ? <EyeOff size={16} /> : <Eye size={16} />}
                 </IconButton>
-              </div>
-              <small>
+              </InputGroup>
+              <FieldDescription>
                 {official
                   ? 'Key 加密保存在此设备；请使用 DeepSeek 开放平台的 API Key。'
                   : 'Key 加密保存在此设备；读取配置不会返回明文。无鉴权的本地中转可留空。'}
-              </small>
+              </FieldDescription>
               {hasSavedKey && !official && (
-                <label className="relay-clear">
-                  <input
-                    type="checkbox"
-                    checked={clearKey}
-                    onChange={(e) => {
-                      setClearKey(e.target.checked);
-                      setKey('');
-                      setNotice('尚未测试当前配置');
-                    }}
-                  />
-                  清除已保存的 Key
-                </label>
+                <Checkbox
+                  id="relay-clear-key"
+                  label="清除已保存的 Key"
+                  checked={clearKey}
+                  onCheckedChange={(checked) => {
+                    setClearKey(checked === true);
+                    setKey('');
+                    setNotice('尚未测试当前配置');
+                  }}
+                />
               )}
             </div>
-          </div>
-          <div className="settings-row relay-row">
-            <label htmlFor="relay-api">接口协议</label>
-            <div>
-              <select
+          </Field>
+          <Field
+            orientation="horizontal"
+            controlId="relay-api"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="relay-api">接口协议</FieldLabel>
+            <div className="grid min-w-0 gap-2">
+              <NativeSelect
                 id="relay-api"
                 disabled={official}
                 value={config.api}
@@ -261,18 +294,23 @@ export function RelaySettings({
               >
                 <option value="openai-completions">Chat Completions（OpenAI 兼容）</option>
                 <option value="openai-responses">Responses（OpenAI 兼容）</option>
-              </select>
-              <small>
+              </NativeSelect>
+              <FieldDescription>
                 {official ? '官方接入使用此协议，无需修改。' : '按中转站文档选择连接协议。'}
-              </small>
+              </FieldDescription>
             </div>
-          </div>
-          <div className="settings-row relay-row">
-            <label htmlFor="relay-model">模型 ID</label>
-            <div>
-              <div className="relay-model">
+          </Field>
+          <Field
+            orientation="horizontal"
+            controlId="relay-model"
+            disabled={!!busy}
+            className="border-b border-separator py-3"
+          >
+            <FieldLabel htmlFor="relay-model">模型 ID</FieldLabel>
+            <div className="grid min-w-0 gap-2">
+              <div className="flex min-w-0 gap-2">
                 {official ? (
-                  <select
+                  <NativeSelect
                     id="relay-model"
                     value={config.model}
                     onChange={(e) => change('model', e.target.value)}
@@ -282,9 +320,9 @@ export function RelaySettings({
                         {model}
                       </option>
                     ))}
-                  </select>
+                  </NativeSelect>
                 ) : (
-                  <input
+                  <Input
                     id="relay-model"
                     list="relay-models"
                     value={config.model}
@@ -295,9 +333,9 @@ export function RelaySettings({
                   />
                 )}
                 {!official && (
-                  <button type="button" onClick={() => void perform('models')}>
+                  <Button variant="secondary" type="button" onClick={() => void perform('models')}>
                     {busy === 'models' ? '正在获取…' : '获取模型'}
-                  </button>
+                  </Button>
                 )}
               </div>
               <datalist id="relay-models">
@@ -305,16 +343,21 @@ export function RelaySettings({
                   <option key={m} value={m} />
                 ))}
               </datalist>
-              <small>
+              <FieldDescription>
                 {official ? 'Flash 支持图片，Pro 仅支持文字。' : '列表不可用时可手动填写模型 ID。'}
-              </small>
+              </FieldDescription>
             </div>
-          </div>
-          <details className="relay-advanced">
-            <summary>上下文与输出限制</summary>
-            <div className="settings-row relay-row">
-              <label htmlFor="relay-context">上下文容量</label>
-              <input
+          </Field>
+          <details data-testid="relay-advanced" className="mt-4 text-fg-secondary">
+            <summary className="cursor-default text-callout">上下文与输出限制</summary>
+            <Field
+              orientation="horizontal"
+              controlId="relay-context"
+              disabled={!!busy}
+              className="border-b border-separator py-3"
+            >
+              <FieldLabel htmlFor="relay-context">上下文容量</FieldLabel>
+              <Input
                 id="relay-context"
                 type="number"
                 min={8192}
@@ -325,10 +368,15 @@ export function RelaySettings({
                   change('contextWindow', e.target.value ? Number(e.target.value) : null)
                 }
               />
-            </div>
-            <div className="settings-row relay-row">
-              <label htmlFor="relay-output">输出上限</label>
-              <input
+            </Field>
+            <Field
+              orientation="horizontal"
+              controlId="relay-output"
+              disabled={!!busy}
+              className="border-b border-separator py-3"
+            >
+              <FieldLabel htmlFor="relay-output">输出上限</FieldLabel>
+              <Input
                 id="relay-output"
                 type="number"
                 min={256}
@@ -336,30 +384,43 @@ export function RelaySettings({
                 value={config.maxTokens}
                 onChange={(e) => change('maxTokens', Number(e.target.value))}
               />
-            </div>
-            <small>容量请以服务商文档为准。未知时采用本地保护上限，不代表模型真实容量。</small>
+            </Field>
+            <small className="mt-2 block text-subheadline text-fg-secondary">
+              容量请以服务商文档为准。未知时采用本地保护上限，不代表模型真实容量。
+            </small>
           </details>
         </fieldset>
-        <div className="relay-test">
-          <button type="button" disabled={!!busy} onClick={() => void perform('test')}>
+        <div className="mb-4 flex items-center gap-4">
+          <Button
+            variant="secondary"
+            type="button"
+            disabled={!!busy}
+            onClick={() => void perform('test')}
+          >
             {busy === 'test' ? '正在测试…' : '测试连接'}
-          </button>
-          <span role="status">
-            {busy ? <LoaderCircle size={16} className="agent-spinner" /> : <Info size={16} />}
+          </Button>
+          <span role="status" className="flex min-w-0 items-center gap-2 text-fg-secondary">
+            {busy ? <Spinner /> : <Info size={16} />}
             {busy === 'test' ? '正在测试流式连接…' : notice}
           </span>
         </div>
         {error && (
-          <p className="agent-error" role="alert">
+          <p className="text-danger text-subheadline" role="alert">
             {error}
           </p>
         )}
-        <small>连接测试会发送一条简短请求，费用由所选服务计收。测试不会自动保存。</small>
+        <small className="mt-2 block text-subheadline text-fg-secondary">
+          连接测试会发送一条简短请求，费用由所选服务计收。测试不会自动保存。
+        </small>
       </div>
-      <footer className="relay-footer">
+      <footer
+        data-testid="relay-footer"
+        className="flex min-h-17 shrink-0 items-center justify-between gap-4 bg-surface px-10 py-3 text-subheadline text-fg-secondary"
+      >
         <span>{dirty ? '更改尚未保存' : value.config ? '配置已保存' : '尚未配置'}</span>
-        <div>
-          <button
+        <div className="flex gap-3">
+          <Button
+            variant="secondary"
             type="button"
             disabled={!!busy}
             onClick={() => {
@@ -375,10 +436,10 @@ export function RelaySettings({
             }}
           >
             取消
-          </button>
-          <button className="agent-primary" type="submit" disabled={!!busy || !dirty}>
+          </Button>
+          <Button variant="default" type="submit" disabled={!!busy || !dirty}>
             {busy === 'save' ? '保存中…' : '保存更改'}
-          </button>
+          </Button>
         </div>
       </footer>
     </form>

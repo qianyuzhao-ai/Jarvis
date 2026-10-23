@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+## UI V1 基础组件功能分支（2026-10-23）
+
+- 按用户实施文档从最新 origin/develop 创建 feature/ui-v1-foundation；设计分支 claude/personal-workbench-project-8xza4v 只读参考，没有合入。
+- 四阶段独立提交 90cb20a / 2a51146 / 2d2971b / 86cb31f，均完成检查、构建与实窗回归；已推送并回读远端分支。授权仅到功能分支推送，没有 PR、合并、标签或发布。详细证据见 [UI V1 验收报告](ui-v1-implementation.md)。
+
+
 ## 0.2.5 发布（2026-10-23）
 
 - 最终成功：修复 73a049a 经 PR #64 合入 develop、PR #65 合入 main（57365e88e2029c0b693a835d72450b4c2f4933a0）。从该工作流执行原 v0.2.5 标签的运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39936714410 四个作业全部 success；标签仍指向 3e58d1bb18b170c93dc4483be923373316a9a231，未移动或覆盖旧资产。

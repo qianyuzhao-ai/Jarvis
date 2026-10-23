@@ -67,7 +67,7 @@ test('general settings persist download directory and only skip dialogs when don
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [directory] });
     }, directory);
     await page.getByRole('button', { name: '选择文件夹', exact: true }).click();
-    await expect(page.locator('.download-directory')).toHaveText(directory);
+    await expect(page.getByTestId('download-directory')).toHaveText(directory);
     await expect(checkbox).not.toBeChecked();
     await app.evaluate(({ dialog }, directory) => {
       dialog.showSaveDialog = async (
@@ -96,7 +96,7 @@ test('general settings persist download directory and only skip dialogs when don
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: '下载时不再询问' })).toBeChecked();
-    await expect(page.locator('.download-directory')).toHaveText(directory);
+    await expect(page.getByTestId('download-directory')).toHaveText(directory);
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => {
         throw new Error('不应弹出保存框');
@@ -324,7 +324,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       await generated
         .getByRole('button', { name: index === 2 ? '下载图像' : '下载视频', exact: true })
         .click();
-      await expect(generated.locator('.node-download-notice')).toContainText('已取消下载');
+      await expect(generated.getByTestId('node-download-notice')).toContainText('已取消下载');
     }
     const renamed = ['休眠舱%20.v2.png', '驾驶舱 v2', '生成全景.v2', '全息影像.mp4'];
     for (let index = 0; index < 4; index++) {
@@ -353,9 +353,9 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await expect(page.locator('.react-flow__node')).toHaveCount(5);
     await first.getByLabel('节点名称', { exact: true }).press('Escape');
     await first.click({ position: { x: 30, y: 30 } });
-    await expect(first.locator('.media-placeholder')).toHaveCSS('outline-width', '3px');
-    await expect(first.locator('.media-placeholder')).toHaveCSS('outline-offset', '3px');
-    await expect(first.locator('.media-placeholder')).not.toHaveCSS(
+    await expect(first.getByTestId('media-placeholder')).toHaveCSS('outline-width', '3px');
+    await expect(first.getByTestId('media-placeholder')).toHaveCSS('outline-offset', '3px');
+    await expect(first.getByTestId('media-placeholder')).not.toHaveCSS(
       'background-color',
       'rgba(0, 0, 0, 0)',
     );
@@ -405,7 +405,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
         exact: true,
       });
       await button.click();
-      await expect(node.locator('.node-download-notice')).toContainText('已下载');
+      await expect(node.getByTestId('node-download-notice')).toContainText('已下载');
       expect(await readFile(outputPaths[index]!)).toEqual(index % 2 ? video : png);
     }
     await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
@@ -422,7 +422,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       .getByRole('button', { name: '下载图像', exact: true })
       .click();
     await expect(
-      page.locator(`.react-flow__node[data-id="${ids[0]}"] .node-download-notice`),
+      page.locator(`.react-flow__node[data-id="${ids[0]}"] [data-testid="node-download-notice"]`),
     ).toContainText('已取消下载');
     const existing = test.info().outputPath('existing.mp4');
     await writeFile(existing, 'keep original');
@@ -458,7 +458,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     ).toBe(false);
     await page.screenshot({ path: test.info().outputPath('node-download-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('node-download-dark.png') });
   } finally {
     await app.close();

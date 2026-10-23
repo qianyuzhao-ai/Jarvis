@@ -11,7 +11,6 @@ import { ChatMessageItem } from '../agent/ChatMessageItem';
 import { canvasSnapshot } from './canvas-context';
 import { prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
-import './canvas-agent.css';
 
 export function CanvasAgentSidebar({
   project,
@@ -135,9 +134,14 @@ export function CanvasAgentSidebar({
       !undoing && !agent.snapshot.busySessionId && project.agentEdits.at(-1)?.id === id,
   };
   return (
-    <div className="canvas-agent-shell" style={{ width: open ? panelWidth : 0 }}>
+    <div
+      data-testid="canvas-agent-shell"
+      className="canvas-agent-shell"
+      style={{ width: open ? panelWidth : 0 }}
+    >
       <aside
         id="canvas-agent"
+        data-testid="canvas-agent"
         className="canvas-agent"
         aria-label="画布助手"
         aria-hidden={!open}
@@ -190,7 +194,7 @@ export function CanvasAgentSidebar({
             }
           }}
         />
-        <header className="canvas-agent-header">
+        <header data-testid="canvas-agent-header" className="canvas-agent-header">
           {history && (
             <IconButton label="返回当前聊天" onClick={() => setHistory(false)}>
               <ChevronLeft size={18} />
@@ -292,6 +296,7 @@ export function CanvasAgentSidebar({
                 ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
                   <button
                     type="button"
+                    data-testid="side-link"
                     className="side-link"
                     key={s}
                     onClick={() => {
@@ -335,7 +340,7 @@ export function CanvasAgentSidebar({
               回到最新
             </button>
           )}
-          <div className="canvas-context-scope">
+          <div data-testid="canvas-context-scope" className="canvas-context-scope">
             <span>当前画布 · {project.nodes.length} 个节点</span>
             {selectedIds.length > 0 && (
               <button

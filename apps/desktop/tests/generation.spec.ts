@@ -273,11 +273,11 @@ test('Electron uploads references, generates image and video, and restores resul
   try {
     const page = await app.firstWindow();
     async function checkResult(kind: string) {
-      await expect(page.locator('.generation-notice')).toContainText('今日剩余 116');
+      await expect(page.getByTestId('generation-notice')).toContainText('今日剩余 116');
       await page.screenshot({ path: test.info().outputPath(`generation-notice-${kind}.png`) });
       await page.getByRole('button', { name: '关闭生成提醒' }).click();
-      await expect(page.locator('.generation-notice')).toHaveCount(0);
-      const details = page.locator('.generation-details');
+      await expect(page.getByTestId('generation-notice')).toHaveCount(0);
+      const details = page.getByTestId('generation-details');
       await expect(details).not.toHaveAttribute('open');
       await expect(page.getByRole('button', { name: '复制返回 URL' })).not.toBeVisible();
       await page.getByLabel('生成信息', { exact: true }).focus();
@@ -333,7 +333,7 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByLabel('upload 地址', { exact: true }).fill(mock.base + '/upload');
     await page.getByLabel('upload-media 地址', { exact: true }).fill(mock.base + '/upload-audio');
     await page.getByRole('button', { name: '保存更改' }).click();
-    await expect(page.locator('.form-actions')).toContainText('已保存到本机');
+    await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('生成联调测试');
@@ -347,11 +347,11 @@ test('Electron uploads references, generates image and video, and restores resul
     ]);
     await page.getByLabel('图像提示词').fill('a cat @');
     await page.getByRole('option', { name: /图片 1.*ref-z.png/ }).click();
-    await expect(page.locator('.prompt-tag')).toHaveText('@image_1');
+    await expect(page.getByTestId('prompt-tag')).toHaveText('@image_1');
     await page.screenshot({ path: test.info().outputPath('prompt-mention.png') });
     mock.setMode('upload-fail');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(page.locator('.editor-notice')).toContainText('files[0].url');
+    await expect(page.getByTestId('editor-notice')).toContainText('files[0].url');
     expect(mock.calls.filter((c) => c.path === '/generate')).toHaveLength(0);
     mock.setMode('hold');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
@@ -364,12 +364,15 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
-    await expect(page.locator('.node-generating')).toHaveText('正在生成…');
+    await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
     await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '重命名 图像生成', exact: true })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('generating-center-light.png') });
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
-    await expect(page.locator('.node-generating svg')).toHaveCSS('animation-name', 'none');
+    await expect(page.locator('[data-testid="node-generating"] svg')).toHaveCSS(
+      'animation-name',
+      'none',
+    );
     await page.screenshot({ path: test.info().outputPath('generating-center-dark.png') });
     await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'light' });
     mock.release();
@@ -379,7 +382,7 @@ test('Electron uploads references, generates image and video, and restores resul
         page.getByAltText('生成的图像').evaluate((n) => (n as HTMLImageElement).naturalWidth),
       )
       .toBe(1);
-    await expect(page.locator('.node-task-status')).toHaveCount(0);
+    await expect(page.getByTestId('node-task-status')).toHaveCount(0);
     await page
       .locator('.react-flow__node-media')
       .first()
@@ -397,7 +400,7 @@ test('Electron uploads references, generates image and video, and restores resul
       { name: 'ref-second.wav', mimeType: 'audio/wav', buffer: Buffer.from('RIFFfixture') },
     ]);
     await page.getByLabel('视频提示词').fill('slow camera @video_2 @audio_1');
-    await expect(page.locator('.prompt-tag')).toHaveText(['@video_2', '@audio_1']);
+    await expect(page.getByTestId('prompt-tag')).toHaveText(['@video_2', '@audio_1']);
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
     await expect
@@ -418,7 +421,7 @@ test('Electron uploads references, generates image and video, and restores resul
       )
       .toBeGreaterThan(0);
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await checkResult('video');
     expect(mock.calls.some((c) => c.path === '/upload-audio')).toBe(true);
     const requests = mock.calls
@@ -444,7 +447,7 @@ test('Electron uploads references, generates image and video, and restores resul
         dialog.showSaveDialog = async () => ({ canceled: false, filePath });
       }, filePath);
       await page.getByRole('button', { name: `下载${kind}`, exact: true }).click();
-      await expect(page.locator('.node-download-notice').last()).toContainText('已下载');
+      await expect(page.getByTestId('node-download-notice').last()).toContainText('已下载');
       expect(await readFile(filePath)).toEqual(kind === '图像' ? png : Buffer.from(bytes));
     }
     await page
@@ -453,7 +456,7 @@ test('Electron uploads references, generates image and video, and restores resul
       .click({ position: { x: 30, y: 30 } });
     mock.setMode('hold');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(page.locator('.node-generating')).toHaveText('正在生成…');
+    await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
     await expect(page.getByAltText('生成的图像')).toHaveCount(0);
     await expect(
       page.locator('.react-flow__node-media').first().getByRole('button', { name: '下载图像' }),
@@ -462,20 +465,20 @@ test('Electron uploads references, generates image and video, and restores resul
     mock.release();
     await expect(page.getByAltText('生成的图像')).toBeVisible();
     await expect(
-      page.locator('.react-flow__node-media').first().locator('.node-task-status'),
+      page.locator('.react-flow__node-media').first().getByTestId('node-task-status'),
     ).toHaveCount(0);
     await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
     mock.setMode('disconnect');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
-    await expect(page.locator('.editor-notice')).toContainText('结果未知');
+    await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
     const submitted = mock.calls.filter((c) => c.path === '/generate').length;
     expect(submitted).toBe(4);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: /生成联调测试/ }).click();
     await page.locator('.react-flow__node-media').last().click();
-    await expect(page.locator('.editor-notice')).toContainText('结果未知');
+    await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
     page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     expect(mock.calls.filter((c) => c.path === '/generate')).toHaveLength(submitted);

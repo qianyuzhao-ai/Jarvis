@@ -340,7 +340,9 @@ test('SSO login is isolated, supplies task cookies, pauses on expiration and res
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await page.getByRole('button', { name: '登录生成平台', exact: true }).scrollIntoViewIfNeeded();
     expect(
-      await page.locator('.settings-form').evaluate((node) => node.scrollWidth - node.clientWidth),
+      await page
+        .getByTestId('settings-form')
+        .evaluate((node) => node.scrollWidth - node.clientWidth),
     ).toBe(0);
     await page.screenshot({ path: test.info().outputPath('platform-login-compact.png') });
     await page.getByRole('button', { name: '退出登录', exact: true }).click();

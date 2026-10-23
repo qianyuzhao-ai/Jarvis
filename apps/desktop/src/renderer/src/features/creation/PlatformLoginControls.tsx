@@ -1,3 +1,4 @@
+import { Button } from '@jarvis/ui/components/Button';
 import { useEffect, useRef, useState } from 'react';
 import { httpUrl } from '../../../../shared/generation';
 import type { PlatformLoginStatus } from '../../../../shared/generation-login';
@@ -60,36 +61,36 @@ export function PlatformLoginControls({ settings, dirty }: { settings: Settings;
     }
   }
   return (
-    <div className="settings-row platform-login-controls">
-      <span>平台登录</span>
+    <div className="v1-login-row grid items-start gap-4 border-b border-separator py-3">
+      <span className="v1-login-label text-body">平台登录</span>
       <div>
-        <div className="platform-login-actions">
-          <button
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
             type="button"
-            className="secondary-button"
             disabled={dirty || busy || !validEndpoint || !settings.loginUrl}
             onClick={() => void act('open')}
           >
             登录生成平台
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
-            className="secondary-button"
             disabled={dirty || busy || !validEndpoint}
             onClick={() => void act('verify')}
           >
             验证连接
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             type="button"
-            className="secondary-button"
             disabled={dirty || busy || !validEndpoint || status?.state === 'empty'}
             onClick={() => void act('logout')}
           >
             退出登录
-          </button>
+          </Button>
         </div>
-        <p role="status">
+        <p role="status" className="mt-2 text-body-relaxed text-fg-secondary">
           {dirty
             ? '请先保存更改，再登录平台'
             : busy
@@ -97,7 +98,7 @@ export function PlatformLoginControls({ settings, dirty }: { settings: Settings;
               : (status?.message ?? '尚未检查登录状态')}
         </p>
         {error && (
-          <p className="error-text" role="alert">
+          <p className="mt-2 text-subheadline text-danger" role="alert">
             {error}
           </p>
         )}

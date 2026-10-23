@@ -36,7 +36,7 @@ export function CanvasExport({
     }
   }
   return (
-    <div className="canvas-status">
+    <div data-testid="canvas-status" className="canvas-status">
       <span className="sr-only" role="status">
         {status}
       </span>
@@ -52,7 +52,11 @@ export function CanvasExport({
       </button>
 
       {feedback && (
-        <div className="canvas-export-feedback" role={feedback.error ? 'alert' : 'status'}>
+        <div
+          data-testid="canvas-export-feedback"
+          className="canvas-export-feedback"
+          role={feedback.error ? 'alert' : 'status'}
+        >
           <span>{feedback.message}</span>
           <button type="button" onClick={() => setFeedback(null)}>
             关闭

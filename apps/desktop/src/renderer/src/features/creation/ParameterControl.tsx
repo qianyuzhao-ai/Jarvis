@@ -23,6 +23,8 @@ export function ParameterControl({
 }) {
   return (
     <label
+      data-testid="parameter-control"
+      data-model={model}
       className={`parameter-control ${model ? 'parameter-control-model' : ''}`}
       data-disabled={disabled}
       title={hint ?? label}

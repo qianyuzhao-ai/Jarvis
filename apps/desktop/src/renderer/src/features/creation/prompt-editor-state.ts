@@ -35,6 +35,7 @@ class ReferenceTag extends WidgetType {
   toDOM() {
     const span = document.createElement('span');
     span.className = 'prompt-tag';
+    span.dataset.testid = 'prompt-tag';
     span.textContent = this.token;
     span.contentEditable = 'false';
     return span;

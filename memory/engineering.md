@@ -2,6 +2,26 @@
 
 最后更新：2026-10-23
 
+## UI V1 阶段 D 设置试装（2026-10-23）
+
+通用、模型、内网、下载、插件/技能控件迁到 @jarvis/ui；保留保存/取消/校验/Key/登录边界。清理过时设置 CSS，混合文件旧颜色原值保留为兼容变量。设置浅深与窄窗截图、组件集成补充及最终门禁见 [UI V1 验收报告](ui-v1-implementation.md)。ModelPicker 无设置调用点，聊天选择器保持原实现。
+
+
+## UI V1 阶段 C 基础控件（2026-10-23）
+
+实现 12 个组件家族、开发专用预览页和浅深 screenshot 基准；Figma 各评审节点、API、视觉差异与验证证据见 [UI V1 实施记录](ui-v1-implementation.md)。本轮按用户实施文档实现初稿，未改 Figma。
+
+
+## UI V1 阶段 B 原生外观（2026-10-23）
+
+接入只读系统强调色 bridge、macOS sidebar vibrancy 与 html 窗口焦点状态；Windows / 降低透明度使用不透明侧栏。当前主机 macOS 27.0.1，13/26 与 Windows 材质及真实系统设置切换仍待实机验收。API 来源与回归结果见 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
+## UI V1 阶段 A 基建（2026-10-23）
+
+建立 @jarvis/ui 工作区、变量约束检查和稳定测试定位；目录打包、360 项生产依赖闭包及真实包启动通过。阶段实窗回归结果与截图证据集中于 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
 ## 0.2.5 发布（2026-10-23）
 
 - 最终成功：修复 73a049a 经 PR #64 合入 develop、PR #65 合入 main（57365e88e2029c0b693a835d72450b4c2f4933a0）。从该工作流执行原 v0.2.5 标签的运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39936714410 四个作业全部 success；标签仍指向 3e58d1bb18b170c93dc4483be923373316a9a231，未移动或覆盖旧资产。

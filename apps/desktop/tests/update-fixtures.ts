@@ -28,7 +28,7 @@ export async function launchUpdateApp() {
   const log = test.info().outputPath('main-process.log');
   instance.process().stderr?.on('data', (chunk) => appendFileSync(log, chunk));
   const page = await instance.firstWindow();
-  await page.locator('.theme-root').waitFor();
+  await page.getByTestId('theme-root').waitFor();
   await page.waitForLoadState('load');
   return instance;
 }

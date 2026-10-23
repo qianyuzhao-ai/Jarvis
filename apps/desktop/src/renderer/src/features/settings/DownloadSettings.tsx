@@ -1,3 +1,5 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Checkbox } from '@jarvis/ui/components/Checkbox';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, FolderOpen } from 'lucide-react';
 import type { DownloadPreferences } from '../../../../shared/generation';
@@ -73,12 +75,15 @@ export function DownloadSettings() {
     }
   }
   return (
-    <section className="download-settings" aria-labelledby="download-heading">
-      <div className="download-directory-row">
-        <h2 id="download-heading">默认下载位置</h2>
-        <button
+    <section className="flex flex-col gap-2" aria-labelledby="download-heading">
+      <div className="flex min-h-13 items-center justify-between gap-4 border-b border-separator pb-3">
+        <h2 id="download-heading" className="text-body">
+          默认下载位置
+        </h2>
+        <Button
+          variant="ghost"
           type="button"
-          className="download-location"
+          className="min-w-0 max-w-3/5"
           aria-label={preferences?.directory ? '更改文件夹' : '选择文件夹'}
           title={preferences?.directory || '选择文件夹'}
           disabled={busy || !preferences}
@@ -91,17 +96,19 @@ export function DownloadSettings() {
           }
         >
           <FolderOpen size={16} />
-          <span className="download-directory">{preferences?.directory || '选择文件夹'}</span>
+          <span data-testid="download-directory" className="min-w-0 truncate">
+            {preferences?.directory || '选择文件夹'}
+          </span>
           <ChevronDown size={14} />
-        </button>
+        </Button>
       </div>
-      <label className="download-dont-ask">
-        <input
-          type="checkbox"
+      <div className="flex min-h-9 items-center justify-end">
+        <Checkbox
+          label="下载时不再询问"
           checked={preferences?.dontAskAgain ?? false}
           disabled={busy || !preferences?.directory}
-          onChange={(event) => {
-            const checked = event.target.checked;
+          onCheckedChange={(value) => {
+            const checked = value === true;
             void update(
               async () => {
                 const response = await window.desktop!.generation.setDownloadDontAsk(checked);
@@ -112,13 +119,19 @@ export function DownloadSettings() {
             );
           }}
         />
-        下载时不再询问
-      </label>
-      {message && <p role={error ? 'alert' : 'status'}>{message}</p>}
+      </div>
+      {message && (
+        <p
+          role={error ? 'alert' : 'status'}
+          className={error ? 'text-subheadline text-danger' : 'text-subheadline text-fg-secondary'}
+        >
+          {message}
+        </p>
+      )}
       {!preferences && error && (
-        <button type="button" className="secondary-button" onClick={() => setRetry((n) => n + 1)}>
+        <Button variant="ghost" type="button" onClick={() => setRetry((n) => n + 1)}>
           重试读取下载设置
-        </button>
+        </Button>
       )}
     </section>
   );

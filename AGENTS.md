@@ -20,6 +20,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 - `apps/desktop/src/renderer`：React UI；禁止直接导入 Electron 和 Node API。
 - `apps/desktop/src/shared`：共享类型。
 - `packages/config`：共享 TypeScript 配置。
+- `packages/ui`：无业务依赖的 React DOM 基础控件与固定浅深变量；desktop 以 devDependencies 引用。设计实现与阶段验收见 `memory/ui-v1-implementation.md`。
 - 使用 pnpm、TypeScript strict、Biome、Tailwind v4 和 Lucide。
 - React 组件使用 PascalCase 文件名，其余模块使用 kebab-case。
 - 不关闭 sandbox/contextIsolation，不向 renderer 暴露通用文件、Shell 或 IPC 接口。
@@ -30,6 +31,8 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 本项目的持久记忆保存在仓库根目录的 `memory/` 中。不要只依赖聊天历史或临时文件保存项目决策。
 
 当前记忆文件：
+
+- [memory/ui-v1-implementation.md](memory/ui-v1-implementation.md)：UI V1 基础组件分阶段实施、设计来源与验收证据。
 
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。

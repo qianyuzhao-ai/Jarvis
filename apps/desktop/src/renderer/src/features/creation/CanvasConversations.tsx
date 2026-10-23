@@ -63,7 +63,11 @@ export function CanvasConversations({
         [...sessions]
           .sort((a, b) => conversationTime(b) - conversationTime(a))
           .map((s) => (
-            <div className="canvas-conversation-row" key={s.id}>
+            <div
+              data-testid="canvas-conversation-row"
+              className="canvas-conversation-row"
+              key={s.id}
+            >
               {editing === s.id ? (
                 <form
                   onSubmit={(e) => {
@@ -94,6 +98,7 @@ export function CanvasConversations({
               ) : (
                 <>
                   <button
+                    data-testid="side-link"
                     className={`side-link canvas-conversation-title ${currentId === s.id ? 'selected' : ''}`}
                     type="button"
                     disabled={pending}
@@ -101,7 +106,10 @@ export function CanvasConversations({
                     onClick={() => select(s.id)}
                   >
                     <MessageSquare size={18} />
-                    <span className="canvas-conversation-summary">
+                    <span
+                      data-testid="canvas-conversation-summary"
+                      className="canvas-conversation-summary"
+                    >
                       <span title={s.title}>{s.title}</span>
                       <time
                         dateTime={new Date(conversationTime(s)).toISOString()}

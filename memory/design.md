@@ -1,6 +1,33 @@
 # Jarvis 设计记忆
 
-最后更新：2026-10-22
+最后更新：2026-10-23
+
+## UI V1 推按钮禁用态对齐（2026-10-23）
+
+- 用户确认 secondary Button、default NativeSelect、outline Toggle off 禁用保留 surface-raised 底、separator 细边框且无阴影；outline Toggle on 禁用保留 fill 底并补边框。代码按此修复，保留其他控件禁用外观。
+- 用户跟进文档确认 Figma 已同步 `state=loading`，居中 Spinner、隐藏文字但保持宽度的现有实现继续保留。本轮没有写入 Figma。
+- 检查、构建及完整实窗回归 89/89（3.1m）通过。浅深精确断言、macOS 截图基准、设置页截图与原基准差异说明见 [UI V1 实施报告](ui-v1-implementation.md) 的跟进修复节。
+
+
+## UI V1 阶段 D 设置试装（2026-10-23）
+
+通用、模型、内网、下载、插件/技能控件迁到 @jarvis/ui；保留保存/取消/校验/Key/登录边界。清理过时设置 CSS，混合文件旧颜色原值保留为兼容变量。设置浅深与窄窗截图、组件集成补充及最终门禁见 [UI V1 验收报告](ui-v1-implementation.md)。ModelPicker 无设置调用点，聊天选择器保持原实现。
+
+
+## UI V1 阶段 C 基础控件（2026-10-23）
+
+实现 12 个组件家族、开发专用预览页和浅深 screenshot 基准；Figma 各评审节点、API、视觉差异与验证证据见 [UI V1 实施记录](ui-v1-implementation.md)。本轮按用户实施文档实现初稿，未改 Figma。
+
+
+## UI V1 阶段 B 原生外观（2026-10-23）
+
+接入只读系统强调色 bridge、macOS sidebar vibrancy 与 html 窗口焦点状态；Windows / 降低透明度使用不透明侧栏。当前主机 macOS 27.0.1，13/26 与 Windows 材质及真实系统设置切换仍待实机验收。API 来源与回归结果见 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
+## UI V1 阶段 A 基建（2026-10-23）
+
+按用户新实施文档建立 packages/ui 与固定浅深变量，旧样式隔离但外观不变；主题属性提升到 html。16 张改造前后截图逐像素一致。Figma 只读核对，未写入设计文件。详细来源、节点和验收见 [UI V1 实施记录](ui-v1-implementation.md)。
+
 
 ### 内网地址由用户手动填写（2026-10-22）
 

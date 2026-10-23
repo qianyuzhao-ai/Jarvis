@@ -1,3 +1,4 @@
+import { Button } from '@jarvis/ui/components/Button';
 import { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import type { SkillInfo } from '../../../../shared/agent-skills';
@@ -13,18 +14,30 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   return (
-    <section className="settings-page plugins-settings" aria-labelledby="plugins-title">
-      <h1 id="plugins-title">插件</h1>
-      <div className="plugins-toolbar">
-        <div className="plugins-tabs" role="tablist" aria-label="插件类型">
+    <section
+      data-testid="plugins-settings"
+      className="v1-settings mx-auto w-full max-w-175 min-w-0 px-10 pt-6 pb-10 font-sans text-body text-fg"
+      aria-labelledby="plugins-title"
+    >
+      <h1 id="plugins-title" className="text-title-1">
+        插件
+      </h1>
+      <div data-testid="plugins-toolbar" className="my-6 flex items-center justify-between gap-4">
+        <div
+          className="inline-flex gap-0.5 rounded-control bg-fill p-0.5"
+          role="tablist"
+          aria-label="插件类型"
+        >
           {tabs.map(([id, label], index) => (
-            <button
+            <Button
+              variant="ghost"
               key={id}
               ref={(node) => {
                 buttons.current[index] = node;
               }}
               type="button"
               role="tab"
+              className="v1-plugin-tab"
               id={`plugins-tab-${id}`}
               aria-selected={tab === id}
               aria-controls={`plugins-panel-${id}`}
@@ -43,15 +56,19 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
               }}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
-        <div className="plugins-actions" ref={setActionTarget}>
+        <div
+          data-testid="plugins-actions"
+          className="flex items-center gap-2"
+          ref={setActionTarget}
+        >
           {tab === 'mcp' && (
-            <button type="button" className="plugins-add" disabled title="MCP 暂未接入">
+            <Button variant="ghost" type="button" className="" disabled title="MCP 暂未接入">
               <Plus size={16} />
               添加mcp
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -62,9 +79,15 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
         hidden={tab !== 'mcp'}
         tabIndex={0}
       >
-        <section className="plugins-mcp" aria-labelledby="plugins-mcp-title">
-          <h2 id="plugins-mcp-title">MCP</h2>
-          <span>暂未接入</span>
+        <section
+          data-testid="plugins-mcp"
+          className="flex min-h-13 items-center justify-between gap-4 border-b border-separator"
+          aria-labelledby="plugins-mcp-title"
+        >
+          <h2 id="plugins-mcp-title" className="text-title-3">
+            MCP
+          </h2>
+          <span className="text-callout text-fg-secondary">暂未接入</span>
         </section>
       </div>
       <div

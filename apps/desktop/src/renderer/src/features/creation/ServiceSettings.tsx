@@ -1,3 +1,7 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Field, FieldLabel } from '@jarvis/ui/components/Field';
+import { Input } from '@jarvis/ui/components/Input';
+import { Textarea } from '@jarvis/ui/components/Textarea';
 import { useState } from 'react';
 import type { Settings } from './types';
 import { loginAddress, loginOrigins } from '../../../../shared/generation-login';
@@ -70,15 +74,28 @@ export function ServiceSettings({
     onDirtyChange(false);
   }
   return (
-    <form className="settings-page settings-form" onSubmit={submit} noValidate>
-      <div>
-        <h1>配置内网服务</h1>
-        <p>请手动填写请求来源标识及实际服务地址，应用不预设内网地址。</p>
+    <form
+      data-testid="settings-form"
+      className="v1-settings mx-auto flex w-full max-w-175 min-w-0 flex-col px-10 pt-6 pb-10 font-sans text-body text-fg"
+      onSubmit={submit}
+      noValidate
+    >
+      <div className="mb-6">
+        <h1 className="text-title-1">配置内网服务</h1>
+        <p className="mt-2 text-body-relaxed text-fg-secondary">
+          请手动填写请求来源标识及实际服务地址，应用不预设内网地址。
+        </p>
       </div>
       {fields.map(([key, label]) => (
-        <label className="settings-row form-field" key={key} htmlFor={key}>
-          <span>{label}</span>
-          <input
+        <Field
+          orientation="horizontal"
+          controlId={key}
+          key={key}
+          error={errors[key]}
+          className="border-b border-separator py-3"
+        >
+          <FieldLabel>{label}</FieldLabel>
+          <Input
             id={key}
             name={key}
             type="text"
@@ -86,8 +103,6 @@ export function ServiceSettings({
             autoComplete="off"
             placeholder={`请输入 ${label}`}
             value={draft[key] ?? ''}
-            aria-invalid={Boolean(errors[key])}
-            aria-describedby={errors[key] ? `${key}-error` : undefined}
             onChange={(e) => {
               const next = { ...draft, [key]: e.target.value };
               setDraft(next);
@@ -95,25 +110,23 @@ export function ServiceSettings({
               setErrors({ ...errors, [key]: undefined });
             }}
           />
-          {errors[key] && (
-            <small id={`${key}-error`} className="error-text">
-              {errors[key]}
-            </small>
-          )}
-        </label>
+        </Field>
       ))}
-      <label className="settings-row form-field" htmlFor="loginDomains">
-        <span id="login-domains-label">允许的统一登录域名</span>
-        <textarea
+      <Field
+        orientation="horizontal"
+        controlId="loginDomains"
+        error={errors.loginDomains}
+        description="平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名，每行一个（也可用逗号分隔）。平台自身域名自动允许。"
+        className="border-b border-separator py-3"
+      >
+        <FieldLabel>允许的统一登录域名</FieldLabel>
+        <Textarea
+          autoResize
           id="loginDomains"
-          aria-labelledby="login-domains-label"
-          rows={3}
           value={draft.loginDomains ?? ''}
           placeholder="请输入登录跳转经过的域名，每行一个"
           spellCheck={false}
           autoComplete="off"
-          aria-invalid={Boolean(errors.loginDomains)}
-          aria-describedby="login-domains-help"
           onChange={(event) => {
             const next = { ...draft, loginDomains: event.target.value };
             setDraft(next);
@@ -121,17 +134,14 @@ export function ServiceSettings({
             onDirtyChange(JSON.stringify(next) !== JSON.stringify(value));
           }}
         />
-        <small id="login-domains-help">
-          平台登录地址填写平台首页或登录入口；这里填写跳转经过的其他域名，每行一个（也可用逗号分隔）。平台自身域名自动允许。
-        </small>
-        {errors.loginDomains && <small className="error-text">{errors.loginDomains}</small>}
-      </label>
+      </Field>
       <PlatformLoginControls settings={value} dirty={dirty} />
-      <div className="form-actions">
-        <span role="status">{dirty ? '更改尚未保存' : status}</span>
-        <button
-          className="secondary-button"
-          type="button"
+      <div data-testid="form-actions" className="mt-6 flex items-center justify-end gap-3">
+        <span role="status" className="mr-auto text-subheadline text-fg-secondary">
+          {dirty ? '更改尚未保存' : status}
+        </span>
+        <Button
+          variant="secondary"
           disabled={!dirty}
           onClick={() => {
             setDraft(value);
@@ -140,10 +150,10 @@ export function ServiceSettings({
           }}
         >
           取消
-        </button>
-        <button className="primary-button" type="submit" disabled={!dirty}>
+        </Button>
+        <Button type="submit" disabled={!dirty}>
           保存更改
-        </button>
+        </Button>
       </div>
     </form>
   );
