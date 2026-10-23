@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23
 
+### V1 Icon Button 组件初稿（2026-10-23）
+
+- 用户要求继续设计纯图标按钮。组件集 `Icon Button`（`337:27595`）位于 V1-Components 页，64 个变体：variant（同 Button 四种）× size（icon-xs / icon-sm / icon / icon-lg，方形 20/24/28/32，宽高绑定 control-h/*）× state（default / hover / pressed / disabled）。属性：`icon`（INSTANCE_SWAP，默认 Lucide ellipsis `26:411`）、`focusVisible`。图标 12 / icon/14 / icon/16 / icon/18。
+- ghost 默认图标色 fg/secondary，hover/pressed 转为 fg/default，符合 macOS 工具栏；destructive 使用 danger/hover·pressed。对应代码 `<Button size="icon-*">`，描述中注明代码必须提供 aria-label 并配 Tooltip。暂不含 loading（布尔属性无法同时隐藏图标并显示 Spinner）。
+- 评审样张 `Icon Button / Review`（`337:27596`）展示两套主题的状态、焦点环、四档尺寸及工具栏示例，截图检查通过。
+- 修复旧组件页 `Lucide / trash`（`94:1654`）内层 Frame（`94:1655`）约束由 MIN 改为 SCALE，使其缩放到 16px 时不再溢出；24px 原尺寸外观不变。
+
 ### V1 Button 组件初稿（2026-10-23）
 
 - 用户要求开始设计 Button。组件集 `Button`（`336:27571`）位于 V1-Components 页，64 个变体：variant（default / secondary / ghost / destructive）× size（xs / sm / default / lg，对应 macOS mini / small / regular / large）× state（default / hover / pressed / disabled）。属性与代码 props 同名：`label`、`leadingIcon` + `leadingIconSwap`（默认 Lucide plus `26:334`）、`trailingIcon` + `trailingIconSwap`（默认 chevron-down `26:420`）、`loading`（loader-circle `107:3883`）、`focusVisible`（3px focus-ring 外圈）。
