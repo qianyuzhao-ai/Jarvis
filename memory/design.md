@@ -1,6 +1,14 @@
 # Jarvis 设计记忆
 
-最后更新：2026-10-22
+最后更新：2026-10-23
+
+### 视觉换新方案 v0.2：方向已确认（2026-10-23）
+
+- 方案文档：[视觉换新-组件库设计系统](https://docs.google.com/document/d/1Z2vZyoCYf3dsKiBwbDrzSDeXsLjj6bJWfk6BwnTLd2M/edit)，已由 v0.1 更新为 v0.2；具体变量规范、macOS 映射与迁移顺序以文档为准。
+- 用户已确认：所有页面重新设计；先在 Figma 设计并确认，再改代码；保持仿 macOS 风格，由用户在 Figma 中逐步设计；从最小组件开始，同时规范 Tailwind CSS 原子化变量。
+- 用户已确认：使用系统字体；跟随 macOS 系统强调色；侧栏使用原生毛玻璃；Windows 沿用同一设计、不单独优化；交互底座为 Radix UI；现在建立 `packages/ui`（`@jarvis/ui`，private workspace 包）。
+- 当前方案要点（未实现）：Figma 变量重组为 Primitives / Semantic 两个集合并与代码变量同名；旧 CSS 先放入 `@layer legacy`，主题属性移到 `<html>`；Button 收敛为 default / secondary / ghost / destructive 四种；测试定位先从 class 改为 role、label 或 data-testid。
+- 待定：变量具体数值和密度在 Figma 中定稿；macOS 13 / 26 毛玻璃观感、Electron 44 系统强调色变化通知需实测。本条只记录方向，未修改 Figma 或应用代码，也不代表授权实现、提交或发布。
 
 ### 内网地址由用户手动填写（2026-10-22）
 
