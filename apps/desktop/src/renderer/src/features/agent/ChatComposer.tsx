@@ -97,7 +97,13 @@ export function ChatComposer({
       }}
     >
       {menuOpen && (
-        <SkillPicker skills={options} active={activeIndex} listId={listId} onSelect={choose} />
+        <SkillPicker
+          skills={options}
+          active={activeIndex}
+          listId={listId}
+          onSelect={choose}
+          onActive={setActive}
+        />
       )}
       <div className="composer-input-surface">
         <textarea

@@ -282,6 +282,10 @@ export function PromptEditor({
           active={menu.active}
           position={position}
           onChoose={choose}
+          onActive={(active) => {
+            if (menuRef.current && !viewRef.current?.composing)
+              show({ ...menuRef.current, active });
+          }}
         />
       )}
     </div>

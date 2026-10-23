@@ -90,6 +90,29 @@
   - `CandidateList`（`358:30798`，2 个变体）：content（default / empty）。surface 浮层内边距 4，可选分组标题，3–5 项（`item4` / `item5`），每项为公开实例；`emptyText`。combobox + listbox 语义，自有实现。
 - 评审样张 `Popover · CandidateList / Review`（`359:30654`）：两种 Popover、/ 技能选择浮在输入框上方、@ 素材引用缩略图列表与无匹配，截图检查两套主题通过；已将缩略图由 32 调为 28 并加描边。初稿待用户确认。
 
+### UI V1 第二批实施（2026-10-24）
+
+用户已授权第二批初稿进入 E–H 实现。阶段 E 完成 scrim 浅深语义变量和 Tailwind 映射、Radix 依赖、asChild secondary 禁用态修复；检查与构建通过，完整回归 89/89（3.1m）通过。Figma 只读，未修改节点。阶段 F 组件与浅深预览已实现，新增交互专项 8/8 通过，完整回归 94/94（3.3m）通过。组件来源及阶段证据统一记录在 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。
+
+阶段 G 已接入全部 9 处确认、插件/写作辅助 Tabs、聊天/生成详情 Collapsible、更新 ProgressField 与参考/下载 BadgeCount；完整回归 95/95（3.3m）通过。原生 details 保留挂载行为继续保留，具体取舍见实施报告。
+
+阶段 H 最终检查、构建、完整回归 95/95（3.4m）及浮层复验 8/8（25.5s）通过，phase-h 36 张浅深截图已生成并检查。阶段 H 已接入写作两类菜单、技能/@ 候选、生成/导出 Toast 和指定持续错误 Alert；去掉候选淡入以保持即时输入反馈，统一第二批图标线宽。MediaEditor 保留现有 960×600 放大外壳与 CodeMirror 实例，ContextUsage 保留 hover + click 混合提示；理由与每处迁移结果见实施报告。Figma 未写入，设计来源如下。
+
+| 家族 | 已读取的 Figma 来源 | 当前实现 |
+| --- | --- | --- |
+| 14 Popover / CandidateList | `358:30609` / `358:30729` | Popover 预览、CandidateList 页面接入 |
+| 15 DropdownMenu | `360:30994` | 组件与写作菜单 |
+| 16 Dialog | `362:31494` | sm/default/lg 组件与预览 |
+| 17 AlertDialog | `363:31597`，评审 `363:32030` | 全部九处确认与 Provider |
+| 18 Tabs | `367:31760` | 插件与写作辅助栏 |
+| 19 Collapsible | `369:31917` | 聊天活动与生成详情 |
+| 20 Alert | `370:32084` | 指定持续提示 |
+| 21 Toast | `371:32325` | 生成提醒与导出反馈 |
+| 22 Badge | `376:32522` / `376:32529` | 标签家族、参考与下载计数 |
+| 23 Progress | `378:32536` / `378:32571` | 更新进度与预览 |
+
+[组件源文件](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=332-28013)。任务文件的明确数值优先于局部初稿差异，尤其 CandidateList 字号、内边距与说明透明度；没有改变视觉方向或主张已通过其他系统版本验收。
+
 ### 第一批组件 PR（2026-10-23）
 
 - 用户要求创建 PR：[PR #67](https://github.com/qianyuzhao-ai/Jarvis/pull/67)，`feature/ui-v1-foundation`（`edbae7d`）→ `develop`，已由用户合并（develop `3c9ab2b`）。随后本设计分支合入 develop，`memory/design.md` 顶部冲突已手动合并，两边记录全部保留。

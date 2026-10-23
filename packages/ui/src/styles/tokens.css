@@ -1,5 +1,16 @@
 @layer theme {
   :root {
+    --popover-width: 280px;
+    --menu-min-width: 220px;
+    --dialog-sm: 400px;
+    --dialog-width: 560px;
+    --dialog-lg: 800px;
+    --toast-width: 340px;
+    --badge-height: 18px;
+    --progress-height: 6px;
+    --icon-stroke: 1.75;
+    --progress-ring-stroke-small: 3;
+    --progress-ring-stroke-regular: 2.5;
     --border-hairline: 0.5px;
     --border-standard: 1px;
     --focus-width: 3px;
@@ -142,6 +153,7 @@
     --color-selection: var(--primitive-blue-light-subtle);
     --color-selection-inactive: var(--primitive-alpha-black-10);
     --color-shadow: var(--primitive-alpha-black-15);
+    --color-scrim: var(--primitive-alpha-black-25);
     --color-accent: var(--primitive-blue-light);
     --color-accent-hover: var(--primitive-blue-light-hover);
     --color-accent-pressed: var(--primitive-blue-light-pressed);
@@ -176,6 +188,7 @@
     --color-selection: var(--primitive-blue-dark-subtle);
     --color-selection-inactive: var(--primitive-alpha-white-10);
     --color-shadow: var(--primitive-alpha-black-50);
+    --color-scrim: var(--primitive-alpha-black-50);
     --color-accent: var(--primitive-blue-dark);
     --color-accent-hover: var(--primitive-blue-dark-hover);
     --color-accent-pressed: var(--primitive-blue-dark-pressed);
@@ -212,6 +225,7 @@
     --ui-color-selection: var(--color-selection);
     --ui-color-selection-inactive: var(--color-selection-inactive);
     --ui-color-shadow: var(--color-shadow);
+    --ui-color-scrim: var(--color-scrim);
     --ui-color-accent: var(--color-accent);
     --ui-color-accent-hover: var(--color-accent-hover);
     --ui-color-accent-pressed: var(--color-accent-pressed);

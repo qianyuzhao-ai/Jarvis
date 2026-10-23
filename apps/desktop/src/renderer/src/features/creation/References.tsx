@@ -1,3 +1,4 @@
+import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useEffect, useRef, useState } from 'react';
 import { ImageIcon, Music, Plus, Video, X } from 'lucide-react';
 import { REFERENCE_LIMITS } from '../../../../shared/generation';
@@ -157,7 +158,12 @@ export function References({
               </span>
             </span>
           ))}
-          <span className="reference-count">共 {items.length}</span>
+          <BadgeCount
+            className="reference-count"
+            tone="neutral"
+            count={items.length}
+            aria-label={`共 ${items.length} 个参考素材`}
+          />
         </button>
       )}
       {!expanded && items.length === 0 && (

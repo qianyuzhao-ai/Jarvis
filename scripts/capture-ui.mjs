@@ -37,6 +37,11 @@ for (const theme of ['light', 'dark']) {
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
     await snap('writing');
+    if (phase === 'phase-h') {
+      await page.getByRole('button', { name: '打开文件夹', exact: true }).click();
+      await snap('writing-menu-open');
+      await page.keyboard.press('Escape');
+    }
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await snap('general');
@@ -47,6 +52,17 @@ for (const theme of ['light', 'dark']) {
     ]) {
       await page.getByRole('button', { name: label, exact: true }).click();
       await snap(name);
+      if (phase === 'phase-h' && name === 'services') {
+        await page.getByLabel('req_from', { exact: true }).fill('视觉确认样例');
+        await page.getByRole('button', { name: '通用', exact: true }).click();
+        await expect(page.getByRole('alertdialog')).toBeVisible();
+        await snap('confirm-open');
+        await page
+          .getByRole('alertdialog')
+          .getByRole('button', { name: '取消', exact: true })
+          .click();
+        await page.getByRole('button', { name: '取消', exact: true }).click();
+      }
       if (phase === 'phase-d' && name === 'models') {
         await page.getByRole('button', { name: '添加模型', exact: true }).click();
         await snap('model-form');

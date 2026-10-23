@@ -1,3 +1,9 @@
+import {
+  CandidateList,
+  CandidateListItem,
+  CandidateListLabel,
+  CandidateListEmpty,
+} from '@jarvis/ui/components/CandidateList';
 import { BookOpen } from 'lucide-react';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 
@@ -6,39 +12,42 @@ export function SkillPicker({
   active,
   listId,
   onSelect,
+  onActive,
 }: {
   skills: SkillInfo[];
   active: number;
   listId: string;
   onSelect: (skill: SkillInfo) => void;
+  onActive: (index: number) => void;
 }) {
   return (
-    <div data-testid="skill-picker" className="skill-picker">
-      <div className="skill-picker-heading">技能</div>
-      <div role="listbox" id={listId} aria-label="选择技能" className="skill-picker-list">
+    <CandidateList
+      data-testid="skill-picker"
+      className="skill-picker"
+      id={listId}
+      aria-label="选择技能"
+    >
+      <CandidateListLabel>技能</CandidateListLabel>
+      <div className="skill-picker-list">
         {skills.length ? (
           skills.map((skill, index) => (
-            <button
+            <CandidateListItem
               key={skill.id}
-              type="button"
-              role="option"
               id={`${listId}-${index}`}
-              aria-selected={active === index}
-              onMouseDown={(e) => e.preventDefault()}
+              active={active === index}
+              onActive={() => onActive(index)}
               onClick={() => onSelect(skill)}
+              media={<BookOpen />}
+              description={skill.description}
+              meta={skill.manualOnly ? '手动' : undefined}
             >
-              <BookOpen size={16} />
-              <span>
-                <strong>/{skill.name}</strong>
-                <small title={skill.description}>{skill.description}</small>
-              </span>
-              {skill.manualOnly && <em>手动</em>}
-            </button>
+              /{skill.name}
+            </CandidateListItem>
           ))
         ) : (
-          <p>没有匹配的已启用技能</p>
+          <CandidateListEmpty>没有匹配的已启用技能</CandidateListEmpty>
         )}
       </div>
-    </div>
+    </CandidateList>
   );
 }

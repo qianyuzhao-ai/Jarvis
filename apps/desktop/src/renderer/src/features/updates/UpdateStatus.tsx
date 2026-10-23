@@ -1,3 +1,4 @@
+import { ProgressField } from '@jarvis/ui/components/Progress';
 import { Button } from '@jarvis/ui/components/Button';
 import type { AppUpdates } from './use-app-updates';
 
@@ -80,14 +81,19 @@ export function UpdateStatus({
         </div>
       </div>
       {phase === 'downloading' && (
-        <div className="update-progress">
-          <progress aria-label="更新下载进度" max={100} value={state?.progress?.percent ?? 0} />
-          <span>
-            {((state?.progress?.transferred ?? 0) / 1048576).toFixed(1)} /{' '}
-            {((state?.progress?.total ?? 0) / 1048576).toFixed(1)} MB ·{' '}
-            {((state?.progress?.bytesPerSecond ?? 0) / 1048576).toFixed(1)} MB/s
-          </span>
-        </div>
+        <ProgressField
+          className="my-2"
+          label="更新下载进度"
+          value={state?.progress?.percent ?? 0}
+          valueLabel={`${Math.floor(state?.progress?.percent ?? 0)}%`}
+          hint={
+            <>
+              {((state?.progress?.transferred ?? 0) / 1048576).toFixed(1)} /{' '}
+              {((state?.progress?.total ?? 0) / 1048576).toFixed(1)} MB ·{' '}
+              {((state?.progress?.bytesPerSecond ?? 0) / 1048576).toFixed(1)} MB/s
+            </>
+          }
+        />
       )}
       {settings && <p>启动后及每 4 小时自动检查。点击下载后显示进度，下载完成不会自动安装。</p>}
       {settings && state?.checkedAt && (

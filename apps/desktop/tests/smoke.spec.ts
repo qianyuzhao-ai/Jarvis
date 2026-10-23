@@ -239,9 +239,14 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await expect(page.getByText('请先填写生成任务地址', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
-    page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
+    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '内网地址', exact: true }).click();
+    await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('');
     await page.getByLabel('生成任务地址', { exact: true }).fill('not-a-url');
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.getByText(/请输入完整的 http/)).toBeVisible();

@@ -1,3 +1,14 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Alert } from '@jarvis/ui/components/Alert';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuShortcut,
+} from '@jarvis/ui/components/DropdownMenu';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   ArrowLeft,
@@ -91,7 +102,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
   const [rightOpen, setRightOpen] = useState(true);
   const [leftWidth, setLeftWidth] = useState(260);
   const [rightWidth, setRightWidth] = useState(280);
-  const [rightTab, setRightTab] = useState<'outline' | 'assistant'>('outline');
+  const [rightTab, setRightTab] = useState('outline');
   const [source, setSource] = useState(false);
   const [folderMenu, setFolderMenu] = useState(false);
   const [moreMenu, setMoreMenu] = useState(false);
@@ -111,7 +122,6 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
   const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
-  const folderArea = useRef<HTMLDivElement>(null);
   const active = writing.documents.find(
     (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
   );
@@ -180,13 +190,6 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
     if (creation) dialog.current?.showModal();
     else dialog.current?.close();
   }, [creation]);
-  useEffect(() => {
-    const close = (e: PointerEvent) => {
-      if (e.target instanceof Node && !folderArea.current?.contains(e.target)) setFolderMenu(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -297,49 +300,43 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
             <ArrowLeft size={14} />
             返回工作台
           </button>
-          <div className="writing-folder-area" ref={folderArea}>
-            <button
-              className="writing-folder-picker"
-              aria-expanded={folderMenu}
-              aria-haspopup="menu"
-              disabled={writing.loading}
-              onClick={() => setFolderMenu((open) => !open)}
-            >
-              <Folder size={20} />
-              <strong>{writing.root?.name ?? '打开文件夹'}</strong>
-              <ChevronDown size={14} />
-            </button>
-            {folderMenu && (
-              <div className="writing-folder-menu" role="menu" aria-label="切换文件夹">
-                <p>切换文件夹</p>
+          <div className="writing-folder-area">
+            <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
+              <DropdownMenuTrigger asChild>
+                <button className="writing-folder-picker" disabled={writing.loading}>
+                  <Folder size={20} />
+                  <strong>{writing.root?.name ?? '打开文件夹'}</strong>
+                  <ChevronDown size={14} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent aria-label="切换文件夹" align="start">
+                <DropdownMenuLabel>切换文件夹</DropdownMenuLabel>
                 {writing.roots.map((root) => (
-                  <button
+                  <DropdownMenuItem
                     key={root.id}
-                    role="menuitem"
                     title={root.directory}
-                    onClick={() => {
-                      setFolderMenu(false);
+                    onSelect={() => {
                       setQuery('');
                       void writing.switchRoot(root);
                     }}
                   >
-                    <Folder size={16} />
+                    <Folder />
                     <span>{root.name}</span>
-                    {writing.root?.id === root.id && <small>当前</small>}
-                  </button>
+                    {writing.root?.id === root.id && (
+                      <DropdownMenuShortcut>当前</DropdownMenuShortcut>
+                    )}
+                  </DropdownMenuItem>
                 ))}
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setFolderMenu(false);
+                <DropdownMenuItem
+                  onSelect={() => {
                     void writing.chooseDirectory();
                   }}
                 >
-                  <FolderPlus size={16} />
+                  <FolderPlus />
                   打开其他文件夹…
-                </button>
-              </div>
-            )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           {writing.root && (
             <>
@@ -372,27 +369,25 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
                   >
                     <FolderPlus size={18} />
                   </IconButton>
-                  <IconButton
-                    label="更多文件操作"
-                    aria-expanded={moreMenu}
-                    onClick={() => setMoreMenu((open) => !open)}
-                  >
-                    <MoreHorizontal size={18} />
-                  </IconButton>
+                  <DropdownMenu open={moreMenu} onOpenChange={setMoreMenu}>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton label="更多文件操作">
+                        <MoreHorizontal size={18} />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent aria-label="更多文件操作" align="end">
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          void writing.refresh();
+                          for (const path of writing.expanded) void writing.refresh(path);
+                        }}
+                      >
+                        刷新文件列表
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-              {moreMenu && (
-                <button
-                  className="writing-refresh"
-                  onClick={() => {
-                    setMoreMenu(false);
-                    void writing.refresh();
-                    for (const path of writing.expanded) void writing.refresh(path);
-                  }}
-                >
-                  刷新文件列表
-                </button>
-              )}
               {searchOpen && (
                 <div className="writing-search">
                   <Search size={16} />
@@ -499,22 +494,43 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
           )}
         </div>
         {writing.notice && (
-          <div className="writing-notice" role="alert">
-            <span>{writing.notice}</span>
-            <IconButton label="关闭提示" onClick={() => writing.setNotice('')}>
-              <X size={14} />
-            </IconButton>
-          </div>
+          <Alert tone="error" onDismiss={() => writing.setNotice('')}>
+            {writing.notice}
+          </Alert>
         )}
         {active?.error && (
-          <div className="writing-notice" role="alert">
-            <span>{active.error}</span>
-            {active.status !== 'conflict' && (
-              <button onClick={() => void writing.save(active.id)}>重试保存</button>
-            )}
-            <button onClick={() => void writing.reload(active.id)}>重新读取</button>
-            <button onClick={() => void writing.saveCopy(active.id)}>另存副本</button>
-          </div>
+          <Alert
+            tone="error"
+            action={
+              <div className="flex flex-wrap gap-2">
+                {active.status !== 'conflict' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void writing.save(active.id)}
+                  >
+                    重试保存
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void writing.reload(active.id)}
+                >
+                  重新读取
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void writing.saveCopy(active.id)}
+                >
+                  另存副本
+                </Button>
+              </div>
+            }
+          >
+            {active.error}
+          </Alert>
         )}
         {active ? (
           <MarkdownEditor
@@ -572,72 +588,64 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
         </footer>
       </main>
       {rightOpen && (
-        <aside className="writing-right" aria-label="写作辅助面板">
-          <div className="writing-right-tabs window-drag" role="tablist" aria-label="辅助功能">
-            <IconButton
-              label="文章大纲"
-              role="tab"
-              aria-selected={rightTab === 'outline'}
-              onClick={() => setRightTab('outline')}
+        <Tabs appearance="underline" value={rightTab} onValueChange={setRightTab} asChild>
+          <aside className="writing-right" aria-label="写作辅助面板">
+            <TabsList className="writing-right-tabs" aria-label="辅助功能">
+              <TabsTrigger value="outline" aria-label="文章大纲">
+                <ListTree />
+              </TabsTrigger>
+              <TabsTrigger value="assistant" aria-label="写作助手">
+                <MessageSquare />
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent
+              value={rightTab}
+              className="writing-right-content"
+              aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
             >
-              <ListTree size={18} />
-            </IconButton>
-            <IconButton
-              label="写作助手"
-              role="tab"
-              aria-selected={rightTab === 'assistant'}
-              onClick={() => setRightTab('assistant')}
-            >
-              <MessageSquare size={18} />
-            </IconButton>
-          </div>
-          <div
-            className="writing-right-content"
-            role="tabpanel"
-            aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
-          >
-            <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
-            {rightTab === 'outline' ? (
-              !active ? (
-                <p>打开文档后显示标题导航</p>
-              ) : outline.length ? (
-                <nav aria-label="文章标题">
-                  {outline.map((heading) => (
-                    <button
-                      key={heading.from}
-                      className={currentHeading === heading.from ? 'current' : ''}
-                      style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
-                      onClick={() => {
-                        const editor = view.current;
-                        if (editor) {
-                          editor.dispatch({
-                            selection: { anchor: heading.from },
-                            effects: EditorView.scrollIntoView(heading.from, {
-                              y: 'start',
-                              yMargin: 32,
-                            }),
-                          });
-                          editor.focus();
-                        }
-                      }}
-                    >
-                      {heading.title || '未命名标题'}
-                    </button>
-                  ))}
-                </nav>
+              <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
+              {rightTab === 'outline' ? (
+                !active ? (
+                  <p>打开文档后显示标题导航</p>
+                ) : outline.length ? (
+                  <nav aria-label="文章标题">
+                    {outline.map((heading) => (
+                      <button
+                        key={heading.from}
+                        className={currentHeading === heading.from ? 'current' : ''}
+                        style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
+                        onClick={() => {
+                          const editor = view.current;
+                          if (editor) {
+                            editor.dispatch({
+                              selection: { anchor: heading.from },
+                              effects: EditorView.scrollIntoView(heading.from, {
+                                y: 'start',
+                                yMargin: 32,
+                              }),
+                            });
+                            editor.focus();
+                          }
+                        }}
+                      >
+                        {heading.title || '未命名标题'}
+                      </button>
+                    ))}
+                  </nav>
+                ) : (
+                  <p>使用 # 标题组织文章结构。</p>
+                )
               ) : (
-                <p>使用 # 标题组织文章结构。</p>
-              )
-            ) : (
-              <div className="writing-ai-placeholder">
-                <MessageSquare size={24} />
-                <strong>AI 写作助手</strong>
-                <p>稍后接入，先专注写作。</p>
-              </div>
-            )}
-          </div>
-          <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
-        </aside>
+                <div className="writing-ai-placeholder">
+                  <MessageSquare size={24} />
+                  <strong>AI 写作助手</strong>
+                  <p>稍后接入，先专注写作。</p>
+                </div>
+              )}
+            </TabsContent>
+            <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
+          </aside>
+        </Tabs>
       )}
       <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>
         <form onSubmit={(e) => void submitCreation(e)}>

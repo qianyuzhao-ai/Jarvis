@@ -372,10 +372,6 @@
     font-size: 13px;
     color: var(--color-secondary);
   }
-  .chat-activity > summary {
-    padding-block: 6px;
-    cursor: pointer;
-  }
   .chat-files {
     border: 1px solid var(--legacy-color-border);
     border-radius: 10px;
@@ -383,14 +379,6 @@
   }
   .chat-file + .chat-file {
     border-top: 1px solid var(--legacy-color-border);
-  }
-  .chat-file > summary {
-    cursor: pointer;
-    padding: 10px 12px;
-    overflow-wrap: anywhere;
-  }
-  .chat-file > summary > span {
-    margin-right: 6px;
   }
   .chat-file-name {
     color: var(--color-ink);
@@ -496,23 +484,9 @@
   .chat-rename button {
     flex-shrink: 0;
   }
-  .agent-error {
-    color: var(--color-ink);
-    border-left: 3px solid var(--legacy-static-color-51);
-    background: var(--node-field);
-    padding: 10px 12px;
-    border-radius: 6px;
-    line-height: 22px;
-    overflow-wrap: anywhere;
-  }
   .chat-error {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 8px 48px;
-  }
-  .chat-error span {
-    flex: 1;
+    margin: calc(var(--spacing) * 2) calc(var(--spacing) * 12);
+    width: auto;
   }
   .agent-primary {
     background: var(--legacy-color-accent);
@@ -561,71 +535,13 @@
   }
   .skill-picker {
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + var(--spacing) * 2);
     left: 0;
     right: 0;
-    border: 1px solid var(--legacy-color-border);
-    background: var(--legacy-color-surface);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px var(--legacy-static-color-38);
-    padding: 6px;
-    z-index: 20;
     overflow: hidden;
-  }
-  .skill-picker-heading {
-    padding: 6px 8px;
-    color: var(--color-secondary);
-    font-size: 11px;
   }
   .skill-picker-list {
-    max-height: min(280px, 40vh);
+    max-height: min(var(--popover-width), 40vh);
     overflow-y: auto;
-  }
-  .skill-picker-list > button {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    text-align: left;
-    border: 0;
-    border-radius: 6px;
-    padding: 8px;
-    background: transparent;
-    color: var(--color-ink);
-  }
-  .skill-picker-list > button[aria-selected='true'],
-  .skill-picker-list > button:hover {
-    background: var(--color-selected);
-  }
-  .skill-picker-list > button > svg {
-    flex-shrink: 0;
-  }
-  .skill-picker-list span {
-    display: grid;
-    gap: 3px;
-    min-width: 0;
-    flex: 1;
-  }
-  .skill-picker-list strong {
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .skill-picker-list small {
-    font-size: 11px;
-    line-height: 18px;
-    color: var(--color-secondary);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-  .skill-picker-list em {
-    font-size: 10px;
-    font-style: normal;
-    color: var(--color-secondary);
-  }
-  .skill-picker-list > p {
-    padding: 12px 8px;
-    font-size: 12px;
-    color: var(--color-secondary);
   }
 }

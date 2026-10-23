@@ -1,3 +1,4 @@
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Info } from 'lucide-react';
 import {
@@ -41,6 +42,8 @@ export function RelaySettings({
   create?: boolean;
   onBack?: () => void;
 }) {
+  const confirm = useConfirm();
+  const returning = useRef(false);
   const [config, setConfig] = useState(value.config ?? empty);
   const [key, setKey] = useState('');
   const [clearKey, setClearKey] = useState(false);
@@ -133,8 +136,21 @@ export function RelaySettings({
             variant="secondary"
             className="mb-4"
             type="button"
-            onClick={() => {
-              if (!dirty || window.confirm('放弃未保存的模型配置并返回？')) onBack();
+            onClick={async () => {
+              if (returning.current) return;
+              returning.current = true;
+              try {
+                if (
+                  !dirty ||
+                  (await confirm({
+                    title: '放弃未保存的更改？',
+                    message: '放弃未保存的模型配置并返回？',
+                  }))
+                )
+                  onBack();
+              } finally {
+                returning.current = false;
+              }
             }}
           >
             返回我的模型

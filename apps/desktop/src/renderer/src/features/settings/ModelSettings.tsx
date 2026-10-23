@@ -1,3 +1,4 @@
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { Button } from '@jarvis/ui/components/Button';
 import { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
@@ -13,6 +14,7 @@ export function ModelSettings({
   onSaved: (value: RelayView) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -27,11 +29,20 @@ export function ModelSettings({
     if (!bridge || locked.current) return;
     const model = value.models?.find((m) => m.id === id);
     if (!model) return;
-    if (remove && !window.confirm(`删除模型“${model.config.name}”？聊天记录会保留。`)) return;
     locked.current = true;
     setPending(true);
     setError('');
     try {
+      if (
+        remove &&
+        !(await confirm({
+          title: `删除模型“${model.config.name}”？`,
+          message: '聊天记录会保留。',
+          tone: 'destructive',
+          confirmLabel: '删除',
+        }))
+      )
+        return;
       onSaved(agentValue(await (remove ? bridge.removeModel(id) : bridge.setDefaultModel(id))));
     } catch (e) {
       setError(e instanceof Error ? e.message : '模型操作失败');

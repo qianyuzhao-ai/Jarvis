@@ -244,7 +244,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       ),
     ).toContainText('这是流式回复。');
     await expect(page.getByRole('button', { name: '打开对话：已保存的对话' })).toBeVisible();
-    await page.locator('[data-testid="chat-file"] > summary').click();
+    await page.locator('[data-testid="chat-file"] > [data-ui="collapsible-trigger"]').click();
     await expect(page.getByTestId('chat-file-path')).toHaveText('Jarvis/preview.html');
     await expect(page.getByTestId('chat-diff')).toBeVisible();
     expect(
@@ -255,7 +255,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       page.locator('[data-diff-kind="add"] [data-testid="diff-line-number"]').nth(1),
     ).toHaveText('1');
     await page.screenshot({ path: test.info().outputPath('chat-diff-dark.png') });
-    await page.locator('[data-testid="chat-file"] > summary').click();
+    await page.locator('[data-testid="chat-file"] > [data-ui="collapsible-trigger"]').click();
     await expect(page.getByTestId('chat-diff')).not.toBeVisible();
     await page.getByLabel('消息', { exact: true }).fill('继续上次讨论');
     await page.getByRole('button', { name: '发送消息' }).click();

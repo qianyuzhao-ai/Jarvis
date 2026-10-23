@@ -178,11 +178,11 @@ test('my models migrates legacy credentials, persists multiple providers and swi
       'DeepSeek 官方',
       'Beta 新名称',
     ]);
-    page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '删除模型：Beta 新名称' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByTestId('configured-model')).toHaveCount(3);
-    page.once('dialog', (dialog) => void dialog.accept());
     await page.getByRole('button', { name: '删除模型：Beta 新名称' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '删除', exact: true }).click();
     await expect(page.getByTestId('configured-model')).toHaveCount(2);
     if (!snapshot.ok || !snapshot.value.snapshot.sessions[0]) throw new Error('Missing chat');
     const sessionId = snapshot.value.snapshot.sessions[0].id;

@@ -103,7 +103,7 @@ test('real updater downloads through HTTP, reports progress, rejects a bad hash 
     expect(downloads).toBe(0);
     await panel.getByRole('button', { name: '下载更新' }).click();
     await expect
-      .poll(async () => Number(await panel.getByRole('progressbar').getAttribute('value')))
+      .poll(async () => Number(await panel.getByRole('progressbar').getAttribute('aria-valuenow')))
       .toBeGreaterThan(0);
     await expect(panel.getByRole('alert')).toContainText('完整性或签名校验失败');
     tamper = false;

@@ -1,3 +1,4 @@
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUpdateGuard } from '../updates/use-update-guard';
 import { z } from 'zod';
@@ -31,6 +32,8 @@ const tabsSchema = z.object({ paths: z.array(z.string()).max(30), active: z.stri
 export const parentPath = (path: string) => path.split('/').slice(0, -1).join('/');
 
 export function useWriting() {
+  const confirm = useConfirm();
+  const reloading = useRef(new Set<string>());
   const [roots, setRoots] = useState<WritingRoot[]>([]);
   const [root, setRoot] = useState<WritingRoot | null>(null);
   const rootRef = useRef(root);
@@ -324,12 +327,22 @@ export function useWriting() {
   };
   const reload = async (id: string) => {
     const doc = documentsRef.current.find((d) => d.id === id);
-    if (!doc || !window.confirm('重新读取将放弃当前尚未保存的更改，是否继续？')) return;
+    if (!doc || reloading.current.has(id)) return;
+    reloading.current.add(id);
     try {
+      if (
+        !(await confirm({
+          title: '放弃更改并重新读取？',
+          message: '重新读取将放弃当前尚未保存的更改，是否继续？',
+        }))
+      )
+        return;
       const file = unwrap(await bridge().readFile({ rootId: doc.rootId, path: doc.path }));
       update(id, { ...file, savedContent: file.content, status: 'saved', error: '' });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '重新读取失败');
+    } finally {
+      reloading.current.delete(id);
     }
   };
   const saveCopy = async (id: string) => {
