@@ -274,23 +274,29 @@ test('Electron uploads references, generates image and video, and restores resul
     const page = await app.firstWindow();
     async function checkResult(kind: string) {
       await expect(page.getByTestId('generation-notice')).toContainText('今日剩余 116');
-      await page.screenshot({ path: test.info().outputPath(`generation-notice-${kind}.png`) });
+      await page.screenshot({
+        animations: 'disabled',
+        path: test.info().outputPath(`generation-notice-${kind}.png`),
+      });
       await page.getByRole('button', { name: '关闭生成提醒' }).click();
       await expect(page.getByTestId('generation-notice')).toHaveCount(0);
       const details = page.getByTestId('generation-details');
-      await expect(details).not.toHaveAttribute('open');
+      await expect(details).toHaveAttribute('data-state', 'closed');
       await expect(page.getByRole('button', { name: '复制返回 URL' })).not.toBeVisible();
       await page.getByLabel('生成信息', { exact: true }).focus();
       await page.keyboard.press('Enter');
-      await expect(details).toHaveAttribute('open');
+      await expect(details).toHaveAttribute('data-state', 'open');
       const url = await details.locator('code').innerText();
       expect(url).toMatch(/^https?:/);
       await page.getByRole('button', { name: '复制返回 URL' }).click();
       await expect(page.getByRole('button', { name: '复制返回 URL' })).toHaveText('已复制');
       expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(url);
-      await page.screenshot({ path: test.info().outputPath(`generation-details-${kind}.png`) });
+      await page.screenshot({
+        animations: 'disabled',
+        path: test.info().outputPath(`generation-details-${kind}.png`),
+      });
       await page.getByLabel('生成信息', { exact: true }).click();
-      await expect(details).not.toHaveAttribute('open');
+      await expect(details).toHaveAttribute('data-state', 'closed');
     }
     const deniedCopy = await page.evaluate(() =>
       window.desktop?.generation.copyResultUrl(crypto.randomUUID()),
@@ -348,7 +354,10 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByLabel('图像提示词').fill('a cat @');
     await page.getByRole('option', { name: /图片 1.*ref-z.png/ }).click();
     await expect(page.getByTestId('prompt-tag')).toHaveText('@image_1');
-    await page.screenshot({ path: test.info().outputPath('prompt-mention.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('prompt-mention.png'),
+    });
     mock.setMode('upload-fail');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await expect(page.getByTestId('editor-notice')).toContainText('files[0].url');
@@ -367,13 +376,19 @@ test('Electron uploads references, generates image and video, and restores resul
     await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
     await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '重命名 图像生成', exact: true })).toBeVisible();
-    await page.screenshot({ path: test.info().outputPath('generating-center-light.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('generating-center-light.png'),
+    });
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
     await expect(page.locator('[data-testid="node-generating"] svg')).toHaveCSS(
       'animation-name',
       'none',
     );
-    await page.screenshot({ path: test.info().outputPath('generating-center-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('generating-center-dark.png'),
+    });
     await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'light' });
     mock.release();
     await expect(page.getByAltText('生成的图像')).toBeVisible();
@@ -479,10 +494,21 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByRole('button', { name: /生成联调测试/ }).click();
     await page.locator('.react-flow__node-media').last().click();
     await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
-    page.once('dialog', (dialog) => void dialog.dismiss());
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     expect(mock.calls.filter((c) => c.path === '/generate')).toHaveLength(submitted);
-    await page.screenshot({ path: test.info().outputPath('generated.png') });
+    await page.getByRole('button', { name: '生成视频', exact: true }).click();
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: '仍要重新生成', exact: true })
+      .click();
+    await expect
+      .poll(() => mock.calls.filter((c) => c.path === '/generate').length)
+      .toBe(submitted + 1);
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('generated.png'),
+    });
     expect(errors).toEqual([]);
   } finally {
     await app.close();

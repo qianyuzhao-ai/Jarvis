@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
-
+import { toast } from '@jarvis/ui/components/Toast';
 export function GenerationNotice({
   notice,
   onDismiss,
@@ -10,19 +9,14 @@ export function GenerationNotice({
 }) {
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(
-      () => onDismiss(notice.id),
-      Math.max(12_000, notice.text.length * 200),
-    );
-    return () => clearTimeout(timer);
+    const id = toast({
+      title: notice.text,
+      testId: 'generation-notice',
+      duration: Math.max(12_000, notice.text.length * 200),
+      closeLabel: '关闭生成提醒',
+      onDismiss: () => onDismiss(notice.id),
+    });
+    return () => toast.dismiss(id, false);
   }, [notice, onDismiss]);
-  if (!notice) return null;
-  return (
-    <div data-testid="generation-notice" className="generation-notice">
-      <p role="status">{notice.text}</p>
-      <button type="button" aria-label="关闭生成提醒" onClick={() => onDismiss(notice.id)}>
-        <X size={16} aria-hidden="true" />
-      </button>
-    </div>
-  );
+  return null;
 }

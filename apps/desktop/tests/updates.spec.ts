@@ -130,11 +130,11 @@ test('automatic and manual checks, download retry/progress, route changes and in
     await panel.getByRole('button', { name: '检查更新' }).click();
     await expect(panel.getByRole('button', { name: '下载更新' })).toBeVisible();
     await panel.getByRole('button', { name: '下载更新' }).click();
-    await expect(panel.getByRole('progressbar')).toHaveAttribute('value', '25');
+    await expect(panel.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '25');
     await expect(page.getByRole('region', { name: '更新提醒', exact: true })).toHaveCount(0);
     await expect(panel.getByRole('alert')).toContainText('测试下载连接中断');
     await panel.getByRole('button', { name: '重试下载' }).click();
-    await expect(panel.getByRole('progressbar')).toHaveAttribute('value', '60');
+    await expect(panel.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '60');
     await panel.scrollIntoViewIfNeeded();
     await page.screenshot({ path: test.info().outputPath('update-progress-light.png') });
     await page.getByRole('button', { name: '返回工作台' }).click();

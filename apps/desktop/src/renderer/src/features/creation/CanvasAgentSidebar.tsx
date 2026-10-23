@@ -1,3 +1,4 @@
+import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ChevronLeft, History, Plus } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
@@ -264,12 +265,9 @@ export function CanvasAgentSidebar({
           />
         )}
         {agent.error && (
-          <div className="agent-error" role="alert">
+          <Alert tone="error" onDismiss={() => agent.setError('')} closeLabel="关闭">
             {agent.error}
-            <button type="button" onClick={() => agent.setError('')}>
-              关闭
-            </button>
-          </div>
+          </Alert>
         )}
         <div
           className="canvas-agent-scroll"

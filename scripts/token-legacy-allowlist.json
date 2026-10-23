@@ -1,15 +1,4 @@
 {
   "apps/desktop/src/renderer/src/features/creation/canvas-vision.ts": ["#ffffff"],
-  "apps/desktop/src/renderer/src/features/creation/canvas-agent.css": [
-    "#ffe8ed",
-    "#ac2e42",
-    "#e6f5e9",
-    "#23733e",
-    "#421c26",
-    "#ff91a3",
-    "#193326",
-    "#80d99e",
-    "#ac2e42"
-  ],
   "apps/desktop/src/renderer/src/features/writing/writing.css": ["#00000018", "#0005"]
 }

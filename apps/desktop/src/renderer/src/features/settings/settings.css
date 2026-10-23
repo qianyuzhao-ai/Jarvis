@@ -15,9 +15,4 @@
   }
 }
 @layer utilities {
-  .v1-plugin-tab[aria-selected='true'] {
-    background: var(--color-surface-raised);
-    color: var(--color-fg);
-    box-shadow: var(--shadow-control);
-  }
 }

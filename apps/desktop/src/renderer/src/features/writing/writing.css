@@ -61,47 +61,6 @@
     white-space: nowrap;
     flex: 1;
   }
-  .writing-folder-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    inset-inline: 0;
-    z-index: 30;
-    padding: 8px;
-    border: 1px solid var(--legacy-color-border);
-    border-radius: 8px;
-    background: var(--legacy-color-surface);
-    box-shadow: 0 6px 20px #00000018;
-  }
-  .writing-folder-menu p {
-    margin: 0 0 6px;
-    font-size: 12px;
-    color: var(--color-secondary);
-  }
-  .writing-folder-menu button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 36px;
-    padding: 8px;
-    border: 0;
-    border-radius: 6px;
-    background: none;
-    text-align: left;
-  }
-  .writing-folder-menu button:hover {
-    background: var(--control-hover);
-  }
-  .writing-folder-menu span {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .writing-folder-menu small {
-    color: var(--color-secondary);
-  }
   .writing-file-tools {
     display: flex;
     align-items: center;
@@ -184,12 +143,6 @@
   }
   .writing-file.selected {
     background: var(--color-selected);
-  }
-  .writing-refresh {
-    border: 1px solid var(--legacy-color-border);
-    border-radius: 6px;
-    background: var(--legacy-color-surface);
-    padding: 8px;
   }
   .writing-main {
     grid-column: 2;
@@ -351,25 +304,6 @@
   .writing-status span {
     white-space: nowrap;
   }
-  .writing-notice {
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    background: var(--color-selected);
-    font-size: 12px;
-  }
-  .writing-notice span {
-    flex: 1;
-    min-width: 100px;
-  }
-  .writing-notice > button:not(.icon-button) {
-    border: 1px solid var(--legacy-color-border);
-    border-radius: 6px;
-    padding: 4px 8px;
-    background: var(--legacy-color-surface);
-  }
   .writing-right {
     grid-column: 3;
     display: flex;
@@ -382,13 +316,6 @@
     min-height: 52px;
     padding: 0 12px;
     border-bottom: 1px solid var(--legacy-color-border);
-  }
-  .writing-right-tabs .icon-button {
-    width: 36px;
-    height: 36px;
-  }
-  .writing-right-tabs .icon-button[aria-selected='true'] {
-    background: var(--color-canvas);
   }
   .writing-right-content {
     display: flex;

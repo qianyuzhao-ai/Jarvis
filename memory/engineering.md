@@ -1,6 +1,10 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-23
+最后更新：2026-10-24
+
+## UI V1 第二批浮层与反馈（2026-10-24）
+
+E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二批十个家族（含 CandidateList）、异步 ConfirmProvider 和最多三条的 Toast；页面接入不新增原生接口、不改数据格式。最终检查、构建、完整实窗 95/95（3.4m），浮层复验 8/8（25.5s）通过。phase-h 36 张浅深截图与所有阶段 SHA、取舍、失败修复记录见 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。MediaEditor 外壳、ContextUsage 混合提示按评估保留；macOS 13/26 和 Windows 仍待实机验收。
 
 ## UI V1 阶段 D 设置试装（2026-10-23）
 

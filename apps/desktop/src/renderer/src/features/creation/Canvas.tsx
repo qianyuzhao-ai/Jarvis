@@ -1,3 +1,5 @@
+import { Alert } from '@jarvis/ui/components/Alert';
+import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { DownloadMedia } from '../../../../shared/generation';
@@ -662,18 +664,25 @@ function CanvasContent({
                 onClick={() => void downloadSelected()}
               >
                 <Download size={16} aria-hidden="true" />
-                <span className="selection-download-count" aria-hidden="true">
-                  {downloadable.length}
-                </span>
+                <BadgeCount
+                  tone="accent"
+                  count={downloadable.length}
+                  aria-label={`${downloadable.length} 个可下载文件`}
+                />
               </button>
               {connectingIds && <span>点击目标图像或视频节点</span>}
             </div>
           )}
           {connectionNotice && (
-            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
+            <Alert
+              tone="error"
+              data-testid="canvas-import-notice"
+              className="canvas-import-notice"
+              onDismiss={() => setConnectionNotice('')}
+              closeLabel="关闭"
+            >
               {connectionNotice}
-              <button onClick={() => setConnectionNotice('')}>关闭</button>
-            </div>
+            </Alert>
           )}
           {dragging && (
             <div data-testid="canvas-drop-hint" className="canvas-drop-hint" role="status">
@@ -682,10 +691,15 @@ function CanvasContent({
             </div>
           )}
           {importNotice && (
-            <div data-testid="canvas-import-notice" className="canvas-import-notice" role="alert">
+            <Alert
+              tone="error"
+              data-testid="canvas-import-notice"
+              className="canvas-import-notice"
+              onDismiss={() => setImportNotice('')}
+              closeLabel="关闭"
+            >
               {importNotice}
-              <button onClick={() => setImportNotice('')}>关闭</button>
-            </div>
+            </Alert>
           )}
           {active && (
             <motion.div

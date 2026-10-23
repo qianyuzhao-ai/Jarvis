@@ -1,3 +1,4 @@
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useRef, useState } from 'react';
 import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '../../components/IconButton';
@@ -28,6 +29,7 @@ export function CanvasConversations({
   rename: (id: string, title: string) => Promise<boolean>;
   remove: (id: string) => Promise<boolean>;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState('');
   const [title, setTitle] = useState('');
   const [pending, setPending] = useState(false);
@@ -44,12 +46,19 @@ export function CanvasConversations({
     }
   }
   async function deleteChat(s: ChatSession) {
-    if (submitting.current || !window.confirm(`删除“${s.title}”对话？画布修改和资产会保留。`))
-      return;
+    if (submitting.current) return;
     submitting.current = true;
     setPending(true);
     try {
-      await remove(s.id);
+      if (
+        await confirm({
+          title: `删除“${s.title}”对话？`,
+          message: '画布修改和资产会保留。',
+          tone: 'destructive',
+          confirmLabel: '删除对话',
+        })
+      )
+        await remove(s.id);
     } finally {
       submitting.current = false;
       setPending(false);

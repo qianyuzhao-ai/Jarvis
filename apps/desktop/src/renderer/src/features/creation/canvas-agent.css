@@ -206,13 +206,6 @@
     gap: 4px;
     margin-bottom: 6px;
   }
-  .canvas-agent .agent-error {
-    margin: 0 16px 8px;
-    font-size: 12px;
-  }
-  .canvas-agent .agent-error button {
-    margin-left: 8px;
-  }
   .canvas-agent-running-dot {
     position: absolute;
     width: 6px;
@@ -226,14 +219,10 @@
   .canvas-change-details {
     margin-bottom: 12px;
   }
-  .canvas-change-details summary {
-    cursor: pointer;
-    font-size: 12px;
-  }
   .canvas-change-details > div {
     display: grid;
-    gap: 4px;
-    margin: 8px 0;
+    gap: var(--spacing);
+    margin: calc(var(--spacing) * 2) 0;
     overflow-wrap: anywhere;
   }
   .canvas-change-details del,
@@ -245,20 +234,12 @@
     white-space: pre-wrap;
   }
   .canvas-change-details del {
-    background: #ffe8ed;
-    color: #ac2e42;
+    background: var(--color-danger-subtle);
+    color: var(--color-danger);
   }
   .canvas-change-details ins {
-    background: #e6f5e9;
-    color: #23733e;
-  }
-  [data-theme='dark'] .canvas-change-details del {
-    background: #421c26;
-    color: #ff91a3;
-  }
-  [data-theme='dark'] .canvas-change-details ins {
-    background: #193326;
-    color: #80d99e;
+    background: var(--color-success-subtle);
+    color: var(--color-success);
   }
 
   .canvas-agent-recovery {
@@ -377,7 +358,7 @@
     padding: 4px;
   }
   .canvas-attachment[data-status='failed'] {
-    border-color: #ac2e42;
+    border-color: var(--color-danger);
   }
   .chat-vision-assets {
     display: flex;

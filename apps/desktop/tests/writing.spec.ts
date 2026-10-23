@@ -277,3 +277,34 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await app.close();
   }
 });
+
+test('writing reload preserves a conflicted buffer on cancel and reads disk on confirmation', async () => {
+  const directory = test.info().outputPath('notes');
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, '确认.md'), '# 初稿\n');
+  const app = await launch(test.info().outputPath('profile'));
+  try {
+    const page = await app.firstWindow();
+    await choose(app, page, directory);
+    await page
+      .getByRole('navigation', { name: '文件列表' })
+      .getByRole('button', { name: '确认.md' })
+      .click();
+    const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
+    await expect(editor).toContainText('初稿');
+    await writeFile(join(directory, '确认.md'), '# 外部版本\n');
+    await editor.press('ControlOrMeta+a');
+    await page.keyboard.insertText('# 本地未保存的内容');
+    await editor.press('ControlOrMeta+s');
+    await expect(page.getByRole('alert')).toContainText('已停止自动保存');
+    await page.getByRole('button', { name: '重新读取', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
+    await expect(editor).toContainText('本地未保存的内容');
+    await page.getByRole('button', { name: '重新读取', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await expect(editor).toContainText('外部版本');
+    expect(await readFile(join(directory, '确认.md'), 'utf8')).toBe('# 外部版本\n');
+  } finally {
+    await app.close();
+  }
+});

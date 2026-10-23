@@ -1,8 +1,10 @@
 # UI V1 实施与验收
 
-最后更新：2026-10-23
+最后更新：2026-10-24
 
 ## 交付状态
+
+第二批 E–H 已完成，`feature/ui-v1-overlays` 已推送并回读验证；完整回归 95/95，最终浮层复验 8/8。详见下方“第二批”章节。
 
 A–D 已完成并通过各阶段门禁，分支 `feature/ui-v1-foundation` 已推送，远端分支回读包含全部四阶段提交。工作区代码保持版本 0.2.5，没有 PR、合并、标签或发布。
 
@@ -121,3 +123,110 @@ A–D 已实现；各阶段证据与最终验收见下文。
 - 设置截图：`node scripts/capture-ui.mjs fix-disabled-settings` 生成 `apps/desktop/test-results/ui-v1/fix-disabled-settings/` 共 16 张浅深截图；已核对通用“检查更新”和内网平台登录按钮的禁用外观。截图保留原生透明区域 alpha。
 
 - 本次修改文件：`packages/ui/src/styles/base.css`、`apps/desktop/src/renderer/src/dev/UiPreview.tsx`、`apps/desktop/tests/ui-preview.spec.ts`、两张 macOS 预览基准、`memory/design.md` 与本报告。完整检查日志保存于 `apps/desktop/test-results/ui-v1/fix-disabled/verification/`。
+
+## 第二批：浮层与反馈（2026-10-24）
+
+依据用户 `codex-prompt-ui-v1-batch2.md`，从最新 origin/develop 创建 `feature/ui-v1-overlays`。授权 E–H 独立提交与最终推送，不创建 PR、合并、标签或发布。设计分支只读参考，未合入；Google Docs v0.2 与 Figma 当前节点已读取。本任务明确授权实现第二批初稿。
+
+### E：变量与依赖
+
+- 新增 scrim 语义色及 bg-scrim 映射：Light black-25、Dark black-50；补齐 secondary Button 的 data-disabled 禁用选择器，浅深测试直接验证 asChild 链接的背景、描边、文字及阴影。
+- 精确依赖：Radix popover 1.3.1、dropdown-menu 2.2.1、dialog 1.3.1、alert-dialog 1.2.1、tabs 1.2.1、collapsible 1.2.1、toast 1.3.1。Progress 计划用原生 ARIA + 百分比宽度与 SVG，避免为无交互展示引入额外依赖。
+- 检查与构建通过；完整窗口回归 89/89（3.1m）通过。首轮 87/89，新增测试样例与旧选择器冲突；恢复样例属性后预览 3/3（6.4s），全量重跑通过。日志：`apps/desktop/test-results/ui-v1/batch2-verification/e-*.log`。
+
+### 第二批设计来源
+
+Figma 文件 `mIwnyR5nAlECFMam1NvmER`、V1-Components 页 `332:28013`。本轮只读核对 Popover `358:30609`、DropdownMenu `360:30994`、Dialog `362:31494`、AlertDialog Review `363:32030`、Tabs Trigger `367:31760`、Collapsible `369:31917`、Alert `370:32084`、Toast `371:32325`、Badge `376:32522`、Progress `378:32536`。以用户任务数值优先于初稿局部差异（如 Tabs 字号、AlertDialog 图标尺寸及 Collapsible 内边距）。
+
+### F：组件与预览
+
+- E 提交：`157ce2d`。F 新增 Popover/CandidateList、DropdownMenu、Dialog、AlertDialog/ConfirmProvider、Tabs、Collapsible、Alert、Toast、Badge、Progress 家族。组件可透传 ref/className/ARIA；复杂结构采用组合 API，样式状态放 utilities 层，未增加 token 白名单。
+- `#/ui-preview` 追加第二批全部家族，含各尺寸/语义色、候选空态/长文本、可操作浮层、菜单复选/单选/子菜单、独立文档关闭按钮、通知队列与加载更新。
+- 预览专项 8/8（23.5s），检查 216 文件、类型 2/2（6.373s），构建成功（633ms）。完整回归 94/94（3.3m）通过。
+- macOS 基准由 1280×2137 扩展为 1280×3780。第一批内容区 y<2070 与旧基准相比 Light 110 / Dark 76 个不同像素，属于少量字形栅格化差异；含旧底部留白/Tooltip 阴影的全旧画布范围分别 1339 / 1305 像素。未改第一批布局与组件规则。浅深整图已目视检查。
+- 取舍：Progress 用 ARIA 和百分比宽度，圆环使用 SVG；没有 Radix Progress 依赖。Collapsible 使用状态切换和 chevron 旋转，未引入高度动画；减少动态效果时去掉旋转过渡。MediaEditor 是否替换在 H 评估。
+
+### G：低风险页面接入
+
+- F 提交：`a73903a`。App 根 ConfirmProvider 统一 9 处确认，保留原文案并拆出标题；设置导航、模型配置返回、模型删除、对话删除、重新生成、写作重新读取均在等待前加锁，取消不改变数据。生成确认后重新读取当前项目/节点，避免旧快照请求。
+- PluginSettings 使用 segment Tabs；WritingSpace 辅助栏使用 underline Tabs。ChatActivity 三类 details 与 GenerationDetails 改为 Collapsible；UpdateStatus 使用 ProgressField；References / Canvas 使用 BadgeCount。
+- 原生确认测试改为实际操作 AlertDialog；保留删除模型/对话的取消与确认断言，补齐设置离开、未知结果重新生成、写作冲突重新读取的两条路径。进度断言改用 aria-valuenow，数量用可访问名称与数字验证。
+- 集成发现 Radix 默认卸载关闭内容，与原生 details 语义不同：CollapsibleContent 默认 forceMount 并在关闭时 display:none，保留既有内容/组件状态及业务断言。首轮生成/导出失败源于这一差异，已修复；引用数量旧文本断言同步迁到新角标语义。
+- 最终门禁：检查 216 文件、类型 2/2（7.559s），构建成功（731ms），完整回归 95/95（3.3m）通过。写作专项 5/5（14.8s）。新增写作用例曾错误假设另存副本保留原标签，现独立验证冲突重新读取；原另存副本断言保留。未改数据、存储或原生接口。
+
+### H：浮层与反馈页面接入
+
+- G 提交：`d7ed150`。写作文件夹及更多菜单换为 DropdownMenu，移除与 Portal 冲突的手写外部点击监听；原菜单项、禁用条件和刷新/目录切换调用保留。
+- SkillPicker 与 PromptMentionMenu 使用 CandidateList；保留稳定 option id、aria-activedescendant、CodeMirror 键盘/组合输入、Portal 位置和滚动跟随。文件名继续为主文字，引用编号为说明；悬停更新 active，mousedown 保留输入焦点。
+- GenerationNotice 使用 Toast，仍按既有队列逐条显示，阅读时间为 max(12 秒, 字数×200ms)，关闭/到期才推进原队列。组件卸载清理不触发业务 dismiss。CanvasExport 以同一 id 从 loading 更新 success/error，保留防重复导出、取消和异常语义；原实现没有“打开文件”动作，未新增原生接口或虚构操作。
+- ChatPage 错误、WritingSpace 提示/冲突、Canvas 连接/导入错误、CanvasAgentSidebar 错误、GenerationDetails 任务错误/警告/复制错误使用 Alert；表单字段错误保持原实现。画布拖入引导是操作期间状态，保存状态为持续状态，均保留；未发现需改 Toast 的其他临时 status。
+- 按文件清理失效 CSS：legacy.css 28、agent.css 17、writing.css 12、updates.css 4、settings.css 1、canvas-agent.css 6 个规则删除或收敛；无文件删除。canvas-agent.css 的差异色改用 success/danger 语义变量，移出白名单；保留 canvas-vision.ts 与 writing.css 中本批未迁移部分的旧例外。
+- 补充组件说明到 packages/ui/README.md。排队确认继承最初触发位置；第二个请求在第一个已打开后到达的焦点恢复已纳入预览回归。Tabs 禁用规则覆盖选中外观。第二批图标统一 1.75 线宽，缩略图内图标居中；高频候选列表直接出现，其他浮层使用统一时长、曲线与减少动态效果策略。
+- 阶段 H 专项首轮 33/36：业务链路通过，失败为 @ 引用旧深色背景断言和两张预览基准。更新旧颜色断言为 surface-raised 后，预览 + @ 引用专项 10/10（28.1s）通过，中文组合输入、原子删除、撤销、剪切/粘贴断言全部保留。基准变化只在第二批图标与缩略图区域。
+
+### 逐处迁移结果与保留项
+
+| 位置 | 结果 |
+| --- | --- |
+| App 四处离开/导航确认 | 已替换，统一等待锁，取消保持路由与编辑值 |
+| RelaySettings 返回 | 已替换，未保存配置确认与等待锁 |
+| ModelSettings 删除 | 已替换，destructive，取消保留模型/记录 |
+| CanvasConversations 删除 | 已替换，destructive，submitting 在确认前锁定 |
+| useGeneration 未知结果重试 | 已替换，确认按钮“仍要重新生成”，取消不发请求，确认后重读节点 |
+| useWriting 重新读取 | 已替换，取消保留冲突缓冲，确认后读取磁盘 |
+| PluginSettings / WritingSpace 辅助栏 | 已替换 Tabs，保留内容和持久化选中项 |
+| ChatActivity 三处 / GenerationDetails | 已替换 Collapsible，保留原默认展开与关闭内容挂载 |
+| UpdateStatus | 已替换 ProgressField，保留百分比、大小、速率与错误 |
+| References / Canvas 下载数量 | 已替换 BadgeCount，保留数量可访问名称 |
+| WritingSpace 两处菜单 | 已替换 DropdownMenu |
+| ChatComposer.menuOpen | 实际为技能 listbox，经 SkillPicker 接入 CandidateList，无普通菜单可替换 |
+| SkillPicker / PromptMentionMenu | 已替换 CandidateList，输入和定位仍由原业务控制 |
+| GenerationNotice / CanvasExport | 已替换 Toast，原队列与导出 API 不变 |
+| ChatPage / WritingSpace / Canvas / CanvasAgentSidebar / GenerationDetails 持续错误 | 已替换 Alert |
+| MediaEditor 放大外壳 | 评估后保留：普通态和放大态共用同一个 CodeMirror 实例；切换到 body Portal 会重挂载编辑器，风险涉及历史/选区、引用 Portal 与 Esc 两级还原。此外已有 960×600 尺寸验收，与 Dialog lg=800 不同。本批不重构该交互，既有实窗覆盖继续验证 |
+| Popover / ContextUsage | Popover 已在预览交付；ContextUsage 同时支持 hover tooltip 与点击保持，现有测试明确验证两种行为，本批保留混合提示，不改成仅点击弹层 |
+
+### 第二批与设计的差异及验收边界
+
+1. 采用任务文件优先：Candidate 描述/meta 为 callout 12px、内边距 8、active 全白；部分 Figma 初稿仍为 11/10px、纵向 4 和说明 85% opacity。Tabs segment callout 12px、图标 16；AlertDialog 图标 20；Collapsible 内边距按任务明确值。色彩方向与组件结构保持原稿。
+2. Progress 的百分比宽度与动态 SVG 替代 Figma paddingRight/静态圆弧，符合任务要求；小圆环 viewBox 的 3 单位线宽经 16/24 缩放为实际 2px，大圆环为 2.5px。
+3. 系统字体、动态系统强调色沿用第一批。Figma 静态 SF Pro 与当前 macOS 字形栅格化存在差异。候选缩略图取真实素材，Lucide 图标复用已安装库；未引用临时 Figma URL。
+4. 预览按家族排列而非复制评审画板坐标；Dialog、Popover、菜单和确认框用真实触发器打开。截图补充打开状态，行为通过实窗测试验证。
+5. 当前主机 macOS 27.0.1；macOS 13/26、Windows 字体、系统强调色及浮层表现仍需目标设备人工验收。真实内网/第三方生成服务不在本轮验证范围。
+6. 未创建 PR、合并、打标签或发布。四阶段功能提交已推送并回读验证，后附提交表。
+
+### 第二批检查与文件索引
+
+| 阶段 | pnpm check | pnpm build | pnpm test:smoke |
+| --- | --- | --- | --- |
+| E | Biome 204 文件，类型 2/2，6.153s | 成功，639ms | 89/89，3.1m |
+| F | Biome 216 文件，类型 2/2，6.373s | 成功，633ms | 94/94，3.3m |
+| G | Biome 216 文件，类型 2/2，7.559s | 成功，731ms | 95/95，3.3m |
+| H | Biome 216 文件，类型 2/2，7.58s | 成功，700ms | 95/95，3.4m；最终浮层复验 8/8，25.5s |
+
+耗时口径沿用第一批：Turbo 任务耗时和 Playwright 套件耗时，不含工具调度。原始日志位于 `apps/desktop/test-results/ui-v1/batch2-verification/`，保留首轮失败与修复后输出。
+
+- E：packages/ui/package.json、pnpm-lock.yaml、tokens.css/base.css、renderer styles.css、ui-preview.spec.ts。
+- F：packages/ui/src/components 的 11 个文件（Popover 与 CandidateList 为一个家族）、base.css/tokens.css、dev/OverlayPreview.tsx / UiPreview.tsx、ui-preview.spec.ts 和两张 macOS 基准。
+- G：App、RelaySettings、ModelSettings、CanvasConversations、useGeneration、useWriting、PluginSettings、WritingSpace、ChatActivity、GenerationDetails、UpdateStatus、References、Canvas；对应行为测试及 Collapsible 挂载语义修正。
+- H：SkillPicker、ChatComposer、PromptMentionMenu、PromptEditor、WritingSpace、GenerationNotice、CanvasExport、ChatPage、CanvasAgentSidebar、Canvas、GenerationDetails；六份旧 CSS、token-legacy-allowlist.json、capture-ui.mjs、组件 API 说明与截图/行为验证。
+- 源码截图基准：`apps/desktop/tests/ui-preview.spec.ts-snapshots/preview-{light,dark}-darwin.png`；额外证据目录 `apps/desktop/test-results/ui-v1/phase-h/`（本机测试产物，不提交 Git）。
+
+
+H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.log` / `h-build-final.log` 与 `h-overlays-final.log` 全部通过。Popover 外部关闭也恢复触发焦点；排队确认在已打开时追加请求后恢复最初触发点；折叠悬停颜色和叠卡数量不被遮挡均有断言。复查收敛聊天提示宽度、叠卡角标层级及折叠样式优先级后完成上述验证。
+
+`node scripts/capture-ui.mjs phase-h` 成功。目录共 **36 张 PNG**：八个页面 × 两主题（16）、真实设置确认/写作菜单打开（4）、组件候选/确认/对话框/菜单/Popover/Toast 三条堆叠 × 两主题（12）、真实技能与 @ 引用两主题（4）。已目视检查浅深组件、确认框、菜单、Toast 堆叠、技能候选和引用菜单。`flow-screenshot-sources.json` 记录四张业务截图来源与校验值；`batch2-verification/preview-diff.json` 记录第一批内容区域与 E 提交基准的像素差异。
+
+本批授权范围内没有未完成的必做实现或自动化验收；MediaEditor / ContextUsage 的评估保留项及目标系统人工验收见上表。源码版本维持 0.2.5，无文件删除、无新增原生接口、无真实模型/生成服务请求。
+
+
+### 第二批提交与推送
+
+| 阶段 | 提交 SHA | 说明 |
+| --- | --- | --- |
+| E | `157ce2dd4740180480c5667da15b5e4651bf41b1` | scrim、精确依赖、asChild 禁用修复 |
+| F | `a73903a088ab74d3b89f91ef8844cb492a41be86` | 全部第二批组件、浅深预览与交互回归 |
+| G | `d7ed1503792d8ae04a5bdb005ab02e5d81ae2155` | 九处确认与低风险页面接入 |
+| H | `34871025f309e643d988ead219624d77feac7b7e` | 菜单、候选、Toast、Alert、旧规则清理与最终验收 |
+
+`git push -u origin feature/ui-v1-overlays` 成功；`git ls-remote --heads origin feature/ui-v1-overlays` 回读为阶段 H 完整 SHA。其后仅追加本验收索引和工程/Git 记忆的文档提交，并随同一功能分支推送。没有 PR、合并、版本标签或发布。
