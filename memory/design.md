@@ -2,6 +2,14 @@
 
 最后更新：2026-10-23
 
+### V1 第二批：21 Toast 初稿（2026-10-23）
+
+- `V1-Components`（`332:28013`）新增 Section `21 Toast`（`371:32326`），组件集 `Toast`（`371:32325`）5 个变体：`tone=info|success|warning|error|loading`；属性 `title` / `description` / `showDescription` / `showAction`（默认关）/ `showClose`。
+- 外观：`color/surface-raised` + 0.5px `color/border` + `V1/shadow-popover`，`radius/panel`，宽 340，内边距 12（右 8），间距 8；图标 16 用对应语义色（error 用 danger），loading 用 Spinner 实例；标题 `V1/headline`、说明 `V1/callout` + `fg/secondary`；操作为 Button secondary sm，关闭为 Icon Button ghost icon-xs + x。
+- 行为约定（待确认）：窗口右下角距边 16，自下向上堆叠、间距 8，最多 3 条；info/success 约 5 秒自动消失，悬停或聚焦时暂停；error 与 loading 不自动消失；`role="status"`，error 用 `role="alert"`；业务队列与时机留在功能层（GenerationNotice、CanvasExport）。持续性提示用 Alert。
+- 审阅板 `Toast / Review`（`372:32138`）：Light/Dark 各含 5 条单条示例和一个 560×300 窗口右下角堆叠示例；总览 Index 新增行 `372:33354`。
+- 验证：插件几何检查通过（有说明 58px、单行 41–45px，无溢出）；`get_screenshot` 图片下载被网络代理拒绝，本次未做截图像素复核。
+
 ### V1 第二批：20 Alert 初稿（2026-10-23）
 
 - 用户要求继续设计 Alert。新 Section `20 Alert`（`370:32085`），概览索引已追加。
