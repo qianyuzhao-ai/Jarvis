@@ -2,6 +2,10 @@
 
 最后更新：2026-10-23
 
+### 第一批组件 PR（2026-10-23）
+
+- 用户要求创建 PR：[PR #67](https://github.com/qianyuzhao-ai/Jarvis/pull/67)，`feature/ui-v1-foundation`（`edbae7d`）→ `develop`。未合并；合并后需把本设计分支的 `memory/design.md` 记录与该分支的修改手动合并。
+
 ### 禁用态修复验收（2026-10-23）
 
 - Codex 在 `feature/ui-v1-foundation` 提交 `edbae7d`：base.css 新增 27 行，secondary Button、default NativeSelect（含箭头）、outline Toggle 禁用为 surface-raised + 0.5px separator + fg-disabled，outline on 保留 fill；预览补充两个 outline Toggle 禁用示例与浅深精确断言，未删除断言；macOS 截图基准已更新。
