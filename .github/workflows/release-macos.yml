@@ -116,7 +116,7 @@ jobs:
             echo '::error::APPLE_TEAM_ID must contain 10 uppercase letters or digits'
             exit 1
           fi
-          pnpm exec electron-builder --mac --${{ matrix.arch }} --publish never --config electron-builder.release.yml
+          pnpm exec electron-builder --mac dmg zip --${{ matrix.arch }} --publish never --config electron-builder.release.yml
       - name: Test Apple network retry policy
         if: matrix.platform == 'macos'
         run: bash .release-tools/apps/desktop/scripts/apple-network-retry.test.sh

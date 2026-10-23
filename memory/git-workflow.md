@@ -2,7 +2,11 @@
 
 最后更新：2026-10-23
 
-## 0.2.5 发布准备（2026-10-23）
+## 0.2.5 发布（2026-10-23）
+
+- 首次运行 39934957130 的 Windows 已成功；复查发现 electron-builder 在 --mac 未指定目标时仍展开配置里的双架构，使每个 macOS 任务重复构建。主动取消原运行，改为 --mac dmg zip --<arch>；新增 release-targets.test.mjs 用实际 builder 解析函数复现旧行为并证明新命令只构建目标架构。仅修复工作流，原 v0.2.5 标签和应用源码不变；随后从修复后的 main 手动触发原标签。
+
+- 实现提交 755baf0 经 PR #62 合入 develop（1761e32），PR #63 合入 main（3e58d1bb18b170c93dc4483be923373316a9a231），两次合并树与已验证源码一致。新标签 v0.2.5 已推送，唯一发布运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39934957130 已启动，最终结果待回读。
 
 - 发布前 pnpm check、构建、版本一致性及 diff 检查通过，完整 Electron/模拟服务回归 84/84（3.0m）、Node 发布工具回归 9/9 通过。
 
