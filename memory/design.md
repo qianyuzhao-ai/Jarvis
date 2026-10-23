@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23
 
+### V1 Textarea 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Textarea。组件集 `Textarea`（`343:28775`）位于 V1-Components 页 InputGroup 下方，14 个变体：behavior（fixed 固定高度 96 + 右下角调整手柄 / auto 随内容增高）× state（同 Input 7 种）。属性：`placeholder`、`value`、`showCount` + `countText`（右下字数，footnote）。
+- 文字 V1/body-relaxed（13/20），内边距 space/8 × space/4（单行高度与 control-h/regular 一致），圆角 radius/control，状态配色与 Input 一致，focus / invalid 为 3px 外圈。默认宽 320。
+- 评审样张 `Textarea / Review`（`343:28776`）展示 fixed 七种状态、auto 一行 / 多行 / 带字数，以及 Field 内替换控件为 Textarea 的“允许的统一登录域名”示例，截图检查两套主题通过。ChatComposer、PromptEditor、MarkdownEditor 不使用本组件替换。初稿待用户确认。
+
 ### V1 InputGroup 组件初稿（2026-10-23）
 
 - 用户要求继续设计 InputGroup。组件集 `InputGroup`（`342:28595`）位于 V1-Components 页 Field 下方，21 个变体：size（sm / default / lg）× state（同 Input 7 种）。外壳样式、尺寸与 Input 一致，左内边距同 Input、右内边距 space/4，元素间距 space/4。
