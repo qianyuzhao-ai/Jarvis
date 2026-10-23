@@ -2,6 +2,143 @@
 
 最后更新：2026-10-23
 
+### 第一批组件 PR（2026-10-23）
+
+- 用户要求创建 PR：[PR #67](https://github.com/qianyuzhao-ai/Jarvis/pull/67)，`feature/ui-v1-foundation`（`edbae7d`）→ `develop`，已由用户合并（develop `3c9ab2b`）。随后本设计分支合入 develop，`memory/design.md` 顶部冲突已手动合并，两边记录全部保留。
+
+### 禁用态修复验收（2026-10-23）
+
+- Codex 在 `feature/ui-v1-foundation` 提交 `edbae7d`：base.css 新增 27 行，secondary Button、default NativeSelect（含箭头）、outline Toggle 禁用为 surface-raised + 0.5px separator + fg-disabled，outline on 保留 fill；预览补充两个 outline Toggle 禁用示例与浅深精确断言，未删除断言；macOS 截图基准已更新。
+- 复验（Linux + Xvfb）：`pnpm check`、`pnpm build` 通过；完整回归 84/89，失败为 3 项保存 API Key 的环境问题（develop 同样失败）及 2 项缺少 Linux 截图基准，新增禁用断言通过。裁切截图确认三类控件浅深禁用外观与 Figma 一致，禁用规则优先于 hover / pressed，loading 不受影响。
+- 小问题：`asChild` 的 secondary Button（`data-disabled`）未纳入白底规则，仍为灰底，影响很小。合并注意：该分支与本设计分支都修改了 `memory/design.md` 顶部，合入 develop 时需手动合并两份记录。
+
+### 验收差异的处理决定（2026-10-23）
+
+- 用户确认：Button loading 保留代码版本（Spinner 居中、文字隐藏保留宽度）；推按钮类控件禁用改为白底，以 Figma 为准。
+- Figma 已同步：`Button`（`336:27571`）删除 `loading` 布尔属性，新增 `state=loading` 20 个变体（共 100 个）：Spinner 绝对居中，Label 与图标透明度 0 保留占位；评审样张与 Spinner 样张中原 loading 实例（16 个）已切换为 state=loading；01 Button 分区随组件集变宽调整，截图检查通过。
+- 代码修复交给 Codex（跟进 prompt）：Button secondary、NativeSelect default、Toggle outline 的禁用态改为 surface-raised + 0.5px separator 边框 + fg-disabled（outline on 保留 fill 底），需在 macOS 更新预览截图基准；完成后再验收。
+
+### 第一批组件代码实现验收（2026-10-23）
+
+- 用户将第一批组件改造交给 Codex，分支 `feature/ui-v1-foundation`（HEAD `483648c`，阶段 A `90cb20a` / B `2a51146` / C `2d2971b` / D `86cb31f`），实施记录在该分支 `memory/ui-v1-implementation.md`。
+- 验收（Linux 容器 + Xvfb）：`pnpm check`、`pnpm build` 通过；完整实窗回归 86/89，失败的 agent、canvas-agent、model-library 3 项均涉及保存 API Key，在未改动的 develop 上同样失败（容器无系统钥匙串），判定为环境问题；Codex 在 macOS 报告 89/89。组件预览截图基准仅有 darwin 版本。
+- 代码审查：tokens.css 数值与 Figma 完全一致；appearance 桥接只读并沿用主窗口 / 主 frame / URL 校验；无文件删除、无通用 IPC；测试 expect 927 → 978、用例 84 → 88，无删除行为断言；新增记忆已登记 AGENTS.md。
+- 截图对比 develop：Chat、项目列表、画布、写作逐像素差异 ≤ 8/255（不可见）；设置各页按设计变化。预览页与 Figma 评审样张结构、尺寸、颜色一致。
+- 待用户决定的差异：Button loading 为居中 Spinner 隐藏文字（保持宽度），Figma 为 Spinner + 文字；secondary 禁用为 fill 灰底，Figma 为白底 + 浅描边。其余：@fontsource/noto-sans-sc 依赖暂留；macOS 13/26 毛玻璃、强调色变化与 Windows 待实机验收。
+
+### V1-Components 页面整理（2026-10-23）
+
+- 用户要求整理 V1-Components 页（`332:28013`）。整理前无游离节点，只有 Foundations、15 个组件集与 13 个评审样张分散在两列。
+- 现在自上而下为：概览框 `V1 Components / 概览`（`353:30429`，说明 + 分区 / 组件集 / 变体数 / 状态索引，均标“初稿 · 待确认”），以及 14 个 Section：`00 Foundations`（`353:30508`）、`01 Button`（`353:30510`）、`02 Icon Button`（`353:30512`）、`03 Input`（`353:30514`）、`04 Field`（`353:30516`）、`05 InputGroup`（`353:30518`）、`06 Textarea`（`353:30520`）、`07 NativeSelect`（`353:30522`）、`08 Checkbox`（`353:30524`）、`09 Toggle`（`353:30526`）、`10 ToggleGroup`（`353:30528`，含 ToggleGroup 与 ToggleGroup Item 两个组件集）、`11 Spinner`（`353:30530`）、`12 Separator`（`353:30532`）、`13 Tooltip`（`353:30534`）。
+- 每个 Section 内：顶部一行用途说明，左侧组件集，右侧 Light / Dark 评审样张；宽组件集（Input、Field、InputGroup、Textarea、NativeSelect）改为组件集在上、样张在下。仅移动位置，组件、实例与 ID 不变，截图检查通过。
+
+### V1 Tooltip 组件初稿（2026-10-23，第一批基础组件设计完成）
+
+- 用户要求继续设计 Tooltip。组件集 `Tooltip`（`351:30351`）位于 V1-Components 页 Separator 下方，2 个变体：lines（single 自适应宽度 / multi 最大宽 240 换行）。属性：`label`、`shortcut` + `showShortcut`（fg/secondary）。
+- macOS 风格无箭头小浮层：surface-raised + 0.5px border + V1/shadow-popover，文字 V1/subheadline（11），内边距 space/8 × space/4，圆角 radius/small。side（top / right / bottom / left）、6px 间距与碰撞翻转由 Radix 定位，不做方向变体；悬停约 500ms 或键盘聚焦显示，Esc 关闭；替代原生 title，点击切换的信息浮层归 Popover。
+- 评审样张 `Tooltip / Review`（`351:30352`）展示四个方向、快捷键、多行换行与键盘聚焦触发，截图检查两套主题通过；已修正多行示例沿用共享默认文字的问题。
+- 至此方案第二步的 12 个基础组件家族（Button / Icon Button、Input、Field、InputGroup、Textarea、NativeSelect、Checkbox、Toggle、ToggleGroup、Spinner、Separator、Tooltip）均已在 Figma 完成初稿，均待用户确认；尚未实现代码。
+
+### V1 Separator 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Separator。组件集 `Separator`（`350:30303`）位于 V1-Components 页 Spinner 下方，2 个变体：orientation（horizontal 默认 240×1，布局中填充宽度 / vertical 默认 1×16，可拉伸）。填充绑定 color/separator，对应 Radix Separator；拖动分隔条另归 Resizable。
+- 评审样张 `Separator / Review`（`350:30304`）展示内缩 16 的列表分组、工具栏竖向分组（ghost Icon Button 之间）与设置分区全宽分隔，截图检查两套主题通过。初稿待用户确认。
+
+### V1 Spinner 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Spinner。组件集 `Spinner`（`348:29919`）位于 V1-Components 页 ToggleGroup 下方，6 个变体：size（sm 12 / default 16 / lg 24）× tone（default = fg/secondary / onAccent = fg/on-accent）。采用 macOS 12 辐条活动指示器（圆角辐条，透明度 1 → 0.18 递减），Figma 为静态帧，代码中旋转；减少动态效果时改为缓慢淡入淡出。仅用于未知时长，确定进度用 Progress。
+- 将 `Button` 全部 80 个变体的 loading 图层由 Lucide loader-circle 替换为 Spinner：xs / sm 用 sm，default / lg 用 default；default、destructive（非 disabled）用 onAccent，其余用 default；保留 `loading` 属性绑定。Button 评审样张自动更新。
+- 评审样张 `Spinner / Review`（`349:29841`）展示三档尺寸、强调色上的 onAccent、四种按钮 loading、行内“正在获取模型列表…”与画布生成中占位，截图检查两套主题通过。初稿待用户确认。
+
+### V1 ToggleGroup 组件初稿（2026-10-23）
+
+- 用户要求继续设计 ToggleGroup。新增两个组件集，位于 V1-Components 页 Toggle 下方：
+  - `ToggleGroup Item`（`347:29672`，12 个变体）：selected（off / on）× size（sm 高 20 / default 高 24，绑定 control-h/mini·small）× state（default / hover / disabled）。on 为 surface-raised + shadow-control 的凸起项，off 为透明 + fg/secondary，hover 显 fill。属性 `label`、`icon` + `iconSwap`（默认 contrast）、`showLabel`、`focusVisible`。
+  - `ToggleGroup`（`347:29793`，4 个变体）：appearance（segmented = fill 轨道 + 2px 内边距的 macOS 分段控件 / default = 一组无边框 Toggle，间距 space/4）× size（sm / default）。内含 4 个公开嵌套项 `Item 1–4`，`item3`（默认开）/ `item4`（默认关）控制项数 2–4。
+- 对应 Radix ToggleGroup type="single"，用于偏好值单选，不是内容导航 Tab。
+- 评审样张 `ToggleGroup / Review`（`347:30224`）展示两档尺寸、hover / disabled / 焦点、四项、仅图标分段（列表 / 网格）、default 外观，以及 Field 水平行“外观：跟随系统 / Light / Dark”示例，截图检查两套主题通过。初稿待用户确认。
+
+### V1 Toggle 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Toggle。组件集 `Toggle`（`346:29444`）位于 V1-Components 页 Checkbox 下方，24 个变体：appearance（default 无边框工具栏 / outline 推按钮）× pressed（off / on）× size（sm / default，高 24 / 28）× state（default / hover / disabled）。属性：`icon` + `iconSwap`（默认 magnet）、`label` + `showLabel`、`focusVisible`。
+- off：default 为透明 + fg/secondary，hover 显 fill；outline 为 surface-raised + 0.5px border + shadow-control。on：selection/default 底 + accent 文字与图标，outline 加 1px accent 描边；disabled 灰化。内边距 space/8、间距 space/4，仅图标时约 32×28。对应 Radix Toggle，与 Button 的瞬时按下区分。
+- 评审样张 `Toggle / Review`（`346:29445`）展示 2×2 外观/按下 × 状态与焦点、仅图标 / 仅文字 / sm，以及画布右下角开关（缩略图 / 点阵 / 吸附）和 Agent“包含所选资产”示例，截图检查两套主题通过。初稿待用户确认。
+
+### V1 Checkbox 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Checkbox。组件集 `Checkbox`（`345:29177`）位于 V1-Components 页 NativeSelect 下方，12 个变体：checked（false / true / mixed）× state（default / pressed / focus / disabled；macOS 复选框无 hover 高亮）。属性：`label`、`showLabel`、`description`、`showDescription`。
+- 14px 方框（radius/small）置于 16px 槽内与 V1/body 首行对齐，间距 6；未选为 surface-raised + 1px border + shadow-control，选中/部分选中为 accent 底 + 白色对勾（Lucide check）/ 横线；pressed 用 fill/hover 叠加或 accent/pressed；disabled 灰化；focus 为方框外 3px focus-ring。对应 Radix Checkbox。
+- 评审样张 `Checkbox / Review`（`345:29178`）展示 3×4 矩阵、带标签与说明、禁用，以及技能启停列表（mixed 表示部分启用）示例，截图检查两套主题通过；已将未选边框从 0.5px 加粗为 1px，修正白底上不可见的问题。初稿待用户确认。
+
+### V1 NativeSelect 组件初稿（2026-10-23）
+
+- 用户要求继续设计 NativeSelect。组件集 `NativeSelect`（`344:29267`）位于 V1-Components 页 Textarea 下方，22 个变体：appearance=default（macOS 弹出按钮：surface-raised + 0.5px border + V1/shadow-control + chevrons-up-down）× size（sm / default / lg）× state（placeholder / filled / hover / focus / disabled / invalid）18 个；appearance=compact（无边框，hover 显 fill，callout 字号 + chevron-down 12，高 24）× filled / hover / focus / disabled 4 个。
+- 属性：`placeholder`、`value`、`leadingIcon` + `leadingIconSwap`（默认 cpu）。default 宽 200 可填充，compact 宽度随内容。展开后使用系统原生菜单，不在 Figma 中设计；不同于 Popover / 候选列表。
+- 评审样张 `NativeSelect / Review`（`344:29698`）展示六种状态、三档尺寸、compact 四种状态，以及画布参数栏、首页模型选择（brain 图标）和 Field 水平行“协议”示例，截图检查两套主题通过。初稿待用户确认。
+
+### V1 Textarea 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Textarea。组件集 `Textarea`（`343:28775`）位于 V1-Components 页 InputGroup 下方，14 个变体：behavior（fixed 固定高度 96 + 右下角调整手柄 / auto 随内容增高）× state（同 Input 7 种）。属性：`placeholder`、`value`、`showCount` + `countText`（右下字数，footnote）。
+- 文字 V1/body-relaxed（13/20），内边距 space/8 × space/4（单行高度与 control-h/regular 一致），圆角 radius/control，状态配色与 Input 一致，focus / invalid 为 3px 外圈。默认宽 320。
+- 评审样张 `Textarea / Review`（`343:28776`）展示 fixed 七种状态、auto 一行 / 多行 / 带字数，以及 Field 内替换控件为 Textarea 的“允许的统一登录域名”示例，截图检查两套主题通过。ChatComposer、PromptEditor、MarkdownEditor 不使用本组件替换。初稿待用户确认。
+
+### V1 InputGroup 组件初稿（2026-10-23）
+
+- 用户要求继续设计 InputGroup。组件集 `InputGroup`（`342:28595`）位于 V1-Components 页 Field 下方，21 个变体：size（sm / default / lg）× state（同 Input 7 种）。外壳样式、尺寸与 Input 一致，左内边距同 Input、右内边距 space/4，元素间距 space/4。
+- 插槽属性：`startIcon` + `startIconSwap`（默认 Lucide search，fg/tertiary）；`suffix` + `suffixText`（单位等后缀，fg/secondary，外包 space/4 右边距）；`endButton`（公开的 ghost `Icon Button` 实例，默认 x 清除，sm/default 用 icon-xs、lg 用 icon-sm，可在面板换成 eye 显示密码）。另有 `placeholder`、`value`。
+- 评审样张 `InputGroup / Review`（`342:28596`）展示 7 种状态、三档尺寸以及搜索 + 清除、API Key 显隐、时长单位后缀、仅前置图标四种组合，截图检查两套主题通过；已修正后缀颜色过浅和贴边问题。初稿待用户确认。
+
+### V1 Field 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Field。组件集 `Field`（`341:28088`）位于 V1-Components 页，6 个变体：orientation（vertical / horizontal）× state（default / invalid / disabled）。属性：`label`、`description`、`showDescription`、`error`。
+- vertical：标签 V1/body 在上，控件与说明全宽，间距 space/8，默认宽 320。horizontal：设置页行，标签列 120 宽、右对齐并按 control-h/regular 垂直居中，控件列填充，列间距 space/16，默认宽 480。
+- 内含公开的嵌套实例 `Control`（默认 Input default/filled，invalid 用 Input invalid，disabled 用 Input disabled），可在右侧面板直接改 value / placeholder / state，或替换为其他控件。invalid 时以带 circle-alert 图标的 danger 错误信息替换说明；disabled 时标签与说明为 fg/disabled。
+- 评审样张 `Field / Review`（`341:28089`）展示两种布局三种状态及模型服务设置示例（名称、错误接口地址、只读 API Key、空模型 ID），截图检查两套主题通过；已修正 horizontal 标签偏上约 2px。初稿待用户确认。
+
+### V1 Input 组件初稿（2026-10-23）
+
+- 用户要求继续设计 Input。组件集 `Input`（`340:28051`）位于 V1-Components 页，25 个变体：appearance=default × size（sm / default / lg，高度共用 control-h/small·regular·large）× state（empty / filled / hover / focus / disabled / readOnly / invalid）共 21 个；appearance=ghost（内联重命名）仅 default 尺寸 × filled / hover / focus / disabled 4 个。属性：`placeholder`、`value`（TEXT）。
+- 样式：surface 底 + 1px border；hover 描边 fg/tertiary；focus 为 accent 描边 + 3px focus-ring 外圈 + 光标；disabled 为 fill 底 + fg/disabled；readOnly 为 fill 底但文字 fg/default（可聚焦复制）；invalid 为 danger 描边 + danger/subtle 外圈。内边距 space/8·12，圆角 radius/small（sm）或 radius/control，文字超长省略。默认宽 240，可在布局中填充。图标、密码显隐与后缀操作留给 InputGroup。
+- 评审样张 `Input / Review`（`340:28052`）展示两套主题下 7 种状态、三档尺寸、ghost 状态与设置表单示例，截图检查通过。初稿待用户确认。
+
+### V1 按钮新增圆形与胶囊形状（2026-10-23）
+
+- 用户询问 macOS 26/27 的圆形按钮，确认采用方案 1：只为常用组合增加形状，而不是全部组合翻倍。参考依据为 macOS 26 Liquid Glass 控件形状；macOS 27 的变化未核实。玻璃材质 Electron 无法复现，圆形/胶囊按钮沿用现有填充与 V1/shadow-control。
+- `Icon Button`（`337:27595`）新增变体属性 `shape`：square（原有 64 个）/ circle（ghost、secondary × icon、icon-lg × 4 状态，16 个），共 80 个。`Button`（`336:27571`）新增 `shape`：rounded（原有 64 个）/ capsule（ghost、secondary × default、lg × 4 状态，16 个，内边距加大为 space/16、space/20），共 80 个。新形状圆角绑定 radius/full。
+- 复制变体会丢失组件属性引用，已为 32 个新变体重新绑定 label / 图标 / loading / focusVisible；评审样张已移位，避免与变大的组件集重叠，并新增胶囊、圆形及浮动工具栏示例行，截图检查两套主题通过。
+- 修复旧组件页 24 个 `Lucide / *` 图标内层 Frame 约束（MIN → SCALE），缩放时不再溢出；原尺寸外观不变。主色（default）与 destructive 暂无圆形/胶囊，如需圆形发送按钮等再补。
+
+### V1 Icon Button 组件初稿（2026-10-23）
+
+- 用户要求继续设计纯图标按钮。组件集 `Icon Button`（`337:27595`）位于 V1-Components 页，64 个变体：variant（同 Button 四种）× size（icon-xs / icon-sm / icon / icon-lg，方形 20/24/28/32，宽高绑定 control-h/*）× state（default / hover / pressed / disabled）。属性：`icon`（INSTANCE_SWAP，默认 Lucide ellipsis `26:411`）、`focusVisible`。图标 12 / icon/14 / icon/16 / icon/18。
+- ghost 默认图标色 fg/secondary，hover/pressed 转为 fg/default，符合 macOS 工具栏；destructive 使用 danger/hover·pressed。对应代码 `<Button size="icon-*">`，描述中注明代码必须提供 aria-label 并配 Tooltip。暂不含 loading（布尔属性无法同时隐藏图标并显示 Spinner）。
+- 评审样张 `Icon Button / Review`（`337:27596`）展示两套主题的状态、焦点环、四档尺寸及工具栏示例，截图检查通过。
+- 修复旧组件页 `Lucide / trash`（`94:1654`）内层 Frame（`94:1655`）约束由 MIN 改为 SCALE，使其缩放到 16px 时不再溢出；24px 原尺寸外观不变。
+
+### V1 Button 组件初稿（2026-10-23）
+
+- 用户要求开始设计 Button。组件集 `Button`（`336:27571`）位于 V1-Components 页，64 个变体：variant（default / secondary / ghost / destructive）× size（xs / sm / default / lg，对应 macOS mini / small / regular / large）× state（default / hover / pressed / disabled）。属性与代码 props 同名：`label`、`leadingIcon` + `leadingIconSwap`（默认 Lucide plus `26:334`）、`trailingIcon` + `trailingIconSwap`（默认 chevron-down `26:420`）、`loading`（loader-circle `107:3883`）、`focusVisible`（3px focus-ring 外圈）。
+- 样式全部绑定 V1 变量：高度 control-h/*，内边距 space/8·12·16，圆角 radius/small（xs/sm）或 radius/control，字体 V1/subheadline·callout·body；secondary 为推按钮（surface-raised + 0.5px border + V1/shadow-control，hover/pressed 叠加 fill）。新增 `color/danger/hover`、`color/danger/pressed`（`VariableID:336:28759/28760`）修正深色下危险按钮按压态变亮的问题。
+- 评审样张 `Button / Review`（`336:27572`）展示两套主题下各 variant 的状态、focusVisible、loading、四档尺寸、图标与长文本；截图检查通过。
+- 已知限制：替换图标后，新图标的描边颜色需重新设置（覆盖按图层名保留）；变体矩阵 64 个超过常规 30 的建议值，用户确认前保持单组件集。图标按钮（纯图标尺寸）尚未设计。初稿待用户确认。
+
+### V1 基础变量与文字样式（第零步设计侧，2026-10-23）
+
+- 用户提供 V1 页面 `V1-视觉换新`（`319:27345`）与组件页 `V1-Components`（`332:28013`），要求先做设计稿、按方案开始第一步。两页此前为空。
+- 新建变量集合 `V1 / Primitives`（`VariableCollectionId:334:26739`，单模式 Value，75 个）：neutral/alpha/glass 与 macOS 系统色（blue/red/green/orange 的 light/dark 及 subtle）颜色原始值隐藏于选择器（alpha/black-* 仅 EFFECT_COLOR）；另含 space/4–64、radius/small·control·panel·window·full、control-h/mini·small·regular·large（20/24/28/32）、icon/14·16·18·24。
+- 新建 `V1 / Semantic`（`VariableCollectionId:334:26740`，Light `334:1` / Dark `334:2`，30 个颜色别名）：window、sidebar、content、surface、surface-raised、fg/*、fill/*、border、separator、focus-ring、selection/*、accent/*、success/warning/danger/info（default/subtle）、shadow。均设定作用域与 WEB 代码名（如 `color/fg/default` → `var(--color-fg)`）。
+- 新建 10 个 SF Pro 文字样式 `V1/large-title` … `V1/footnote`（含中文多行 `V1/body-relaxed` 13/20），3 个阴影样式 `V1/shadow-control|popover|dialog`，阴影颜色绑定 `color/shadow`。Figma 中无 PingFang SC，中文为 Figma 回退字体显示。
+- 规范样张 `V1 / Foundations`（`334:27289`，Light `334:27290` / Dark `334:27425`）位于 V1-Components 页，截图检查两套主题均正常，已修正阴影裁切。
+- 全部数值为基于 macOS 系统色的初稿，待用户在 Figma 中调整确认；V0 变量集合 `Jarvis / 首页` 与旧样式保持不变。未修改应用代码。
+
+### 视觉换新方案 v0.2：方向已确认（2026-10-23）
+
+- 方案文档：[视觉换新-组件库设计系统](https://docs.google.com/document/d/1Z2vZyoCYf3dsKiBwbDrzSDeXsLjj6bJWfk6BwnTLd2M/edit)，已由 v0.1 更新为 v0.2；具体变量规范、macOS 映射与迁移顺序以文档为准。
+- 用户已确认：所有页面重新设计；先在 Figma 设计并确认，再改代码；保持仿 macOS 风格，由用户在 Figma 中逐步设计；从最小组件开始，同时规范 Tailwind CSS 原子化变量。
+- 用户已确认：使用系统字体；跟随 macOS 系统强调色；侧栏使用原生毛玻璃；Windows 沿用同一设计、不单独优化；交互底座为 Radix UI；现在建立 `packages/ui`（`@jarvis/ui`，private workspace 包）。
+- 当前方案要点（未实现）：Figma 变量重组为 Primitives / Semantic 两个集合并与代码变量同名；旧 CSS 先放入 `@layer legacy`，主题属性移到 `<html>`；Button 收敛为 default / secondary / ghost / destructive 四种；测试定位先从 class 改为 role、label 或 data-testid。
+- 待定：变量具体数值和密度在 Figma 中定稿；macOS 13 / 26 毛玻璃观感、Electron 44 系统强调色变化通知需实测。本条只记录方向，未修改 Figma 或应用代码，也不代表授权实现、提交或发布。
+
 ## UI V1 推按钮禁用态对齐（2026-10-23）
 
 - 用户确认 secondary Button、default NativeSelect、outline Toggle off 禁用保留 surface-raised 底、separator 细边框且无阴影；outline Toggle on 禁用保留 fill 底并补边框。代码按此修复，保留其他控件禁用外观。
@@ -27,7 +164,6 @@
 ## UI V1 阶段 A 基建（2026-10-23）
 
 按用户新实施文档建立 packages/ui 与固定浅深变量，旧样式隔离但外观不变；主题属性提升到 html。16 张改造前后截图逐像素一致。Figma 只读核对，未写入设计文件。详细来源、节点和验收见 [UI V1 实施记录](ui-v1-implementation.md)。
-
 
 ### 内网地址由用户手动填写（2026-10-22）
 
