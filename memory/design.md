@@ -2,6 +2,132 @@
 
 最后更新：2026-10-24
 
+### 第三阶段计划书更新：跨空间标签与空间 Agent（2026-10-24）
+
+- 用户决定：跨空间标签页现在就做；写作空间右边栏去掉大纲；右边栏弹出后只是 Agent 对话，在哪个标签页打开就能操作该标签页的空间。要求写进计划书并 PR 到 develop。
+- 计划书入库为 `memory/ui-v1-shell-plan.md`（已登记 AGENTS.md 记忆索引）：新增 J3 跨空间标签页（标签模型 chat / canvas / writing / settings、打开 / 去重 / 关闭规则、写作打开文档并入全局标签、快捷键、`localStorage` 键 `jarvis:window-tabs` 持久化、每标签后退前进与右边栏状态）；新增阶段 N（右边栏 = 所在空间 Agent：画布沿用项目会话；新增写作 Agent，照 canvas-tools / canvas-broker 模式，只能读 / 改当前标签文档的编辑器缓冲区，带版本校验与同轮撤销，不直接写盘、无其他文件操作；完成后更新 AGENTS.md 当前范围）；K3 去掉大纲（允许删除大纲断言并列明）；首页与设置不显示右边栏。阶段顺序 I → J → K → N → L → M。
+
+### UI V1 第三阶段 Codex 执行计划书（2026-10-24）
+
+- 用户要求制作移交 Codex 的执行计划书。已交付（会话临时文件 codex-plan-ui-v1-shell.md，未入库）：分支 feature/ui-v1-shell，阶段 I 图标出口 @jarvis/ui/icons + SidebarItem / WindowTab / Composer / AssistantPanel；J 窗口外壳（顶栏 44、图标栏 48、主面板内缩 6、右边栏在外壳上、trafficLightPosition 调整为唯一主进程改动）；K 页面迁移（首页、创作空间项目列表并入侧栏列、写作空间进入外壳并迁移文档标签、设置）；L 画布节点与编辑栏（320×180 比例规则、状态映射、端口 14 / 热区 28、操作条删除、编辑栏摆放规则与放大态）；M 清理与总验收。
+- 计划中的默认决定（未经用户逐条确认）：标签栏只做当前空间内标签；后退 / 前进为会话内历史；“更多”按钮、头像、首页上下文条、麦克风不做；写作右边栏保留大纲 / 写作助手 Tab，助手为占位不接模型；日历禁用占位；“定位到节点”不做；生成已用时间由 generation.startedAt 客户端计算。
+
+### V1 画布节点：端口放大、页面稿换用组件（2026-10-24）
+
+- 用户决定：不显示上传进度；生成耗时由我们自己计时（接口不支持取消 / 进度）；连接端口要变大；页面稿中的节点换成现有节点组件。
+- `Generation Node` / `Asset Node`：端口改为 14px、2px 描边（输入 x −7、输出 x 宽 −7，垂直居中），热区 28（Port hit area (28)），悬停放大到 18；上传中恢复为 Spinner + “正在上传 文件名…”；生成中“正在生成 · 已 1:24”说明为客户端按提交时间计时、不提供取消。审阅板端口悬停示意改为 18px。
+- 页面稿 4 个画布帧（`400:33060`、`400:35061`、`402:34479`、`402:35041`）：删除早期 200 宽手绘节点卡、旧连线与端口，改为组件实例——3 个 Asset Node（image ready，selected，媒体分别覆盖为三种渐变，名称 海边日落 / 城市夜景 / 森林晨雾.png）→ 3 个 Generation Node（图像生成 1 generating，2 / 3 empty），实例按画布缩放 rescale（列表收起 75%、项目列表展开 60%），连线从输出端口到输入端口重画；左下缩放显示改为 75% / 60%；工具栏与浮动控件保持最上层。
+
+### V1 画布节点：剩余待办与尺寸调整（2026-10-24）
+
+- 用户要求：继续处理剩余待办；节点默认尺寸改为 16:9、宽 320；删除节点按钮换位置。
+- `Generation Node`（17 个变体）与 `Asset Node`（10 个变体）：媒体块改为 320×180（竖图示例 320×320，内含 180×320 结果，高度规则 320 ÷ 宽高比、限制 180–320）；端口按新尺寸居中并加 24px 透明热区（Port hit area）；新增 `focusVisible` 属性（外 5px、3px color/focus-ring 环，区别于选中环）；名称改为 Name row，选中时显示 selection/default 底（随 `selected`）；生成中文案“正在生成 · 已 1:24”。删除按钮移到节点右上操作条（trash，生成 / 上传中不显示），非生成中状态都有操作条。上传中改为文件名 + small 确定进度条 + “45% · 3.2 / 7.1 MB”；音频就绪只保留播放 + 时长（不在节点内拖动进度）。
+- `Node Editor`（现 9 个变体）：移除底栏删除按钮与分隔；empty 在生成按钮旁显示禁用原因（图像“选择模型并填写提示词后可生成”、视频“填写提示词后可生成”）；无参考占位块加“连接上游节点 / 或放大后添加”；生成信息标题改为“生成信息 · N 个参考”；新增 `kind=image, state=error, size=default`（`417:37320`，参数行下 Alert error 可关闭）；描述补充摆放规则：选中节点下方 16px 居中，空间不足翻到上方，夹在可视区内（边距 16），宽 min(760, 画布宽 − 32)，随画布平移缩放，节点出视口时贴边并提供“定位到节点”（提议）。
+- 审阅板重建 `Canvas Node / Review`（`418:37299`，Light + Dark 克隆），3520×2020：全部状态、端口悬停（14px accent 端口 + Tooltip“输出：拖向下游节点”）、键盘焦点、多选名称高亮、组合（编辑栏在节点下方 16px）、视频生成中 / 空 / 错误编辑栏。总览行变体数 17 · 10 · 9。
+- 仍待确认：“定位到节点”为新增交互提议。（生成取消：接口不支持，不做；页面稿节点已于后续替换为组件。）
+
+### V1 画布节点 UI/UX 检查与修正（2026-10-24）
+
+- 用户要求检查节点设计的 UI/UX 问题；随后要求按建议顺序直接在 Figma 修改，并把第 14 点（参数图标难懂）改为不显示图标、只显示当前选择的参数。
+- 检查结论（P0）：失败态与代码不符（代码失败时保留旧结果）、结果未知提示过轻、缺“媒体加载中 / 媒体无法加载”；（P1）固定 360×240 未体现 contain 留白、视频原生控制条与选中拖动冲突、音频拖动冲突、媒体上的 subtle Badge 对比度不稳、操作仅悬停可见、端口 10px 热区小、上传与生成无进度信息、删除图标不一致且紧邻生成、生成禁用无原因、参数图标难懂；（P2）参考区提示、生成信息标题技术化、编辑栏摆放规则、名称重叠与多选、焦点与选中样式、错误提示变体。
+- 已改（本轮）：
+  - `Generation Node`（`407:34466`，现 17 个变体）：failed 改为无旧结果卡片（danger 图标 + “生成失败” + 原因 + 重试）；新增 failed-result（保留结果，左上 danger solid Badge + 底部原因条 + 重试 xs）；unknown 改为警示卡片（“上游可能已经生成并计费，重新生成前请先核实” + 查看任务信息）；新增 media-loading、media-error（重新加载媒体）；新增 image done-portrait（宽 360，高按比例并限制 202–360，9:16 结果 contain 居中、留白 fill/default）。描述补充：视频用封面帧 + 悬停播放按钮，不用原生控制条；叠在媒体上的 Badge 一律 solid；操作条悬停 / 聚焦 / 选中显示；端口热区 24。
+  - `Asset Node`（`407:34737`，现 10 个变体）：删除按钮图标改为 trash；“素材”Badge 改 neutral solid；新增 image media-error。
+  - `Node Editor`（`409:35547`，8 个变体）：参数 NativeSelect 去掉前置图标，只显示当前值；删除按钮移到底栏最左，后接 1px 分隔，远离生成按钮。
+  - 审阅板重建为 `Canvas Node / Review`（`415:36360`，Light 板 + Dark `415:40313`），3840 宽，含全部新状态与“无参考占位”编辑栏；总览行变体数更新为 17 · 10 · 8。
+- 未改（待后续）：音频拖动冲突、上传进度条、生成已用时间 / 取消、端口放大视觉、生成禁用原因提示、参考区提示文案、生成信息标题、编辑栏摆放规则、名称重叠 / 多选、焦点样式、编辑栏错误变体。
+
+### V1 画布节点与节点编辑栏（2026-10-24）
+
+- 用户认可当前页面框架；要求把现有图像节点、视频节点（含上传的）以及节点编辑栏拎出来看样式。
+- 依据代码盘点（develop）：MediaPlaceholder（生成节点 360×240：empty“点击编辑”/ 生成中 / 结果 / failed“失败”/ unknown“结果未知”，下载操作，左入右出端口，名称在下方可重命名）、AssetNode（上传素材 image / video / audio：上传中 / 就绪（下载 + 删除）/ 上传失败，仅输出端口）、MediaEditor（参考素材 + PromptEditor + 关闭 / 放大；ImageControls 模型 / 宽高比 / 思考程度 / 分辨率，VideoControls 模型 / 时长 / 宽高比 / 分辨率 + 生成音频；删除、生成；GenerationDetails 折叠卡）。
+- 图标库新增 music `406:32605`、play、volume-2、volume-x、minimize、rectangle-horizontal、diamond、clock-3、copy、image-plus（`406:*`，共 60 个）。
+- 新 Section `27 Canvas Node · Node Editor`（`407:34738`），总览 Index 行已追加：
+  - `Generation Node`（`407:34466`，kind image / video × state empty / generating / done / failed / unknown）：媒体块 360×240、radius 12；empty / failed / unknown 为 surface-raised + 0.5px border + 图标 + “点击编辑…”，failed / unknown 左上 danger / warning Badge；generating 为 fill/default + Spinner lg；done 铺满结果，视频加中心播放按钮与右下时长 Badge；右上悬浮操作条（下载）；左右 10px 端口；selected 为外 3px 的 2px accent 圆角环；名称在下方。属性 `name`、`selected`、`showActions`。
+  - `Asset Node`（`407:34737`，kind image / video / audio × state uploading / ready / upload-failed）：仅输出端口；ready 左上“素材”中性 Badge（新增提议，区分上传与生成）、右上下载 + 删除；音频为播放按钮 + small Progress + 时间；上传失败为 danger 图标与原因 + “请重新拖入文件上传”。
+  - `Node Editor`（`409:35547`，kind image / video × state empty / ready / busy）：760 宽，surface-raised + border + shadow-popover，radius/window；上部参考缩略图 64×80（编号 BadgeCount）+ 虚线“参考”添加块、提示词（@ 引用为 accent Badge 标签）、关闭 / 放大；下部参数为公开 NativeSelect compact sm + 前置图标，视频加生成音频 Toggle sm，右侧删除与生成（default icon-lg，空或生成中禁用），busy 显示 Spinner“正在生成…”并禁用参数；底部公开 Collapsible card“生成信息”（`showDetails`）。
+  - 审阅板 `Canvas Node / Review`（`410:35898`）：Light / Dark 点阵画布上展示全部状态，以及“上传素材 → 选中生成节点 + 编辑栏”组合与视频编辑栏生成中。点阵改为单个 SVG 路径（逐个椭圆会导致脚本超时）。
+- 待确认：上传素材节点的“素材”Badge；生成中是否显示进度百分比（当前接口无进度，用 Spinner）。
+- 编辑栏放大态（同日补）：`Node Editor` 新增变体属性 `size`（原 6 个为 default），新增 `kind=image|video, state=ready, size=expanded`（`412:35898` / `412:36174`）。依据代码 `.media-editor.is-expanded`：居中 960×600 对话框、shadow-dialog、color/scrim 遮罩、焦点圈定、Esc 先还原再关闭。结构：“参考素材”标题 + 数量（图像 3 / 9 仅图片；视频可含图片 / 视频 / 音频），参考条横向（虚线 + 添加块在首位，72×96 缩略图左下编号 solid Badge、右上 secondary icon-xs 移除、下方文件名），分隔线下为占满剩余高度的提示词（多个 @ 引用 accent Badge）；右侧关闭 / 还原（minimize）；底部参数行与生成信息同普通态。审阅 `Node Editor · Expanded / Review`（`412:39281`）：Light 图像、Dark 视频，点阵画布 + 节点 + 遮罩 + 居中放大面板。
+- 发现差异：代码普通态的参考区为最多 3 张叠放卡片 + 数量角标（84×104，点击放大），无参考时为占位图标、不提供添加；Figma 原画为单张缩略图 + 添加块。用户决定按代码改回：`Node Editor` 6 个 size=default 变体的 References 改为 84×104——有参考时 3 张 72×96 叠放卡片（radius 6、1px border，顶层左上、其后各向右下偏移 4px，左上编号标签 = surface-raised 底 + footnote，视频示例含音频卡），左下 BadgeCount neutral“3”；empty 为 fill/default + 0.5px border 占位块 + image 图标。放大态缩略图编号同步改为左上同款标签（移除按钮保持右上）。组件描述已更新。
+
+### V1 右边栏移到外壳（2026-10-24）
+
+- 用户要求：右边栏入口按钮放到顶部右上角标签页栏；右边栏背景也为磨砂透明。
+- `Assistant Panel` 组件（`399:34448`）两个变体改为透明背景，描述同步：位于窗口外壳毛玻璃上、白色主面板右侧，不加分隔线。
+- 6 个页面帧（画布 `400:33060` / `400:35061`、项目列表展开 `402:34479` / `402:35041`、写作 `401:33851` / `401:34895`）：Assistant Panel 移出主面板放到外壳上（x 913，宽 360，高同主面板，透明底，Composer 保持不透明）；白色主面板宽度缩为 865，右侧也呈圆角与边框；删除画布工具栏与写作文档工具栏中的 panel-right Toggle，改为外壳顶栏最右侧 Toggle（开），“更多”移到其左侧。首页 Chat 无右边栏，未加该按钮。
+
+### V1 创作空间：画布工具栏背景（2026-10-24）
+
+- 用户要求：画布页顶部“图像 / 视频 / 上传”所在的工具栏行需要与画布区分，加背景。已在 4 个画布帧（`400:33060`、`400:35061`、`402:34479`、`402:35041`）的 `Canvas toolbar`（高 48）上加实色背景 color/window（Light neutral/100、Dark neutral/850）与底部 1px color/separator，置于画布最上层，遮住点阵；节点仍从 y 64 开始。
+
+### V1 创作空间：项目列表展开状态（2026-10-24）
+
+- 用户说明：创作空间中，左侧（外壳顶栏的侧栏开关）打开后显示项目列表；一个项目就是一张画布。
+- 新增 `Canvas · Projects open / Light`（`402:34479`）与 `/ Dark`（`402:35041`），由画布页复制（位于画布页下方 3000）：主面板左侧加入项目列表列 248（fill/default + 1px separator）——标题“我的项目”（title-3）+ ghost 搜索；Sidebar Item “新建项目”（plus）；“最近编辑”分组下 5 个项目（layout-grid 图标 + 最近编辑时间 meta，当前“视觉系统”selected）；底部“共 5 个项目 · 一个项目对应一张画布”。画布缩为 616，工具栏、居中添加按钮与右下视图控件随之调整；右侧 Assistant Panel 不变。
+- 原 `Canvas · Creation`（`400:33060` / `400:35061`）为列表收起状态，二者并存。待确认：项目行是否需要缩略图、项目的重命名 / 删除放在行内更多菜单。
+
+### V1 写作空间页面（2026-10-24）
+
+- 用户要求接着做写作空间页面。`V1-视觉换新` 新增 `Writing · Editor / Light`（`401:33851`）与 `/ Dark`（`401:34895`），由首页帧复制（位于首页下方 2000）。
+- 外壳：标签新增“周报草稿.md”（file-text，active），聊天 / 视觉系统 inactive；图标栏写作空间选中。
+- 主面板三栏：① 侧栏列 248（fill/default）：Button ghost lg “我的文档 ▾” + ghost 新建文件 / 新建文件夹；文件树全部为 Sidebar Item（文件夹 folder-open / folder，文件 file-text，子项左缩进 16，当前文件 selected）；底部本地路径 callout fg-tertiary。② 编辑区 616：文档工具栏 48（“周报 /”路径 + 文件名 headline + 已保存；右侧搜索、大纲 Toggle（list-tree，关）、右边栏 Toggle（panel-right，开））；正文列 552 居中（title-1 Semibold 标题、footnote 元信息、title-3 Semibold 小标题、body-relaxed 正文与列表），所选两段以 selection/default 底高亮；底部状态栏 28（“已选 2 段” / “Markdown · UTF-8”）。③ Assistant Panel conversation（360），标题“写作助手”，改写对话 + 回执“已保存：替换 2 段”+ 撤销，后续“再口语一点 / 保持”；Composer 上下文“周报草稿.md / 已选 2 段”，占位“让助手改写、续写、总结…”。
+- 大纲原在右侧栏 Tab 中，现改为编辑区工具栏的 Toggle（展开方式待定）。正文为 CodeMirror 业务区，不进 packages/ui。插件几何检查通过，截图下载仍被代理拒绝。
+
+### V1 创作空间画布页 · Assistant Panel 右边栏（2026-10-24）
+
+- 用户要求：先做创作空间页面，并带上右边栏。
+- 图标库新增 upload `398:32605`、panel-right `398:32610`、undo-2 `398:32614`、grid-3x3 `398:32618`、lightbulb `398:32625`（共 50 个）。
+- 新 Section `26 Assistant Panel`（`399:34448` 组件集，Section `399:34449`，Dark 样张 `399:34451`），总览 Index 行 `400:38742` 已追加：360×720（页面中填充高度），底 color/content；头部 44（标题 headline + ghost 历史 / 新对话 / 关闭）；content=empty：sparkles + 标题 + 说明 + 3 个 secondary sm 建议（lightbulb）；content=conversation：右对齐 fill/default 用户气泡（宽 244）、助手正文、Alert success 回执“已保存：新建 3 个节点”+ 撤销、后续“开始生成 / 稍后”按钮；底部公开 Composer compact（上下文“已选 3 个节点 / 视觉系统”）。属性 `title`。三个空间共用（画布助手 / 写作助手 / 日历助手）。
+- 页面 `V1-视觉换新` 新增 `Canvas · Creation / Light`（`400:33060`）与 `/ Dark`（`400:35061`），由首页帧复制：标签“视觉系统”active、“聊天”inactive；图标栏 AIGC 创作空间选中。主面板内侧栏列收起（画布需要宽度，外壳侧栏开关可展开），左为画布 865 宽：color/content + 24px 点阵（fg/tertiary 50%），顶部画布工具栏 48（标题“视觉系统”+“已保存”；居中 secondary sm 图像 / 视频 + 上传 icon-sm；右侧导出 Excel + panel-right Toggle 开）；节点卡 200 宽（surface-raised、radius 12、shadow-control；头部图标 + 标题 + Badge；媒体 112；底部提示词 footnote 两行）：3 个参考图节点（选中，2px accent 外描边）→ 3 个图像生成节点（Seedream 4.0 accent Badge，第一个 Progress Ring 24 + “正在生成… 60%”，其余“等待生成”），贝塞尔连线 + 端口；左下缩放胶囊（− 100% + 适应），右下视图 Toggle（缩略图 / 网格 / 吸附开）。右为 Assistant Panel conversation（360，左 1px separator）。
+- 节点卡、连线、点阵为页面层元素（React Flow 业务，不进 packages/ui）。待确认：画布页侧栏列是否展示项目列表；节点卡样式（之后可抽为 Canvas Node 组件）。插件几何检查通过，截图下载仍被代理拒绝。
+
+### V1 Composer 对话输入框组件（2026-10-24）
+
+- 用户要求：把首页聊天输入框做成组件；写作空间、创作空间、日历都会有可通过对话调用模型的右边栏，同样使用该输入框。
+- 新 Section `25 Composer`（`395:33743`），组件集 `Composer`（`395:33742`，6 个变体）：layout（wide 首页 720 / compact 右边栏 340，实例可填充栏宽）× state（empty 占位 + 发送禁用 / filled 有内容 / busy 回复中，发送换为 secondary 停止按钮）。全 auto-layout：上方上下文条（fill/default、radius 12、藏于输入框后 12px，两个公开 ghost sm 按钮 Context 1 / 2 + 右侧设置 icon-sm），输入框 surface-raised + 0.5px border + shadow-control、radius 16、文本 body-relaxed 自动增高；工具栏 + 附件 / 技能 / 模型（公开 NativeSelect compact sm）/ 麦克风 / 发送。属性 `placeholder`、`value`、`showContext`、`showSkill`、`showModel`、`showMic`（默认关）。行为约定：Enter 发送、Shift+Enter 换行、输入法组合期间不发送，/ 与 @ 候选浮于输入框上方。
+- 图标库新增 `Icon / square`（停止，`394:32605`）与 `Icon / clock`（`396:33280`），共 45 个。
+- 审阅板 `Composer / Review`（`397:33074`）：wide 三态；360 宽“画布助手”右边栏示意（标题 + 历史 / 新对话 / 关闭、消息、compact 输入框）；写作（周报草稿.md / 已选 2 段）与日历（10 月 24 日 / 日历，隐藏技能）上下文示例。总览 Index 行已追加。
+- 首页 Chat（`389:26739` / `389:27224`）的手绘输入框已替换为 Composer wide/empty 实例，底边距 24。插件几何检查通过，截图下载仍被代理拒绝。
+- 待确认：右边栏本身（标题栏、消息样式、宽度 360）尚未做成组件；麦克风默认隐藏。
+
+### V1 图标库独立 · Sidebar Item · Window Tab（2026-10-24）
+
+- 用户要求：补侧栏列表行与窗口标签页组件；新风格用到的图标全部放进新的组件库，不与旧图标混用，便于以后批量替换。
+- V1 图标库：`V1-Components` 新增 Section `Icons · Lucide`（`391:32605`），43 个组件命名 `Icon / <lucide 名>`（Lucide 1.60，24px，内层 SCALE，线宽 1.75，描边默认 V1 color/fg/default）。来源：旧 Components 页 31 个图标复制而来；此前新增的 12 个（house / layout-grid / pen-line / calendar / arrow-left / square-pen / message-circle / mic / monitor / sparkles / settings / brain，ID `387:*` 不变）移入；brain / layout-grid / square-pen 的旧重复版本统一指向库内版本。旧 Components 页图标未改动，仍供旧页面使用。
+- 迁移：11 个 INSTANCE_SWAP 属性默认值改为库内图标；V1-Components 与 V1-视觉换新两页 259 处引用（189 处经属性、70 处直接替换）改指库内图标，保留原颜色覆盖。复查：两页旧图标引用 0、库内引用 956；抽查 Button 各变体 / 禁用、NativeSelect、Tabs 开启隐藏图标后颜色仍为对应 V1 语义变量。
+- 新 Section `24 Sidebar Item · Window Tab`（`392:32720`），审阅板 `393:32641`，总览 Index 行 `393:33954`（另加图标库行 `393:33959`）：
+  - `Sidebar Item`（`392:32673`，state default / hover / selected / disabled）：高 32、左 8 右 4、间距 8、radius/control、宽度填充；图标 16（fg-secondary，选中 fg），标题 body 单行省略，可选 meta（callout fg-tertiary），hover / selected 显示 ghost icon-xs 更多按钮；hover fill/default，selected fill/hover（失焦用 selection-inactive），disabled fg-disabled。属性 `label`、`showIcon` + `icon`、`meta` + `showMeta`。
+  - `Window Tab`（`392:32719`，state active / inactive / hover）：高 28、默认宽 200（代码 120–240 自适应）、左 10 右 4、间距 6、radius/control；active = surface-raised + 0.5px border + shadow-control、标题 Semibold；inactive 透明 + fg-secondary、无关闭；hover fill/default + 关闭（ghost icon-xs x）。属性 `label`、`showIcon` + `icon`、`closable`。
+- 首页 Chat（`389:26739` / `389:27224`）：标签区改为 Window Tab（聊天 active、视觉系统 inactive）+ 新建；侧栏“新对话”与最近对话改为 Sidebar Item（含时间 meta，首条 selected）。插件几何检查通过，截图下载仍被代理拒绝。
+
+### V1 页面框架：Codex 式窗口外壳 · 首页 Chat 初稿（2026-10-24）
+
+- 用户给出 Codex 桌面版截图作为想要的框架：外圈为半透明磨砂外壳（顶栏 + 左侧图标栏），主要内容区为白色不透明面板，与外壳明显区分。要求直接在 Figma 绘制。
+- 页面 `V1-视觉换新`（`319:27345`）新增 `Chat · Home / Light`（`385:26739`）与 `Chat · Home / Dark`（`385:26875`），各为 1440×900 渐变壁纸上的 1280×800 窗口，全部绑定 V1 变量与文字 / 阴影样式；图标为从 lucide-react 1.60.0 提取的路径（线宽 1.75）。
+- 结构：窗口 radius/window、底 color/sidebar（毛玻璃）、0.5px border、shadow-dialog。外壳顶栏高 44：交通灯 (18, 16)，后退 / 前进 / 侧栏开关 ghost 28；标签页（220×28，fill/default 底，与内容列对齐）+ 新建；右侧更多。外壳图标栏宽 52：首页（选中 fill/hover 底）/ 创作空间 / 写作 / 历史 / 更多，底部设置与头像。主面板 x 52、y 44，右与下内缩 6，radius/panel，color/content + 0.5px border；面板内侧栏列 248（fill/default 底 + 1px separator）：“Jarvis ▾”、搜索、新对话、最近对话列表（选中 fill/hover）、底部“本地工作台”；内容区居中欢迎语（brain 40 + title-1）与底部 720 宽输入框（上方上下文条“本地工作台 / 未关联项目”，输入框 surface-raised、radius 16、+ / 技能 / 模型 DeepSeek V3 ▾ / 麦克风 / accent 圆形发送）。
+- 待确认：标签页是 Codex 的结构，Jarvis 目前没有多标签；图标栏分区（首页 / 创作 / 写作 / 历史）与侧栏列表的分工；麦克风为示意。插件几何检查通过；截图下载仍被代理拒绝，未做截图复核。
+- 用户反馈（同日）：① 多标签页是后续要做的功能，保留；② 左侧图标栏为 首页 / AIGC 创作空间 / 写作空间 / 日历，日历未实现，只占位且为不可选中（disabled）状态；③ 页面应使用 V1 组件。
+- 已按反馈重建为 `Chat · Home / Light`（`389:26739`）与 `Chat · Home / Dark`（`389:27224`），旧的手绘版 `385:26739` / `385:26875` 已删除。窗口内 28 个控件均为 V1 组件实例：Icon Button（后退 / 前进 disabled / 侧栏开关 / 新标签 icon-sm / 更多 / 搜索 / 麦克风 / 上下文设置 icon-sm / 加号；发送为 default icon）、Tabs Trigger（segment active，图标 message-circle，closable）、Toggle default（图标栏首页 on、创作 / 写作 off、日历 disabled、设置 off；最近对话列表行 on / off，宽度填充、左对齐）、Button ghost（“Jarvis ▾” lg + trailing chevron、新对话 + square-pen、上下文“本地工作台 / 未关联项目” sm、技能 sm）、NativeSelect compact sm（模型 DeepSeek V3）。图标栏宽 48。交通灯（系统绘制）、头像、欢迎图标与输入框外壳仍为页面层元素。
+- 为图标替换在旧 Components 页 `Lucide / Icons`（`26:330`）新增 12 个 Lucide 组件（同原结构：24px、内层 SCALE、线宽 1.75、描边沿用原变量）：house `387:26739`、layout-grid `387:26743`、pen-line `387:26749`、calendar `387:26753`、arrow-left `387:26759`、square-pen `387:26763`、message-circle `387:26767`、mic `387:26770`、monitor `387:26775`、sparkles `387:26780`、settings `387:26786`、brain `387:26790`。已验证替换进 Icon Button / Toggle 后颜色仍取 V1 语义变量（fg/secondary、fg/disabled、on-accent、accent）。
+- 注意：现有组件没有列表行（ListRow）与侧栏导航项，暂以 Toggle / ghost Button 组合；标签页外观借用 Tabs Trigger segment，宽度随内容（84），与 Codex 的宽标签不同。
+
+### V1 第三批暂停（2026-10-24）
+
+- 用户决定：第三批（布局模板层：窗口外框 / 顶栏、AppSidebar、Toolbar、SettingsRow、列表行、EmptyState）不按本计划设计，用户将自行重新做样式设计。不再继续 25 及以后的组件。
+- 已完成的 `24 Window · TitleBar`（Section `382:33089`）未被采纳；其中“顶栏 60 → 52”等提议作废，代码不做对应修改。用户要求删除：已确认无外部实例引用后，删除该 Section（含 Traffic Lights / TitleBar / Window 组件集与审阅板）及总览 Index 行 `382:33914`；V1-Components 现以 `23 Progress` 结尾。下文 24 的初稿记录仅作历史。
+
+### V1 第三批：24 Window · TitleBar 初稿（2026-10-24，未采纳）
+
+- PR #69（第二批代码）、#70（设计记录）已合并；用户要求开始设计第三批。按方案第十二节第四步“布局模板层”，计划顺序：24 Window · TitleBar、25 AppSidebar、26 Toolbar、27 SettingsRow、28 列表行（ListRow）、29 EmptyState（Card / Resizable 拖动条视需要并入）。设计分支已从合并后的 develop 重建。
+- 现状（develop 代码）：macOS `titleBarStyle: hiddenInset`、`trafficLightPosition {16, 23}`、vibrancy=sidebar；内容区 `.workspace` 左侧 16 圆角，顶栏 `.workspace-toolbar` 最小高 60，侧栏收起时左让 96；侧栏 230–320 可拖动。
+- 新 Section `24 Window · TitleBar`（`382:33089`），总览 Index 行 `382:33914`：
+  - `Traffic Lights`（`382:32613`，active true / false）：系统按钮示意，12px、间距 8，失焦为 fill/pressed 灰；代码不实现，仅用于页面稿避让左上 72×52。
+  - `TitleBar`（`382:32945`，6 个变体）：kind（page / back / tools）× sidebar（open / collapsed）。高 52、左 16（收起时 84 并显示侧栏开关）、右 12；标题 V1/headline，可选副标题 subheadline fg-tertiary；右侧状态 callout fg-tertiary + ghost icon 按钮（间距 4）；tools 的中间工具组绝对居中。属性 `title`、`showSubtitle`、`status` + `showStatus`、`showActions`。整条为拖动区，控件 no-drag；无底色，内容滚到下方时加 0.5px separator。
+  - `Window`（`382:33088`，4 个变体）：sidebar（open / collapsed）× active（true / false）。960×600，radius/window，底 color/sidebar；侧栏 240，交通灯 (20, 20)，侧栏开关在侧栏右上；内容区 color/content，展开时左两角 radius/window + 0.5px separator；失焦时交通灯灰、标题 fg-secondary。Sidebar / Content slot 为占位。
+- 提议（待确认）：顶栏由 60 改为 52（macOS 26 统一工具栏），交通灯垂直居中 → 代码需同步 `trafficLightPosition` 约 {x: 20, y: 20}、收起时左让 84。
+- 审阅板 `Window · TitleBar / Review`（`382:33521`）：Light / Dark 各含渐变壁纸上的窗口（展开、收起 + 失焦）与三种 TitleBar。插件几何检查通过（交通灯 (20, 20)、顶栏 52、工具组居中 360/720）；截图下载仍被代理拒绝，未做截图复核。初稿待用户确认。
+
 ### 第二批组件代码实现验收（2026-10-24）
 
 - Codex 按 `codex-prompt-ui-v1-batch2.md` 在 `feature/ui-v1-overlays` 实现（E `157ce2d` / F `a73903a` / G `d7ed150` / H `3487102`，文档 `49ac988`），实施记录在该分支 `memory/ui-v1-implementation.md`“第二批”章节。
