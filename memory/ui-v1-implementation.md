@@ -258,3 +258,12 @@ H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.
 - 写作文件树进入 SidebarItem，原内部文档标签 DOM 移除；搜索移到 48px 文档工具栏，路径在侧栏底部，正文最大 560，底部状态栏显示选中段落数。删除写作大纲和辅助 Tab；写作 Agent 在 N 接入。
 - 删除的大纲 UI 断言：`writing.spec.ts` 原“从想法到初稿”标题可见、代码块“不是标题”不可见、点击“下一步”标题导航操作；编辑器获得焦点断言改为直接 focus 后保留。旧写作助手 Tab/未接入文案改为检查独立 AssistantPanel，真实对话与工具断言在 N 增加。Markdown 标题解析及文件、保存、冲突、撤销/重做断言保留。
 - 专项 12/12 通过；已采集 `phase-k/` 共 20 张浅深截图，核对首页、画布助手和写作外壳。截图使用新隔离配置，无模型/无文件夹时保留原设置引导，因此内容与 Figma 的示例项目/周报不同。修正发送按钮残留旧定位偏移、写作路径置底后已重采；`pnpm check`、`pnpm build`、最终完整回归 **101/101（3.7m）** 通过。门禁日志 `shell-verification/k-*.log`。
+
+### N：文档作用域写作 Agent
+
+- K 提交 `25ae76e`。新增 shared/writing-agent、main writing-broker/writing-tools，沿用 Agent service/runtime、技能与最小 preload 桥接。主窗口/mainFrame/可信 URL 校验不变；broker 额外绑定 owner/runId/文档作用域/一次 claim/15 秒期限。
+- 仅提供 read_document（每块最多 32000 字符）、read_selection、replace_range、insert_text。工具参数不接受文件路径；作用域由会话固定为当前 rootId + 相对路径，send 更换文档作用域会被拒绝。内容/名称视为数据，未提供目录、其他文件、文件操作、Shell 或保存工具。
+- renderer host 只读取当前写作根中已打开文档的缓冲区；SHA-256 内容版本、范围、外部冲突和超时均校验。修改后保持未保存并暂停该文档定时自动保存，用户保存/现有保存流程仍走原 writing API；磁盘格式、IndexedDB 不变。manualSave 标记与撤销事务仅内存，不新增 localStorage 键。
+- 同轮写入共享事务回执与撤销；CodeMirror 使用同轮标记合并历史，运行中的选区移动不拆开这轮历史，完成后隔离后续人工编辑。后台文档写入缓存的 EditorState；切回标签仍显示原对象的修改。会话记录/活动新增可选 writingScope，兼容旧记录；文档侧栏复用技能、模型、取消、历史、重命名和删除。
+- 新增 2 项纯逻辑测试与 1 项实窗模拟模型测试：原生工具链中选区替换 + 插入、一次 Ctrl+Z/重做、回执撤销、超过自动保存周期磁盘仍不变、后台切到乙文档后只改甲、人工输入版本冲突、显式保存、错误窗口 IPC、会话改绑拒绝。专项 3/3（5.7s）通过，截图 `phase-n/writing-agent-{light,dark}.png`。首轮测试模拟消息按 string 读取，但 SDK 实际为内容数组；修正夹具后继续验证，未改产品逻辑来绕过失败。
+- AGENTS.md 当前范围已更新。检查与构建通过，完整门禁 **104/104（3.8m）** 通过；日志 `shell-verification/n-*.log`。浅深写作 Agent 截图已检查，修复文件树图标插槽误用造成的换行。

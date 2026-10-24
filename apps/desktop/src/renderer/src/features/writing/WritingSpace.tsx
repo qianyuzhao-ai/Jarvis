@@ -1,3 +1,5 @@
+import { WritingAgentSidebar } from './WritingAgentSidebar';
+import { useWritingHost } from './use-writing-host';
 import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
 import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
 import { Sparkles } from '@jarvis/ui/icons';
@@ -15,10 +17,10 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ChevronDown,
-  ChevronRight,
   FilePlus,
   FileText,
   Folder,
+  FolderOpen,
   FolderPlus,
   MoreHorizontal,
   Search,
@@ -104,6 +106,7 @@ export function WritingSpace({
     rightWidth: number;
     onWidth: (width: number) => void;
     onClose: () => void;
+    configure: () => void;
     onOpen: (path: string, newTab: boolean) => void;
   };
 }) {
@@ -123,6 +126,7 @@ export function WritingSpace({
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
   const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
+  const writingHost = useWritingHost(writing, view, editorCache);
   const active = writing.documents.find(
     (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
   );
@@ -202,6 +206,17 @@ export function WritingSpace({
       <div key={entry.path}>
         <SidebarItem
           depth={depth}
+          icon={
+            entry.kind === 'directory' ? (
+              writing.expanded.has(entry.path) ? (
+                <FolderOpen size={16} />
+              ) : (
+                <Folder size={16} />
+              )
+            ) : (
+              <FileText size={16} />
+            )
+          }
           selected={entry.kind === 'file' && active?.path === entry.path}
           aria-current={entry.kind === 'file' && active?.path === entry.path ? 'page' : undefined}
           className={`writing-file ${entry.kind === 'file' && active?.path === entry.path ? 'selected' : ''} ${entry.kind === 'directory' && writing.selectedDirectory === entry.path ? 'current-folder' : ''}`}
@@ -221,18 +236,6 @@ export function WritingSpace({
                 .then(() => shell.onOpen(entry.path, event.metaKey || event.ctrlKey));
           }}
         >
-          {entry.kind === 'directory' ? (
-            <>
-              {writing.expanded.has(entry.path) ? (
-                <ChevronDown size={12} />
-              ) : (
-                <ChevronRight size={12} />
-              )}
-              <Folder size={16} />
-            </>
-          ) : (
-            <FileText size={16} />
-          )}
           <span>{entry.name}</span>
         </SidebarItem>
         {entry.kind === 'directory' &&
@@ -516,22 +519,38 @@ export function WritingSpace({
         shell.active &&
         shell.rightOpen &&
         createPortal(
-          <AssistantPanel
-            aria-label="写作助手"
-            title="写作助手"
-            className="writing-assistant"
-            style={{ width: shell.rightWidth }}
-            actions={
-              <IconButton label="关闭写作助手" onClick={shell.onClose}>
-                <X size={16} />
-              </IconButton>
-            }
-          >
-            <AssistantEmpty title="写作助手" icon={<Sparkles size={24} />}>
-              读取当前文档，帮你改写、续写、总结；每次修改都可以撤销。
-            </AssistantEmpty>
-            <ResizeHandle side="right" width={shell.rightWidth} onChange={shell.onWidth} />
-          </AssistantPanel>,
+          <div className="writing-assistant-host" style={{ width: shell.rightWidth }}>
+            {active ? (
+              <WritingAgentSidebar
+                key={active.id}
+                document={active}
+                host={writingHost}
+                selectedParagraphs={selectedParagraphs}
+                configure={shell.configure}
+                close={shell.onClose}
+              />
+            ) : (
+              <AssistantPanel
+                aria-label="写作助手"
+                title="写作助手"
+                className="writing-assistant"
+                style={{ width: shell.rightWidth }}
+                actions={
+                  <IconButton label="关闭写作助手" onClick={shell.onClose}>
+                    <X size={16} />
+                  </IconButton>
+                }
+              >
+                <AssistantEmpty title="写作助手" icon={<Sparkles size={24} />}>
+                  读取当前文档，帮你改写、续写、总结；每次修改都可以撤销。
+                </AssistantEmpty>
+                <ResizeHandle side="right" width={shell.rightWidth} onChange={shell.onWidth} />
+              </AssistantPanel>
+            )}
+            {active && (
+              <ResizeHandle side="right" width={shell.rightWidth} onChange={shell.onWidth} />
+            )}
+          </div>,
           shell.rightHost,
         )}
       <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>

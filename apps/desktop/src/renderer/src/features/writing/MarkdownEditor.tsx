@@ -1,7 +1,8 @@
+import { writingHistory } from './writing-history';
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { defaultKeymap, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownKeymap } from '@codemirror/lang-markdown';
 import { bracketMatching } from '@codemirror/language';
 import { headings, livePreview, type Heading } from './markdown';
@@ -50,7 +51,7 @@ export function MarkdownEditor({
         doc: latest.current.content,
         extensions: [
           markdown(),
-          history(),
+          writingHistory,
           drawSelection(),
           bracketMatching(),
           highlightActiveLine(),

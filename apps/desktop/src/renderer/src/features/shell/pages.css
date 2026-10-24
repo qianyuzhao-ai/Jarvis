@@ -327,3 +327,50 @@
     background: var(--color-content);
   }
 }
+@layer components {
+  .writing-assistant-host {
+    position: relative;
+    height: 100%;
+  }
+  .writing-agent-panel {
+    width: 100%;
+    height: 100%;
+  }
+  .writing-agent-panel .ui-assistant-body {
+    min-height: 0;
+    overflow: auto;
+  }
+  .writing-agent-messages {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    gap: 20px;
+  }
+  .writing-agent-messages .chat-message {
+    font-size: var(--text-body);
+  }
+  [data-testid='writing-agent-context'] {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .writing-agent-panel .model-trigger {
+    max-width: 110px;
+  }
+}
+@layer components {
+  .writing-agent-panel .ui-assistant-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .writing-agent-messages {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+}

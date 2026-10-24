@@ -15,6 +15,7 @@ export interface DocumentSession {
   path: string;
   content: string;
   savedContent: string;
+  manualSave?: boolean;
   revision: string;
   status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
   error: string;
@@ -90,6 +91,7 @@ export function useWriting() {
           update(id, {
             revision: result.value.revision,
             savedContent: doc.content,
+            manualSave: current?.content === doc.content ? false : current?.manualSave,
             status: current?.content === doc.content ? 'saved' : 'dirty',
             error: '',
           });
@@ -123,7 +125,8 @@ export function useWriting() {
   });
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      for (const d of documentsRef.current) if (d.status === 'dirty') void save(d.id);
+      for (const d of documentsRef.current)
+        if (d.status === 'dirty' && !d.manualSave) void save(d.id);
     }, 800);
     return () => clearTimeout(timer);
   }, [documents, save]);
@@ -426,6 +429,7 @@ export function useWriting() {
   }, [activeId, update]);
   return {
     ready,
+    getDocuments: () => documentsRef.current,
     roots,
     root,
     directories,
@@ -449,11 +453,12 @@ export function useWriting() {
     flush,
     reload,
     saveCopy,
-    change: (id: string, content: string) => {
+    change: (id: string, content: string, manualSave = false) => {
       const current = documentsRef.current.find((d) => d.id === id);
       if (current)
         update(id, {
           content,
+          manualSave: manualSave || current.manualSave,
           status:
             current.status === 'conflict'
               ? 'conflict'

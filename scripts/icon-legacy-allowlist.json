@@ -16,7 +16,6 @@
   "apps/desktop/src/renderer/src/features/settings/DownloadSettings.tsx",
   "apps/desktop/src/renderer/src/features/agent/RelaySettings.tsx",
   "apps/desktop/src/renderer/src/features/agent/SkillPicker.tsx",
-  "apps/desktop/src/renderer/src/features/agent/ChatMessageItem.tsx",
   "apps/desktop/src/renderer/src/features/agent/SkillsSettings.tsx",
   "apps/desktop/src/renderer/src/features/creation/AssetNode.tsx",
   "apps/desktop/src/renderer/src/features/creation/ProjectList.tsx",
@@ -27,7 +26,6 @@
   "apps/desktop/src/renderer/src/features/creation/MediaPlaceholder.tsx",
   "apps/desktop/src/renderer/src/features/creation/CanvasExport.tsx",
   "apps/desktop/src/renderer/src/features/creation/ImageControls.tsx",
-  "apps/desktop/src/renderer/src/features/creation/CanvasConversations.tsx",
   "apps/desktop/src/renderer/src/features/creation/ParameterControl.tsx",
   "apps/desktop/src/renderer/src/features/creation/NodeDownload.tsx",
   "apps/desktop/src/renderer/src/features/creation/References.tsx"

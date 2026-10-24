@@ -1,3 +1,5 @@
+import { Alert } from '@jarvis/ui/components/Alert';
+import { Button } from '@jarvis/ui/components/Button';
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -35,12 +37,18 @@ export type CanvasActivityActions = {
   undo: (id: string) => void;
   canUndo: (id: string) => boolean;
 };
+export type WritingActivityActions = {
+  undo: (id: string) => void;
+  canUndo: (id: string) => boolean;
+};
 export function ChatActivity({
   activities,
   canvas,
+  writing,
 }: {
   activities: ChatMessage['activities'];
   canvas?: CanvasActivityActions;
+  writing?: WritingActivityActions;
 }) {
   if (!activities?.length) return null;
   return (
@@ -49,6 +57,24 @@ export function ChatActivity({
         <Collapsible className="chat-activity" key={activity.id} defaultOpen>
           <CollapsibleTrigger>{activity.label}</CollapsibleTrigger>
           <CollapsibleContent>
+            {writing && activity.writingScope && activity.transactionId && (
+              <Alert
+                tone="success"
+                title={activity.label}
+                action={
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={!writing.canUndo(activity.transactionId)}
+                    onClick={() => writing.undo(activity.transactionId!)}
+                  >
+                    撤销本次修改
+                  </Button>
+                }
+              >
+                编辑器内容已更新，尚未保存到磁盘。
+              </Alert>
+            )}
             {canvas && activity.nodeIds?.length ? (
               <div className="canvas-activity-actions">
                 <button type="button" onClick={() => canvas.focus(activity.nodeIds ?? [])}>

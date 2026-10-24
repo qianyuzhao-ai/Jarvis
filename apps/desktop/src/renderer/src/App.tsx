@@ -526,6 +526,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 rightHost,
                 rightOpen: writingVisible && active.rightPanelOpen,
                 rightWidth: active.rightPanelWidth,
+                configure: () => void openSettings('models'),
                 onWidth: (width) =>
                   change((s) => ({
                     ...s,
