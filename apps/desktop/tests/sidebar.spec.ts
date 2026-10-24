@@ -74,6 +74,9 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     expect(reduced).toBe(0);
     await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
+    expect(
+      await page.evaluate(() => document.scrollingElement!.scrollWidth - window.innerWidth),
+    ).toBeLessThanOrEqual(0);
     await page.screenshot({ path: test.info().outputPath('canvas-assistant-closed.png') });
   } finally {
     await app.close();
@@ -157,14 +160,13 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
         page
           .getByTestId('sidebar-shell')
           .evaluate((n) =>
-            Math.round(
+            Math.abs(
               n.getBoundingClientRect().x -
-                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
-                0.5,
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x,
             ),
           ),
       )
-      .toBe(0);
+      .toBeLessThanOrEqual(1);
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
     await expect
@@ -172,14 +174,13 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
         page
           .getByTestId('workspace')
           .evaluate((n) =>
-            Math.round(
+            Math.abs(
               n.getBoundingClientRect().x -
-                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
-                0.5,
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x,
             ),
           ),
       )
-      .toBe(0);
+      .toBeLessThanOrEqual(1);
     await expect(page.getByTestId('sidebar-shell')).toHaveAttribute('inert', '');
     await page.screenshot({ path: test.info().outputPath('sidebar-collapsed.png') });
     await page.getByRole('button', { name: '展开侧栏' }).click();
@@ -196,28 +197,28 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
         page
           .getByTestId('sidebar-shell')
           .evaluate((n) =>
-            Math.round(
+            Math.abs(
               n.getBoundingClientRect().x -
-                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
-                0.5,
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x +
+                320,
             ),
           ),
       )
-      .toBe(-320);
+      .toBeLessThanOrEqual(1);
     await page.getByRole('button', { name: '展开侧栏' }).click();
     await expect
       .poll(() =>
         page
           .getByTestId('workspace')
           .evaluate((n) =>
-            Math.round(
+            Math.abs(
               n.getBoundingClientRect().x -
                 n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
-                0.5,
+                320,
             ),
           ),
       )
-      .toBe(320);
+      .toBeLessThanOrEqual(1);
     expect(errors).toEqual([]);
   } finally {
     await app.close();

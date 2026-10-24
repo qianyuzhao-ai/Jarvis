@@ -103,7 +103,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.screenshot({ path: test.info().outputPath('relay-compact.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '返回我的模型' }).click();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     const messageInput = page.getByLabel('消息', { exact: true });

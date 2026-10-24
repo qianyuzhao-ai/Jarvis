@@ -356,7 +356,6 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           onDeleteChat={agent.deleteConversation}
           busy={!!agent.snapshot.busySessionId}
           onSettings={openSettings}
-          onBack={() => void space('canvas')}
         />
       )}
     </>

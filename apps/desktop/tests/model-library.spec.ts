@@ -123,7 +123,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     const savedText = await readFile(file, 'utf8');
     for (const key of ['relay-old-key', 'deepseek-own-key', 'relay-beta-key'])
       expect(savedText).not.toContain(key);
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);

@@ -174,7 +174,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
@@ -247,10 +247,10 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await expect(page.getByText('请先填写生成任务地址', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();

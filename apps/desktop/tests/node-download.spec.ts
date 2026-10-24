@@ -279,7 +279,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     const workspace: WorkspaceData = {
       version: 1,
       projects: [
-        { ...createProject(), name: '节点下载测试', nodes, viewport: { x: 40, y: 40, zoom: 0.8 } },
+        { ...createProject(), name: '节点下载测试', nodes, viewport: { x: 40, y: 20, zoom: 0.7 } },
       ],
       settings: { reqFrom: '', generateUrl: '', imageUploadUrl: '', audioUploadUrl: '' },
       theme: 'system',

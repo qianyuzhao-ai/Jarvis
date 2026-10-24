@@ -46,7 +46,6 @@ export function ShellSidebar({
   activeChat,
   onChat,
   onSettings,
-  onBack,
   onRenameProject,
   onRenameChat,
   onDeleteChat,
@@ -62,7 +61,6 @@ export function ShellSidebar({
   activeChat: string | null;
   onChat: (id: string | null, title: string, newTab: boolean) => void;
   onSettings: (s: Section) => void;
-  onBack: () => void;
   onRenameProject: (id: string, title: string) => Promise<boolean>;
   onRenameChat: (id: string, title: string) => Promise<boolean>;
   onDeleteChat: (id: string) => Promise<boolean>;
@@ -151,9 +149,6 @@ export function ShellSidebar({
     <aside id="sidebar" className="shell-sidebar" aria-label="主导航">
       {kind === 'settings' ? (
         <>
-          <button className="sidebar-back" onClick={onBack}>
-            返回工作台
-          </button>
           <h1>设置</h1>
           <nav aria-label="设置分类">
             {(

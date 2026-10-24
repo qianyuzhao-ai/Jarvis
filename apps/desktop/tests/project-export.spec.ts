@@ -296,7 +296,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await page.getByLabel('upload-media 地址', { exact: true }).fill(mock.base + '/upload-media');
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('删除节点后导出');
     await page

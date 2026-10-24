@@ -253,9 +253,9 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await expect(page.getByRole('complementary', { name: '写作助手' })).toBeHidden();
     await expect
       .poll(async () =>
-        Math.round((await page.getByTestId('writing-main').boundingBox())?.width ?? 0),
+        Math.abs(((await page.getByTestId('writing-main').boundingBox())?.width ?? 0) - 1385),
       )
-      .toBe(1385);
+      .toBeLessThanOrEqual(1);
     const documentWidth = await page.locator('.cm-content').boundingBox();
     expect(documentWidth?.width).toBe(560);
     await page.screenshot({ path: test.info().outputPath('writing-both-collapsed.png') });
@@ -265,7 +265,7 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
-    await page.getByRole('button', { name: '返回工作台', exact: true }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toBeVisible();

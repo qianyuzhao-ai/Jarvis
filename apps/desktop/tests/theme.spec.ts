@@ -60,7 +60,7 @@ test('general settings offer system, light and dark preferences with persistence
     );
     await expect(page.getByRole('button', { name: /外观/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '切换主题' })).toHaveCount(0);
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await expect(root).toHaveAttribute('data-theme', 'dark');
     await page.emulateMedia({ colorScheme: 'light' });
