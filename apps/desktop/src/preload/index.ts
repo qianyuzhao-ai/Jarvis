@@ -1,3 +1,4 @@
+import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
 import type { AgentEvent } from '../shared/agent';
@@ -46,6 +47,15 @@ const desktop: DesktopInfo = {
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
     createSession: () => ipcRenderer.invoke('agent:create'),
     createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
+    createWritingSession: (scope) => ipcRenderer.invoke('agent:create-writing', scope),
+    claimWritingCommand: (id) => ipcRenderer.invoke('agent:claim-writing', id),
+    completeWritingCommand: (reply) => ipcRenderer.invoke('agent:complete-writing', reply),
+    onWritingCommand: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, command: WritingCommand) =>
+        listener(command);
+      ipcRenderer.on('agent:writing-command', handle);
+      return () => ipcRenderer.removeListener('agent:writing-command', handle);
+    },
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
     completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),
     onCanvasCommand: (listener) => {

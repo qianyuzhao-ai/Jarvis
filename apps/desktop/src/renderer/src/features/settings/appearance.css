@@ -31,31 +31,13 @@
   }
   :root[data-platform='darwin'],
   :root[data-platform='darwin'] body,
-  :root[data-platform='darwin'] .theme-root,
-  :root[data-platform='darwin'] .writing-shell {
+  :root[data-platform='darwin'] .theme-root {
     background: transparent;
-  }
-  .sidebar-shell,
-  .writing-left,
-  .writing-right {
-    background: var(--color-window);
-  }
-  :root[data-platform='darwin'] .sidebar-shell,
-  :root[data-platform='darwin'] .writing-left,
-  :root[data-platform='darwin'] .writing-right {
-    background: var(--color-sidebar);
   }
   .workspace {
     background: var(--color-content);
   }
   .writing-main {
     background: var(--color-content);
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    :root[data-platform='darwin'] .sidebar-shell,
-    :root[data-platform='darwin'] .writing-left,
-    :root[data-platform='darwin'] .writing-right {
-      background: var(--color-window);
-    }
   }
 }

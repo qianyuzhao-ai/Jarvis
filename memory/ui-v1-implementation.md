@@ -4,6 +4,8 @@
 
 ## 交付状态
 
+第三阶段 I → J → K → N → L → M 已完成，`feature/ui-v1-shell` 已推送并回读验证；最终完整回归 110/110、目录包 360 项依赖与真实启动验证通过。阶段提交与推送结果见本文末尾。
+
 第二批 E–H 已完成，`feature/ui-v1-overlays` 已推送并回读验证；完整回归 95/95，最终浮层复验 8/8。详见下方“第二批”章节。
 
 A–D 已完成并通过各阶段门禁，分支 `feature/ui-v1-foundation` 已推送，远端分支回读包含全部四阶段提交。工作区代码保持版本 0.2.5，没有 PR、合并、标签或发布。
@@ -230,3 +232,113 @@ H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.
 | H | `34871025f309e643d988ead219624d77feac7b7e` | 菜单、候选、Toast、Alert、旧规则清理与最终验收 |
 
 `git push -u origin feature/ui-v1-overlays` 成功；`git ls-remote --heads origin feature/ui-v1-overlays` 回读为阶段 H 完整 SHA。其后仅追加本验收索引和工程/Git 记忆的文档提交，并随同一功能分支推送。没有 PR、合并、版本标签或发布。
+
+## 第三阶段：窗口外壳、跨空间标签与空间 Agent
+
+2026-10-24 按用户附件 `codex-prompt-ui-v1-shell.md` 执行 I → J → K → N → L → M。以 `memory/ui-v1-shell-plan.md` 为准；从最新 origin/develop 创建 `feature/ui-v1-shell`，保留前一任务已授权合入的 Agent 节点生成修复 `a1ec3a3`。只推送功能分支，不创建 PR、合入 develop、打标签或发布。
+
+### I：基础组件与图标出口
+
+- 通过 Figma MCP 核对 Sidebar Item selected `392:32639`、Window Tab active `392:32674`、Composer `395:33742`、Assistant Panel `399:34448` 的设计上下文与截图，以及图标库 `391:32605` 的 60 个图标名。使用相同版本 Lucide 图标，统一出口默认线宽 1.75；额外导出旧业务所需图标以支持后续迁移，不改变图标内容。
+- 新增 SidebarItem、WindowTabs/WindowTab、Composer/ComposerAction、AssistantPanel/AssistantEmpty。侧栏行的更多按钮与主按钮、标签关闭与 tab 触发按钮均是独立可聚焦控件；状态样式放 utilities 层，未新增颜色变量或 token 白名单。
+- 图标直接导入白名单记录现有文件，新增/迁移文件只能从 @jarvis/ui/icons 导入；预览覆盖四种侧栏状态、标签、wide/compact 三态输入框、助手空态。浅深截图在 `apps/desktop/test-results/ui-v1/phase-i/`，已目视检查。
+- 新增键盘箭头切换、独立关闭、浅深精确颜色测试。原禁用按钮断言因新增 Composer 按钮匹配多元素，改为限定原 Button 家族，未减少断言。
+- 门禁日志：`apps/desktop/test-results/ui-v1/shell-verification/i-*.log`；`pnpm check`、`pnpm build` 通过，完整回归 **98/98（3.7m）** 通过。
+
+### J：窗口外壳与标签
+
+- I 提交 `e6a2783`。新增 AppShell、纯标签模型 tabs.ts、use-window-tabs、ShellSidebar、ChatTab；44px 顶栏、48px 图标栏、主面板内缩 6、侧栏初始 248（旧保存宽度继续读取）、macOS 交通灯 {18,16}。未改窗口安全参数。
+- 标签覆盖 chat/canvas/writing/settings，设置单例、对象去重、每标签历史、快捷键和 `jarvis:window-tabs` 恢复。聊天独立视图；运行中的画布 Agent 保留宿主实例，闲置画布切换后按持久数据恢复，避免 React Flow 在隐藏容器中失去测量；后台生成/上传沿用工作台级处理。写作控制器提升到工作台，文档标签进入外壳；脏文档关闭确认、设置离开确认保留。
+- 页面入口与侧栏迁入外壳是 J 的结构接线；K 继续页面内容、Composer/AssistantPanel 外观迁移与大纲移除。右栏已通过 Portal 放到主面板外。
+- 回归迁移：项目名匹配限定 project-row，避免与新标签关闭按钮冲突；拖入坐标改从实际画布容器原点计算，保持精确落点/缩放断言；侧栏位置按主面板原点断言，保留动画中间位移、反向、键盘与持久化；助手默认宽 400→360，键盘加宽预期 410→370；聊天入口测试通过首页图标访问新对话。旧大纲断言本阶段仍保留。
+- 修复过程中发现并处理：Portal 包装缺少高度导致助手不可见；另存副本中间状态导致当前文档标签被误清理；项目重命名后历史标题未同步。门禁日志 `shell-verification/j-*.log`。最终检查/构建通过，完整回归 **101/101（3.7m）** 通过（j-smoke-final.log）；其中新增跨空间标签实窗测试与 2 项纯模型测试，已有画布 Agent 测试新增后台切换后 runId 不变断言。另修复新对话被旧会话回调覆盖，设置保存状态缺失，以及窄工具栏重叠。首轮完整 93/101 与后续失败均保留日志；未删除业务断言。
+
+### K：页面迁移
+
+- J 提交 `74fe52c`。首页和画布输入复用 Composer，保留原 form、输入法组合、Enter/Shift+Enter、技能候选、模型选择、取消与防重逻辑。画布助手使用透明 AssistantPanel，保留会话标题、历史、回执、撤销及附件；开关在外壳，新增面板内关闭操作。
+- 项目列表已位于主面板侧栏，移除画布返回按钮；项目更多菜单复用名称更新，聊天更多菜单复用现有重命名/删除 API。未新增项目删除能力（原实现没有）。设置与搜索/排序保持功能；时间 meta 改为相对时间。
+- 写作文件树进入 SidebarItem，原内部文档标签 DOM 移除；搜索移到 48px 文档工具栏，路径在侧栏底部，正文最大 560，底部状态栏显示选中段落数。删除写作大纲和辅助 Tab；写作 Agent 在 N 接入。
+- 删除的大纲 UI 断言：`writing.spec.ts` 原“从想法到初稿”标题可见、代码块“不是标题”不可见、点击“下一步”标题导航操作；编辑器获得焦点断言改为直接 focus 后保留。旧写作助手 Tab/未接入文案改为检查独立 AssistantPanel，真实对话与工具断言在 N 增加。Markdown 标题解析及文件、保存、冲突、撤销/重做断言保留。
+- 专项 12/12 通过；已采集 `phase-k/` 共 20 张浅深截图，核对首页、画布助手和写作外壳。截图使用新隔离配置，无模型/无文件夹时保留原设置引导，因此内容与 Figma 的示例项目/周报不同。修正发送按钮残留旧定位偏移、写作路径置底后已重采；`pnpm check`、`pnpm build`、最终完整回归 **101/101（3.7m）** 通过。门禁日志 `shell-verification/k-*.log`。
+
+### N：文档作用域写作 Agent
+
+- K 提交 `25ae76e`。新增 shared/writing-agent、main writing-broker/writing-tools，沿用 Agent service/runtime、技能与最小 preload 桥接。主窗口/mainFrame/可信 URL 校验不变；broker 额外绑定 owner/runId/文档作用域/一次 claim/15 秒期限。
+- 仅提供 read_document（每块最多 32000 字符）、read_selection、replace_range、insert_text。工具参数不接受文件路径；作用域由会话固定为当前 rootId + 相对路径，send 更换文档作用域会被拒绝。内容/名称视为数据，未提供目录、其他文件、文件操作、Shell 或保存工具。
+- renderer host 只读取当前写作根中已打开文档的缓冲区；SHA-256 内容版本、范围、外部冲突和超时均校验。修改后保持未保存并暂停该文档定时自动保存，用户保存/现有保存流程仍走原 writing API；磁盘格式、IndexedDB 不变。manualSave 标记与撤销事务仅内存，不新增 localStorage 键。
+- 同轮写入共享事务回执与撤销；CodeMirror 使用同轮标记合并历史，运行中的选区移动不拆开这轮历史，完成后隔离后续人工编辑。后台文档写入缓存的 EditorState；切回标签仍显示原对象的修改。会话记录/活动新增可选 writingScope，兼容旧记录；文档侧栏复用技能、模型、取消、历史、重命名和删除。
+- 新增 2 项纯逻辑测试与 1 项实窗模拟模型测试：原生工具链中选区替换 + 插入、一次 Ctrl+Z/重做、回执撤销、超过自动保存周期磁盘仍不变、后台切到乙文档后只改甲、人工输入版本冲突、显式保存、错误窗口 IPC、会话改绑拒绝。专项 3/3（5.7s）通过，截图 `phase-n/writing-agent-{light,dark}.png`。首轮测试模拟消息按 string 读取，但 SDK 实际为内容数组；修正夹具后继续验证，未改产品逻辑来绕过失败。
+- AGENTS.md 当前范围已更新。检查与构建通过，完整门禁 **104/104（3.8m）** 通过；日志 `shell-verification/n-*.log`。浅深写作 Agent 截图已检查，修复文件树图标插槽误用造成的换行。
+
+### L：画布节点与编辑栏
+
+- N 提交 `e307090`。Figma 已核对生成节点 `407:34466`、素材节点 `407:34737`、普通编辑栏 `409:34624` 与放大编辑栏 `412:35898` 的上下文和截图；以计划书覆盖定位到节点/取消等范围外提议。
+- 媒体宽 320，加载前高 180，自然尺寸换算后限制 180–320；高度仅 Canvas 界面状态，保存仍只保留 id/type/position/data。名称在媒体外，编辑栏下方定位包含名称占用高度；四边 16、空间不足翻到上方、超高内容滚动。
+- 节点状态覆盖空、生成计时、媒体加载、成功、失败、保留旧结果的失败、结果未知、媒体错误；素材上传中/失败/成功均保留。操作条移到右上，隐藏于生成/上传期间，悬停/选中/键盘聚焦显示。上传节点仍能通过已有 Delete 快捷键删除，回归保留“不复活已删节点”断言。
+- 端口可见 14、热区 28、hover 18，保留键盘连接并加 Tooltip。选中和键盘焦点用独立环。视频/音频移除原生控制条，提供播放/暂停和真实时长（元数据不可用显示未知，不推测），视频悬停播放按钮；素材及状态 Badge 为实色。
+- 参数改为 NativeSelect compact、无前置图标，原模型/参数规范化不变；删除移出编辑栏。禁用原因、忙碌 Spinner、可关闭引用错误 Alert、参考数量折叠标题、普通叠卡与放大参考标题接入。PromptEditor 实例、组合输入、引用、Esc 两级恢复与焦点圈定保持。
+- 新增 node-visuals.spec.ts 2 项：尺寸/耗时纯校验，以及 12 节点状态板、浅深状态截图、端口热区/Tooltip/键盘焦点、失败重试、加载错误重试、视频/音频播放、删除、编辑栏翻转/边界/无参数图标。截图 `phase-l/`，另沿用真实上传/生成/连线测试。
+- 布局断言适配：编辑栏从旧窗口下留 60 改为实际画布四边 16；参数短模型固定 160 改为内容自适应，保留长名称扩宽与参数间距；生成文案保留忙碌断言并增加递增耗时。减少动态效果下节点 Spinner 仍静态。首轮失败及修复见 `shell-verification/l-*.log`。修复 Tooltip 覆盖 React Flow Handle 点击事件导致的键盘连接回归；操作条独立层级并以悬停交互验收，下载测试布局为增高媒体留出名称空间。检查与构建通过，最终完整门禁 **106/106（4.0m）** 通过。普通/放大编辑栏及节点状态浅深截图已采集，未删除任何生成、上传、下载、连接或导出业务断言。
+
+### M：清理、打包与总验收（已完成）
+
+- L 提交 `c992f02`。逐个删除已无引用的 `components/Sidebar.tsx` 与 `features/creation/ProjectList.tsx`，没有批量删除文件/目录。清理 legacy.css / writing.css / agent.css / shell.css 中 35 / 27 / 10 / 9 条失效选择器，并移除旧内部侧栏的 macOS 背景覆盖；外壳保留玻璃，主面板内侧栏使用 fill。
+- 剩余图标导入全部迁到统一出口；直接 lucide-react 导入白名单为空。token 白名单仅保留 canvas-vision.ts 的 `#ffffff`，用于视觉输入图片的固定白底合成，不随界面主题改变。新增依赖为零，pnpm-lock.yaml 和 desktop 生产依赖未改变。
+- 修复 SidebarItem.asChild 的链接组合与禁用 trailing 焦点；补齐同一设置分区点击不触发离开确认、长文档路径/重复标签 ID 恢复、写作文件夹切换后保持新空间激活、关闭文档清理旧编辑器缓存。新增/补充真实 UI 与纯状态回归，未删除业务断言。
+- 最终收尾专项 21/21（47.3s）通过，原 macOS 组件预览截图仍通过。首次全量 108/109：对话框第二次打开后立即点击遮罩出现一次未关闭，已增加可见/动画完成等待，保留遮罩关闭与焦点断言；同时补充标签栏拖动区与标签 no-drag 的精确 CSS 断言，防止通用组件样式覆盖外壳拖动区。
+- `pnpm package:dir` 已生成本地 macOS arm64 未签名目录包；真实打包启动在独立 userData、外部 cwd 下验证 ASAR、360 项生产依赖、窗口标签、写作 Agent claim IPC 和更新桥接。最终目录包为 `release/a7f82778-3064-4c36-879d-d682abf68194/mac-arm64/Jarvis.app`，未签名/公证、不发布。
+- 补充写作 UTF-16 / Unicode 边界校验，拒绝截断 emoji 的替换范围，分段读取也不拆开代理对；纯逻辑与含 emoji 文档的实窗专项 4/4（6.3s）通过。浮层和拖动区专项重复两轮 6/6（19.3s）通过。
+- 最终截图汇总目录：`apps/desktop/test-results/ui-v1/phase-m/`；共 36 张 PNG，覆盖页面浅深、真实对话/写作文档、写作 Agent、节点状态、上传中、端口焦点、编辑栏普通/放大态。20 张由 capture-ui 生成，16 张取自最终业务测试截图；screenshot-sources.json 保存后者来源及 SHA-256。门禁原始日志在 `shell-verification/m-*.log`。
+
+### 第三阶段迁移结果
+
+| 迁移点 | 结果 |
+| --- | --- |
+| 项目列表路由合并 | 已替换。创作空间侧栏含创建、搜索、排序、选中态及现有重命名；默认打开最近项目，无项目显示空态；移除原独立列表与画布返回按钮 |
+| 写作标签并入全局标签 | 已替换。文档与窗口标签同步，支持去重、快捷键、关闭确认、历史和恢复；切换根目录清理失效引用并留在写作空间 |
+| 画布 Agent 迁移 | 已替换。透明 AssistantPanel 位于主面板外；开关/宽度按标签保存；原项目会话、视觉附件、技能、修改回执与撤销保持；后台切换不取消运行 |
+| 写作 Agent | 已新增。仅 read_document / read_selection / replace_range / insert_text，作用域固定为当前文档；owner/mainFrame/URL/runId/超时/版本校验，缓冲区修改与同轮撤销，不提供保存或其他文件操作 |
+| 存储 | IndexedDB 与 Markdown 格式未改；新增 UI 状态只在 jarvis:window-tabs；会话与活动可选 writingScope 向后兼容；编辑事务与 manualSave 仅内存 |
+| 大纲 | 已移除。删除的标题导航相关断言在 K 节列明；Markdown 解析、编辑、保存、冲突及撤销回归保留 |
+| 窗口布局 | AppShell 管理顶栏、图标栏、全局标签和空间；SidebarLayout 仅保留已经验证的列宽拖动与动画，不再负责页面路由 |
+| 生成节点 | 已替换视觉与交互。保留生成、上传、引用、下载和导出协议；此前 Agent 非 UUID 节点生成修复 a1ec3a3 仍在分支中 |
+
+### 第三阶段与 Figma 的差异及取舍
+
+1. 按计划书覆盖设计稿：跨空间标签为真实功能；写作大纲不保留；写作助手只能操作当前文档缓冲区。首页/设置没有右栏，日历仅禁用占位，不增加头像、麦克风、更多菜单、生成取消或新的定位交互。
+2. 使用系统字体与系统强调色，保留固定 Light/Dark。Figma 的静态 SF Pro、桌面壁纸和系统交通灯示意不是应用内素材；采用 Electron 原生交通灯与 vibrancy。页面截图不包含系统窗口按钮，目标系统观感仍需实机确认。
+3. 业务截图采用隔离配置和本地模拟服务，项目/文档/图片/视频内容与 Figma 示例不同。节点高度由真实媒体比例决定；未知媒体时长显示未知，不使用示意值；生成耗时来自本地开始时间，不表示服务进度。
+4. 图标使用同版本 Lucide 的实际图形，统一线宽 1.75；播放后的暂停状态补充同家族 Pause 图标。未将 Figma 临时图片 URL 引入代码。
+5. 保留状态复杂的 PromptEditor/MarkdownEditor 及现有保存/确认流程。放大节点编辑栏保留原 CodeMirror 实例和 960×600 外壳，不替换为默认 800px Dialog；其他菜单、提示、输入与状态使用现有基础组件。
+6. 项目更多菜单只接入已有重命名；原项目列表没有删除能力，因此未新增项目删除。对话管理沿用现有重命名/删除能力。
+
+### 第三阶段待实机验收
+
+- 本机已验证 macOS 27.0.1 / arm64。macOS 13/26 的交通灯视觉居中、系统减少透明度与毛玻璃观感，以及 Windows 原生标题栏、字体、菜单、拖动和输入法仍需目标设备确认。
+- 真实内网生成服务和真实模型服务仍需用户环境联调；本轮测试使用隔离模拟服务。
+- 本轮只交付功能分支与本地目录包，不进行 PR、合入 main/develop、版本标签、签名公证或 Release 发布。
+
+
+### 第三阶段最终门禁与文件索引
+
+| 阶段 | 提交 | check / build | 完整 smoke |
+| --- | --- | --- | --- |
+| I | `e6a2783` | 均通过 | 98/98，3.7m |
+| J | `74fe52c` | 均通过 | 101/101，3.7m |
+| K | `25ae76e` | 均通过 | 101/101，3.7m |
+| N | `e307090` | 均通过 | 104/104，3.8m |
+| L | `c992f02` | 均通过 | 106/106，4.0m |
+| M | `426b8d3` | 均通过 | 110/110，4.3m |
+
+最终日志为 `shell-verification/m-smoke-final.log`、`m-package-final.log`、`m-packaged-startup-final.log`；check/build 使用 Turbo，部分复验命中缓存，不将缓存耗时当作重新编译耗时。token 检查器自身测试 1/1 通过。没有新增依赖，应用版本维持 0.2.5。
+
+- I：packages/ui 的 icons、SidebarItem、WindowTabs、Composer、AssistantPanel、base.css，以及 ShellPreview 和预览测试。
+- J：AppShell、features/shell、App、窗口外观配置，以及 window-tabs/window-shell 测试。
+- K：ChatComposer、CanvasAgentSidebar、WritingSpace、页面 CSS 与写作/画布行为测试。
+- N：shared/writing-agent、main/agent/writing-broker 与 writing-tools、最小 preload 桥接、写作 host/transactions/history/AgentSidebar，以及 writing-agent 测试。
+- L：画布节点组件、node-actions-context、节点媒体尺寸/时间辅助函数、MediaEditor、ParameterControl、nodes.css，以及 node-visuals 与原生成/上传/连接回归。
+- M：剩余图标出口、失效组件与 CSS、标签恢复/写作边界回归、打包启动 verifier、白名单与本验收记录。
+
+完整实现及自动化验收已完成；目标系统和真实内网联调边界见上节。截图及日志为本地测试产物，不提交 Git。
+
+第三阶段已执行 `git push -u origin feature/ui-v1-shell`，远端回读为 M 提交 `426b8d3c7e0ad72b8450fc68211698389ce06877`。随后追加本提交索引与推送记录的文档提交，并随同一分支推送。未创建 PR、合并、打标签或发布。

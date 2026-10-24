@@ -1,7 +1,7 @@
 import * as Primitive from '@radix-ui/react-tabs';
 import { cva } from 'class-variance-authority';
 import { createContext, useContext, type ComponentProps } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@jarvis/ui/icons';
 import { cn } from '../lib/utils';
 import { Button } from './Button';
 type Appearance = 'segment' | 'underline';

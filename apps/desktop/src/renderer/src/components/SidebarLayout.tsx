@@ -84,8 +84,8 @@ export function SidebarLayout({
           onPointerCancel={() => finish(true)}
           onLostPointerCapture={() => finish()}
           onDoubleClick={() => {
-            setWidth(minimum);
-            onWidthChange(minimum);
+            setWidth(248);
+            onWidthChange(248);
           }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {

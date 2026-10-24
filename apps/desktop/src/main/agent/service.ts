@@ -1,3 +1,6 @@
+import { sameWritingScope, type WritingScope } from '../../shared/writing-agent';
+import { WritingBroker } from './writing-broker';
+import { writingTools } from './writing-tools';
 import { createHash, randomUUID } from 'node:crypto';
 import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -20,6 +23,7 @@ import type { StoredSkill } from './skill-store';
 export class AgentService {
   readonly skills: SkillStore;
   readonly canvas = new CanvasBroker();
+  readonly writing = new WritingBroker();
   private seq = 0;
   private active: {
     id: string;
@@ -91,11 +95,17 @@ export class AgentService {
     );
     return pending;
   }
-  create(projectId?: string) {
+  create(projectId?: string, writingScope?: WritingScope) {
+    if (projectId && writingScope) throw new Error('会话不能同时属于画布与文档');
     return this.exclusive(async () => {
       this.idle();
       const selected = this.config.resolve();
-      const id = await this.store.create(selected.config, projectId, selected.modelId);
+      const id = await this.store.create(
+        selected.config,
+        projectId,
+        selected.modelId,
+        writingScope,
+      );
       this.emit();
       return id;
     });
@@ -188,25 +198,31 @@ export class AgentService {
     owner: number,
     canvas?: CanvasSnapshot,
     images: VisionAsset[] = [],
+    writing?: WritingScope,
   ) {
     return this.exclusive(async () => {
       const skills = this.skills.snapshot();
       const command = skillCommand(text);
       if (text.startsWith('/') && (!command || !skills.some((s) => s.name === command.name)))
         throw new Error('未知或已停用的技能，请使用 / 重新选择');
-      const scope = this.store.record(id).view.projectId;
+      const view = this.store.record(id).view;
+      if ((canvas && writing) || !sameWritingScope(view.writingScope, writing))
+        throw new Error('写作会话与当前文档不匹配');
+      const scope = view.projectId;
       if (scope !== canvas?.projectId) throw new Error('画布会话与项目不匹配');
       validateVisionInput(images, canvas, this.store.record(id).view);
       if (canvas && JSON.stringify(canvas).length > 250000) throw new Error('画布上下文过大');
       const prior = this.store.requests.find((r) => r.id === requestId);
       const inputHash = createHash('sha256')
-        .update(JSON.stringify({ canvas, images }))
+        .update(JSON.stringify({ canvas, images, writing }))
         .digest('hex');
       if (prior) {
         if (
           prior.sessionId !== id ||
           prior.text !== text ||
-          (prior.inputHash ? prior.inputHash !== inputHash : !!canvas || images.length > 0)
+          (prior.inputHash
+            ? prior.inputHash !== inputHash
+            : !!canvas || !!writing || images.length > 0)
         )
           throw new Error('同一请求标识不能用于不同消息');
         return prior.runId;
@@ -281,6 +297,7 @@ export class AgentService {
         canvas,
         images,
         skills,
+        writing,
       );
       return run.id;
     });
@@ -294,6 +311,7 @@ export class AgentService {
     canvas?: CanvasSnapshot,
     images: VisionAsset[] = [],
     skills: StoredSkill[] = [],
+    writing?: WritingScope,
   ) {
     let stop: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -302,7 +320,9 @@ export class AgentService {
       const skill = skillRuntime(skills, text, output, () => this.changed());
       const tools = canvas
         ? canvasTools(canvas, this.canvas, run.owner, run.id, output, () => this.changed())
-        : [];
+        : writing
+          ? writingTools(writing, this.writing, run.owner, run.id, output, () => this.changed())
+          : [];
       const runtime = await openAgent(
         this.root,
         run.sessionId,
@@ -314,7 +334,13 @@ export class AgentService {
               tools,
               context: `当前项目 ${canvas.projectId}，本次引用节点 ${canvas.selectedIds.join(', ') || '未选择'}。`,
             }
-          : undefined,
+          : writing
+            ? {
+                tools,
+                kind: 'writing',
+                context: `当前文档：${writing.path}。只能读写这一个文档的编辑器缓冲区，不能保存磁盘。`,
+              }
+            : undefined,
         skill,
       );
       run.sdk = runtime.session;

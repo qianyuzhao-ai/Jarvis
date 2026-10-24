@@ -90,20 +90,24 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await expect
       .poll(async () => {
         const panel = await page.getByRole('region', { name: '图像编辑面板' }).boundingBox();
-        const windowSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+        const canvasBounds = await page.getByTestId('canvas-body').boundingBox();
         return Boolean(
           panel &&
-            panel.x >= 0 &&
-            panel.y >= 60 &&
-            panel.x + panel.width <= windowSize.width &&
-            panel.y + panel.height <= windowSize.height - 60,
+            canvasBounds &&
+            panel.x >= canvasBounds.x + 15 &&
+            panel.y >= canvasBounds.y + 15 &&
+            panel.x + panel.width <= canvasBounds.x + canvasBounds.width - 15 &&
+            panel.y + panel.height <= canvasBounds.y + canvasBounds.height - 15,
         );
       })
       .toBe(true);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await page.getByLabel('生成信息', { exact: true }).click();
-    await expect(page.getByText('生成失败')).toBeVisible();
+    await expect(
+      page.getByTestId('generation-details').getByText('生成失败', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByTestId('node-task-status')).toHaveText('生成失败');
     await page.getByRole('button', { name: '视频', exact: true }).click();
     await expect(nodes).toHaveCount(2);
     await nodes.last().click();
@@ -166,17 +170,18 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '适应视图' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
-    await page.getByRole('button', { name: '返回工作台' }).click();
-    await page.getByRole('button', { name: /画布交互测试/ }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
     await expect(page.getByTestId('canvas-status')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /画布交互测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await expect(nodes).toHaveCount(2);
     await expect(page.getByRole('button', { name: '磁力吸附' })).toHaveAttribute(
       'aria-pressed',
@@ -189,9 +194,12 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await expect(nodes).toHaveCount(3);
     await nodes.last().click();
-    await page.getByRole('button', { name: '删除节点', exact: true }).click();
+    await page
+      .locator('.react-flow__node.selected')
+      .getByRole('button', { name: '删除节点', exact: true })
+      .click();
     await expect(nodes).toHaveCount(2);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await expect(nodes).toHaveCount(0);
     expect(errors).toEqual([]);
@@ -239,10 +247,10 @@ test('settings validate, cancel, save and restore without requests', async () =>
     await expect(page.getByText('请先填写生成任务地址', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('local-test');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByLabel('req_from', { exact: true })).toHaveValue('local-test');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();

@@ -1,4 +1,3 @@
-import { Brain, Diamond, Image, RectangleHorizontal } from 'lucide-react';
 import { ParameterControl } from './ParameterControl';
 import { gptDimensions, gptPreset, gptSizes, imageModels, isNano, nanoRatios } from './models';
 import type { MediaData } from './types';
@@ -42,7 +41,6 @@ export function ImageControls({
         label="选择模型"
         value={data.model}
         display={labels[data.model] ?? '选择模型'}
-        icon={<Image size={16} />}
         disabled={disabled}
         onChange={(model) => onChange({ model })}
       >
@@ -57,7 +55,6 @@ export function ImageControls({
         label="宽高比"
         value={dimensions.ratio}
         display={dimensions.ratio === 'auto' ? 'Auto' : dimensions.ratio}
-        icon={<RectangleHorizontal size={16} />}
         disabled={disabled}
         onChange={(ratio) =>
           onChange({ size: nano ? ratio : gptPreset(ratio, dimensions.resolution) })
@@ -79,7 +76,6 @@ export function ImageControls({
               ? 'Auto'
               : data.quality.charAt(0).toUpperCase() + data.quality.slice(1)
           }
-          icon={<Brain size={16} />}
           disabled={disabled}
           onChange={(quality) => onChange({ quality })}
         >
@@ -94,7 +90,6 @@ export function ImageControls({
         label="分辨率"
         value={dimensions.resolution}
         display={dimensions.resolution === 'auto' ? 'Auto' : dimensions.resolution}
-        icon={<Diamond size={16} />}
         disabled={disabled}
         onChange={(resolution) =>
           onChange(

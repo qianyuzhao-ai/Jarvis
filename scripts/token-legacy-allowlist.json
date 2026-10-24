@@ -1,4 +1,3 @@
 {
-  "apps/desktop/src/renderer/src/features/creation/canvas-vision.ts": ["#ffffff"],
-  "apps/desktop/src/renderer/src/features/writing/writing.css": ["#00000018", "#0005"]
+  "apps/desktop/src/renderer/src/features/creation/canvas-vision.ts": ["#ffffff"]
 }

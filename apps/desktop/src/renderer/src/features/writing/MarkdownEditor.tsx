@@ -1,7 +1,8 @@
+import { writingHistory } from './writing-history';
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, drawSelection, highlightActiveLine } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { defaultKeymap, historyKeymap } from '@codemirror/commands';
 import { markdown, markdownKeymap } from '@codemirror/lang-markdown';
 import { bracketMatching } from '@codemirror/language';
 import { headings, livePreview, type Heading } from './markdown';
@@ -18,7 +19,7 @@ export function MarkdownEditor({
 }: {
   document: { id: string; content: string };
   onChange: (id: string, content: string) => void;
-  onOutline: (headings: Heading[]) => void;
+  onOutline?: (headings: Heading[]) => void;
   onPosition: (position: number) => void;
   onSave: () => void;
   source: boolean;
@@ -39,7 +40,7 @@ export function MarkdownEditor({
     const listener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         if (!applying.current) callbacks.current.onChange(document.id, update.state.doc.toString());
-        callbacks.current.onOutline(headings(update.state));
+        callbacks.current.onOutline?.(headings(update.state));
       }
       if (update.selectionSet || update.viewportChanged)
         callbacks.current.onPosition(update.state.selection.main.head);
@@ -50,7 +51,7 @@ export function MarkdownEditor({
         doc: latest.current.content,
         extensions: [
           markdown(),
-          history(),
+          writingHistory,
           drawSelection(),
           bracketMatching(),
           highlightActiveLine(),
@@ -75,7 +76,7 @@ export function MarkdownEditor({
     const view = new EditorView({ state, parent: host.current });
     viewRef.current = view;
     view.scrollDOM.scrollTop = saved?.scroll ?? 0;
-    callbacks.current.onOutline(headings(view.state));
+    callbacks.current.onOutline?.(headings(view.state));
     callbacks.current.onPosition(view.state.selection.main.head);
     return () => {
       states.set(document.id, { state: view.state, scroll: view.scrollDOM.scrollTop });
