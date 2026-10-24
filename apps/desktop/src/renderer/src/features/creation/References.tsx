@@ -1,6 +1,6 @@
 import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useEffect, useRef, useState } from 'react';
-import { ImageIcon, Music, Plus, Video, X } from 'lucide-react';
+import { ImageIcon, Music, Plus, Video, X } from '@jarvis/ui/icons';
 import { REFERENCE_LIMITS } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
 import type { MediaData, Reference } from './types';
@@ -173,6 +173,11 @@ export function References({
           aria-label="暂无参考素材"
         >
           <ImageIcon size={24} strokeWidth={1.75} />
+          <span>
+            连接上游节点
+            <br />
+            或放大后添加
+          </span>
         </div>
       )}
       {expanded && (

@@ -1,59 +1,59 @@
 import { Toaster } from '@jarvis/ui/components/Toast';
+import { Alert } from '@jarvis/ui/components/Alert';
 import { ConfirmProvider, useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { subscribeAccentColor, observeWindowFocus } from './features/settings/appearance';
-import { lazy, Suspense, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
-import { PanelLeftOpen, Workflow } from 'lucide-react';
+import { Suspense, lazy, useLayoutEffect, useCallback, useEffect, useState, useRef } from 'react';
 import { MotionConfig } from 'motion/react';
-import { SidebarLayout } from './components/SidebarLayout';
-import { Sidebar } from './components/Sidebar';
-import { IconButton } from './components/IconButton';
+import { AppShell } from './components/AppShell';
+import { ShellSidebar } from './features/shell/ShellSidebar';
+import {
+  activateTab,
+  closeTab,
+  openTabView,
+  travelTab,
+  pruneTabs,
+  type TabView,
+} from './features/shell/tabs';
+import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
-import { ProjectList } from './features/creation/ProjectList';
 import { ServiceSettings } from './features/creation/ServiceSettings';
 import { loadWorkspace } from './features/creation/storage';
 import { createProject, type Project, type WorkspaceData } from './features/creation/types';
-
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
 import { GenerationNotice } from './features/creation/GenerationNotice';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
-import { ChatPage } from './features/agent/ChatPage';
+import { ChatTab } from './features/shell/ChatTab';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
 import { useAppUpdates } from './features/updates/use-app-updates';
 import { useUpdateGuard } from './features/updates/use-update-guard';
 import { UpdateStatus } from './features/updates/UpdateStatus';
+import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
-  import('./features/writing/WritingSpace').then((module) => ({ default: module.WritingSpace })),
+  import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins';
 function Workbench({ initial }: { initial: WorkspaceData }) {
   const confirm = useConfirm();
-  const leaving = useRef(false);
-  async function mayLeave(message: string) {
-    if (leaving.current) return false;
-    if (!settingsDirty) return true;
-    leaving.current = true;
-    try {
-      return await confirm({ title: '放弃未保存的更改？', message });
-    } finally {
-      leaving.current = false;
-    }
-  }
   const updates = useAppUpdates();
   const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
   const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
-  const [route, setRoute] = useState<'chat' | 'projects' | 'settings' | 'canvas' | 'writing'>(
-    'chat',
-  );
-  const [settingsSection, setSettingsSection] = useState<
-    'general' | 'services' | 'models' | 'plugins'
-  >('general');
   const agent = useAgent();
+  const writing = useWriting();
+  const shell = useWindowTabs();
+  const { state, change } = shell;
+  const active = state.tabs.find((t) => t.id === state.activeId)!;
+  const route = active.kind;
+  const settingsSection = (active.ref ?? 'general') as SettingsSection;
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const leaving = useRef(false);
+  const [leftHost, setLeftHost] = useState<HTMLDivElement | null>(null);
+  const [rightHost, setRightHost] = useState<HTMLDivElement | null>(null);
   const theme = useResolvedTheme(data.theme);
   useEffect(() => {
     const root = document.documentElement;
@@ -68,66 +68,299 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const expandButton = useRef<HTMLButtonElement>(null);
-  const collapseButton = useRef<HTMLButtonElement>(null);
-  function collapseSidebar() {
-    setSidebarOpen(false);
-    requestAnimationFrame(() => expandButton.current?.focus());
-  }
-  function expandSidebar() {
-    setSidebarOpen(true);
-    requestAnimationFrame(() => collapseButton.current?.focus());
-  }
-  const [settingsDirty, setSettingsDirty] = useState(false);
   useUpdateGuard(() => {
     if (settingsDirty) throw new Error('设置尚未保存，请先保存或取消更改，再重启安装。');
   });
+  async function mayLeave() {
+    if (leaving.current) return false;
+    if (!settingsDirty) return true;
+    leaving.current = true;
+    try {
+      const yes = await confirm({
+        title: '放弃未保存的更改？',
+        message: '更改尚未保存，确定放弃这些更改吗？',
+      });
+      if (yes) setSettingsDirty(false);
+      return yes;
+    } finally {
+      leaving.current = false;
+    }
+  }
+  function syncView(view: TabView) {
+    if (view.kind === 'chat') agent.select(view.ref);
+    if (view.kind === 'writing') {
+      const doc = writing.documents.find(
+        (d) => d.path === view.ref && d.rootId === writing.root?.id,
+      );
+      if (doc) writing.setActiveId(doc.id);
+    }
+  }
+  async function open(view: TabView, newTab = false) {
+    const current = shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId);
+    if (current?.kind === view.kind && current.ref === view.ref && view.kind !== 'chat' && !newTab)
+      return;
+    if (current?.kind === 'settings' && view.kind === 'settings' && current.ref === view.ref)
+      return;
+    if (!(await mayLeave())) return;
+    change((s) => openTabView(s, view, newTab));
+    syncView(view);
+  }
+  async function activate(id: string) {
+    if (id === shell.current.current.activeId) return;
+    if (!(await mayLeave())) return;
+    const tab = shell.current.current.tabs.find((t) => t.id === id);
+    if (!tab) return;
+    change((s) => activateTab(s, id));
+    syncView(tab);
+  }
+  async function close(id: string) {
+    const tab = shell.current.current.tabs.find((t) => t.id === id);
+    if (!tab || (tab.kind === 'settings' && !(await mayLeave()))) return;
+    if (tab.kind === 'writing' && tab.ref) {
+      const doc = writing.documents.find((d) => d.rootId === tab.rootId && d.path === tab.ref);
+      if (doc && !(await writing.closeDocument(doc.id))) return;
+    }
+    change((s) => closeTab(s, id));
+    syncView(shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId)!);
+  }
+  async function travel(offset: number) {
+    if (!(await mayLeave())) return;
+    change((s) => travelTab(s, offset));
+    syncView(shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId)!);
+  }
+  const projectView = (p: Project): TabView => ({ kind: 'canvas', ref: p.id, title: p.name });
+  async function space(kind: TabView['kind']) {
+    const recent = [...shell.current.current.tabs]
+      .filter((t) => t.kind === kind)
+      .sort((a, b) => b.visited - a.visited)[0];
+    if (recent) return activate(recent.id);
+    const project = [...data.projects].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    const doc = writing.documents.find((d) => d.id === writing.activeId);
+    return open(
+      kind === 'canvas'
+        ? project
+          ? projectView(project)
+          : { kind, ref: null, title: '创作空间' }
+        : kind === 'writing'
+          ? {
+              kind,
+              ref: doc?.path ?? null,
+              rootId: writing.root?.id,
+              title: doc?.path.split('/').at(-1) ?? '写作空间',
+            }
+          : {
+              kind,
+              ref: kind === 'settings' ? 'general' : null,
+              title: kind === 'settings' ? '设置' : '新对话',
+            },
+      true,
+    );
+  }
+  const openSettings = (section: SettingsSection) =>
+    open({ kind: 'settings', ref: section, title: '设置' }, true);
+  function create() {
+    const project = createProject();
+    update((p) => ({ ...p, projects: [...p.projects, project] }));
+    void open(projectView(project));
+  }
   const changeProject = useCallback(
-    (change: (project: Project) => Project) =>
+    (id: string, changeProject: (p: Project) => Project) =>
       update((previous) => ({
         ...previous,
         projects: previous.projects.map((p) =>
-          p.id === projectId ? { ...change(p), updatedAt: Date.now() } : p,
+          p.id === id ? { ...changeProject(p), updatedAt: Date.now() } : p,
         ),
       })),
-    [projectId, update],
+    [update],
   );
-  async function openSettings(section: 'general' | 'services' | 'models' | 'plugins') {
-    if (
-      settingsDirty &&
-      section !== settingsSection &&
-      !(await mayLeave('更改尚未保存，确定放弃这些更改吗？'))
-    )
-      return;
-    if (section !== settingsSection) setSettingsDirty(false);
-    setSettingsSection(section);
-    setRoute('settings');
-  }
-  const openProject = (id: string) => {
-    setProjectId(id);
-    setRoute('canvas');
-  };
-  const project = data.projects.find((p) => p.id === projectId);
-  async function returnToProjects() {
-    if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改并返回工作台吗？')))
-      return;
-    setSettingsDirty(false);
-    setRoute('projects');
-  }
-  async function navigateChat(id: string | null) {
-    if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改吗？'))) return;
-    setSettingsDirty(false);
-    if (id) agent.select(id);
-    else agent.newChat();
-    setRoute('chat');
-  }
-  function create() {
-    const next = createProject();
-    update((p) => ({ ...p, projects: [...p.projects, next] }));
-    openProject(next.id);
-  }
+  useEffect(() => {
+    if (!agent.loading)
+      change((s) =>
+        pruneTabs(
+          s,
+          (t) => t.kind !== 'chat' || !t.ref || agent.snapshot.sessions.some((c) => c.id === t.ref),
+        ),
+      );
+  }, [agent.loading, agent.snapshot.sessions, change]);
+  useEffect(() => {
+    change((s) =>
+      pruneTabs(
+        s,
+        (t) => t.kind !== 'canvas' || !t.ref || data.projects.some((p) => p.id === t.ref),
+      ),
+    );
+  }, [data.projects, change]);
+  const recordSession = useCallback(
+    (tabId: string, id: string, title: string) => {
+      change((s) => {
+        const tab = s.tabs.find((t) => t.id === tabId);
+        if (!tab || tab.kind !== 'chat' || (tab.ref === id && tab.title === title)) return s;
+        return {
+          ...s,
+          tabs: s.tabs.map((t) =>
+            t.id === tabId
+              ? {
+                  ...t,
+                  ref: id,
+                  title,
+                  history: t.history.map((v, i) => (i === t.cursor ? { ...v, ref: id, title } : v)),
+                }
+              : t,
+          ),
+        };
+      });
+    },
+    [change],
+  );
+  useEffect(() => {
+    change((s) => ({
+      ...s,
+      tabs: s.tabs.map((t) => ({
+        ...t,
+        title:
+          t.kind === 'canvas'
+            ? (data.projects.find((p) => p.id === t.ref)?.name ?? t.title)
+            : t.title,
+        history: t.history.map((v) =>
+          v.kind === 'canvas'
+            ? { ...v, title: data.projects.find((p) => p.id === v.ref)?.name ?? v.title }
+            : v,
+        ),
+      })),
+    }));
+  }, [data.projects, change]);
+  const validatedWritingRoot = useRef<string | null>(null);
+  useEffect(() => {
+    const rootId = writing.root?.id ?? '';
+    if (!writing.ready || writing.loading || validatedWritingRoot.current === rootId) return;
+    const changedRoot = validatedWritingRoot.current !== null;
+    validatedWritingRoot.current = rootId;
+    change((s) => {
+      const current = s.tabs.find((t) => t.id === s.activeId);
+      const next = pruneTabs(
+        s,
+        (t) =>
+          t.kind !== 'writing' ||
+          !t.ref ||
+          (t.rootId === writing.root?.id &&
+            writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref)),
+      );
+      if (
+        changedRoot &&
+        current?.kind === 'writing' &&
+        !next.tabs.some((t) => t.id === current.id)
+      ) {
+        const doc = writing.documents.find((d) => d.id === writing.activeId && d.rootId === rootId);
+        return openTabView(
+          next,
+          {
+            kind: 'writing',
+            rootId: rootId || undefined,
+            ref: doc?.path ?? null,
+            title: doc?.path.split('/').at(-1) ?? '写作空间',
+          },
+          true,
+        );
+      }
+      return next;
+    });
+  }, [
+    writing.ready,
+    writing.loading,
+    writing.root?.id,
+    writing.documents,
+    writing.activeId,
+    change,
+  ]);
+  const lastDocument = useRef('');
+  useEffect(() => {
+    if (!writing.ready || !writing.activeId || lastDocument.current === writing.activeId) return;
+    lastDocument.current = writing.activeId;
+    const doc = writing.documents.find((d) => d.id === writing.activeId);
+    if (!doc) return;
+    const tab = shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId);
+    if (tab?.kind !== 'writing') return;
+    change((s) =>
+      openTabView(
+        s,
+        {
+          kind: 'writing',
+          ref: doc.path,
+          rootId: doc.rootId,
+          title: doc.path.split('/').at(-1)!,
+        },
+        Boolean(
+          tab.ref && writing.documents.some((d) => d.path === tab.ref && d.rootId === tab.rootId),
+        ),
+      ),
+    );
+  }, [writing.ready, writing.activeId, writing.documents, change, shell.current]);
+  const shortcuts = useRef({ close, activate, open });
+  shortcuts.current = { close, activate, open };
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (
+        e.isComposing ||
+        e.keyCode === 229 ||
+        document.querySelector('[role="alertdialog"],[role="dialog"],dialog[open]')
+      )
+        return;
+      const s = shell.current.current,
+        mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        void shortcuts.current.open({ kind: 'chat', ref: null, title: '新对话' }, true);
+      } else if (mod && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        void shortcuts.current.close(s.activeId);
+      } else if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        const i = s.tabs.findIndex((t) => t.id === s.activeId);
+        void shortcuts.current.activate(
+          s.tabs[(i + (e.shiftKey ? -1 : 1) + s.tabs.length) % s.tabs.length]!.id,
+        );
+      } else if (mod && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        const t = s.tabs[e.key === '9' ? s.tabs.length - 1 : Number(e.key) - 1];
+        if (t) void shortcuts.current.activate(t.id);
+      }
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [shell.current]);
+  const writingVisible = route === 'writing';
+  const sidebar = (
+    <>
+      <div ref={setLeftHost} hidden={!writingVisible} className="shell-writing-sidebar" />
+      {!writingVisible && (
+        <ShellSidebar
+          kind={route}
+          section={settingsSection}
+          projects={data.projects}
+          activeProject={active.ref}
+          onCreate={create}
+          onOpenProject={(p, n) => void open(projectView(p), n)}
+          sessions={agent.snapshot.sessions}
+          activeChat={active.ref}
+          onChat={(id, title, n) => void open({ kind: 'chat', ref: id, title }, n)}
+          onRenameProject={async (id, title) => {
+            await commit((s) => ({
+              ...s,
+              projects: s.projects.map((p) =>
+                p.id === id ? { ...p, name: title, updatedAt: Date.now() } : p,
+              ),
+            }));
+            return true;
+          }}
+          onRenameChat={agent.renameConversation}
+          onDeleteChat={agent.deleteConversation}
+          busy={!!agent.snapshot.busySessionId}
+          onSettings={openSettings}
+          onBack={() => void space('canvas')}
+        />
+      )}
+    </>
+  );
   return (
     <div
       data-testid="theme-root"
@@ -139,120 +372,76 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
         <UpdateStatus updates={updates} />
       )}
       {saveError && (
-        <div role="alert" className="save-error">
+        <Alert
+          tone="error"
+          action={<button onClick={() => update((p) => ({ ...p }))}>重试保存</button>}
+        >
           {saveError}
-          <button onClick={() => update((p) => ({ ...p }))}>重试保存</button>
-        </div>
+        </Alert>
       )}
-      {route === 'writing' ? (
-        <Suspense
-          fallback={
-            <main className="launch-message" role="status">
-              正在打开写作空间…
-            </main>
-          }
-        >
-          <WritingSpace onBack={() => setRoute('projects')} />
-        </Suspense>
-      ) : route === 'canvas' && project ? (
-        <Canvas
-          project={project}
-          onImport={(files, point, onNotice) => importAssets(project.id, files, point, onNotice)}
-          onGenerate={(nodeId) => void generate(project.id, nodeId)}
-          onChange={changeProject}
-          onCommit={(change) =>
-            commit(
-              (previous) => ({
-                ...previous,
-                projects: previous.projects.map((p) =>
-                  p.id === project.id ? { ...change(p), updatedAt: Date.now() } : p,
-                ),
-              }),
-              true,
-            )
-          }
-          onConfigureAgent={() => openSettings('models')}
-          agentBusy={agent.busyProjectId === project.id}
-          onBack={() => setRoute('projects')}
-          theme={theme}
-          status={status}
-        />
-      ) : (
-        <SidebarLayout
-          open={sidebarOpen}
-          initialWidth={data.sidebarWidth}
-          onWidthChange={(sidebarWidth) => update((previous) => ({ ...previous, sidebarWidth }))}
-          sidebar={
-            <Sidebar
-              settings={route === 'settings'}
-              onProjects={returnToProjects}
-              onSettings={() => openSettings('general')}
-              onCollapse={collapseSidebar}
-              collapseRef={collapseButton}
-              section={settingsSection}
-              onGeneral={() => openSettings('general')}
-              onServices={() => openSettings('services')}
-              onModels={() => openSettings('models')}
-              onPlugins={() => openSettings('plugins')}
-              onNewChat={() => navigateChat(null)}
-              onSelectChat={(id) => navigateChat(id)}
-              chatSessions={agent.snapshot.sessions}
-              currentChatId={agent.session?.id ?? null}
-              currentRoute={route}
-              onWriting={async () => {
-                if (settingsDirty && !(await mayLeave('更改尚未保存，确定放弃这些更改吗？')))
-                  return;
-                setSettingsDirty(false);
-                setRoute('writing');
-              }}
-            />
-          }
-        >
-          <header
-            className="workspace-toolbar window-drag"
-            data-platform={window.desktop?.platform}
-            data-collapsed={!sidebarOpen}
-          >
-            {!sidebarOpen && (
-              <IconButton
-                ref={expandButton}
-                label="展开侧栏"
-                aria-controls="sidebar"
-                aria-expanded={false}
-                onClick={expandSidebar}
-              >
-                <PanelLeftOpen size={18} />
-              </IconButton>
-            )}
-            <span>
-              {route === 'settings'
-                ? settingsSection === 'general'
-                  ? '通用'
-                  : settingsSection === 'models'
-                    ? '模型服务'
-                    : settingsSection === 'plugins'
-                      ? '插件'
-                      : '内网地址'
-                : route === 'chat'
-                  ? '新对话'
-                  : 'AIGC 创作空间'}
-            </span>
-            <div className="toolbar-end">
+      {shell.error && <Alert tone="error">{shell.error}</Alert>}
+      <AppShell
+        state={state}
+        width={data.sidebarWidth}
+        onWidth={(sidebarWidth) => update((p) => ({ ...p, sidebarWidth }))}
+        sidebar={sidebar}
+        right={<div ref={setRightHost} className="shell-assistant-host" />}
+        dirty={(id) => {
+          const tab = state.tabs.find((t) => t.id === id);
+          return tab?.kind === 'settings'
+            ? settingsDirty
+            : writing.documents.some(
+                (d) =>
+                  d.path === tab?.ref && d.rootId === tab?.rootId && d.content !== d.savedContent,
+              );
+        }}
+        onSidebar={() => change((s) => ({ ...s, sidebarOpen: !s.sidebarOpen }))}
+        onRight={() =>
+          change((s) => ({
+            ...s,
+            tabs: s.tabs.map((t) =>
+              t.id === s.activeId ? { ...t, rightPanelOpen: !t.rightPanelOpen } : t,
+            ),
+          }))
+        }
+        onActivate={(id) => void activate(id)}
+        onClose={(id) => void close(id)}
+        onNew={() => void open({ kind: 'chat', ref: null, title: '新对话' }, true)}
+        onTravel={(n) => void travel(n)}
+        onSpace={(kind) => void space(kind)}
+      >
+        {state.tabs
+          .filter((t) => t.kind === 'chat')
+          .map((tab) => (
+            <div key={tab.id} className="shell-view" hidden={state.activeId !== tab.id}>
+              <ChatTab
+                key={tab.ref ?? 'draft'}
+                sessionId={tab.ref}
+                configuration={agent.configuration}
+                onSession={(id, title) => recordSession(tab.id, id, title)}
+                onConfigure={() => void openSettings('models')}
+              />
+            </div>
+          ))}
+        <div className="shell-view" hidden={route !== 'settings'}>
+          {route === 'settings' && (
+            <header className="shell-settings-toolbar">
+              <span>
+                {
+                  { general: '通用', models: '模型服务', services: '内网地址', plugins: '插件' }[
+                    settingsSection
+                  ]
+                }
+              </span>
               <span
                 data-testid="save-status"
-                className="save-status"
                 role="status"
-                hidden={
-                  route === 'chat' ||
-                  (route === 'settings' &&
-                    (settingsSection === 'models' || settingsSection === 'plugins'))
-                }
+                hidden={settingsSection === 'models' || settingsSection === 'plugins'}
               >
                 {status}
               </span>
-              {route !== 'chat' && <Workflow size={16} />}
-            </div>
-          </header>
+            </header>
+          )}
           {route === 'settings' && settingsSection === 'general' ? (
             <GeneralSettings
               updates={updates}
@@ -286,17 +475,122 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               onDirtyChange={setSettingsDirty}
               status={status}
             />
-          ) : route === 'chat' ? (
-            <ChatPage
-              key={`${agent.session?.id ?? 'draft'}-${agent.draftKey}`}
-              agent={agent}
-              onConfigure={() => openSettings('models')}
+          ) : null}
+        </div>
+        {data.projects
+          .filter(
+            (p) => (route === 'canvas' && active.ref === p.id) || agent.busyProjectId === p.id,
+          )
+          .map((project) => (
+            <div
+              className="shell-view"
+              hidden={route !== 'canvas' || active.ref !== project.id}
+              key={project.id}
+            >
+              <Canvas
+                project={project}
+                onImport={(files, point, onNotice) =>
+                  importAssets(project.id, files, point, onNotice)
+                }
+                onGenerate={(nodeId) => void generate(project.id, nodeId)}
+                onChange={(fn) => changeProject(project.id, fn)}
+                onCommit={(fn) =>
+                  commit(
+                    (previous) => ({
+                      ...previous,
+                      projects: previous.projects.map((p) =>
+                        p.id === project.id ? { ...fn(p), updatedAt: Date.now() } : p,
+                      ),
+                    }),
+                    true,
+                  )
+                }
+                onConfigureAgent={() => void openSettings('models')}
+                agentBusy={agent.busyProjectId === project.id}
+                theme={theme}
+                status={status}
+                shell={{
+                  active: route === 'canvas' && active.ref === project.id,
+                  rightHost,
+                  open: active.ref === project.id && active.rightPanelOpen,
+                  width: active.rightPanelWidth,
+                  onClose: () =>
+                    change((s) => ({
+                      ...s,
+                      tabs: s.tabs.map((t) =>
+                        t.kind === 'canvas' && t.ref === project.id
+                          ? { ...t, rightPanelOpen: false }
+                          : t,
+                      ),
+                    })),
+                  onWidth: (width) =>
+                    change((s) => ({
+                      ...s,
+                      tabs: s.tabs.map((t) =>
+                        t.ref === project.id && t.kind === 'canvas'
+                          ? { ...t, rightPanelWidth: width }
+                          : t,
+                      ),
+                    })),
+                }}
+              />
+            </div>
+          ))}
+        {route === 'canvas' && !active.ref && (
+          <div className="empty-projects">
+            <h1>开始你的第一个创作项目</h1>
+            <button className="secondary-button" onClick={create}>
+              创建项目
+            </button>
+            <span data-testid="save-status">{status}</span>
+          </div>
+        )}
+        <div className="shell-view" hidden={!writingVisible}>
+          <Suspense fallback={<p>正在打开写作空间…</p>}>
+            <WritingSpace
+              writing={writing}
+              shell={{
+                active: writingVisible,
+                leftHost,
+                rightHost,
+                rightOpen: writingVisible && active.rightPanelOpen,
+                rightWidth: active.rightPanelWidth,
+                configure: () => void openSettings('models'),
+                onWidth: (width) =>
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelWidth: width } : t,
+                    ),
+                  })),
+                onClose: () => {
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelOpen: false } : t,
+                    ),
+                  }));
+                  requestAnimationFrame(() =>
+                    document.querySelector<HTMLButtonElement>('[aria-label="展开右侧栏"]')?.focus(),
+                  );
+                },
+                onOpen: (path, newTab) => {
+                  if (writing.root)
+                    void open(
+                      {
+                        kind: 'writing',
+                        ref: path,
+                        rootId: writing.root.id,
+                        title: path.split('/').at(-1)!,
+                      },
+                      newTab,
+                    );
+                },
+              }}
             />
-          ) : (
-            <ProjectList projects={data.projects} onCreate={create} onOpen={openProject} />
-          )}
-        </SidebarLayout>
-      )}
+          </Suspense>
+        </div>
+      </AppShell>
     </div>
   );
 }

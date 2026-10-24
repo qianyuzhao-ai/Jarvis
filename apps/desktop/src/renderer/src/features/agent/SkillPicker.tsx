@@ -4,7 +4,7 @@ import {
   CandidateListLabel,
   CandidateListEmpty,
 } from '@jarvis/ui/components/CandidateList';
-import { BookOpen } from 'lucide-react';
+import { BookOpen } from '@jarvis/ui/icons';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 
 export function SkillPicker({

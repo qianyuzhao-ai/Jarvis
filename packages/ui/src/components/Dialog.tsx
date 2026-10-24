@@ -1,6 +1,6 @@
 import * as Primitive from '@radix-ui/react-dialog';
 import { cva } from 'class-variance-authority';
-import { X } from 'lucide-react';
+import { X } from '@jarvis/ui/icons';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';
 import { Button } from './Button';

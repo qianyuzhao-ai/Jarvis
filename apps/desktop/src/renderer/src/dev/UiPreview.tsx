@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, Search, Plus, Magnet, Grid2X2, List, X } from 'lucide-react';
+import { Eye, EyeOff, Search, Plus, Magnet, Grid2X2, List, X } from '@jarvis/ui/icons';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Input } from '@jarvis/ui/components/Input';
 import { Field, FieldLabel, FieldDescription, FieldError } from '@jarvis/ui/components/Field';
@@ -19,6 +19,7 @@ import {
   TooltipContent,
 } from '@jarvis/ui/components/Tooltip';
 import './ui-preview.css';
+import { ShellPreview } from './ShellPreview';
 import { OverlayPreview } from './OverlayPreview';
 const variants = ['default', 'secondary', 'ghost', 'destructive'] as const;
 const sizes = ['xs', 'sm', 'default', 'lg', 'icon-xs', 'icon-sm', 'icon', 'icon-lg'] as const;
@@ -402,6 +403,7 @@ export default function UiPreview() {
         </div>
       </section>
       <OverlayPreview />
+      <ShellPreview />
     </main>
   );
 }

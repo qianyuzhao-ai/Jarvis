@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronsUpDown } from '@jarvis/ui/icons';
 import { cn } from '../lib/utils';
 import { inputSizes, type ControlSize } from './Input';
 import { useFieldControl } from './Field';

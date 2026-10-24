@@ -1,3 +1,9 @@
+import {
+  writingScopeSchema,
+  type WritingScope,
+  type WritingCommand,
+  type WritingReply,
+} from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
@@ -83,6 +89,7 @@ export const agentSendSchema = z.object({
   requestId: agentId,
   text: z.string().trim().min(1).max(32000),
   canvas: canvasSnapshotSchema.optional(),
+  writing: writingScopeSchema.optional(),
   images: z.array(visionAssetSchema).max(12).optional(),
 });
 export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
@@ -93,6 +100,7 @@ export const chatActivitySchema = z.object({
   transactionId: z.string().uuid().optional(),
   changes: z.array(canvasChangeSchema).max(200).optional(),
   projectId: z.string().uuid().optional(),
+  writingScope: writingScopeSchema.optional(),
   files: z
     .array(
       z.object({
@@ -132,6 +140,7 @@ export const chatSessionSchema = z.object({
   contextTokens: z.number().nullable(),
   contextWindow: z.number().nullable(),
   projectId: z.string().uuid().optional(),
+  writingScope: writingScopeSchema.optional(),
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type RelayInput = z.infer<typeof relayInputSchema>;
@@ -171,6 +180,10 @@ export interface AgentBridge {
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
   createSession(): Promise<AgentResult<string>>;
   createCanvasSession(projectId: string): Promise<AgentResult<string>>;
+  createWritingSession(scope: WritingScope): Promise<AgentResult<string>>;
+  claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
+  completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
+  onWritingCommand(listener: (command: WritingCommand) => void): () => void;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;

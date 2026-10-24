@@ -1,5 +1,5 @@
 import * as Primitive from '@radix-ui/react-collapsible';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight } from '@jarvis/ui/icons';
 import { cva } from 'class-variance-authority';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';

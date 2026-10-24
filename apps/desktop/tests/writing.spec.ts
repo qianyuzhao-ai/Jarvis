@@ -50,10 +50,7 @@ test('writing reads real directories, edits, creates, searches and restores tabs
       .click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await expect(editor).toContainText('写下');
-    const outline = page.getByRole('navigation', { name: '文章标题' });
-    await expect(outline.getByRole('button', { name: '从想法到初稿' })).toBeVisible();
-    await expect(outline.getByRole('button', { name: '不是标题' })).toHaveCount(0);
-    await outline.getByRole('button', { name: '下一步' }).click();
+    await editor.focus();
     await expect(editor).toBeFocused();
     await editor.press('ControlOrMeta+a');
     await page.keyboard.insertText(
@@ -220,6 +217,7 @@ test('writing retains a conflicted buffer and saves a separate copy', async () =
     await expect(page.getByRole('alert')).toContainText('已停止自动保存');
     expect(await readFile(join(directory, '初稿.md'), 'utf8')).toBe('# 外部版本\n');
     await page.getByRole('button', { name: '关闭 初稿.md' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByRole('tab', { name: /初稿.md/ })).toBeVisible();
     await page.getByRole('button', { name: '另存副本' }).click();
     await expect(page.getByRole('tab', { name: /初稿-副本-/ })).toBeVisible();
@@ -244,25 +242,28 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '初稿.md' })
       .click();
-    await page.getByRole('tab', { name: '写作助手' }).click();
-    await expect(page.getByRole('tabpanel', { name: '写作助手' })).toContainText('稍后接入');
-    await expect(
-      page.getByRole('tabpanel', { name: '写作助手' }).locator('input,textarea'),
-    ).toHaveCount(0);
-    await page.getByRole('button', { name: '收起左侧栏' }).click();
+    await page.getByRole('button', { name: '展开右侧栏' }).click();
+    await expect(page.getByRole('complementary', { name: '写作助手' })).toContainText(
+      '读取当前文档',
+    );
+    await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('complementary', { name: '写作文件目录' })).toBeHidden();
-    await expect(page.getByRole('button', { name: '展开左侧栏' })).toBeFocused();
+    await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
     await page.getByRole('button', { name: '收起右侧栏' }).click();
-    await expect(page.getByRole('complementary', { name: '写作辅助面板' })).toBeHidden();
-    const bounds = await page.getByTestId('writing-main').boundingBox();
-    expect(bounds?.width).toBe(1440);
+    await expect(page.getByRole('complementary', { name: '写作助手' })).toBeHidden();
+    await expect
+      .poll(async () =>
+        Math.round((await page.getByTestId('writing-main').boundingBox())?.width ?? 0),
+      )
+      .toBe(1385);
     const documentWidth = await page.locator('.cm-content').boundingBox();
-    expect(documentWidth?.width).toBe(680);
+    expect(documentWidth?.width).toBe(560);
     await page.screenshot({ path: test.info().outputPath('writing-both-collapsed.png') });
     await page.getByRole('button', { name: '展开右侧栏' }).click();
-    await page.getByRole('button', { name: '展开左侧栏' }).click();
-    await page.getByRole('button', { name: '返回工作台', exact: true }).click();
+    await page.getByRole('button', { name: '展开侧栏' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台', exact: true }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
@@ -304,6 +305,52 @@ test('writing reload preserves a conflicted buffer on cancel and reads disk on c
     await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
     await expect(editor).toContainText('外部版本');
     expect(await readFile(join(directory, '确认.md'), 'utf8')).toBe('# 外部版本\n');
+  } finally {
+    await app.close();
+  }
+});
+
+test('switching writing folders clears obsolete tabs and keeps the new document space active', async () => {
+  const first = test.info().outputPath('第一目录'),
+    second = test.info().outputPath('第二目录');
+  await mkdir(first, { recursive: true });
+  await mkdir(second, { recursive: true });
+  await writeFile(join(first, '第一.md'), '# 第一个目录的内容');
+  await writeFile(join(second, '第二.md'), '# 第二个目录的内容');
+  const app = await launch(test.info().outputPath('profile'));
+  try {
+    const page = await app.firstWindow();
+    await choose(app, page, first);
+    await page
+      .getByRole('navigation', { name: '文件列表' })
+      .getByRole('button', { name: '第一.md', exact: true })
+      .click();
+    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
+      '第一个目录',
+    );
+    await app.evaluate(({ dialog }, directory) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [directory] });
+    }, second);
+    await page.getByRole('button', { name: '第一目录', exact: true }).click();
+    await page.getByRole('menuitem', { name: '打开其他文件夹…' }).click();
+    await expect(page.getByRole('button', { name: '写作空间', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.getByRole('tab', { name: '第一.md', exact: true })).toHaveCount(0);
+    await page
+      .getByRole('navigation', { name: '文件列表' })
+      .getByRole('button', { name: '第二.md', exact: true })
+      .click();
+    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
+      '第二个目录',
+    );
+    await page.getByRole('button', { name: '第二目录', exact: true }).click();
+    await page.getByRole('menuitem', { name: '第一目录', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
+      '第一个目录',
+    );
+    await expect(page.getByRole('tab', { name: '第二.md', exact: true })).toHaveCount(0);
   } finally {
     await app.close();
   }

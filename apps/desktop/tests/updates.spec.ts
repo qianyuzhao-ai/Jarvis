@@ -145,6 +145,7 @@ test('automatic and manual checks, download retry/progress, route changes and in
     await expect(notice.getByRole('button', { name: '重启并安装' })).toBeFocused();
     expect(app.windows()).toHaveLength(1);
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await panel.scrollIntoViewIfNeeded();

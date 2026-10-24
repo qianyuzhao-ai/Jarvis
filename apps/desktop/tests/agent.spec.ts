@@ -104,6 +104,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: '返回我的模型' }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     const messageInput = page.getByLabel('消息', { exact: true });
     const dockGap = () =>
@@ -190,6 +191,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     );
 
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '模型服务', exact: true }).click();
     await page.screenshot({ path: test.info().outputPath('relay-dark.png') });
@@ -197,7 +199,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       .getByRole('button', { name: '打开对话：本周工作安排' })
       .count()
       .then(async (count) => {
-        if (!count) await page.getByRole('button', { name: '返回工作台' }).click();
+        if (!count) await page.getByRole('button', { name: '首页', exact: true }).click();
       });
     await page.getByRole('button', { name: '打开对话：本周工作安排' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -265,6 +267,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       ),
     ).toHaveCount(2);
     expect(JSON.stringify(requests.at(-1)?.messages)).toContain('本周工作安排');
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.evaluate(async (model) => {
       const bridge = window.desktop!.agent;
@@ -339,6 +342,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     });
     expect(invalid?.ok).toBe(false);
     expect(requests).toHaveLength(calls);
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.evaluate(async (model) => {
       const bridge = window.desktop!.agent;

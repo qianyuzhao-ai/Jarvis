@@ -1,6 +1,6 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useRef, useState } from 'react';
-import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { MessageSquare, Pencil, Trash2 } from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
 import type { ChatSession } from '../../../../shared/agent';
 
@@ -21,7 +21,9 @@ export function CanvasConversations({
   select,
   rename,
   remove,
+  scope = 'canvas',
 }: {
+  scope?: 'canvas' | 'writing';
   sessions: ChatSession[];
   currentId?: string;
   busy: boolean;
@@ -30,6 +32,7 @@ export function CanvasConversations({
   remove: (id: string) => Promise<boolean>;
 }) {
   const confirm = useConfirm();
+  const label = scope === 'writing' ? '写作' : '画布';
   const [editing, setEditing] = useState('');
   const [title, setTitle] = useState('');
   const [pending, setPending] = useState(false);
@@ -53,7 +56,7 @@ export function CanvasConversations({
       if (
         await confirm({
           title: `删除“${s.title}”对话？`,
-          message: '画布修改和资产会保留。',
+          message: scope === 'writing' ? '文档缓冲区和磁盘文件会保留。' : '画布修改和资产会保留。',
           tone: 'destructive',
           confirmLabel: '删除对话',
         })
@@ -65,7 +68,10 @@ export function CanvasConversations({
     }
   }
   return (
-    <nav className="canvas-agent-history" aria-label="当前项目对话">
+    <nav
+      className="canvas-agent-history"
+      aria-label={scope === 'writing' ? '当前文档对话' : '当前项目对话'}
+    >
       {sessions.length === 0 ? (
         <p>还没有对话</p>
       ) : (
@@ -85,7 +91,7 @@ export function CanvasConversations({
                   }}
                 >
                   <label className="sr-only" htmlFor="canvas-conversation-title">
-                    画布对话名称
+                    {label}对话名称
                   </label>
                   <input
                     id="canvas-conversation-title"
@@ -135,7 +141,7 @@ export function CanvasConversations({
                   </button>
                   <IconButton
                     disabled={pending}
-                    label={`重命名画布对话：${s.title}`}
+                    label={`重命名${label}对话：${s.title}`}
                     onClick={() => {
                       setEditing(s.id);
                       setTitle(s.title);
@@ -145,7 +151,7 @@ export function CanvasConversations({
                   </IconButton>
                   <IconButton
                     disabled={busy || pending}
-                    label={`删除画布对话：${s.title}`}
+                    label={`删除${label}对话：${s.title}`}
                     onClick={() => void deleteChat(s)}
                   >
                     <Trash2 size={18} />

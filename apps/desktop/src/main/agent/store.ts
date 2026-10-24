@@ -1,3 +1,4 @@
+import type { WritingScope } from '../../shared/writing-agent';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -68,7 +69,12 @@ export class AgentStore {
       throw error;
     }
   }
-  async create(config: RelayConfig, projectId?: string, modelId?: string) {
+  async create(
+    config: RelayConfig,
+    projectId?: string,
+    modelId?: string,
+    writingScope?: WritingScope,
+  ) {
     const view: ChatSession = {
       id: randomUUID(),
       title: '新对话',
@@ -81,6 +87,7 @@ export class AgentStore {
       contextTokens: null,
       contextWindow: config.contextWindow,
       ...(projectId ? { projectId } : {}),
+      ...(writingScope ? { writingScope } : {}),
     };
     this.records.push({ view, config: structuredClone(config) });
     try {

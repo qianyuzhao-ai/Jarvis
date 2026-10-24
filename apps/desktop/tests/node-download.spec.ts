@@ -258,7 +258,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       {
         id: ids[2]!,
         type: 'media',
-        position: { x: 0, y: 320 },
+        position: { x: 0, y: 400 },
         data: {
           ...createMedia('image'),
           result: { requestId: randomUUID(), url: base + '/generated.png' },
@@ -267,7 +267,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       {
         id: ids[3]!,
         type: 'media',
-        position: { x: 420, y: 320 },
+        position: { x: 420, y: 400 },
         data: {
           ...createMedia('video'),
           name: undefined,
@@ -299,7 +299,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     }, workspace);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /节点下载测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();
     for (const index of [2, 3]) {
       const generated = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);
       const name = index === 2 ? '图像生成' : '视频生成';
@@ -321,6 +321,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
         },
         name + (index === 2 ? '.png' : '.webm'),
       );
+      await generated.hover({ position: { x: 10, y: 10 } });
       await generated
         .getByRole('button', { name: index === 2 ? '下载图像' : '下载视频', exact: true })
         .click();
@@ -353,8 +354,11 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await expect(page.locator('.react-flow__node')).toHaveCount(5);
     await first.getByLabel('节点名称', { exact: true }).press('Escape');
     await first.click({ position: { x: 30, y: 30 } });
-    await expect(first.getByTestId('media-placeholder')).toHaveCSS('outline-width', '3px');
-    await expect(first.getByTestId('media-placeholder')).toHaveCSS('outline-offset', '3px');
+    const ring = await first.getByTestId('media-placeholder').evaluate((el) => {
+      const style = getComputedStyle(el, '::before');
+      return { width: style.borderWidth, inset: style.top };
+    });
+    expect(ring).toEqual({ width: '2px', inset: '-5px' });
     await expect(first.getByTestId('media-placeholder')).not.toHaveCSS(
       'background-color',
       'rgba(0, 0, 0, 0)',
@@ -363,10 +367,10 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await page.screenshot({ path: test.info().outputPath('renamed-selected-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.screenshot({ path: test.info().outputPath('renamed-selected-dark.png') });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /节点下载测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();
     for (let index = 0; index < 4; index++) {
       await expect(
         page.locator(`.react-flow__node[data-id="${ids[index]}"]`).getByRole('button', {
@@ -404,6 +408,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
         name: index % 2 ? '下载视频' : '下载图像',
         exact: true,
       });
+      await node.hover({ position: { x: 10, y: 10 } });
       await button.click();
       await expect(node.getByTestId('node-download-notice')).toContainText('已下载');
       expect(await readFile(outputPaths[index]!)).toEqual(index % 2 ? video : png);
@@ -417,6 +422,9 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' });
     });
+    await page
+      .locator(`.react-flow__node[data-id="${ids[0]}"]`)
+      .hover({ position: { x: 10, y: 10 } });
     await page
       .locator(`.react-flow__node[data-id="${ids[0]}"]`)
       .getByRole('button', { name: '下载图像', exact: true })

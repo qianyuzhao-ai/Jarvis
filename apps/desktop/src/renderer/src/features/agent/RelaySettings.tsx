@@ -1,6 +1,6 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, Info } from 'lucide-react';
+import { Eye, EyeOff, Info } from '@jarvis/ui/icons';
 import {
   agentValue,
   relayInputSchema,

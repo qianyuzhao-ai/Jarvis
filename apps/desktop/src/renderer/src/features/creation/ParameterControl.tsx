@@ -1,4 +1,5 @@
-import { ChevronDown } from 'lucide-react';
+import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
+import { Tooltip } from '@jarvis/ui/components/Tooltip';
 import type { ReactNode } from 'react';
 export function ParameterControl({
   label,
@@ -7,7 +8,6 @@ export function ParameterControl({
   disabled,
   onChange,
   children,
-  icon,
   model = false,
   hint,
 }: {
@@ -17,31 +17,28 @@ export function ParameterControl({
   disabled: boolean;
   onChange: (value: string) => void;
   children: ReactNode;
-  icon?: ReactNode;
   model?: boolean;
   hint?: string;
 }) {
   return (
-    <label
-      data-testid="parameter-control"
-      data-model={model}
-      className={`parameter-control ${model ? 'parameter-control-model' : ''}`}
-      data-disabled={disabled}
-      title={hint ?? label}
-    >
-      <span className="parameter-control-value">
-        {icon}
-        <span>{display}</span>
-        <ChevronDown size={12} />
-      </span>
-      <select
-        aria-label={label}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
+    <Tooltip content={hint ?? label}>
+      <label
+        data-testid="parameter-control"
+        data-model={model}
+        className={`parameter-control ${model ? 'parameter-control-model' : ''}`}
+        data-disabled={disabled}
+        title={hint ?? `${label}：${display}`}
       >
-        {children}
-      </select>
-    </label>
+        <NativeSelect
+          appearance="compact"
+          aria-label={label}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          {children}
+        </NativeSelect>
+      </label>
+    </Tooltip>
   );
 }

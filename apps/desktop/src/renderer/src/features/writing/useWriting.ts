@@ -15,6 +15,7 @@ export interface DocumentSession {
   path: string;
   content: string;
   savedContent: string;
+  manualSave?: boolean;
   revision: string;
   status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
   error: string;
@@ -34,6 +35,7 @@ export const parentPath = (path: string) => path.split('/').slice(0, -1).join('/
 export function useWriting() {
   const confirm = useConfirm();
   const reloading = useRef(new Set<string>());
+  const [ready, setReady] = useState(false);
   const [roots, setRoots] = useState<WritingRoot[]>([]);
   const [root, setRoot] = useState<WritingRoot | null>(null);
   const rootRef = useRef(root);
@@ -89,6 +91,7 @@ export function useWriting() {
           update(id, {
             revision: result.value.revision,
             savedContent: doc.content,
+            manualSave: current?.content === doc.content ? false : current?.manualSave,
             status: current?.content === doc.content ? 'saved' : 'dirty',
             error: '',
           });
@@ -122,7 +125,8 @@ export function useWriting() {
   });
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      for (const d of documentsRef.current) if (d.status === 'dirty') void save(d.id);
+      for (const d of documentsRef.current)
+        if (d.status === 'dirty' && !d.manualSave) void save(d.id);
     }, 800);
     return () => clearTimeout(timer);
   }, [documents, save]);
@@ -237,6 +241,8 @@ export function useWriting() {
         if (next) await switchRoot(next);
       } catch (error) {
         if (active) setNotice(error instanceof Error ? error.message : '读取目录记录失败');
+      } finally {
+        if (active) setReady(true);
       }
     })();
     return () => {
@@ -316,14 +322,28 @@ export function useWriting() {
       return false;
     }
   };
+  const closing = useRef(new Set<string>());
   const closeDocument = async (id: string) => {
-    if (!(await save(id))) return;
-    const current = documentsRef.current.find((d) => d.id === id);
-    if (current && current.content !== current.savedContent) return;
-    const remaining = documentsRef.current.filter((d) => d.id !== id);
-    updateDocuments(() => remaining);
-    if (activeId === id)
-      setActiveId(remaining.filter((d) => d.rootId === rootRef.current?.id).at(-1)?.id ?? '');
+    if (closing.current.has(id)) return false;
+    closing.current.add(id);
+    try {
+      const doc = documentsRef.current.find((d) => d.id === id);
+      if (
+        doc &&
+        doc.content !== doc.savedContent &&
+        !(await confirm({ title: '放弃未保存的更改？', message: '关闭文档将放弃尚未保存的更改。' }))
+      )
+        return false;
+      const pending = saves.current.get(id);
+      if (pending) await pending;
+      const remaining = documentsRef.current.filter((d) => d.id !== id);
+      updateDocuments(() => remaining);
+      if (activeId === id)
+        setActiveId(remaining.filter((d) => d.rootId === rootRef.current?.id).at(-1)?.id ?? '');
+      return true;
+    } finally {
+      closing.current.delete(id);
+    }
   };
   const reload = async (id: string) => {
     const doc = documentsRef.current.find((d) => d.id === id);
@@ -408,6 +428,8 @@ export function useWriting() {
     };
   }, [activeId, update]);
   return {
+    ready,
+    getDocuments: () => documentsRef.current,
     roots,
     root,
     directories,
@@ -431,11 +453,12 @@ export function useWriting() {
     flush,
     reload,
     saveCopy,
-    change: (id: string, content: string) => {
+    change: (id: string, content: string, manualSave = false) => {
       const current = documentsRef.current.find((d) => d.id === id);
       if (current)
         update(id, {
           content,
+          manualSave: manualSave || current.manualSave,
           status:
             current.status === 'conflict'
               ? 'conflict'

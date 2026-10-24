@@ -2,6 +2,19 @@
 
 最后更新：2026-10-24
 
+## UI V1 第三阶段完成（2026-10-24）
+
+窗口外壳、跨空间标签、页面迁移、当前文档写作 Agent、节点与编辑栏更新已完成。最终 check/build、完整 Electron 模拟服务回归 110/110（4.3m）通过；本地 macOS arm64 目录包在外部 cwd、隔离 userData 下通过 360 项生产依赖及 ASAR 实窗启动，窗口标签、写作 Agent 与更新桥接均验证。版本仍为 0.2.5，无新依赖；保留 Agent 节点生成修复 a1ec3a3。分支 feature/ui-v1-shell，提交/推送与 36 张截图索引见 [实施与验收](ui-v1-implementation.md) 第三阶段。真实内网与其他目标系统仍待联调。
+
+
+## Agent 节点生成 ID 兼容修复（2026-10-24）
+
+- 根因：画布 Agent 创建允许 1–100 字符的节点 ID（如 `agent-image`），但生成提交、参考素材上传、任务回读及请求账本只接受 UUID；手动节点使用 UUID 因此未受影响。UUID 限制早于任务接口迁移，属于两个本地协议之间的衔接缺陷。
+- 新增共享 `canvas-node-id.ts`，画布操作与生成/上传/任务/账本统一使用相同的有界字符串规则。节点 ID 只用于本地关联，不参与文件路径或远端任务 URL；requestId、projectId 继续要求 UUID。保留现有节点 ID、连线和撤销记录，无需迁移或重建节点。
+- 保持 Agent 的创建/编辑权限边界：用户点击生成后正常发送请求，本次未新增 Agent 自动执行生成工具。
+- 验证：`pnpm check`、`pnpm build`、`git diff --check` 通过；生成与画布 Agent 相关 10 项回归同轮通过（47.0s）。新增用例使用真实 Agent 创建/连线函数产生非 UUID 节点并存入 IndexedDB，在 Electron 窗口上传参考图、点击生成图像/视频、检查图像 URL 沿连线进入视频请求，重启后恢复结果并回读任务账本，确认没有重复提交；同时验证 ID 长度限制及 projectId/requestId 的 UUID 校验仍生效。最初沙箱监听 EPERM，放行后正常运行；新增测试首次因未填充模拟视频而预览失败，复用原视频夹具后通过。本次使用本地模拟服务，不代表真实内网联调完成。
+- 修复已提交为 `a1ec3a3`（`feature/agent-node-generation`）。用户随后要求从最新 develop 新开分支并合入：当前分支 `feature/agent-generation-fix`，合并提交 `1c76472`，无冲突；检查及构建通过，未推送或发布。
+
 ## UI V1 第二批浮层与反馈（2026-10-24）
 
 E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二批十个家族（含 CandidateList）、异步 ConfirmProvider 和最多三条的 Toast；页面接入不新增原生接口、不改数据格式。最终检查、构建、完整实窗 95/95（3.4m），浮层复验 8/8（25.5s）通过。phase-h 36 张浅深截图与所有阶段 SHA、取舍、失败修复记录见 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。MediaEditor 外壳、ContextUsage 混合提示按评估保留；macOS 13/26 和 Windows 仍待实机验收。

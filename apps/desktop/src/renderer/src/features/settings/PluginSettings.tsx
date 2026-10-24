@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
 import { Button } from '@jarvis/ui/components/Button';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@jarvis/ui/icons';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { SkillsSettings } from '../agent/SkillsSettings';
 

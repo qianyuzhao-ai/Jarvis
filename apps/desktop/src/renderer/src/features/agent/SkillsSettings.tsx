@@ -2,7 +2,7 @@ import { Button } from '@jarvis/ui/components/Button';
 import { Checkbox } from '@jarvis/ui/components/Checkbox';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BookOpen, FolderPlus } from 'lucide-react';
+import { BookOpen, FolderPlus } from '@jarvis/ui/icons';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { agentValue } from '../../../../shared/agent';
 

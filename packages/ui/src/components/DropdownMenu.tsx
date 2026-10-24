@@ -1,5 +1,5 @@
 import * as Primitive from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronRight, Circle } from 'lucide-react';
+import { Check, ChevronRight, Circle } from '@jarvis/ui/icons';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/utils';
 export const DropdownMenu = Primitive.Root;

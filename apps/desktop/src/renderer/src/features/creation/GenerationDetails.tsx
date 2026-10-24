@@ -4,8 +4,8 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@jarvis/ui/components/Collapsible';
-import { useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy } from '@jarvis/ui/icons';
 import type { MediaData } from './types';
 
 const labels = {
@@ -19,10 +19,17 @@ const labels = {
 export function GenerationDetails({
   data,
   connectedCount,
+  openRequest = 0,
 }: {
   data: MediaData;
   connectedCount: number;
+  openRequest?: number;
 }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openRequest) setOpen(true);
+  }, [openRequest]);
+  const referenceCount = data.references.length + connectedCount;
   const [copied, setCopied] = useState('');
   const [error, setError] = useState('');
   const pending = useRef(false);
@@ -48,13 +55,15 @@ export function GenerationDetails({
     }
   }
   return (
-    <Collapsible appearance="card" data-testid="generation-details" className="mx-5 mb-3 min-w-0">
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      appearance="card"
+      data-testid="generation-details"
+      className="mx-5 mb-3 min-w-0"
+    >
       <CollapsibleTrigger aria-label="生成信息">
-        <span>
-          {connectedCount > 0
-            ? `已连入 ${connectedCount} 个参考节点，生成时使用上游已完成的 URL。`
-            : '生成信息'}
-        </span>
+        <span>{referenceCount ? `生成信息 · ${referenceCount} 个参考` : '生成信息'}</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div
