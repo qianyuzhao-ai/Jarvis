@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { addRelayModel } from './helpers/model-setup';
 
 test('skills import, slash selection, automatic activation, disablement and restart work in real windows', async () => {
   test.setTimeout(60000);
@@ -69,21 +70,11 @@ test('skills import, slash selection, automatic activation, disablement and rest
     let page = await app.firstWindow();
     await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1440, 900));
-    await page.evaluate(async (baseUrl) => {
-      const r = await window.desktop?.agent.saveConfiguration({
-        config: {
-          name: 'mock',
-          baseUrl,
-          api: 'openai-completions',
-          model: 'mock',
-          contextWindow: 32768,
-          maxTokens: 4096,
-        },
-        apiKey: '',
-        clearKey: false,
-      });
-      if (!r?.ok) throw new Error('Configuration failed');
-    }, `http://127.0.0.1:${address.port}/v1`);
+    await addRelayModel(page, {
+      baseUrl: `http://127.0.0.1:${address.port}/v1`,
+      model: 'mock',
+      contextWindow: 32768,
+    });
     await page.reload();
     await expect(page.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '设置', exact: true }).click();

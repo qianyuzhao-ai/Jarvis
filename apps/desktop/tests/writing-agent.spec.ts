@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { addRelayModel } from './helpers/model-setup';
 
 test('writing Agent edits only its document buffer, groups undo, survives tab switches and rejects stale versions', async () => {
   test.setTimeout(90000);
@@ -121,21 +122,12 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     });
     expect(untrusted).toMatchObject({ ok: false, error: '请求来源不可信' });
 
-    await page.evaluate(async (baseUrl) => {
-      const r = await window.desktop!.agent.saveConfiguration({
-        config: {
-          name: 'Writing mock',
-          baseUrl,
-          api: 'openai-completions',
-          model: 'mock',
-          contextWindow: 32768,
-          maxTokens: 4096,
-        },
-        apiKey: '',
-        clearKey: false,
-      });
-      if (!r.ok) throw new Error(r.error);
-    }, `http://127.0.0.1:${address.port}/v1`);
+    await addRelayModel(page, {
+      name: 'Writing mock',
+      baseUrl: `http://127.0.0.1:${address.port}/v1`,
+      model: 'mock',
+      contextWindow: 32768,
+    });
     await page.reload();
     await app.evaluate(({ dialog }, directory) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [directory] });

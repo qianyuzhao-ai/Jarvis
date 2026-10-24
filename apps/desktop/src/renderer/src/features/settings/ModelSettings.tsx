@@ -1,49 +1,41 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { Button } from '@jarvis/ui/components/Button';
-import { useRef, useState } from 'react';
+import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import { Plus } from '@jarvis/ui/icons';
-import { agentValue, type RelayView } from '../../../../shared/agent';
-import { RelaySettings } from '../agent/RelaySettings';
+import { useEffect, useRef, useState } from 'react';
+import { agentValue } from '../../../../shared/agent';
+import type { CatalogProvider, ModelSettingsView, ModelView } from '../../../../shared/models';
+import { AddProviderDialog, type ProviderDialogMode } from './models/AddProviderDialog';
+import { ModelCapabilitiesDialog } from './models/ModelCapabilitiesDialog';
+import { ProviderCard } from './models/ProviderCard';
 
-export function ModelSettings({
-  value,
-  onSaved,
-  onDirtyChange,
-}: {
-  value: RelayView;
-  onSaved: (value: RelayView) => void;
-  onDirtyChange: (dirty: boolean) => void;
-}) {
+export function ModelSettings({ value, busy }: { value: ModelSettingsView; busy: boolean }) {
   const confirm = useConfirm();
-  const [editing, setEditing] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<CatalogProvider[]>([]);
+  const [dialog, setDialog] = useState<ProviderDialogMode | null>(null);
+  const [capabilities, setCapabilities] = useState<ModelView | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const locked = useRef(false);
-  const selected = value.models?.find((m) => m.id === editing);
-  function back() {
-    onDirtyChange(false);
-    setEditing(null);
-  }
-  async function change(id: string, remove: boolean) {
-    const bridge = window.desktop?.agent;
-    if (!bridge || locked.current) return;
-    const model = value.models?.find((m) => m.id === id);
-    if (!model) return;
+  useEffect(() => {
+    let active = true;
+    void window.desktop?.models
+      .getCatalog()
+      .then((result) => active && setCatalog(agentValue(result)))
+      .catch(
+        (e: unknown) => active && setError(e instanceof Error ? e.message : '读取服务商目录失败'),
+      );
+    return () => {
+      active = false;
+    };
+  }, []);
+  async function act(action: () => Promise<unknown>) {
+    if (locked.current) return;
     locked.current = true;
     setPending(true);
     setError('');
     try {
-      if (
-        remove &&
-        !(await confirm({
-          title: `删除模型“${model.config.name}”？`,
-          message: '聊天记录会保留。',
-          tone: 'destructive',
-          confirmLabel: '删除',
-        }))
-      )
-        return;
-      onSaved(agentValue(await (remove ? bridge.removeModel(id) : bridge.setDefaultModel(id))));
+      await action();
     } catch (e) {
       setError(e instanceof Error ? e.message : '模型操作失败');
     } finally {
@@ -51,100 +43,146 @@ export function ModelSettings({
       setPending(false);
     }
   }
-  if (editing)
-    return (
-      <RelaySettings
-        key={editing}
-        value={
-          selected
-            ? { config: selected.config, hasKey: selected.hasKey }
-            : { config: null, hasKey: false }
-        }
-        modelId={selected?.id}
-        create={editing === 'new'}
-        onSaved={(saved) => {
-          onSaved(saved);
-          back();
-        }}
-        onDirtyChange={onDirtyChange}
-        onBack={back}
-      />
-    );
+  const models = window.desktop?.models;
+  const disabled = pending || busy;
   return (
     <section
       className="v1-settings mx-auto w-full max-w-175 min-w-0 px-10 pt-6 pb-10 font-sans text-body text-fg"
-      aria-labelledby="my-models-title"
+      aria-labelledby="models-title"
     >
-      <header className="mb-6 flex items-center justify-between gap-4">
-        <h1 id="my-models-title" className="text-title-1">
-          我的模型
-        </h1>
-        <Button
-          variant="secondary"
-          className=""
-          type="button"
-          disabled={pending}
-          onClick={() => setEditing('new')}
-        >
-          <Plus size={16} />
-          添加模型
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 id="models-title" className="text-title-1">
+            模型
+          </h1>
+          <p className="mt-1.5 text-body-relaxed text-fg-secondary">
+            Jarvis Agent 的首页、画布和写作入口共用这里的服务商与模型。AIGC
+            空间的生成服务在“内网地址”中配置。
+          </p>
+        </div>
+        <Button variant="secondary" disabled={disabled} onClick={() => setDialog({ kind: 'new' })}>
+          <Plus />
+          添加服务商
         </Button>
       </header>
+      {busy && (
+        <p className="mb-4 text-callout text-fg-secondary">
+          有请求正在进行，完成或停止后才能修改模型设置。
+        </p>
+      )}
       {error && (
-        <p className="text-subheadline text-danger" role="alert">
+        <p className="mb-4 text-subheadline text-danger" role="alert">
           {error}
         </p>
       )}
-      {value.models?.length ? (
-        value.models.map((model) => (
-          <article
-            data-testid="configured-model"
-            className="flex items-center justify-between gap-4 border-b border-separator py-4"
-            key={model.id}
-          >
-            <div className="min-w-0 break-words">
-              <strong className="text-headline">{model.config.name}</strong>
-              <p className="my-2 text-callout text-fg-secondary">
-                {model.config.provider === 'deepseek' ? 'DeepSeek 官方' : '自定义中转站'} ·{' '}
-                {model.config.model}
+      {value.providers.length ? (
+        <>
+          <div className="mb-6 flex items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="default-model" className="text-headline">
+                默认模型
+              </label>
+              <p className="text-callout text-fg-secondary">
+                新对话默认使用；已有对话保留各自的选择。
               </p>
-              {model.id === value.defaultModelId && (
-                <small className="text-subheadline text-fg-secondary">默认模型</small>
-              )}
             </div>
-            <div className="flex shrink-0 flex-wrap justify-end gap-2">
-              <Button
-                variant="secondary"
-                type="button"
-                disabled={pending || model.id === value.defaultModelId}
-                onClick={() => void change(model.id, false)}
-                aria-label={`设为默认：${model.config.name}`}
+            <div className="w-70 shrink-0">
+              <NativeSelect
+                id="default-model"
+                value={value.defaultModelId ?? ''}
+                disabled={disabled || !value.models.length}
+                onChange={(e) =>
+                  void act(async () => agentValue(await models!.setDefaultModel(e.target.value)))
+                }
               >
-                设为默认
-              </Button>
-              <Button
-                variant="secondary"
-                type="button"
-                disabled={pending}
-                onClick={() => setEditing(model.id)}
-                aria-label={`编辑模型：${model.config.name}`}
-              >
-                编辑
-              </Button>
-              <Button
-                variant="destructive"
-                type="button"
-                disabled={pending}
-                onClick={() => void change(model.id, true)}
-                aria-label={`删除模型：${model.config.name}`}
-              >
-                删除
-              </Button>
+                {!value.defaultModelId && <option value="">尚未添加模型</option>}
+                {value.providers.map((p) => {
+                  const list = value.models.filter((m) => m.providerId === p.id);
+                  return list.length ? (
+                    <optgroup key={p.id} label={p.name}>
+                      {list.map((m) => (
+                        <option key={m.id} value={m.id} disabled={!m.available}>
+                          {p.name} · {m.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null;
+                })}
+              </NativeSelect>
             </div>
-          </article>
-        ))
+          </div>
+          <div className="grid gap-3">
+            {value.providers.map((provider) => (
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                models={value.models.filter((m) => m.providerId === provider.id)}
+                defaultModelId={value.defaultModelId}
+                catalogBaseUrl={catalog.find((c) => c.id === provider.sdkProvider)?.baseUrl}
+                disabled={disabled}
+                onEdit={() => setDialog({ kind: 'edit', provider })}
+                onManageModels={() => setDialog({ kind: 'models', provider })}
+                onRemove={() =>
+                  void act(async () => {
+                    if (
+                      await confirm({
+                        title: `删除服务商“${provider.name}”？`,
+                        message:
+                          '会同时移除它的全部模型；聊天记录会保留，用到这些模型的对话需要重新选择模型。',
+                        tone: 'destructive',
+                        confirmLabel: '删除',
+                      })
+                    )
+                      agentValue(await models!.removeProvider(provider.id));
+                  })
+                }
+                onSetDefault={(id) =>
+                  void act(async () => agentValue(await models!.setDefaultModel(id)))
+                }
+                onCapabilities={setCapabilities}
+                onRemoveModel={(model) =>
+                  void act(async () => {
+                    if (
+                      await confirm({
+                        title: `移除模型“${model.name}”？`,
+                        message: '聊天记录会保留；用到这个模型的对话需要重新选择模型。',
+                        tone: 'destructive',
+                        confirmLabel: '移除',
+                      })
+                    )
+                      agentValue(await models!.removeModel(model.id));
+                  })
+                }
+              />
+            ))}
+          </div>
+        </>
       ) : (
-        <p className="text-body-relaxed text-fg-secondary">还没有模型，添加后即可在聊天中选择。</p>
+        <div className="grid justify-items-start gap-3 rounded-panel border border-separator p-6">
+          <p className="text-body-relaxed text-fg-secondary">
+            还没有服务商。添加 DeepSeek、OpenAI
+            等服务商或自定义中转站后，勾选的模型就能在聊天中选择。
+          </p>
+          <Button disabled={disabled} onClick={() => setDialog({ kind: 'new' })}>
+            <Plus />
+            添加服务商
+          </Button>
+        </div>
+      )}
+      {dialog && (
+        <AddProviderDialog
+          mode={dialog}
+          settings={value}
+          catalog={catalog}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {capabilities && (
+        <ModelCapabilitiesDialog
+          model={value.models.find((m) => m.id === capabilities.id) ?? capabilities}
+          provider={value.providers.find((p) => p.id === capabilities.providerId)!}
+          onClose={() => setCapabilities(null)}
+        />
       )}
     </section>
   );

@@ -155,7 +155,7 @@
     background: var(--color-selected);
   }
   .canvas-agent .model-trigger {
-    max-width: 135px;
+    max-width: 120px;
     font-size: 12px;
   }
   .canvas-agent .composer-auto {

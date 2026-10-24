@@ -1,13 +1,15 @@
 import { sameWritingScope, type WritingScope } from '../../../../shared/writing-agent';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { agentValue, type AgentSnapshot, type AgentEvent } from '../../../../shared/agent';
 import {
-  agentValue,
-  type AgentSnapshot,
-  type AgentEvent,
-  type RelayView,
-} from '../../../../shared/agent';
+  nearestThinkingLevel,
+  type ModelSettingsView,
+  type ThinkingLevel,
+} from '../../../../shared/models';
 import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
+
+const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
 
 export function useAgent(
   projectId?: string,
@@ -20,7 +22,6 @@ export function useAgent(
       ? `jarvis:canvas-chat:${projectId}`
       : 'jarvis:chat-session';
   const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
-  const [configuration, setConfiguration] = useState<RelayView>({ config: null, hasKey: false });
   const [selected, setSelected] = useState<string | null>(() =>
     initialSelection === undefined
       ? storageKey
@@ -29,6 +30,7 @@ export function useAgent(
       : initialSelection,
   );
   const [draftKey, setDraftKey] = useState(0);
+  const [draftThinking, setDraftThinking] = useState<ThinkingLevel>();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -59,11 +61,11 @@ export function useAgent(
       }
     };
     const stop = bridge.onEvent(receive);
-    void Promise.all([bridge.getSnapshot(), bridge.getConfiguration()])
-      .then(([s, c]) => {
+    void bridge
+      .getSnapshot()
+      .then((s) => {
         if (!active) return;
         receive(agentValue(s));
-        setConfiguration(agentValue(c));
         setLoading(false);
       })
       .catch((e: unknown) => {
@@ -77,6 +79,7 @@ export function useAgent(
       stop();
     };
   }, []);
+  const configuration: ModelSettingsView = snapshot.models ?? EMPTY_MODELS;
   const sessions = snapshot.sessions.filter(
     (s) => s.projectId === projectId && sameWritingScope(s.writingScope, writingScope),
   );
@@ -98,11 +101,6 @@ export function useAgent(
     setError('');
     try {
       if (projectId && canvas?.projectId !== projectId) throw new Error('请选择当前画布上下文');
-      const chosen =
-        configuration.models?.find((entry) => entry.id === (session?.modelId ?? model))?.config ??
-        configuration.config;
-      if (images?.length && chosen?.provider === 'deepseek' && chosen.model === 'deepseek-v4-pro')
-        throw new Error('DeepSeek Pro 不支持图片，请切换到 Flash');
       const id =
         session?.id ??
         agentValue(
@@ -112,8 +110,18 @@ export function useAgent(
               ? bridge.createCanvasSession(projectId)
               : bridge.createSession()),
         );
-      if (!session && model && model !== configuration.config?.model)
+      if (!session && model && model !== configuration.defaultModelId)
         agentValue(await bridge.setModel({ sessionId: id, model }));
+      const picked = configuration.models.find(
+        (m) => m.id === (model || configuration.defaultModelId),
+      );
+      if (!session && draftThinking && picked && picked.thinkingLevels.length > 1)
+        agentValue(
+          await bridge.setThinkingLevel({
+            sessionId: id,
+            level: nearestThinkingLevel(picked.thinkingLevels, draftThinking),
+          }),
+        );
       agentValue(
         await bridge.send({
           sessionId: id,
@@ -148,6 +156,18 @@ export function useAgent(
       agentValue(await window.desktop.agent.setModel({ sessionId: session.id, model }));
     } catch (e) {
       setError(e instanceof Error ? e.message : '切换模型失败');
+    }
+  }
+  async function thinking(level: ThinkingLevel) {
+    if (!session) {
+      setDraftThinking(level);
+      return;
+    }
+    if (!window.desktop?.agent) return;
+    try {
+      agentValue(await window.desktop.agent.setThinkingLevel({ sessionId: session.id, level }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '切换思考程度失败');
     }
   }
   async function rename(title: string) {
@@ -192,13 +212,15 @@ export function useAgent(
     writingScope,
     busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
     configuration,
-    setConfiguration,
+    configured: !!configuration.defaultModelId,
     session,
     loading,
     error,
     setError,
     sending,
     draftKey,
+    draftThinking,
+    thinking,
     select,
     send,
     cancel,
@@ -208,6 +230,7 @@ export function useAgent(
     deleteConversation,
     newChat: () => {
       select(null);
+      setDraftThinking(undefined);
       setDraftKey((v) => v + 1);
       setError('');
     },

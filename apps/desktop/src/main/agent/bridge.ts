@@ -2,15 +2,18 @@ import { writingScopeSchema, writingReplySchema } from '../../shared/writing-age
 import { app, BrowserWindow, clipboard, dialog, ipcMain, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { agentId, agentSendSchema, type AgentResult } from '../../shared/agent';
 import {
-  agentId,
-  agentSendSchema,
-  relayInputSchema,
-  relayModelsInputSchema,
-  type AgentResult,
-} from '../../shared/agent';
-import { RelayConfiguration } from './configuration';
+  providerInputSchema,
+  providerTestSchema,
+  setProviderModelsSchema,
+  thinkingInputSchema,
+  updateModelSchema,
+} from '../../shared/models';
+import { providerCatalog } from './catalog';
 import { JsonFile } from './json-file';
+import { systemKeyCipher } from './key-cipher';
+import { ModelStore } from './model-store';
 import { AgentService } from './service';
 import { AgentStore } from './store';
 import { canvasReplySchema } from '../../shared/canvas-agent';
@@ -30,7 +33,7 @@ export function trustAgentWindow(contents: WebContents, url: string) {
 }
 export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
-  const config = new RelayConfiguration(new JsonFile(join(root, 'connection.json')));
+  const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
   service = new AgentService(config, store, root);
   let initializationError = '';
@@ -75,12 +78,27 @@ export async function registerAgent() {
       const v = z.object({ id: agentId, enabled: z.boolean() }).strict().parse(r);
       return service.setSkillEnabled(v.id, v.enabled);
     },
-    'agent:configuration': () => config.view(),
-    'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
-    'agent:remove-model': (id) => service.removeModel(agentId.parse(id)),
-    'agent:default-model': (id) => service.setDefaultModel(agentId.parse(id)),
-    'agent:test': (r, owner) => service.test(relayInputSchema.parse(r), owner),
-    'agent:models': (r) => config.models(relayModelsInputSchema.parse(r)),
+    'models:settings': () => config.view(),
+    'models:catalog': () => providerCatalog(),
+    'models:save-provider': (r) => service.saveProvider(providerInputSchema.parse(r)),
+    'models:test-provider': (r, owner) => {
+      const v = providerTestSchema.parse(r);
+      return service.testProvider(v.provider, owner, v.modelId);
+    },
+    'models:candidates': (r) => service.fetchProviderModels(providerInputSchema.parse(r)),
+    'models:set-provider-models': (r) => {
+      const v = setProviderModelsSchema.parse(r);
+      return service.setProviderModels(v.providerId, v.models);
+    },
+    'models:update': (r) => service.updateModel(updateModelSchema.parse(r)),
+    'models:remove': (id) => service.removeModel(agentId.parse(id)),
+    'models:remove-provider': (id) => service.removeProvider(agentId.parse(id)),
+    'models:default': (id) => service.setDefaultModel(agentId.parse(id)),
+    'models:probe-vision': (id, owner) => service.probeVision(agentId.parse(id), owner),
+    'agent:thinking': (r) => {
+      const v = thinkingInputSchema.parse(r);
+      return service.setThinkingLevel(v.sessionId, v.level);
+    },
     'agent:snapshot': () => service.snapshot(),
     'agent:create': () => service.create(),
     'agent:create-canvas': (r) => service.create(agentId.parse(r)),

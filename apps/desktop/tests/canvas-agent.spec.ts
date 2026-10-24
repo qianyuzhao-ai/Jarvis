@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
 import type { WorkspaceData } from '../src/renderer/src/features/creation/types';
+import { addRelayModel } from './helpers/model-setup';
 
 async function workspace(page: Page) {
   return page.evaluate(async () => {
@@ -116,23 +117,13 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
-    const saved = await page.evaluate(
-      async (baseUrl) =>
-        window.desktop?.agent.saveConfiguration({
-          config: {
-            name: 'Canvas mock',
-            baseUrl,
-            api: 'openai-completions',
-            model: 'mock',
-            contextWindow: 1000000,
-            maxTokens: 4096,
-          },
-          apiKey: 'mock-key',
-          clearKey: false,
-        }),
-      `http://127.0.0.1:${addr.port}/v1`,
-    );
-    expect(saved?.ok).toBe(true);
+    await addRelayModel(page, {
+      name: 'Canvas mock',
+      baseUrl: `http://127.0.0.1:${addr.port}/v1`,
+      model: 'mock',
+      apiKey: 'mock-key',
+      contextWindow: 1000000,
+    });
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();

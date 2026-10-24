@@ -102,7 +102,11 @@ export function WritingAgentSidebar({
             text={text}
             setText={setText}
             input={input}
-            model={agent.session?.model ?? (model || agent.configuration.config?.model || '')}
+            model={
+              agent.session
+                ? (agent.session.modelId ?? '')
+                : model || agent.configuration.defaultModelId || ''
+            }
             onModel={(value) => {
               if (agent.session) void agent.model(value);
               else setModel(value);
@@ -162,7 +166,7 @@ export function WritingAgentSidebar({
               title="写作助手"
               icon={<Sparkles size={24} />}
               suggestions={
-                agent.configuration.config ? (
+                agent.configured ? (
                   ['把选中段落改得更口语', '为全文写一段摘要', '续写下一段'].map((s) => (
                     <Button
                       key={s}
@@ -178,7 +182,7 @@ export function WritingAgentSidebar({
                   ))
                 ) : (
                   <Button variant="secondary" size="sm" onClick={configure}>
-                    配置模型服务
+                    前往模型设置
                   </Button>
                 )
               }

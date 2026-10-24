@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { DEEPSEEK_BASE_URL, relaySchema } from '../src/shared/agent';
 import { openAgent } from '../src/main/agent/runtime';
+import { catalogModel } from './helpers/models';
 
 test('DeepSeek configuration fixes the official origin and preserves legacy relay configuration', () => {
   const legacy = {
@@ -45,21 +46,10 @@ test('Pi native DeepSeek streams both official models with the expected protocol
   };
   try {
     for (const model of ['deepseek-flash', 'deepseek-v4-pro']) {
-      const config = relaySchema.parse({
-        provider: 'deepseek',
-        name: 'DeepSeek',
-        baseUrl: DEEPSEEK_BASE_URL,
-        api: 'openai-completions',
-        model,
-      });
+      const config = catalogModel('deepseek', model, 'mock-deepseek-key');
       const id = randomUUID();
       for (const prompt of ['第一轮', '第二轮']) {
-        const { session } = await openAgent(
-          test.info().outputPath(model),
-          id,
-          config,
-          'mock-deepseek-key',
-        );
+        const { session } = await openAgent(test.info().outputPath(model), id, config);
         try {
           await session.prompt(prompt, { expandPromptTemplates: false });
           const last = session.messages.filter((m) => m.role === 'assistant').at(-1);
@@ -78,7 +68,9 @@ test('Pi native DeepSeek streams both official models with the expected protocol
     expect(requests).toHaveLength(4);
     expect(requests.every((r) => r.url === `${DEEPSEEK_BASE_URL}/chat/completions`)).toBe(true);
     expect(requests.every((r) => r.authorization === 'Bearer mock-deepseek-key')).toBe(true);
-    expect(requests.every((r) => r.body.max_tokens === 4096 && r.body.stream === true)).toBe(true);
+    expect(requests.every((r) => r.body.max_tokens === 384000 && r.body.stream === true)).toBe(
+      true,
+    );
     expect(requests.every((r) => JSON.stringify(r.body.thinking) === '{"type":"disabled"}')).toBe(
       true,
     );

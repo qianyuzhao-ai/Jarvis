@@ -213,6 +213,22 @@
     color: var(--color-ink);
     font-size: 14px;
   }
+  .composer-model {
+    min-width: 0;
+  }
+  .composer-select {
+    max-width: 240px;
+    text-overflow: ellipsis;
+  }
+  .composer-thinking {
+    max-width: 120px;
+  }
+  .ui-composer[data-layout='compact'] .composer-select {
+    max-width: 112px;
+  }
+  .ui-composer[data-layout='compact'] .composer-thinking {
+    max-width: 92px;
+  }
   .context-ring {
     width: 28px;
   }

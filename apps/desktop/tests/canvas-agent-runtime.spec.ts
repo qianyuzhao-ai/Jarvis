@@ -7,7 +7,8 @@ import { canvasTools } from '../src/main/agent/canvas-tools';
 import { canvasSnapshot } from '../src/renderer/src/features/creation/canvas-context';
 import { prepareCanvasEdit } from '../src/renderer/src/features/creation/canvas-transactions';
 import { createMedia, createProject } from '../src/renderer/src/features/creation/types';
-import { relaySchema, type ChatMessage } from '../src/shared/agent';
+import type { ChatMessage } from '../src/shared/agent';
+import { relayModel } from './helpers/models';
 
 test('Pi canvas tools read, persist an edit and consume its receipt before reporting success', async () => {
   const requests: Record<string, unknown>[] = [];
@@ -90,13 +91,7 @@ test('Pi canvas tools read, persist an edit and consume its receipt before repor
   const runtime = await openAgent(
     test.info().outputPath('runtime'),
     randomUUID(),
-    relaySchema.parse({
-      name: 'Canvas mock',
-      baseUrl: `http://127.0.0.1:${address.port}/v1`,
-      api: 'openai-completions',
-      model: 'mock',
-    }),
-    '',
+    relayModel({ baseUrl: `http://127.0.0.1:${address.port}/v1`, model: 'mock' }),
     false,
     { tools, context: 'Current canvas only.' },
   );

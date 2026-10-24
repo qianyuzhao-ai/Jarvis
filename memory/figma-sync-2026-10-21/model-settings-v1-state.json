@@ -1,0 +1,133 @@
+{
+  "updatedAt": "2026-10-24",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "page": {
+    "id": "319:27345",
+    "name": "V1-视觉换新"
+  },
+  "status": "用户已确认设计稿（2026-10-24），进入阶段 2",
+  "plan": "https://docs.google.com/document/d/1WRecrTkcJNEq0BtekdvhhXqz87Q4glzOiWH_BKiXNVc/edit",
+  "localComponents": {
+    "Model Row": {
+      "id": "427:29676",
+      "props": [
+        "name",
+        "modelId",
+        "isDefault",
+        "vision",
+        "textOnly",
+        "showContext",
+        "visionUnknown",
+        "thinking"
+      ],
+      "exposed": [
+        "Badge / 上下文"
+      ]
+    },
+    "Provider Tile": {
+      "id": "429:29979",
+      "variants": [
+        "state=default",
+        "state=selected"
+      ],
+      "props": [
+        "name",
+        "meta"
+      ]
+    },
+    "Model Option": {
+      "id": "429:29980",
+      "props": [
+        "name",
+        "modelId",
+        "vision",
+        "textOnly",
+        "showContext",
+        "visionUnknown",
+        "thinking"
+      ],
+      "exposed": [
+        "Checkbox",
+        "Badge / 上下文"
+      ]
+    },
+    "section": {
+      "page": "332:28013 V1-Components",
+      "id": "432:37742",
+      "name": "28 Model Settings",
+      "description": "432:37743",
+      "review": {
+        "frame": "432:45756",
+        "light": "432:45757",
+        "dark": "432:45928"
+      }
+    },
+    "Composer (existing 395:33742)": {
+      "change": "新增 showThinking（默认关）与 6 个变体工具栏中模型右侧的 Thinking 选择（NativeSelect compact sm）"
+    },
+    "Assistant Panel (existing 399:34448)": {
+      "change": "两个变体内的 Composer（399:33936、399:34320）开启 showThinking，值“思考：高”；画布与写作右边栏实例同步显示"
+    }
+  },
+  "frames": {
+    "Settings · Models": {
+      "light": "428:29687",
+      "dark": "431:43867"
+    },
+    "Add provider 1 Choose": {
+      "light": "430:29985",
+      "dark": "431:43966"
+    },
+    "Add provider 2 Connect (DeepSeek)": {
+      "light": "430:30332",
+      "dark": "431:44100"
+    },
+    "Add provider 3 Models (DeepSeek)": {
+      "light": "430:30544",
+      "dark": "431:44221"
+    },
+    "Add provider 2 Connect custom": {
+      "light": "430:30863",
+      "dark": "431:44341"
+    },
+    "Add provider 3 Models custom": {
+      "light": "430:31124",
+      "dark": "431:44473"
+    },
+    "Chat · Model picker": {
+      "light": "431:31910",
+      "dark": "431:44605"
+    },
+    "Chat · Model picker with image": {
+      "light": "431:32341",
+      "dark": "431:44664"
+    },
+    "Model capabilities unknown": {
+      "light": "434:34724",
+      "dark": "434:35383"
+    },
+    "Model capabilities detected": {
+      "light": "434:35107",
+      "dark": "434:35514"
+    },
+    "Chat · Thinking level": {
+      "light": "437:36345",
+      "dark": "437:37009"
+    },
+    "Chat · Thinking unsupported": {
+      "light": "437:36753",
+      "dark": "437:37062"
+    }
+  },
+  "notes": [
+    "外壳克隆自 Chat · Home / Light 389:26739；暗色帧通过 V1 / Semantic 集合显式 Dark 模式 334:2 并复制 389:27224 壁纸。",
+    "对话框由 Dialog size=default 实例分离后填充内容区；Badge accent subtle 在浅色下文字不可见，默认标记改用 accent solid（组件库问题待查）。",
+    "已截图检查：设置页浅/深、第 1/2/3 步、自定义第 2/3 步、带图选择器浅色、第 1 步深色。",
+    "2026-10-24：三个组件按用户要求移到 V1-Components 页 Section 28 Model Settings（描述 + 组件 + 浅/深 Review），原 V1 页临时容器 427:29675 已删除，页面实例保持链接；Section 截图检查通过。",
+    "2026-10-24：按用户确认的图片能力方案（服务商信息 → SDK 目录精确匹配 → 检测 → 手动）更新：两个行组件新增 visionUnknown（warning subtle“图片未确认”）；本地 Ollama qwen3:32b 改为未确认；自定义第 3 步按目录识别显示图片/仅文字/未确认；选择器中 gpt-5.2-mini、qwen3:32b 显示“图片未确认”，带图会话显示“未确认 · 先检测”；新增模型能力对话框（自动识别/支持/不支持分段、检测按钮与结果、上下文与输出上限）。已截图检查组件 Review、能力对话框浅/深、带图选择器、自定义第 3 步。",
+    "2026-10-24：按用户确认的思考程度与输出上限方案更新：行组件新增 thinking（“可思考”）；Composer 新增 showThinking；选择器画面显示“思考：高”；模型能力对话框新增思考程度（不调节 / 低中高），上下文“未知”、输出上限“自动”并标注来源；qwen3:32b 行隐藏上下文标签；新增思考程度选择 打开 / 不支持 两种状态。已截图检查思考菜单浅色、能力对话框深色、带图选择器、设置页浅色。",
+    "2026-10-24：用户要求右侧边栏输入框也能选择思考程度；Assistant Panel 组件内 Composer 已开启思考选择，画布页截图检查工具栏 315px 内放下“模型 + 思考：高”。长模型名在 compact 宽度下需要代码截断。用户随即确认其余设计稿。",
+    "2026-10-24 阶段 3：设置页 / 添加服务商 / 模型能力对话框已在代码中实现并通过实窗测试；Figma 节点未改动。",
+    "2026-10-24 阶段 4：Composer 思考选择（showThinking）与带图选择器禁用状态已在代码中实现（首页、画布右边栏），实窗测试通过；Figma 节点未改动。"
+  ]
+}

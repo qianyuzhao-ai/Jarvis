@@ -12,7 +12,8 @@ import { Composer } from '@jarvis/ui/components/Composer';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import type { useAgent } from './use-agent';
 import { ContextUsage } from './ContextUsage';
-import { ModelPicker } from './ModelPicker';
+import { ModelPicker, ThinkingPicker } from './ModelPicker';
+import { thinkingFor } from '../../../../shared/models';
 import { SkillPicker } from './SkillPicker';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 
@@ -74,7 +75,11 @@ export function ChatComposer({
     return () => document.removeEventListener('pointerdown', outside);
   }, [menuOpen, text]);
   const busy = !!agent.session?.runId;
-  const configured = !!agent.configuration.config;
+  const configured = agent.configured;
+  const selectedModel = agent.configuration.models.find((entry) => entry.id === model);
+  const withImages =
+    hasAttachments || !!agent.session?.messages.some((m) => m.visionAssets?.length);
+  const locked = !configured || busy || agent.sending || !!agent.snapshot.busySessionId;
   useLayoutEffect(() => {
     const node = input.current;
     if (!node) return;
@@ -201,26 +206,24 @@ export function ChatComposer({
           </Button>
           <div className="composer-spacer" />
           <ModelPicker
-            model={model}
-            models={agent.configuration.models ?? []}
-            selectedId={
-              agent.session
-                ? agent.session.modelId
-                : (agent.configuration.models?.find((entry) => entry.id === model)?.id ??
-                  agent.configuration.defaultModelId ??
-                  undefined)
-            }
-            disabled={!configured || busy || agent.sending || !!agent.snapshot.busySessionId}
+            settings={agent.configuration}
+            selectedId={model || undefined}
+            disabled={locked}
+            withImages={withImages}
             onChange={onModel}
+          />
+          <ThinkingPicker
+            model={selectedModel}
+            value={thinkingFor(
+              selectedModel,
+              agent.session ? (agent.session.thinkingLevel ?? 'off') : agent.draftThinking,
+            )}
+            disabled={locked}
+            onChange={(level) => void agent.thinking(level)}
           />
           <ContextUsage
             used={agent.session?.contextTokens}
-            capacity={
-              agent.session?.contextWindow ??
-              agent.configuration.models?.find((entry) => entry.id === model)?.config
-                .contextWindow ??
-              agent.configuration.config?.contextWindow
-            }
+            capacity={agent.session ? agent.session.contextWindow : selectedModel?.contextWindow}
           />
           {busy ? (
             <IconButton

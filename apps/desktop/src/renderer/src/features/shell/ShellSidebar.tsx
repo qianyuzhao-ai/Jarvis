@@ -154,7 +154,7 @@ export function ShellSidebar({
             {(
               [
                 { id: 'general', name: '通用', Icon: Settings },
-                { id: 'models', name: '模型服务', Icon: Cpu },
+                { id: 'models', name: '模型', Icon: Cpu },
                 { id: 'services', name: '内网地址', Icon: Plug },
                 { id: 'plugins', name: '插件', Icon: Puzzle },
               ] as const

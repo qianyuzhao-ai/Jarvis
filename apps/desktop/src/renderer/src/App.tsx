@@ -416,7 +416,6 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               <ChatTab
                 key={tab.ref ?? 'draft'}
                 sessionId={tab.ref}
-                configuration={agent.configuration}
                 onSession={(id, title) => recordSession(tab.id, id, title)}
                 onConfigure={() => void openSettings('models')}
               />
@@ -427,7 +426,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             <header className="shell-settings-toolbar">
               <span>
                 {
-                  { general: '通用', models: '模型服务', services: '内网地址', plugins: '插件' }[
+                  { general: '通用', models: '模型', services: '内网地址', plugins: '插件' }[
                     settingsSection
                   ]
                 }
@@ -451,11 +450,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <ModelSettings
-                value={agent.configuration}
-                onSaved={agent.setConfiguration}
-                onDirtyChange={setSettingsDirty}
-              />
+              <ModelSettings value={agent.configuration} busy={!!agent.snapshot.busySessionId} />
             )
           ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (
