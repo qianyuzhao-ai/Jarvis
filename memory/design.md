@@ -2,6 +2,18 @@
 
 最后更新：2026-10-24
 
+### 第三阶段交付验收：feature/ui-v1-shell e71b46a（2026-10-24）
+
+- 结果：未通过，需修复后再合入 develop。`pnpm check`、`pnpm build` 通过；Linux + Xvfb 冒烟 102/110。
+- 环境失败 5 项（不计入）：agent、canvas-agent、model-library 依赖系统钥匙串；ui-preview 2 项只有 darwin 基线。
+- 稳定失败 3 项（复现两次）：
+  - `node-download.spec.ts:167`：画布浮动缩放面板挡住重命名点击；原生标题栏占用高度后出现，Windows 同样有风险，需调整布局避让，不能只改测试。
+  - `sidebar.spec.ts:83`（期望 0 得 1）、`writing.spec.ts:232`（期望 1385 得 1384）：1× DPR 下精确像素断言差 1px，改为 ±1 容差。
+- 真实缺陷：画布视图关闭右边栏后 AssistantPanel 仍挂在屏外（右边缘 1619），文档 scrollWidth 1619 > 1280，页面可横向滚动。关闭时卸载，或在外壳根节点加 `overflow: clip`。
+- 小问题：设置页侧栏仍有“返回工作台”链接，跨空间标签页后应去掉。
+- 已确认：写作 Agent 只有 read_document / read_selection / replace_range / insert_text，校验 owner / claim / runId / scope / 过期与 SHA-256 版本，只改编辑器缓冲区，无文件系统访问，安全审查通过。断言 1070 → 1226，测试 93 → 108；删除的断言均有替代，例外只有已授权的大纲断言和过时的 1440 整窗宽度。AGENTS.md 当前范围已更新为“写作助手已接入”。Linux 截图与设计稿大体一致。
+- 注意：该分支包含 develop 上没有的 Agent 修复提交 a1ec3a3、1c76472、258bcf0，提 PR 时会一并带入。
+
 ### 第三阶段计划书更新：跨空间标签与空间 Agent（2026-10-24）
 
 - 用户决定：跨空间标签页现在就做；写作空间右边栏去掉大纲；右边栏弹出后只是 Agent 对话，在哪个标签页打开就能操作该标签页的空间。要求写进计划书并 PR 到 develop。
