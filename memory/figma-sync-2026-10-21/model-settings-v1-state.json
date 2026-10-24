@@ -17,7 +17,8 @@
         "vision",
         "textOnly",
         "showContext",
-        "visionUnknown"
+        "visionUnknown",
+        "thinking"
       ],
       "exposed": [
         "Badge / 上下文"
@@ -42,7 +43,8 @@
         "vision",
         "textOnly",
         "showContext",
-        "visionUnknown"
+        "visionUnknown",
+        "thinking"
       ],
       "exposed": [
         "Checkbox",
@@ -59,6 +61,9 @@
         "light": "432:45757",
         "dark": "432:45928"
       }
+    },
+    "Composer (existing 395:33742)": {
+      "change": "新增 showThinking（默认关）与 6 个变体工具栏中模型右侧的 Thinking 选择（NativeSelect compact sm）"
     }
   },
   "frames": {
@@ -101,6 +106,14 @@
     "Model capabilities detected": {
       "light": "434:35107",
       "dark": "434:35514"
+    },
+    "Chat · Thinking level": {
+      "light": "437:36345",
+      "dark": "437:37009"
+    },
+    "Chat · Thinking unsupported": {
+      "light": "437:36753",
+      "dark": "437:37062"
     }
   },
   "notes": [
@@ -108,6 +121,7 @@
     "对话框由 Dialog size=default 实例分离后填充内容区；Badge accent subtle 在浅色下文字不可见，默认标记改用 accent solid（组件库问题待查）。",
     "已截图检查：设置页浅/深、第 1/2/3 步、自定义第 2/3 步、带图选择器浅色、第 1 步深色。",
     "2026-10-24：三个组件按用户要求移到 V1-Components 页 Section 28 Model Settings（描述 + 组件 + 浅/深 Review），原 V1 页临时容器 427:29675 已删除，页面实例保持链接；Section 截图检查通过。",
-    "2026-10-24：按用户确认的图片能力方案（服务商信息 → SDK 目录精确匹配 → 检测 → 手动）更新：两个行组件新增 visionUnknown（warning subtle“图片未确认”）；本地 Ollama qwen3:32b 改为未确认；自定义第 3 步按目录识别显示图片/仅文字/未确认；选择器中 gpt-5.2-mini、qwen3:32b 显示“图片未确认”，带图会话显示“未确认 · 先检测”；新增模型能力对话框（自动识别/支持/不支持分段、检测按钮与结果、上下文与输出上限）。已截图检查组件 Review、能力对话框浅/深、带图选择器、自定义第 3 步。"
+    "2026-10-24：按用户确认的图片能力方案（服务商信息 → SDK 目录精确匹配 → 检测 → 手动）更新：两个行组件新增 visionUnknown（warning subtle“图片未确认”）；本地 Ollama qwen3:32b 改为未确认；自定义第 3 步按目录识别显示图片/仅文字/未确认；选择器中 gpt-5.2-mini、qwen3:32b 显示“图片未确认”，带图会话显示“未确认 · 先检测”；新增模型能力对话框（自动识别/支持/不支持分段、检测按钮与结果、上下文与输出上限）。已截图检查组件 Review、能力对话框浅/深、带图选择器、自定义第 3 步。",
+    "2026-10-24：按用户确认的思考程度与输出上限方案更新：行组件新增 thinking（“可思考”）；Composer 新增 showThinking；选择器画面显示“思考：高”；模型能力对话框新增思考程度（不调节 / 低中高），上下文“未知”、输出上限“自动”并标注来源；qwen3:32b 行隐藏上下文标签；新增思考程度选择 打开 / 不支持 两种状态。已截图检查思考菜单浅色、能力对话框深色、带图选择器、设置页浅色。"
   ]
 }
