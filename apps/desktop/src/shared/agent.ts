@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
-import { apiKeySchema, baseUrlSchema, thinkingLevelSchema, type ThinkingLevel } from './models';
+import {
+  baseUrlSchema,
+  thinkingLevelSchema,
+  type ModelSettingsView,
+  type ThinkingLevel,
+} from './models';
 import {
   canvasChangeSchema,
   canvasSnapshotSchema,
@@ -9,6 +14,7 @@ import {
   type CanvasReply,
 } from './canvas-agent';
 
+/** v2 settings schema, kept to read older files and session records during migration. */
 export const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
 export const DEEPSEEK_MODELS = ['deepseek-flash', 'deepseek-v4-pro'] as const;
 
@@ -34,26 +40,7 @@ export const relaySchema = z
       c.provider !== 'deepseek' || !c.model || DEEPSEEK_MODELS.some((model) => model === c.model),
     '请选择当前版本支持的 DeepSeek 官方模型',
   );
-export const relayInputSchema = z
-  .object({
-    config: relaySchema,
-    modelId: z.string().uuid().optional(),
-    create: z.boolean().optional(),
-    apiKey: apiKeySchema,
-    clearKey: z.boolean().default(false),
-  })
-  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key')
-  .refine((r) => !(r.create && r.modelId), '新增模型不能包含已有模型 ID');
 export const agentId = z.string().uuid();
-export const relayModelsInputSchema = z
-  .object({
-    config: relaySchema.safeExtend({ model: z.string().trim().max(200) }),
-    modelId: z.string().uuid().optional(),
-    create: z.boolean().optional(),
-    apiKey: apiKeySchema,
-    clearKey: z.boolean().default(false),
-  })
-  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key');
 export const agentSendSchema = z.object({
   sessionId: agentId,
   requestId: agentId,
@@ -111,22 +98,12 @@ export const chatSessionSchema = z.object({
   thinkingLevel: thinkingLevelSchema.optional(),
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
-export type RelayInput = z.infer<typeof relayInputSchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type ChatSession = z.infer<typeof chatSessionSchema>;
-export interface RelayView {
-  config: RelayConfig | null;
-  hasKey: boolean;
-  models?: ConfiguredModel[];
-  defaultModelId?: string | null;
-}
-export interface ConfiguredModel {
-  id: string;
-  config: RelayConfig;
-  hasKey: boolean;
-}
 export interface AgentSnapshot {
   skills?: SkillInfo[];
+  /** Model settings shared by every Agent entry (home, canvas, writing); Keys are never included. */
+  models?: ModelSettingsView;
   sessions: ChatSession[];
   busySessionId: string | null;
 }
@@ -139,12 +116,6 @@ export interface AgentBridge {
   listSkills(): Promise<AgentResult<SkillInfo[]>>;
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
-  getConfiguration(): Promise<AgentResult<RelayView>>;
-  saveConfiguration(input: RelayInput): Promise<AgentResult<RelayView>>;
-  removeModel(id: string): Promise<AgentResult<RelayView>>;
-  setDefaultModel(id: string): Promise<AgentResult<RelayView>>;
-  testConnection(input: RelayInput): Promise<AgentResult<string>>;
-  listModels(input: RelayInput): Promise<AgentResult<string[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
   createSession(): Promise<AgentResult<string>>;
   createCanvasSession(projectId: string): Promise<AgentResult<string>>;

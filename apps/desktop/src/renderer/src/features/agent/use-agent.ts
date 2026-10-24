@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import {
-  agentValue,
-  type AgentSnapshot,
-  type AgentEvent,
-  type RelayView,
-} from '../../../../shared/agent';
+import { agentValue, type AgentSnapshot, type AgentEvent } from '../../../../shared/agent';
+import type { ModelSettingsView } from '../../../../shared/models';
 import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
+
+const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
 
 export function useAgent(projectId?: string) {
   const storageKey = projectId ? `jarvis:canvas-chat:${projectId}` : 'jarvis:chat-session';
   const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
-  const [configuration, setConfiguration] = useState<RelayView>({ config: null, hasKey: false });
   const [selected, setSelected] = useState<string | null>(() => localStorage.getItem(storageKey));
   const [draftKey, setDraftKey] = useState(0);
   const [error, setError] = useState('');
@@ -42,11 +39,11 @@ export function useAgent(projectId?: string) {
       }
     };
     const stop = bridge.onEvent(receive);
-    void Promise.all([bridge.getSnapshot(), bridge.getConfiguration()])
-      .then(([s, c]) => {
+    void bridge
+      .getSnapshot()
+      .then((s) => {
         if (!active) return;
         receive(agentValue(s));
-        setConfiguration(agentValue(c));
         setLoading(false);
       })
       .catch((e: unknown) => {
@@ -60,6 +57,7 @@ export function useAgent(projectId?: string) {
       stop();
     };
   }, []);
+  const configuration: ModelSettingsView = snapshot.models ?? EMPTY_MODELS;
   const sessions = snapshot.sessions.filter((s) => s.projectId === projectId);
   const session = sessions.find((s) => s.id === selected) ?? null;
   async function send(
@@ -80,7 +78,7 @@ export function useAgent(projectId?: string) {
         agentValue(
           await (projectId ? bridge.createCanvasSession(projectId) : bridge.createSession()),
         );
-      if (!session && model && model !== configuration.config?.model)
+      if (!session && model && model !== configuration.defaultModelId)
         agentValue(await bridge.setModel({ sessionId: id, model }));
       agentValue(
         await bridge.send({
@@ -157,7 +155,7 @@ export function useAgent(projectId?: string) {
     projectId,
     busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
     configuration,
-    setConfiguration,
+    configured: !!configuration.defaultModelId,
     session,
     loading,
     error,

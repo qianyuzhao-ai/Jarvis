@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
-import type { AgentEvent, ChatMessage, RelayInput } from '../../shared/agent';
+import type { AgentEvent, ChatMessage } from '../../shared/agent';
 import {
   nearestThinkingLevel,
   type ProbeResult,
@@ -55,6 +55,7 @@ export class AgentService {
       seq: this.seq,
       snapshot: {
         skills: this.skills.list(),
+        models: this.config.view(),
         sessions: structuredClone(this.store.records.map((r) => r.view)),
         busySessionId: this.active?.sessionId ?? null,
       },
@@ -118,13 +119,8 @@ export class AgentService {
     return this.exclusive(async () => {
       this.idle();
       await action();
+      this.emit();
       return this.config.view();
-    });
-  }
-  saveConfiguration(input: RelayInput) {
-    return this.exclusive(async () => {
-      this.idle();
-      return this.config.legacySave(input);
     });
   }
   removeModel(id: string) {
@@ -137,6 +133,7 @@ export class AgentService {
     return this.exclusive(async () => {
       this.idle();
       const id = await this.config.saveProvider(input);
+      this.emit();
       return { id, settings: this.config.view() };
     });
   }
@@ -481,14 +478,6 @@ export class AgentService {
     await this.operations;
     clearTimeout(this.timer);
   }
-  test(input: RelayInput, owner: number) {
-    return this.exclusive(async () => {
-      this.idle();
-      const model = this.config.legacyTransient(input);
-      await this.ask(model, owner, '仅回复 OK');
-      return '连接成功 · 已收到流式回复';
-    });
-  }
   /** Built-in providers answer a short prompt; custom ones list models unless a model ID is given. */
   testProvider(input: ProviderInput, owner: number, modelId?: string) {
     return this.exclusive(async () => {
@@ -534,6 +523,7 @@ export class AgentService {
         const status = error instanceof ProbeError ? error.status : 0;
         if ([400, 415, 422].includes(status)) {
           await this.config.recordProbe(id, 'unsupported');
+          this.emit();
           return {
             vision: 'unsupported',
             message: `服务拒绝了图片输入（${status}），已标为不支持图片`,
@@ -543,6 +533,7 @@ export class AgentService {
       }
       const supported = reply.replace(/\s/g, '').includes(code);
       await this.config.recordProbe(id, supported ? 'supported' : 'unsupported');
+      this.emit();
       return supported
         ? { vision: 'supported', message: `检测通过：模型正确读出了测试图片中的数字 ${code}` }
         : {

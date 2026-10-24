@@ -60,7 +60,7 @@ export function ChatComposer({
     return () => document.removeEventListener('pointerdown', outside);
   }, [menuOpen, text]);
   const busy = !!agent.session?.runId;
-  const configured = !!agent.configuration.config;
+  const configured = agent.configured;
   useLayoutEffect(() => {
     const node = input.current;
     if (!node) return;
@@ -215,24 +215,17 @@ export function ChatComposer({
         </button>
         <div className="composer-spacer" />
         <ModelPicker
-          model={model}
-          models={agent.configuration.models ?? []}
-          selectedId={
-            agent.session
-              ? agent.session.modelId
-              : (agent.configuration.models?.find((entry) => entry.id === model)?.id ??
-                agent.configuration.defaultModelId ??
-                undefined)
-          }
+          settings={agent.configuration}
+          selectedId={model || undefined}
           disabled={!configured || busy || agent.sending || !!agent.snapshot.busySessionId}
           onChange={onModel}
         />
         <ContextUsage
           used={agent.session?.contextTokens}
           capacity={
-            agent.session?.contextWindow ??
-            agent.configuration.models?.find((entry) => entry.id === model)?.config.contextWindow ??
-            agent.configuration.config?.contextWindow
+            agent.session
+              ? agent.session.contextWindow
+              : agent.configuration.models.find((entry) => entry.id === model)?.contextWindow
           }
         />
       </div>

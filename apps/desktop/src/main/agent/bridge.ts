@@ -1,13 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
-import {
-  agentId,
-  agentSendSchema,
-  relayInputSchema,
-  relayModelsInputSchema,
-  type AgentResult,
-} from '../../shared/agent';
+import { agentId, agentSendSchema, type AgentResult } from '../../shared/agent';
 import {
   providerInputSchema,
   providerTestSchema,
@@ -77,19 +71,6 @@ export async function registerAgent() {
       const v = z.object({ id: agentId, enabled: z.boolean() }).strict().parse(r);
       return service.setSkillEnabled(v.id, v.enabled);
     },
-    // v2 settings form adapter; removed with that form in phase 3.
-    'agent:configuration': () => config.legacyView(),
-    'agent:save': (r) => service.saveConfiguration(relayInputSchema.parse(r)),
-    'agent:remove-model': async (id) => {
-      await service.removeModel(agentId.parse(id));
-      return config.legacyView();
-    },
-    'agent:default-model': async (id) => {
-      await service.setDefaultModel(agentId.parse(id));
-      return config.legacyView();
-    },
-    'agent:test': (r, owner) => service.test(relayInputSchema.parse(r), owner),
-    'agent:models': (r) => config.legacyModels(relayModelsInputSchema.parse(r)),
     'models:settings': () => config.view(),
     'models:catalog': () => providerCatalog(),
     'models:save-provider': (r) => service.saveProvider(providerInputSchema.parse(r)),

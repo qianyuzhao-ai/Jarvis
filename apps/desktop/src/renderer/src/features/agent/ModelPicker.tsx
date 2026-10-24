@@ -1,19 +1,18 @@
-import type { ConfiguredModel } from '../../../../shared/agent';
+import type { ModelSettingsView } from '../../../../shared/models';
 
 export function ModelPicker({
-  model,
+  settings,
   selectedId,
-  models,
   disabled,
   onChange,
 }: {
-  model: string;
+  settings: ModelSettingsView;
   selectedId?: string;
-  models: ConfiguredModel[];
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
-  const selected = models.find((entry) => entry.id === selectedId);
+  const selected = settings.models.find((entry) => entry.id === selectedId);
+  const provider = settings.providers.find((p) => p.id === selected?.providerId);
   return (
     <div className="composer-model">
       <select
@@ -21,23 +20,27 @@ export function ModelPicker({
         className="model-trigger"
         aria-label="聊天模型"
         value={selected?.id ?? ''}
-        disabled={disabled || !models.length}
-        title={
-          selected ? `${selected.config.name} · ${selected.config.model}` : model || '先添加模型'
-        }
+        disabled={disabled || !settings.models.length}
+        title={selected ? `${provider?.name ?? ''} · ${selected.modelId}` : '先添加模型'}
         onChange={(event) => onChange(event.target.value)}
       >
         {!selected && (
           <option value="" disabled>
-            {model || '先添加模型'}
+            {settings.models.length ? '选择模型' : '先添加模型'}
           </option>
         )}
-        {models.map((entry) => (
-          <option key={entry.id} value={entry.id}>
-            {entry.config.name} · {entry.config.model} ·{' '}
-            {entry.config.provider === 'deepseek' ? 'DeepSeek 官方' : '中转站'}
-          </option>
-        ))}
+        {settings.providers.map((p) => {
+          const models = settings.models.filter((m) => m.providerId === p.id);
+          return models.length ? (
+            <optgroup key={p.id} label={p.name}>
+              {models.map((m) => (
+                <option key={m.id} value={m.id} disabled={!m.available}>
+                  {m.available ? m.name : `${m.name}（已下线）`}
+                </option>
+              ))}
+            </optgroup>
+          ) : null;
+        })}
       </select>
     </div>
   );

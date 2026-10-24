@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { createProject, emptyWorkspace } from '../src/renderer/src/features/creation/types';
+import { addRelayModel } from './helpers/model-setup';
 test('selected images and sampled video frames reach the vision model; failed assets can be removed', async () => {
   test.setTimeout(60000);
   const video = await readFile(resolve(import.meta.dirname, 'fixtures/vision-colors.mp4'));
@@ -113,28 +114,15 @@ test('selected images and sampled video frames reach the vision model; failed as
         },
       },
     ];
+    await addRelayModel(page, {
+      name: 'Vision mock',
+      baseUrl: origin + '/v1',
+      model: 'vision',
+      vision: 'supported',
+      contextWindow: 1000000,
+    });
     await page.evaluate(
-      async ({ data, origin }) => {
-        const configured = await window.desktop?.agent.saveConfiguration({
-          config: {
-            name: 'Vision mock',
-            baseUrl: origin + '/v1',
-            api: 'openai-completions',
-            model: 'vision',
-            contextWindow: 1000000,
-            maxTokens: 4096,
-          },
-          apiKey: '',
-          clearKey: false,
-        });
-        if (!configured?.ok) throw new Error('Cannot save configuration');
-        const modelId = configured.value.defaultModelId;
-        if (!modelId) throw new Error('Missing model');
-        const marked = await window.desktop?.models.updateModel({
-          id: modelId,
-          vision: 'supported',
-        });
-        if (!marked?.ok) throw new Error('Cannot mark image support');
+      async ({ data }) => {
         const db = await new Promise<IDBDatabase>((resolve, reject) => {
           const r = indexedDB.open('jarvis-workspace', 1);
           r.onsuccess = () => resolve(r.result);

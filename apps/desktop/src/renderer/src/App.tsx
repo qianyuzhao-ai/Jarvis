@@ -229,7 +229,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 ? settingsSection === 'general'
                   ? '通用'
                   : settingsSection === 'models'
-                    ? '模型服务'
+                    ? '模型'
                     : settingsSection === 'plugins'
                       ? '插件'
                       : '内网地址'
@@ -263,11 +263,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <ModelSettings
-                value={agent.configuration}
-                onSaved={agent.setConfiguration}
-                onDirtyChange={setSettingsDirty}
-              />
+              <ModelSettings value={agent.configuration} busy={!!agent.snapshot.busySessionId} />
             )
           ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (

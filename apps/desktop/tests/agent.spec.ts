@@ -70,39 +70,51 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await expect(page.getByRole('heading', { name: '先添加一个模型' })).toBeVisible();
-    await page.getByRole('button', { name: '配置模型服务' }).click();
-    await page.getByRole('button', { name: '添加模型', exact: true }).click();
+    await page.getByRole('button', { name: '前往模型设置' }).click();
+    await expect(page.getByRole('heading', { name: '模型', exact: true })).toBeVisible();
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0]?.setSize(1800, 1000),
     );
-    await expect(page.getByTestId('relay-settings')).toHaveCSS('width', '700px');
-    await page.getByLabel('API 地址', { exact: true }).fill(`http://127.0.0.1:${address.port}/v1`);
-    await page.getByLabel('API Key', { exact: true }).fill('local-test-key');
-    await page.getByRole('button', { name: '获取模型', exact: true }).click();
-    await expect.poll(() => modelsRequests).toBe(1);
-    await page.getByLabel('模型 ID', { exact: true }).fill('mock');
-    await page.locator('[data-testid="relay-advanced"] summary').click();
+    const settingsPage = page.locator('section[aria-labelledby="models-title"]');
+    await expect(settingsPage).toHaveCSS('width', '700px');
+    await page.getByRole('button', { name: '添加服务商', exact: true }).first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('第 1 步，共 3 步')).toBeVisible();
+    await dialog.getByRole('button', { name: /自定义接口/ }).click();
+    await dialog.getByRole('button', { name: '下一步', exact: true }).click();
+    await dialog.getByLabel('名称', { exact: true }).fill('我的中转站');
+    await dialog
+      .getByLabel('接口地址', { exact: true })
+      .fill(`http://127.0.0.1:${address.port}/v1`);
+    await dialog.getByLabel('API Key', { exact: true }).fill('local-test-key');
+    await dialog.getByRole('button', { name: '测试连接', exact: true }).click();
+    await expect(dialog.getByRole('status')).toContainText('连接成功 · 获取到 3 个模型');
+    expect(modelsRequests).toBe(1);
+    await dialog.getByRole('button', { name: '下一步', exact: true }).click();
+    await expect(dialog.getByTestId('model-option')).toHaveCount(3);
+    await expect(dialog.getByTestId('model-option').first()).toContainText('图片未确认');
+    await dialog.getByRole('checkbox', { name: '启用 mock' }).click();
+    await page.screenshot({ path: test.info().outputPath('add-provider-models.png') });
+    await dialog.getByRole('button', { name: '添加 1 个模型', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByTestId('configured-model')).toHaveCount(1);
+    await page.getByRole('button', { name: '模型菜单：mock' }).click();
+    await page.getByRole('menuitem', { name: '模型能力…' }).click();
     await page.getByLabel('上下文容量', { exact: true }).fill('1000000');
-    await page.getByRole('button', { name: '测试连接', exact: true }).click();
-    await expect(page.getByRole('status').filter({ hasText: '连接成功' })).toBeVisible();
-    await expect(page.locator('[data-testid="relay-footer"] > span')).toHaveText('更改尚未保存');
-    await page.getByRole('button', { name: '保存更改', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '我的模型', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '编辑模型：我的中转站' }).click();
-    const saved = await page.evaluate(() => window.desktop?.agent.getConfiguration());
-    expect(saved?.ok && saved.value.hasKey).toBe(true);
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByTestId('configured-model')).toContainText('1M 上下文');
+    const saved = await page.evaluate(() => window.desktop?.models.getSettings());
+    expect(saved?.ok && saved.value.providers[0]?.hasKey).toBe(true);
     expect(JSON.stringify(saved)).not.toContain('local-test-key');
     const userData = await app.evaluate(({ app }) => app.getPath('userData'));
     const stored = await readFile(join(userData, 'agent', 'connection.json'), 'utf8');
     expect(stored).not.toContain('local-test-key');
-    await page.screenshot({ path: test.info().outputPath('relay-light.png') });
+    await page.screenshot({ path: test.info().outputPath('models-light.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
-    await expect
-      .poll(() => page.getByTestId('relay-content').evaluate((n) => n.scrollWidth - n.clientWidth))
-      .toBe(0);
-    await page.screenshot({ path: test.info().outputPath('relay-compact.png') });
+    await expect.poll(() => settingsPage.evaluate((n) => n.scrollWidth - n.clientWidth)).toBe(0);
+    await page.screenshot({ path: test.info().outputPath('models-compact.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
-    await page.getByRole('button', { name: '返回我的模型' }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     const messageInput = page.getByLabel('消息', { exact: true });
@@ -191,8 +203,8 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
 
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
-    await page.getByRole('button', { name: '模型服务', exact: true }).click();
-    await page.screenshot({ path: test.info().outputPath('relay-dark.png') });
+    await page.getByRole('button', { name: '模型', exact: true }).click();
+    await page.screenshot({ path: test.info().outputPath('models-dark.png') });
     await page
       .getByRole('button', { name: '打开对话：本周工作安排' })
       .count()
@@ -267,21 +279,21 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     expect(JSON.stringify(requests.at(-1)?.messages)).toContain('本周工作安排');
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.evaluate(async (model) => {
-      const bridge = window.desktop!.agent;
-      const view = await bridge.getConfiguration();
-      if (!view.ok || !view.value.config) throw new Error('Missing configuration');
-      const saved = await bridge.saveConfiguration({
-        create: true,
-        config: { ...view.value.config, name: model, model },
-        apiKey: 'local-test-key',
-        clearKey: false,
+      const bridge = window.desktop!.models;
+      const view = await bridge.getSettings();
+      const provider = view.ok ? view.value.providers[0] : undefined;
+      if (!view.ok || !provider) throw new Error('Missing configuration');
+      const enabled = view.value.models
+        .filter((m) => m.providerId === provider.id)
+        .map((m) => ({ modelId: m.modelId }));
+      const saved = await bridge.setProviderModels({
+        providerId: provider.id,
+        models: [...enabled, { modelId: model }],
       });
       if (!saved.ok) throw new Error(saved.error);
     }, 'slow');
     await page.reload();
-    await page
-      .getByRole('combobox', { name: '聊天模型' })
-      .selectOption({ label: 'slow · slow · 中转站' });
+    await page.getByRole('combobox', { name: '聊天模型' }).selectOption({ label: 'slow' });
     await page.getByLabel('消息', { exact: true }).fill('停止验证');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(
@@ -341,21 +353,21 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     expect(requests).toHaveLength(calls);
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.evaluate(async (model) => {
-      const bridge = window.desktop!.agent;
-      const view = await bridge.getConfiguration();
-      if (!view.ok || !view.value.config) throw new Error('Missing configuration');
-      const saved = await bridge.saveConfiguration({
-        create: true,
-        config: { ...view.value.config, name: model, model },
-        apiKey: 'local-test-key',
-        clearKey: false,
+      const bridge = window.desktop!.models;
+      const view = await bridge.getSettings();
+      const provider = view.ok ? view.value.providers[0] : undefined;
+      if (!view.ok || !provider) throw new Error('Missing configuration');
+      const enabled = view.value.models
+        .filter((m) => m.providerId === provider.id)
+        .map((m) => ({ modelId: m.modelId }));
+      const saved = await bridge.setProviderModels({
+        providerId: provider.id,
+        models: [...enabled, { modelId: model }],
       });
       if (!saved.ok) throw new Error(saved.error);
     }, 'broken');
     await page.reload();
-    await page
-      .getByRole('combobox', { name: '聊天模型' })
-      .selectOption({ label: 'broken · broken · 中转站' });
+    await page.getByRole('combobox', { name: '聊天模型' }).selectOption({ label: 'broken' });
     await page.getByLabel('消息', { exact: true }).fill('断流验证');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(

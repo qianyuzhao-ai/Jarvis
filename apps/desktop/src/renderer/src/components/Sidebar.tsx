@@ -93,7 +93,7 @@ export function Sidebar({
               aria-current={section === 'models' ? 'page' : undefined}
             >
               <Cpu />
-              模型服务
+              模型
             </button>
             <button
               data-testid="side-link"

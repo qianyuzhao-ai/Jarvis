@@ -286,9 +286,9 @@ export function CanvasAgentSidebar({
               <h2>一起整理这张画布</h2>
               <p>可以查看节点、调整提示词和参数、创建节点与连接。修改后可撤销。</p>
               <p>多选图片或视频后，点击输入框下方 + 添加。图片直接发送，视频抽取代表帧。</p>
-              {!agent.configuration.config ? (
+              {!agent.configured ? (
                 <button className="nav-button" type="button" onClick={configure}>
-                  配置模型服务
+                  前往模型设置
                 </button>
               ) : (
                 ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
@@ -364,7 +364,11 @@ export function CanvasAgentSidebar({
             text={text}
             setText={setText}
             input={input}
-            model={session?.model ?? (draftModel || agent.configuration.config?.model || '')}
+            model={
+              session
+                ? (session.modelId ?? '')
+                : draftModel || agent.configuration.defaultModelId || ''
+            }
             onModel={(value) => {
               if (session) void agent.model(value);
               else setDraftModel(value);

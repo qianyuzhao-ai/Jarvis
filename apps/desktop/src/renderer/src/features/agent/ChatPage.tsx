@@ -24,8 +24,10 @@ export function ChatPage({
   const input = useRef<HTMLTextAreaElement>(null);
   const following = useRef(true);
   const busy = !!session?.runId;
-  const configured = !!configuration.config;
-  const model = session?.model ?? (draftModel || configuration.config?.model || '');
+  const configured = agent.configured;
+  const model = session
+    ? (session.modelId ?? '')
+    : draftModel || configuration.defaultModelId || '';
   const last = session?.messages.at(-1);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -139,7 +141,7 @@ export function ChatPage({
             </p>
             {!configured && (
               <button className="agent-primary" onClick={onConfigure}>
-                配置模型服务
+                前往模型设置
               </button>
             )}
             {!session?.messages.length && configured && (

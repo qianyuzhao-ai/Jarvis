@@ -2,13 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import type { Api, Model } from '@earendil-works/pi-ai';
 import { z } from 'zod';
-import {
-  DEEPSEEK_BASE_URL,
-  relaySchema,
-  type RelayConfig,
-  type RelayInput,
-  type RelayView,
-} from '../../shared/agent';
+import { relaySchema } from '../../shared/agent';
 import {
   THINKING_LEVELS,
   customApiSchema,
@@ -113,6 +107,7 @@ const LEGACY_DEFAULT_NAMES = new Set(['DeepSeek 官方', '我的中转站']);
 
 export class ModelStore {
   private stored: Stored = { version: 3, defaultModelId: null, providers: [], models: [] };
+  private cachedView: ModelSettingsView | undefined;
   constructor(
     private file: JsonFile,
     private cipher: KeyCipher,
@@ -124,6 +119,7 @@ export class ModelStore {
     if (!value) return;
     if (typeof value === 'object' && 'version' in value && value.version === 3) {
       this.stored = storedSchema.parse(value);
+      this.cachedView = undefined;
       return;
     }
     const legacy =
@@ -140,6 +136,7 @@ export class ModelStore {
     });
     await this.file.write(next);
     this.stored = next;
+    this.cachedView = undefined;
   }
 
   /** Groups v2 entries that share an endpoint and Key into one provider, keeping every model ID. */
@@ -220,6 +217,7 @@ export class ModelStore {
     const parsed = storedSchema.parse(next);
     await this.file.write(parsed);
     this.stored = parsed;
+    this.cachedView = undefined;
   }
   private clone() {
     return structuredClone(this.stored);
@@ -322,6 +320,10 @@ export class ModelStore {
   }
 
   view(): ModelSettingsView {
+    this.cachedView ??= this.buildView();
+    return structuredClone(this.cachedView);
+  }
+  private buildView(): ModelSettingsView {
     return {
       providers: this.stored.providers.map(
         (p): ProviderView => ({
@@ -572,9 +574,7 @@ export class ModelStore {
     const { apiKey, name } = this.connection(input);
     if (input.kind === 'builtin') {
       const sdk = builtinProvider(input.sdkProvider);
-      const model = modelId
-        ? builtinModel(input.sdkProvider, modelId)
-        : (sdk?.getModels().find((m) => !m.input.includes('image')) ?? sdk?.getModels()[0]);
+      const model = modelId ? builtinModel(input.sdkProvider, modelId) : sdk?.getModels()[0];
       if (!sdk || !model) throw new Error('目录中没有可用于测试的模型');
       return {
         id: '',
@@ -605,144 +605,6 @@ export class ModelStore {
       contextWindow: null,
       maxTokens: null,
     };
-  }
-
-  // ---- Adapter for the v2 settings form; removed together with that form in phase 3. ----
-
-  private legacyConfig(provider: StoredProvider, model: StoredModel): RelayConfig {
-    const c = this.capabilities(provider, model);
-    const name = model.label ?? provider.name;
-    if (provider.kind === 'builtin')
-      return provider.sdkProvider === 'deepseek'
-        ? {
-            provider: 'deepseek',
-            name,
-            baseUrl: DEEPSEEK_BASE_URL,
-            api: 'openai-completions',
-            model: model.modelId,
-            contextWindow: c.contextWindow,
-            maxTokens: LEGACY_MAX_TOKENS,
-          }
-        : {
-            provider: 'relay',
-            name,
-            baseUrl: builtinProvider(provider.sdkProvider ?? '')?.baseUrl ?? 'https://invalid',
-            api: 'openai-completions',
-            model: model.modelId,
-            contextWindow: null,
-            maxTokens: LEGACY_MAX_TOKENS,
-          };
-    const window = model.manual.contextWindow ?? null;
-    const legacyWindow = window && window >= 8192 && window <= 2_000_000 ? window : null;
-    let maxTokens = model.manual.maxTokens ?? LEGACY_MAX_TOKENS;
-    maxTokens = Math.min(Math.max(maxTokens, 256), 32768, (legacyWindow ?? 32768) - 1);
-    return {
-      provider: 'relay',
-      name,
-      baseUrl: provider.baseUrl ?? '',
-      api: provider.api === 'openai-responses' ? 'openai-responses' : 'openai-completions',
-      model: model.modelId,
-      contextWindow: legacyWindow,
-      maxTokens,
-    };
-  }
-  legacyView(): RelayView {
-    const models = this.stored.models.map((m) => {
-      const provider = this.provider(m.providerId);
-      return { id: m.id, config: this.legacyConfig(provider, m), hasKey: !!provider.encryptedKey };
-    });
-    const selected = models.find((m) => m.id === this.stored.defaultModelId);
-    return {
-      config: selected ? selected.config : null,
-      hasKey: !!selected?.hasKey,
-      defaultModelId: this.stored.defaultModelId,
-      models,
-    };
-  }
-  private legacyProvider(input: RelayInput, existing?: StoredProvider): ProviderInput {
-    const { config } = input;
-    return config.provider === 'deepseek'
-      ? {
-          kind: 'builtin',
-          sdkProvider: 'deepseek',
-          ...(existing?.kind === 'builtin' ? { id: existing.id } : {}),
-          apiKey: input.apiKey,
-        }
-      : {
-          kind: 'custom',
-          ...(existing?.kind === 'custom' ? { id: existing.id } : {}),
-          name: existing?.kind === 'custom' ? existing.name : config.name,
-          baseUrl: config.baseUrl,
-          api: config.api,
-          apiKey: input.apiKey,
-          clearKey: input.clearKey,
-        };
-  }
-  async legacySave(input: RelayInput) {
-    if (input.config.provider === 'deepseek' && input.clearKey)
-      throw new Error('DeepSeek 官方接入需要 API Key');
-    const model = input.modelId && !input.create ? this.model(input.modelId) : undefined;
-    const existing = model ? this.provider(model.providerId) : undefined;
-    const kindChanged =
-      !!existing && (existing.kind === 'builtin') !== (input.config.provider === 'deepseek');
-    if (kindChanged && !input.apiKey && input.config.provider === 'deepseek')
-      throw new Error('更换服务来源时请填写新 API Key');
-    const providerInput = this.legacyProvider(input, kindChanged ? undefined : existing);
-    const providerId = await this.saveProvider(providerInput);
-    const next = this.clone();
-    const provider = this.provider(providerId, next);
-    const record: StoredModel = model
-      ? (next.models.find((m) => m.id === model.id) as StoredModel)
-      : { id: randomUUID(), providerId, modelId: input.config.model, manual: {} };
-    record.providerId = providerId;
-    record.modelId = input.config.model;
-    if (input.config.name !== provider.name && input.config.name !== input.config.model)
-      record.label = input.config.name;
-    else delete record.label;
-    if (provider.kind === 'custom') {
-      record.manual.contextWindow = input.config.contextWindow ?? undefined;
-      record.manual.maxTokens =
-        input.config.maxTokens !== LEGACY_MAX_TOKENS ? input.config.maxTokens : undefined;
-      if (record.manual.contextWindow === undefined) delete record.manual.contextWindow;
-      if (record.manual.maxTokens === undefined) delete record.manual.maxTokens;
-    } else record.manual = {};
-    if (!model) next.models.push(record);
-    if (kindChanged && existing && !next.models.some((m) => m.providerId === existing.id))
-      next.providers = next.providers.filter((p) => p.id !== existing.id);
-    next.defaultModelId ??= record.id;
-    await this.commit(next);
-    return this.legacyView();
-  }
-  legacyTransient(input: RelayInput): ResolvedModel {
-    const model = input.modelId && !input.create ? this.model(input.modelId) : undefined;
-    const existing = model ? this.provider(model.providerId) : undefined;
-    const sameKind =
-      !!existing && (existing.kind === 'builtin') === (input.config.provider === 'deepseek');
-    if (input.config.provider === 'deepseek' && input.clearKey)
-      throw new Error('DeepSeek 官方接入需要 API Key');
-    if (existing && !sameKind && !input.apiKey && existing.encryptedKey)
-      throw new Error('更换服务来源或地址时请填写新 API Key；中转站也可明确清除旧 Key');
-    const resolved = this.transient(
-      this.legacyProvider(input, sameKind ? existing : undefined),
-      input.config.model,
-    );
-    return {
-      ...resolved,
-      ...(resolved.kind === 'custom'
-        ? { contextWindow: input.config.contextWindow, maxTokens: input.config.maxTokens }
-        : {}),
-    };
-  }
-  async legacyModels(input: RelayInput) {
-    const model = input.modelId && !input.create ? this.model(input.modelId) : undefined;
-    const existing = model ? this.provider(model.providerId) : undefined;
-    const sameKind = !!existing && existing.kind === 'custom';
-    const provider = this.legacyProvider(
-      { ...input, config: { ...input.config, provider: 'relay' } },
-      sameKind ? existing : undefined,
-    );
-    const list = await this.candidates(provider);
-    return [...new Set(list.map((m) => m.id))].sort();
   }
 }
 
