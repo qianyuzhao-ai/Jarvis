@@ -2,6 +2,18 @@
 
 最后更新：2026-10-24
 
+### V1 画布节点与节点编辑栏（2026-10-24）
+
+- 用户认可当前页面框架；要求把现有图像节点、视频节点（含上传的）以及节点编辑栏拎出来看样式。
+- 依据代码盘点（develop）：MediaPlaceholder（生成节点 360×240：empty“点击编辑”/ 生成中 / 结果 / failed“失败”/ unknown“结果未知”，下载操作，左入右出端口，名称在下方可重命名）、AssetNode（上传素材 image / video / audio：上传中 / 就绪（下载 + 删除）/ 上传失败，仅输出端口）、MediaEditor（参考素材 + PromptEditor + 关闭 / 放大；ImageControls 模型 / 宽高比 / 思考程度 / 分辨率，VideoControls 模型 / 时长 / 宽高比 / 分辨率 + 生成音频；删除、生成；GenerationDetails 折叠卡）。
+- 图标库新增 music `406:32605`、play、volume-2、volume-x、minimize、rectangle-horizontal、diamond、clock-3、copy、image-plus（`406:*`，共 60 个）。
+- 新 Section `27 Canvas Node · Node Editor`（`407:34738`），总览 Index 行已追加：
+  - `Generation Node`（`407:34466`，kind image / video × state empty / generating / done / failed / unknown）：媒体块 360×240、radius 12；empty / failed / unknown 为 surface-raised + 0.5px border + 图标 + “点击编辑…”，failed / unknown 左上 danger / warning Badge；generating 为 fill/default + Spinner lg；done 铺满结果，视频加中心播放按钮与右下时长 Badge；右上悬浮操作条（下载）；左右 10px 端口；selected 为外 3px 的 2px accent 圆角环；名称在下方。属性 `name`、`selected`、`showActions`。
+  - `Asset Node`（`407:34737`，kind image / video / audio × state uploading / ready / upload-failed）：仅输出端口；ready 左上“素材”中性 Badge（新增提议，区分上传与生成）、右上下载 + 删除；音频为播放按钮 + small Progress + 时间；上传失败为 danger 图标与原因 + “请重新拖入文件上传”。
+  - `Node Editor`（`409:35547`，kind image / video × state empty / ready / busy）：760 宽，surface-raised + border + shadow-popover，radius/window；上部参考缩略图 64×80（编号 BadgeCount）+ 虚线“参考”添加块、提示词（@ 引用为 accent Badge 标签）、关闭 / 放大；下部参数为公开 NativeSelect compact sm + 前置图标，视频加生成音频 Toggle sm，右侧删除与生成（default icon-lg，空或生成中禁用），busy 显示 Spinner“正在生成…”并禁用参数；底部公开 Collapsible card“生成信息”（`showDetails`）。
+  - 审阅板 `Canvas Node / Review`（`410:35898`）：Light / Dark 点阵画布上展示全部状态，以及“上传素材 → 选中生成节点 + 编辑栏”组合与视频编辑栏生成中。点阵改为单个 SVG 路径（逐个椭圆会导致脚本超时）。
+- 待确认：上传素材节点的“素材”Badge；生成中是否显示进度百分比（当前接口无进度，用 Spinner）；编辑栏放大态样式未单独出稿。
+
 ### V1 右边栏移到外壳（2026-10-24）
 
 - 用户要求：右边栏入口按钮放到顶部右上角标签页栏；右边栏背景也为磨砂透明。
