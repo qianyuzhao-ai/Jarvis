@@ -2,6 +2,16 @@
 
 最后更新：2026-10-24
 
+### V1 图标库独立 · Sidebar Item · Window Tab（2026-10-24）
+
+- 用户要求：补侧栏列表行与窗口标签页组件；新风格用到的图标全部放进新的组件库，不与旧图标混用，便于以后批量替换。
+- V1 图标库：`V1-Components` 新增 Section `Icons · Lucide`（`391:32605`），43 个组件命名 `Icon / <lucide 名>`（Lucide 1.60，24px，内层 SCALE，线宽 1.75，描边默认 V1 color/fg/default）。来源：旧 Components 页 31 个图标复制而来；此前新增的 12 个（house / layout-grid / pen-line / calendar / arrow-left / square-pen / message-circle / mic / monitor / sparkles / settings / brain，ID `387:*` 不变）移入；brain / layout-grid / square-pen 的旧重复版本统一指向库内版本。旧 Components 页图标未改动，仍供旧页面使用。
+- 迁移：11 个 INSTANCE_SWAP 属性默认值改为库内图标；V1-Components 与 V1-视觉换新两页 259 处引用（189 处经属性、70 处直接替换）改指库内图标，保留原颜色覆盖。复查：两页旧图标引用 0、库内引用 956；抽查 Button 各变体 / 禁用、NativeSelect、Tabs 开启隐藏图标后颜色仍为对应 V1 语义变量。
+- 新 Section `24 Sidebar Item · Window Tab`（`392:32720`），审阅板 `393:32641`，总览 Index 行 `393:33954`（另加图标库行 `393:33959`）：
+  - `Sidebar Item`（`392:32673`，state default / hover / selected / disabled）：高 32、左 8 右 4、间距 8、radius/control、宽度填充；图标 16（fg-secondary，选中 fg），标题 body 单行省略，可选 meta（callout fg-tertiary），hover / selected 显示 ghost icon-xs 更多按钮；hover fill/default，selected fill/hover（失焦用 selection-inactive），disabled fg-disabled。属性 `label`、`showIcon` + `icon`、`meta` + `showMeta`。
+  - `Window Tab`（`392:32719`，state active / inactive / hover）：高 28、默认宽 200（代码 120–240 自适应）、左 10 右 4、间距 6、radius/control；active = surface-raised + 0.5px border + shadow-control、标题 Semibold；inactive 透明 + fg-secondary、无关闭；hover fill/default + 关闭（ghost icon-xs x）。属性 `label`、`showIcon` + `icon`、`closable`。
+- 首页 Chat（`389:26739` / `389:27224`）：标签区改为 Window Tab（聊天 active、视觉系统 inactive）+ 新建；侧栏“新对话”与最近对话改为 Sidebar Item（含时间 meta，首条 selected）。插件几何检查通过，截图下载仍被代理拒绝。
+
 ### V1 页面框架：Codex 式窗口外壳 · 首页 Chat 初稿（2026-10-24）
 
 - 用户给出 Codex 桌面版截图作为想要的框架：外圈为半透明磨砂外壳（顶栏 + 左侧图标栏），主要内容区为白色不透明面板，与外壳明显区分。要求直接在 Figma 绘制。
