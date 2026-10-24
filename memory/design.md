@@ -14,7 +14,7 @@
   - 审阅板 `Canvas Node / Review`（`410:35898`）：Light / Dark 点阵画布上展示全部状态，以及“上传素材 → 选中生成节点 + 编辑栏”组合与视频编辑栏生成中。点阵改为单个 SVG 路径（逐个椭圆会导致脚本超时）。
 - 待确认：上传素材节点的“素材”Badge；生成中是否显示进度百分比（当前接口无进度，用 Spinner）。
 - 编辑栏放大态（同日补）：`Node Editor` 新增变体属性 `size`（原 6 个为 default），新增 `kind=image|video, state=ready, size=expanded`（`412:35898` / `412:36174`）。依据代码 `.media-editor.is-expanded`：居中 960×600 对话框、shadow-dialog、color/scrim 遮罩、焦点圈定、Esc 先还原再关闭。结构：“参考素材”标题 + 数量（图像 3 / 9 仅图片；视频可含图片 / 视频 / 音频），参考条横向（虚线 + 添加块在首位，72×96 缩略图左下编号 solid Badge、右上 secondary icon-xs 移除、下方文件名），分隔线下为占满剩余高度的提示词（多个 @ 引用 accent Badge）；右侧关闭 / 还原（minimize）；底部参数行与生成信息同普通态。审阅 `Node Editor · Expanded / Review`（`412:39281`）：Light 图像、Dark 视频，点阵画布 + 节点 + 遮罩 + 居中放大面板。
-- 发现差异（未改）：代码普通态的参考区为最多 3 张叠放卡片 + 数量角标（84×104，点击放大），无参考时为占位图标、不提供添加；当前 Figma 普通态画的是单张缩略图 + 添加块，待确认以哪种为准。
+- 发现差异：代码普通态的参考区为最多 3 张叠放卡片 + 数量角标（84×104，点击放大），无参考时为占位图标、不提供添加；Figma 原画为单张缩略图 + 添加块。用户决定按代码改回：`Node Editor` 6 个 size=default 变体的 References 改为 84×104——有参考时 3 张 72×96 叠放卡片（radius 6、1px border，顶层左上、其后各向右下偏移 4px，左上编号标签 = surface-raised 底 + footnote，视频示例含音频卡），左下 BadgeCount neutral“3”；empty 为 fill/default + 0.5px border 占位块 + image 图标。放大态缩略图编号同步改为左上同款标签（移除按钮保持右上）。组件描述已更新。
 
 ### V1 右边栏移到外壳（2026-10-24）
 
