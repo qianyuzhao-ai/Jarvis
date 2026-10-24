@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { canvasNodeIdSchema as nodeId } from './canvas-node-id';
 
-const nodeId = z.string().min(1).max(100);
 const coordinate = z.number().finite().min(-100000).max(100000);
 export const canvasChangeSchema = z
   .object({

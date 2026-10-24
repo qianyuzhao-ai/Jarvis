@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { canvasNodeIdSchema } from './canvas-node-id';
 import { loginFields, type PlatformLogin, type PlatformLoginStatus } from './generation-login';
 
 export const REFERENCE_LIMITS = { image: 9, audio: 3, video: 3 } as const;
@@ -54,14 +55,14 @@ export const generationInputSchema = z.object({
 export const startRequestSchema = z.object({
   requestId: z.uuid(),
   projectId: z.uuid(),
-  nodeId: z.uuid(),
+  nodeId: canvasNodeIdSchema,
   settings: serviceSettingsSchema,
   input: generationInputSchema,
 });
 export const uploadRequestSchema = z.object({
   requestId: z.uuid(),
   projectId: z.uuid(),
-  nodeId: z.uuid(),
+  nodeId: canvasNodeIdSchema,
   settings: serviceSettingsSchema,
   file: z.object({
     name: z.string().min(1).max(500),
@@ -73,7 +74,7 @@ export const uploadRequestSchema = z.object({
 export const jobSchema = z.object({
   requestId: z.uuid(),
   projectId: z.uuid(),
-  nodeId: z.uuid(),
+  nodeId: canvasNodeIdSchema,
   kind: z.enum(['image', 'video']),
   status: z.enum(['running', 'succeeded', 'failed', 'unknown']),
   startedAt: z.number(),
@@ -89,7 +90,7 @@ export const jobSchema = z.object({
 export const requestRecordSchema = z.object({
   requestId: z.uuid(),
   projectId: z.uuid(),
-  nodeId: z.uuid(),
+  nodeId: canvasNodeIdSchema,
   operation: z.enum(['generation', 'upload']),
   kind: z.enum(['image', 'video', 'audio']),
   status: z.enum(['running', 'succeeded', 'failed', 'unknown']),
