@@ -593,9 +593,21 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await clickBlankPane(page);
     await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(0);
+    const idleStroke = await page.evaluate(() => {
+      const element = document.createElement('span');
+      element.style.color = 'var(--color-fg-tertiary)';
+      document.body.append(element);
+      const value = getComputedStyle(element).color;
+      element.remove();
+      return value;
+    });
     await expect(page.locator('.react-flow__edge .react-flow__edge-path').first()).toHaveCSS(
       'stroke',
-      'rgb(163, 166, 170)',
+      idleStroke,
+    );
+    await expect(page.locator('.react-flow__edge .react-flow__edge-path').first()).toHaveCSS(
+      'stroke-width',
+      '1.5px',
     );
     await node(page, ids.imageA).click({ position: { x: 30, y: 30 } });
     await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(2);
@@ -672,7 +684,10 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await expect(page.locator('.react-flow__edge')).toHaveCount(5);
     await expect(page.locator('.react-flow__node')).toHaveCount(7);
     await node(page, ids.imageB).click({ position: { x: 30, y: 30 } });
-    await page.getByRole('button', { name: '删除节点', exact: true }).click();
+    await page
+      .locator('.react-flow__node.selected')
+      .getByRole('button', { name: '删除节点', exact: true })
+      .click();
     await expect(page.locator('.react-flow__edge')).toHaveCount(3);
     expect(errors).toEqual([]);
   } finally {

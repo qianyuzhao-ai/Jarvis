@@ -11,6 +11,7 @@
 @import './features/settings/settings.css';
 @import './features/shell/shell.css';
 @import './features/shell/pages.css';
+@import './features/creation/nodes.css';
 @import './features/writing/writing.css';
 @source '../../../../../packages/ui/src';
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));

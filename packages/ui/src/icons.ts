@@ -96,3 +96,5 @@ export const Volume2 = icon(Lucide.Volume2);
 export const VolumeX = icon(Lucide.VolumeX);
 export const Workflow = icon(Lucide.Workflow);
 export const X = icon(Lucide.X);
+
+export const Pause = icon(Lucide.Pause);

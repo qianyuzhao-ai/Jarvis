@@ -1,3 +1,4 @@
+import { recordVideo } from './helpers/record-video';
 import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -26,32 +27,6 @@ const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=',
   'base64',
 );
-async function recordVideo() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 16;
-  canvas.height = 16;
-  const ctx = canvas.getContext('2d')!;
-  ctx.fillRect(0, 0, 16, 16);
-  const stream = canvas.captureStream(5);
-  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-  const chunks: Blob[] = [];
-  const done = new Promise<Blob>((resolve) => {
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
-  });
-  recorder.start();
-  let frame = 0;
-  const animation = setInterval(() => {
-    ctx.fillStyle = frame++ % 2 ? '#206080' : '#802060';
-    ctx.fillRect(0, 0, 16, 16);
-  }, 50);
-  await new Promise((r) => setTimeout(r, 900));
-  clearInterval(animation);
-  recorder.stop();
-  const blob = await done;
-  stream.getTracks().forEach((t) => t.stop());
-  return Array.from(new Uint8Array(await blob.arrayBuffer()));
-}
 
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
@@ -355,7 +330,10 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('生成联调测试');
     await page.getByRole('button', { name: '图像', exact: true }).click();
-    await page.locator('.react-flow__node-media').last().click();
+    await page
+      .locator('.react-flow__node-media')
+      .last()
+      .click({ position: { x: 30, y: 30 } });
     await page.getByLabel('图像提示词').fill('a cat');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2');
     await page.getByLabel('选择参考素材').setInputFiles([
@@ -384,7 +362,7 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '生成联调测试' }).click();
-    await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
+    await expect(page.getByTestId('node-generating')).toHaveText(/正在生成 · 已 \d+:\d{2}/);
     await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '重命名 图像生成', exact: true })).toBeVisible();
     await page.screenshot({
@@ -416,7 +394,10 @@ test('Electron uploads references, generates image and video, and restores resul
     await checkResult('image');
     mock.setMode('success');
     await page.getByRole('button', { name: '视频', exact: true }).click();
-    await page.locator('.react-flow__node-media').last().click();
+    await page
+      .locator('.react-flow__node-media')
+      .last()
+      .click({ position: { x: 30, y: 30 } });
     await page.getByLabel('视频提示词').fill('slow camera');
     await page.getByLabel('选择模型', { exact: true }).selectOption('seedance-2.0');
     await page.getByLabel('选择参考素材').setInputFiles([
@@ -472,6 +453,10 @@ test('Electron uploads references, generates image and video, and restores resul
       await app.evaluate(({ dialog }, filePath) => {
         dialog.showSaveDialog = async () => ({ canceled: false, filePath });
       }, filePath);
+      await page
+        .locator('.react-flow__node-media')
+        .filter({ has: page.getByRole('button', { name: `下载${kind}`, exact: true }) })
+        .hover({ position: { x: 10, y: 10 } });
       await page.getByRole('button', { name: `下载${kind}`, exact: true }).click();
       await expect(page.getByTestId('node-download-notice').last()).toContainText('已下载');
       expect(await readFile(filePath)).toEqual(kind === '图像' ? png : Buffer.from(bytes));
@@ -482,7 +467,7 @@ test('Electron uploads references, generates image and video, and restores resul
       .click({ position: { x: 30, y: 30 } });
     mock.setMode('hold');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
+    await expect(page.getByTestId('node-generating')).toHaveText(/正在生成 · 已 \d+:\d{2}/);
     await expect(page.getByAltText('生成的图像')).toHaveCount(0);
     await expect(
       page.locator('.react-flow__node-media').first().getByRole('button', { name: '下载图像' }),
@@ -494,7 +479,10 @@ test('Electron uploads references, generates image and video, and restores resul
       page.locator('.react-flow__node-media').first().getByTestId('node-task-status'),
     ).toHaveCount(0);
     await page.getByRole('button', { name: '关闭编辑面板', exact: true }).click();
-    await page.locator('.react-flow__node-media').last().click();
+    await page
+      .locator('.react-flow__node-media')
+      .last()
+      .click({ position: { x: 30, y: 30 } });
     mock.setMode('disconnect');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
@@ -503,7 +491,10 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '生成联调测试' }).click();
-    await page.locator('.react-flow__node-media').last().click();
+    await page
+      .locator('.react-flow__node-media')
+      .last()
+      .click({ position: { x: 30, y: 30 } });
     await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();

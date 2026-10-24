@@ -72,7 +72,8 @@ test('Image, Nano and video use shared single-row macOS controls', async () => {
     expect(new Set(tops).size).toBe(1);
     const modelControl = group.locator('[data-model="true"]');
     const shortWidth = await modelControl.evaluate((node) => node.getBoundingClientRect().width);
-    expect(shortWidth).toBe(160);
+    expect(shortWidth).toBeGreaterThan(60);
+    await expect(modelControl.locator('select')).toHaveCSS('field-sizing', 'content');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2.5-sunburst');
     const longWidth = await modelControl.evaluate((node) => node.getBoundingClientRect().width);
     expect(longWidth).toBeGreaterThan(shortWidth);

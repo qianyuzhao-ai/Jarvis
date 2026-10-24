@@ -309,6 +309,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
       )
       .toBe(1);
     expect(mock.calls).toHaveLength(3);
+    await page.getByAltText('image.png').hover();
     await page.getByRole('button', { name: '删除资源 image.png', exact: true }).click();
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     expect(errors).toEqual([]);
@@ -403,7 +404,8 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await drop(page, [{ name: 'removed.png', mime: 'image/png', bytes: Array.from(png) }]);
     await expect(page.locator('[data-node-kind="asset"]').last()).toContainText('正在上传');
     await expect.poll(() => mock.calls.length).toBe(2);
-    await page.getByRole('button', { name: '删除资源 removed.png', exact: true }).click();
+    await page.locator('.react-flow__node-asset').last().click();
+    await page.keyboard.press('Delete');
     mock.release();
     await page
       .getByLabel('导入画布素材')
