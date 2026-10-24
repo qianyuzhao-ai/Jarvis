@@ -6,7 +6,7 @@
 
 - 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
 - 更新测试入口迁到关于页，补充通用页无更新区、关于选中态及刷新恢复断言。`pnpm check`、`pnpm build` 与 updates / updates-http / updates-service / update-preparation 共 13/13（17.9s）通过，浅深/窄窗截图检查通过。实际发布和真实安装未执行。
-- 用户于同日授权两个分支推送、提 PR 并合入 develop。模型修复已由 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`），随后同步到本分支；仅两份记忆顶部记录冲突，保留两侧完整记录，应用代码自动合并。关于页 PR 继续完成集成。
+- 用户于同日授权两个分支推送、提 PR 并合入 develop。模型修复已由 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`），随后同步到本分支；仅两份记忆顶部记录冲突，保留两侧完整记录，应用代码自动合并。关于页由 [PR #75](https://github.com/qianyuzhao-ai/Jarvis/pull/75) 交付，合并前集成检查、构建与模型/更新相关 26/26（30.1s）通过。
 
 ## 模型配置开发模式卡住修复（2026-10-25）
 

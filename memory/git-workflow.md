@@ -1,6 +1,13 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-24
+最后更新：2026-10-25
+
+## 模型配置修复与关于页集成（2026-10-25）
+
+- 用户授权 `feature/model-dialog-lifecycle-fix` 与 `feature/settings-about` 推送、提 PR 并合入 develop，范围不含 main、版本标签或发布。
+- 模型修复提交 `d8d1d93` 经 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`）；关于页提交 `931f896` 同步新 develop（合并提交 `197e07e`），两份记忆顶部冲突保留双方记录，应用代码无冲突。关于页交付 PR 为 [#75](https://github.com/qianyuzhao-ai/Jarvis/pull/75)。
+- 合并前集成 `pnpm check`、`pnpm build` 与模型/更新相关 26/26（30.1s）回归通过。GitHub 插件创建 PR 返回 integration 403，使用本机已登录 gh 完成授权操作；没有绕过仓库规则或强推。
+
 
 ## UI V1 第三阶段功能分支（2026-10-24）
 
