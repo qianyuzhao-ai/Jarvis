@@ -93,12 +93,12 @@ export function AddProviderDialog({
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [error, setError] = useState('');
   const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   const builtin =
     choice?.kind === 'builtin' ? catalog.find((p) => p.id === choice.sdkProvider) : undefined;
   const providerName = builtin?.name ?? (name.trim() || '自定义接口');
