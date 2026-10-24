@@ -2,6 +2,13 @@
 
 最后更新：2026-10-24
 
+### V1 写作空间页面（2026-10-24）
+
+- 用户要求接着做写作空间页面。`V1-视觉换新` 新增 `Writing · Editor / Light`（`401:33851`）与 `/ Dark`（`401:34895`），由首页帧复制（位于首页下方 2000）。
+- 外壳：标签新增“周报草稿.md”（file-text，active），聊天 / 视觉系统 inactive；图标栏写作空间选中。
+- 主面板三栏：① 侧栏列 248（fill/default）：Button ghost lg “我的文档 ▾” + ghost 新建文件 / 新建文件夹；文件树全部为 Sidebar Item（文件夹 folder-open / folder，文件 file-text，子项左缩进 16，当前文件 selected）；底部本地路径 callout fg-tertiary。② 编辑区 616：文档工具栏 48（“周报 /”路径 + 文件名 headline + 已保存；右侧搜索、大纲 Toggle（list-tree，关）、右边栏 Toggle（panel-right，开））；正文列 552 居中（title-1 Semibold 标题、footnote 元信息、title-3 Semibold 小标题、body-relaxed 正文与列表），所选两段以 selection/default 底高亮；底部状态栏 28（“已选 2 段” / “Markdown · UTF-8”）。③ Assistant Panel conversation（360），标题“写作助手”，改写对话 + 回执“已保存：替换 2 段”+ 撤销，后续“再口语一点 / 保持”；Composer 上下文“周报草稿.md / 已选 2 段”，占位“让助手改写、续写、总结…”。
+- 大纲原在右侧栏 Tab 中，现改为编辑区工具栏的 Toggle（展开方式待定）。正文为 CodeMirror 业务区，不进 packages/ui。插件几何检查通过，截图下载仍被代理拒绝。
+
 ### V1 创作空间画布页 · Assistant Panel 右边栏（2026-10-24）
 
 - 用户要求：先做创作空间页面，并带上右边栏。
