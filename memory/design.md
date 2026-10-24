@@ -12,7 +12,9 @@
   - `Asset Node`（`407:34737`，kind image / video / audio × state uploading / ready / upload-failed）：仅输出端口；ready 左上“素材”中性 Badge（新增提议，区分上传与生成）、右上下载 + 删除；音频为播放按钮 + small Progress + 时间；上传失败为 danger 图标与原因 + “请重新拖入文件上传”。
   - `Node Editor`（`409:35547`，kind image / video × state empty / ready / busy）：760 宽，surface-raised + border + shadow-popover，radius/window；上部参考缩略图 64×80（编号 BadgeCount）+ 虚线“参考”添加块、提示词（@ 引用为 accent Badge 标签）、关闭 / 放大；下部参数为公开 NativeSelect compact sm + 前置图标，视频加生成音频 Toggle sm，右侧删除与生成（default icon-lg，空或生成中禁用），busy 显示 Spinner“正在生成…”并禁用参数；底部公开 Collapsible card“生成信息”（`showDetails`）。
   - 审阅板 `Canvas Node / Review`（`410:35898`）：Light / Dark 点阵画布上展示全部状态，以及“上传素材 → 选中生成节点 + 编辑栏”组合与视频编辑栏生成中。点阵改为单个 SVG 路径（逐个椭圆会导致脚本超时）。
-- 待确认：上传素材节点的“素材”Badge；生成中是否显示进度百分比（当前接口无进度，用 Spinner）；编辑栏放大态样式未单独出稿。
+- 待确认：上传素材节点的“素材”Badge；生成中是否显示进度百分比（当前接口无进度，用 Spinner）。
+- 编辑栏放大态（同日补）：`Node Editor` 新增变体属性 `size`（原 6 个为 default），新增 `kind=image|video, state=ready, size=expanded`（`412:35898` / `412:36174`）。依据代码 `.media-editor.is-expanded`：居中 960×600 对话框、shadow-dialog、color/scrim 遮罩、焦点圈定、Esc 先还原再关闭。结构：“参考素材”标题 + 数量（图像 3 / 9 仅图片；视频可含图片 / 视频 / 音频），参考条横向（虚线 + 添加块在首位，72×96 缩略图左下编号 solid Badge、右上 secondary icon-xs 移除、下方文件名），分隔线下为占满剩余高度的提示词（多个 @ 引用 accent Badge）；右侧关闭 / 还原（minimize）；底部参数行与生成信息同普通态。审阅 `Node Editor · Expanded / Review`（`412:39281`）：Light 图像、Dark 视频，点阵画布 + 节点 + 遮罩 + 居中放大面板。
+- 发现差异（未改）：代码普通态的参考区为最多 3 张叠放卡片 + 数量角标（84×104，点击放大），无参考时为占位图标、不提供添加；当前 Figma 普通态画的是单张缩略图 + 添加块，待确认以哪种为准。
 
 ### V1 右边栏移到外壳（2026-10-24）
 
