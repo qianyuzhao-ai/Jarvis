@@ -1,3 +1,6 @@
+import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
+import { Button } from '@jarvis/ui/components/Button';
+import { Sparkles, X } from '@jarvis/ui/icons';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ChevronLeft, History, Plus } from '@jarvis/ui/icons';
@@ -22,9 +25,11 @@ export function CanvasAgentSidebar({
   configure,
   width,
   onWidth,
+  onClose,
 }: {
   width: number;
   onWidth: (n: number) => void;
+  onClose: () => void;
   project: Project;
   selectedIds: string[];
   open: boolean;
@@ -141,7 +146,105 @@ export function CanvasAgentSidebar({
       className="canvas-agent-shell"
       style={{ width: open ? panelWidth : 0 }}
     >
-      <aside
+      <AssistantPanel
+        title="画布助手"
+        header={
+          <header data-testid="canvas-agent-header" className="canvas-agent-header">
+            {history && (
+              <IconButton label="返回当前聊天" onClick={() => setHistory(false)}>
+                <ChevronLeft size={18} />
+              </IconButton>
+            )}
+            <div className="canvas-agent-heading">
+              <span>画布助手</span>
+              <strong title={history ? '历史对话' : (session?.title ?? '新聊天')}>
+                {history ? '历史对话' : (session?.title ?? '新聊天')}
+              </strong>
+            </div>
+            {!history && (
+              <IconButton
+                label="画布对话历史"
+                disabled={attachments.preparing}
+                onClick={() => setHistory(true)}
+              >
+                <History size={18} />
+              </IconButton>
+            )}
+            <button
+              type="button"
+              className="canvas-agent-new-chat"
+              aria-label="新建画布对话"
+              disabled={attachments.preparing}
+              onClick={() => {
+                agent.newChat();
+                setText('');
+                attachments.clear();
+                setHistory(false);
+              }}
+            >
+              <Plus size={18} />
+              <span>新聊天</span>
+            </button>
+            <IconButton label="关闭画布助手" onClick={onClose}>
+              <X size={16} />
+            </IconButton>
+          </header>
+        }
+        composer={
+          <div className="canvas-agent-dock" hidden={history}>
+            {!atBottom && (
+              <button
+                className="canvas-agent-latest"
+                type="button"
+                onClick={() => {
+                  const n = viewport.current;
+                  if (n) n.scrollTop = n.scrollHeight;
+                  following.current = true;
+                  setAtBottom(true);
+                }}
+              >
+                <ArrowDown size={14} />
+                回到最新
+              </button>
+            )}
+            <CanvasAttachments
+              entries={attachments.entries}
+              preparing={attachments.preparing}
+              remove={attachments.remove}
+              focus={focus}
+            />
+            <ChatComposer
+              compact
+              context={
+                <div data-testid="canvas-context-scope" className="canvas-context-scope">
+                  <span>当前画布 · {project.nodes.length} 个节点</span>
+                  {selectedIds.length > 0 && (
+                    <button
+                      type="button"
+                      aria-pressed={includeSelected}
+                      onClick={() => setIncludeSelected(!includeSelected)}
+                    >
+                      {includeSelected ? '已引用' : '引用'} {selectedIds.length} 个选中节点
+                    </button>
+                  )}
+                </div>
+              }
+              onAttach={() => void attachments.add()}
+              preparing={attachments.preparing || attachments.blocked}
+              hasAttachments={attachments.images.length > 0}
+              agent={agent}
+              text={text}
+              setText={setText}
+              input={input}
+              model={session?.model ?? (draftModel || agent.configuration.config?.model || '')}
+              onModel={(value) => {
+                if (session) void agent.model(value);
+                else setDraftModel(value);
+              }}
+              onSubmit={submit}
+            />
+          </div>
+        }
         id="canvas-agent"
         data-testid="canvas-agent"
         className="canvas-agent"
@@ -194,40 +297,7 @@ export function CanvasAgentSidebar({
             }
           }}
         />
-        <header data-testid="canvas-agent-header" className="canvas-agent-header">
-          {history && (
-            <IconButton label="返回当前聊天" onClick={() => setHistory(false)}>
-              <ChevronLeft size={18} />
-            </IconButton>
-          )}
-          <strong title={history ? '历史对话' : (session?.title ?? '新聊天')}>
-            {history ? '历史对话' : (session?.title ?? '新聊天')}
-          </strong>
-          {!history && (
-            <IconButton
-              label="画布对话历史"
-              disabled={attachments.preparing}
-              onClick={() => setHistory(true)}
-            >
-              <History size={18} />
-            </IconButton>
-          )}
-          <button
-            type="button"
-            className="canvas-agent-new-chat"
-            aria-label="新建画布对话"
-            disabled={attachments.preparing}
-            onClick={() => {
-              agent.newChat();
-              setText('');
-              attachments.clear();
-              setHistory(false);
-            }}
-          >
-            <Plus size={18} />
-            <span>新聊天</span>
-          </button>
-        </header>
+
         {!history &&
           !!project.agentEdits.length &&
           !session?.messages.some((m) =>
@@ -281,14 +351,17 @@ export function CanvasAgentSidebar({
           }}
         >
           {!session?.messages.length ? (
-            <div className="canvas-agent-welcome">
-              <h2>一起整理这张画布</h2>
+            <AssistantEmpty
+              className="canvas-agent-welcome"
+              title="画布助手"
+              icon={<Sparkles size={24} />}
+            >
               <p>可以查看节点、调整提示词和参数、创建节点与连接。修改后可撤销。</p>
               <p>多选图片或视频后，点击输入框下方 + 添加。图片直接发送，视频抽取代表帧。</p>
               {!agent.configuration.config ? (
-                <button className="nav-button" type="button" onClick={configure}>
+                <Button variant="secondary" size="sm" type="button" onClick={configure}>
                   配置模型服务
-                </button>
+                </Button>
               ) : (
                 ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
                   <button
@@ -305,7 +378,7 @@ export function CanvasAgentSidebar({
                   </button>
                 ))
               )}
-            </div>
+            </AssistantEmpty>
           ) : (
             <div className="chat-messages" role="log" aria-label="画布对话消息" aria-live="off">
               {session.messages.map((m) => (
@@ -321,57 +394,7 @@ export function CanvasAgentSidebar({
             </div>
           )}
         </div>
-        <div className="canvas-agent-dock" hidden={history}>
-          {!atBottom && (
-            <button
-              className="canvas-agent-latest"
-              type="button"
-              onClick={() => {
-                const n = viewport.current;
-                if (n) n.scrollTop = n.scrollHeight;
-                following.current = true;
-                setAtBottom(true);
-              }}
-            >
-              <ArrowDown size={14} />
-              回到最新
-            </button>
-          )}
-          <div data-testid="canvas-context-scope" className="canvas-context-scope">
-            <span>当前画布 · {project.nodes.length} 个节点</span>
-            {selectedIds.length > 0 && (
-              <button
-                type="button"
-                aria-pressed={includeSelected}
-                onClick={() => setIncludeSelected(!includeSelected)}
-              >
-                {includeSelected ? '已引用' : '引用'} {selectedIds.length} 个选中节点
-              </button>
-            )}
-          </div>
-          <CanvasAttachments
-            entries={attachments.entries}
-            preparing={attachments.preparing}
-            remove={attachments.remove}
-            focus={focus}
-          />
-          <ChatComposer
-            onAttach={() => void attachments.add()}
-            preparing={attachments.preparing || attachments.blocked}
-            hasAttachments={attachments.images.length > 0}
-            agent={agent}
-            text={text}
-            setText={setText}
-            input={input}
-            model={session?.model ?? (draftModel || agent.configuration.config?.model || '')}
-            onModel={(value) => {
-              if (session) void agent.model(value);
-              else setDraftModel(value);
-            }}
-            onSubmit={submit}
-          />
-        </div>
-      </aside>
+      </AssistantPanel>
     </div>
   );
 }

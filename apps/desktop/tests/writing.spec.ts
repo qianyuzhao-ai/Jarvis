@@ -50,11 +50,7 @@ test('writing reads real directories, edits, creates, searches and restores tabs
       .click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await expect(editor).toContainText('写下');
-    await page.getByRole('button', { name: '展开右侧栏' }).click();
-    const outline = page.getByRole('navigation', { name: '文章标题' });
-    await expect(outline.getByRole('button', { name: '从想法到初稿' })).toBeVisible();
-    await expect(outline.getByRole('button', { name: '不是标题' })).toHaveCount(0);
-    await outline.getByRole('button', { name: '下一步' }).click();
+    await editor.focus();
     await expect(editor).toBeFocused();
     await editor.press('ControlOrMeta+a');
     await page.keyboard.insertText(
@@ -247,23 +243,21 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
       .getByRole('button', { name: '初稿.md' })
       .click();
     await page.getByRole('button', { name: '展开右侧栏' }).click();
-    await page.getByRole('tab', { name: '写作助手' }).click();
-    await expect(page.getByRole('tabpanel', { name: '写作助手' })).toContainText('稍后接入');
-    await expect(
-      page.getByRole('tabpanel', { name: '写作助手' }).locator('input,textarea'),
-    ).toHaveCount(0);
+    await expect(page.getByRole('complementary', { name: '写作助手' })).toContainText(
+      '读取当前文档',
+    );
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('complementary', { name: '写作文件目录' })).toBeHidden();
     await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
     await page.getByRole('button', { name: '收起右侧栏' }).click();
-    await expect(page.getByRole('complementary', { name: '写作辅助面板' })).toBeHidden();
+    await expect(page.getByRole('complementary', { name: '写作助手' })).toBeHidden();
     await expect
       .poll(async () =>
         Math.round((await page.getByTestId('writing-main').boundingBox())?.width ?? 0),
       )
       .toBe(1385);
     const documentWidth = await page.locator('.cm-content').boundingBox();
-    expect(documentWidth?.width).toBe(680);
+    expect(documentWidth?.width).toBe(560);
     await page.screenshot({ path: test.info().outputPath('writing-both-collapsed.png') });
     await page.getByRole('button', { name: '展开右侧栏' }).click();
     await page.getByRole('button', { name: '展开侧栏' }).click();

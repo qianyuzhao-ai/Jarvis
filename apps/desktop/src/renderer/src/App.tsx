@@ -96,11 +96,15 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     }
   }
   async function open(view: TabView, newTab = false) {
+    const current = shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId);
+    if (current?.kind === view.kind && current.ref === view.ref && view.kind !== 'chat' && !newTab)
+      return;
     if (!(await mayLeave())) return;
     change((s) => openTabView(s, view, newTab));
     syncView(view);
   }
   async function activate(id: string) {
+    if (id === shell.current.current.activeId) return;
     if (!(await mayLeave())) return;
     const tab = shell.current.current.tabs.find((t) => t.id === id);
     if (!tab) return;
@@ -269,7 +273,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       if (
         e.isComposing ||
         e.keyCode === 229 ||
-        document.querySelector('[role="alertdialog"],dialog[open]')
+        document.querySelector('[role="alertdialog"],[role="dialog"],dialog[open]')
       )
         return;
       const s = shell.current.current,
@@ -310,6 +314,18 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           sessions={agent.snapshot.sessions}
           activeChat={active.ref}
           onChat={(id, title, n) => void open({ kind: 'chat', ref: id, title }, n)}
+          onRenameProject={async (id, title) => {
+            await commit((s) => ({
+              ...s,
+              projects: s.projects.map((p) =>
+                p.id === id ? { ...p, name: title, updatedAt: Date.now() } : p,
+              ),
+            }));
+            return true;
+          }}
+          onRenameChat={agent.renameConversation}
+          onDeleteChat={agent.deleteConversation}
+          busy={!!agent.snapshot.busySessionId}
           onSettings={openSettings}
           onBack={() => void space('canvas')}
         />
@@ -462,7 +478,6 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 }
                 onConfigureAgent={() => void openSettings('models')}
                 agentBusy={agent.busyProjectId === project.id}
-                onBack={() => void space('canvas')}
                 theme={theme}
                 status={status}
                 shell={{
@@ -470,6 +485,15 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   rightHost,
                   open: active.ref === project.id && active.rightPanelOpen,
                   width: active.rightPanelWidth,
+                  onClose: () =>
+                    change((s) => ({
+                      ...s,
+                      tabs: s.tabs.map((t) =>
+                        t.kind === 'canvas' && t.ref === project.id
+                          ? { ...t, rightPanelOpen: false }
+                          : t,
+                      ),
+                    })),
                   onWidth: (width) =>
                     change((s) => ({
                       ...s,
@@ -496,12 +520,30 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           <Suspense fallback={<p>正在打开写作空间…</p>}>
             <WritingSpace
               writing={writing}
-              onBack={() => void space('canvas')}
               shell={{
                 active: writingVisible,
                 leftHost,
                 rightHost,
                 rightOpen: writingVisible && active.rightPanelOpen,
+                rightWidth: active.rightPanelWidth,
+                onWidth: (width) =>
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelWidth: width } : t,
+                    ),
+                  })),
+                onClose: () => {
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelOpen: false } : t,
+                    ),
+                  }));
+                  requestAnimationFrame(() =>
+                    document.querySelector<HTMLButtonElement>('[aria-label="展开右侧栏"]')?.focus(),
+                  );
+                },
                 onOpen: (path, newTab) => {
                   if (writing.root)
                     void open(

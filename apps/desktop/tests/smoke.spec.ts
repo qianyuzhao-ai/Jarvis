@@ -166,7 +166,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: '适应视图' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
@@ -192,7 +192,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await nodes.last().click();
     await page.getByRole('button', { name: '删除节点', exact: true }).click();
     await expect(nodes).toHaveCount(2);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await expect(nodes).toHaveCount(0);
     expect(errors).toEqual([]);

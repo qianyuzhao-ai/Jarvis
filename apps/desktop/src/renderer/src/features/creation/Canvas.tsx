@@ -1,3 +1,4 @@
+import { Button } from '@jarvis/ui/components/Button';
 import { createPortal } from 'react-dom';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { BadgeCount } from '@jarvis/ui/components/Badge';
@@ -23,7 +24,6 @@ import {
   Position,
 } from '@xyflow/react';
 import {
-  ChevronLeft,
   Download,
   Image,
   LayoutGrid,
@@ -63,6 +63,7 @@ type Props = {
     rightHost: HTMLElement | null;
     open: boolean;
     width: number;
+    onClose: () => void;
     onWidth: (n: number) => void;
   };
   project: Project;
@@ -70,7 +71,6 @@ type Props = {
   onCommit: (update: (project: Project) => Project) => Promise<void>;
   onConfigureAgent: () => void;
   agentBusy: boolean;
-  onBack: () => void;
   theme: 'light' | 'dark';
   status: string;
   onGenerate: (nodeId: string) => void;
@@ -86,7 +86,6 @@ function CanvasContent({
   onChange,
   onCommit,
   onConfigureAgent,
-  onBack,
   theme,
   status,
   onGenerate,
@@ -421,9 +420,6 @@ function CanvasContent({
         data-platform={window.desktop?.platform}
       >
         <div className="canvas-title">
-          <IconButton label="返回项目列表" onClick={onBack}>
-            <ChevronLeft size={18} />
-          </IconButton>
           <input
             aria-label="项目名称"
             value={project.name}
@@ -433,16 +429,17 @@ function CanvasContent({
               if (!project.name.trim()) patch({ name: '未命名项目' });
             }}
           />
+          <span className="canvas-save-label">{status}</span>
         </div>
         <div className="canvas-create">
-          <button onClick={() => add('image')}>
+          <Button variant="secondary" size="sm" onClick={() => add('image')}>
             <Image size={18} />
             图像
-          </button>
-          <button onClick={() => add('video')}>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => add('video')}>
             <Video size={18} />
             视频
-          </button>
+          </Button>
           <IconButton label="导入素材" onClick={() => fileInput.current?.click()}>
             <Upload size={18} />
           </IconButton>
@@ -739,6 +736,7 @@ function CanvasContent({
                 open={agentOpen}
                 width={shell.width}
                 onWidth={shell.onWidth}
+                onClose={shell.onClose}
                 focus={focusNodes}
                 commit={onCommit}
                 configure={onConfigureAgent}

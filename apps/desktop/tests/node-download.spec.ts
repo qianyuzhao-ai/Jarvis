@@ -363,7 +363,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await page.screenshot({ path: test.info().outputPath('renamed-selected-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.screenshot({ path: test.info().outputPath('renamed-selected-dark.png') });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();

@@ -1,3 +1,6 @@
+import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
+import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
+import { Sparkles } from '@jarvis/ui/icons';
 import { createPortal } from 'react-dom';
 import { Button } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
@@ -9,23 +12,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuShortcut,
 } from '@jarvis/ui/components/DropdownMenu';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
-  ArrowLeft,
   ChevronDown,
   ChevronRight,
   FilePlus,
   FileText,
   Folder,
   FolderPlus,
-  ListTree,
-  MessageSquare,
   MoreHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
   Search,
   X,
 } from '@jarvis/ui/icons';
@@ -35,7 +30,6 @@ import type { WritingEntry } from '../../../../shared/writing';
 import { IconButton } from '../../components/IconButton';
 import { MarkdownEditor } from './MarkdownEditor';
 import { unwrap, useWriting } from './useWriting';
-import type { Heading } from './markdown';
 
 function ResizeHandle({
   side,
@@ -98,25 +92,22 @@ function ResizeHandle({
 }
 
 export function WritingSpace({
-  onBack,
   writing,
   shell,
 }: {
-  onBack: () => void;
   writing: ReturnType<typeof useWriting>;
   shell: {
     active: boolean;
     leftHost: HTMLElement | null;
     rightHost: HTMLElement | null;
     rightOpen: boolean;
+    rightWidth: number;
+    onWidth: (width: number) => void;
+    onClose: () => void;
     onOpen: (path: string, newTab: boolean) => void;
   };
 }) {
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
-  const [leftWidth, setLeftWidth] = useState(260);
-  const [rightWidth, setRightWidth] = useState(280);
-  const [rightTab, setRightTab] = useState('outline');
+  const [selectedParagraphs, setSelectedParagraphs] = useState(0);
   const [source, setSource] = useState(false);
   const [folderMenu, setFolderMenu] = useState(false);
   const [moreMenu, setMoreMenu] = useState(false);
@@ -124,52 +115,17 @@ export function WritingSpace({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WritingEntry[] | null>(null);
   const [searching, setSearching] = useState(false);
-  const [outline, setOutline] = useState<Heading[]>([]);
-  const [position, setPosition] = useState(0);
   const [creation, setCreation] = useState<'file' | 'directory' | null>(null);
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-  const leftToggle = useRef<HTMLButtonElement>(null);
-  const rightToggle = useRef<HTMLButtonElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
   const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
   const active = writing.documents.find(
     (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
   );
-  const tabs = writing.documents.filter((d) => d.rootId === writing.root?.id);
-  const preferencesReady = useRef(false);
-  useEffect(() => {
-    try {
-      const value: unknown = JSON.parse(localStorage.getItem('jarvis:writing-layout') ?? '{}');
-      if (value && typeof value === 'object') {
-        if ('leftOpen' in value && typeof value.leftOpen === 'boolean') setLeftOpen(value.leftOpen);
-        if ('rightOpen' in value && typeof value.rightOpen === 'boolean')
-          setRightOpen(value.rightOpen);
-        if ('leftWidth' in value && typeof value.leftWidth === 'number')
-          setLeftWidth(Math.max(230, Math.min(340, value.leftWidth)));
-        if ('rightWidth' in value && typeof value.rightWidth === 'number')
-          setRightWidth(Math.max(240, Math.min(400, value.rightWidth)));
-        if ('rightTab' in value && value.rightTab === 'assistant') setRightTab('assistant');
-      }
-    } catch {
-      writing.setNotice('侧栏状态无法读取，已使用默认布局');
-    }
-    preferencesReady.current = true;
-  }, [writing.setNotice]);
-  useEffect(() => {
-    if (!preferencesReady.current) return;
-    try {
-      localStorage.setItem(
-        'jarvis:writing-layout',
-        JSON.stringify({ leftOpen, rightOpen, leftWidth, rightWidth, rightTab }),
-      );
-    } catch {
-      writing.setNotice('侧栏状态无法保存');
-    }
-  }, [leftOpen, rightOpen, leftWidth, rightWidth, rightTab, writing.setNotice]);
   useEffect(() => {
     if (!searchOpen || !query.trim() || !writing.root) {
       setResults(null);
@@ -225,23 +181,11 @@ export function WritingSpace({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [writing.root, shell.active]);
-  function toggleLeft() {
-    setLeftOpen((open) => !open);
-    requestAnimationFrame(() => leftToggle.current?.focus());
-  }
-  function toggleRight() {
-    setRightOpen((open) => !open);
-    requestAnimationFrame(() => rightToggle.current?.focus());
-  }
   function toggleSearch() {
     setSearchOpen((open) => !open);
     setQuery('');
     setResults(null);
     if (searchOpen) requestAnimationFrame(() => searchToggle.current?.focus());
-  }
-  async function leave() {
-    if (await writing.flush()) onBack();
-    else writing.setNotice('请先重试保存或处理冲突，再返回工作台');
   }
   async function submitCreation(e: FormEvent) {
     e.preventDefault();
@@ -256,10 +200,11 @@ export function WritingSpace({
   function fileTree(path: string, depth = 0): React.ReactNode {
     return (writing.directories[path] ?? []).map((entry) => (
       <div key={entry.path}>
-        <button
+        <SidebarItem
+          depth={depth}
+          selected={entry.kind === 'file' && active?.path === entry.path}
           aria-current={entry.kind === 'file' && active?.path === entry.path ? 'page' : undefined}
           className={`writing-file ${entry.kind === 'file' && active?.path === entry.path ? 'selected' : ''} ${entry.kind === 'directory' && writing.selectedDirectory === entry.path ? 'current-folder' : ''}`}
-          style={{ paddingLeft: 8 + depth * 16 }}
           title={entry.path}
           aria-expanded={entry.kind === 'directory' ? writing.expanded.has(entry.path) : undefined}
           onAuxClick={(event) => {
@@ -289,42 +234,18 @@ export function WritingSpace({
             <FileText size={16} />
           )}
           <span>{entry.name}</span>
-        </button>
+        </SidebarItem>
         {entry.kind === 'directory' &&
           writing.expanded.has(entry.path) &&
           fileTree(entry.path, depth + 1)}
       </div>
     ));
   }
-  const currentHeading = outline.filter((h) => h.from <= position).at(-1)?.from;
   return (
-    <div
-      className="writing-shell"
-      data-platform={window.desktop?.platform}
-      style={
-        {
-          '--writing-left': '0px',
-          '--writing-right': '0px',
-        } as CSSProperties
-      }
-    >
+    <div className="writing-shell" data-platform={window.desktop?.platform}>
       {shell.leftHost &&
         createPortal(
           <aside className="writing-left" aria-label="写作文件目录">
-            <div className="writing-left-chrome window-drag" hidden>
-              <IconButton
-                ref={leftToggle}
-                label="收起左侧栏"
-                onClick={toggleLeft}
-                aria-expanded={true}
-              >
-                <PanelLeftClose size={18} />
-              </IconButton>
-            </div>
-            <button hidden className="writing-back" onClick={() => void leave()}>
-              <ArrowLeft size={14} />
-              返回工作台
-            </button>
             <div className="writing-folder-area">
               <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
                 <DropdownMenuTrigger asChild>
@@ -368,14 +289,6 @@ export function WritingSpace({
                 <div className="writing-file-tools">
                   <span>文件</span>
                   <div>
-                    <IconButton
-                      ref={searchToggle}
-                      label="搜索文件"
-                      aria-expanded={searchOpen}
-                      onClick={toggleSearch}
-                    >
-                      <Search size={18} />
-                    </IconButton>
                     <IconButton
                       label="新建文件"
                       onClick={() => {
@@ -466,57 +379,13 @@ export function WritingSpace({
                 </nav>
               </>
             )}
+            <footer className="writing-root-path" title={writing.root?.directory}>
+              {writing.root?.directory ?? '尚未打开文件夹'}
+            </footer>
           </aside>,
           shell.leftHost,
         )}
       <main data-testid="writing-main" className="writing-main">
-        <header hidden className="writing-tabs window-drag">
-          {!leftOpen && (
-            <div className="writing-collapsed-controls">
-              <IconButton
-                ref={leftToggle}
-                label="展开左侧栏"
-                onClick={toggleLeft}
-                aria-expanded={false}
-              >
-                <PanelLeftOpen size={18} />
-              </IconButton>
-            </div>
-          )}
-          <div className="writing-tab-list" role="tablist" aria-label="打开的文档">
-            {tabs.map((doc) => (
-              <div
-                className={`writing-tab ${doc.id === writing.activeId ? 'active' : ''}`}
-                key={doc.id}
-              >
-                <button
-                  role="tab"
-                  aria-selected={doc.id === writing.activeId}
-                  onClick={() => writing.setActiveId(doc.id)}
-                  title={doc.path}
-                >
-                  {doc.path.split('/').at(-1)}
-                  {doc.content !== doc.savedContent && <span aria-label="未保存"> ·</span>}
-                </button>
-                <IconButton
-                  label={`关闭 ${doc.path.split('/').at(-1)}`}
-                  onClick={() => void writing.closeDocument(doc.id)}
-                >
-                  <X size={14} />
-                </IconButton>
-              </div>
-            ))}
-            {!tabs.length && <span className="writing-tab-placeholder">写作空间</span>}
-          </div>
-          <IconButton
-            ref={rightToggle}
-            label={rightOpen ? '收起右侧栏' : '展开右侧栏'}
-            onClick={toggleRight}
-            aria-expanded={rightOpen}
-          >
-            {rightOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-          </IconButton>
-        </header>
         <div className="writing-document-tools">
           <span>
             {writing.root
@@ -528,6 +397,16 @@ export function WritingSpace({
               {source ? '源码模式' : '实时预览'}
               <ChevronDown size={12} />
             </button>
+          )}
+          {writing.root && (
+            <IconButton
+              ref={searchToggle}
+              label="搜索文件"
+              aria-expanded={searchOpen}
+              onClick={toggleSearch}
+            >
+              <Search size={18} />
+            </IconButton>
           )}
         </div>
         {writing.notice && (
@@ -573,8 +452,16 @@ export function WritingSpace({
           <MarkdownEditor
             document={active}
             onChange={writing.change}
-            onOutline={setOutline}
-            onPosition={setPosition}
+            onOutline={() => {}}
+            onPosition={() => {
+              const editor = view.current;
+              const range = editor?.state.selection.main;
+              const selected =
+                editor && range && !range.empty ? editor.state.sliceDoc(range.from, range.to) : '';
+              setSelectedParagraphs(
+                selected ? selected.split(/\n\s*\n/).filter((p) => p.trim()).length : 0,
+              );
+            }}
             onSave={() => void writing.save(active.id)}
             source={source}
             viewRef={view}
@@ -618,6 +505,7 @@ export function WritingSpace({
                 ? '请选择文档'
                 : '尚未打开文件夹'}
           </span>
+          <span>已选 {selectedParagraphs} 段</span>
           <span>
             {active ? `${Array.from(active.content.replace(/\s/g, '')).length} 字 · ` : ''}Markdown
             · UTF-8
@@ -628,64 +516,22 @@ export function WritingSpace({
         shell.active &&
         shell.rightOpen &&
         createPortal(
-          <Tabs appearance="underline" value={rightTab} onValueChange={setRightTab} asChild>
-            <aside className="writing-right" aria-label="写作辅助面板">
-              <TabsList className="writing-right-tabs" aria-label="辅助功能">
-                <TabsTrigger value="outline" aria-label="文章大纲">
-                  <ListTree />
-                </TabsTrigger>
-                <TabsTrigger value="assistant" aria-label="写作助手">
-                  <MessageSquare />
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent
-                value={rightTab}
-                className="writing-right-content"
-                aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
-              >
-                <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
-                {rightTab === 'outline' ? (
-                  !active ? (
-                    <p>打开文档后显示标题导航</p>
-                  ) : outline.length ? (
-                    <nav aria-label="文章标题">
-                      {outline.map((heading) => (
-                        <button
-                          key={heading.from}
-                          className={currentHeading === heading.from ? 'current' : ''}
-                          style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
-                          onClick={() => {
-                            const editor = view.current;
-                            if (editor) {
-                              editor.dispatch({
-                                selection: { anchor: heading.from },
-                                effects: EditorView.scrollIntoView(heading.from, {
-                                  y: 'start',
-                                  yMargin: 32,
-                                }),
-                              });
-                              editor.focus();
-                            }
-                          }}
-                        >
-                          {heading.title || '未命名标题'}
-                        </button>
-                      ))}
-                    </nav>
-                  ) : (
-                    <p>使用 # 标题组织文章结构。</p>
-                  )
-                ) : (
-                  <div className="writing-ai-placeholder">
-                    <MessageSquare size={24} />
-                    <strong>AI 写作助手</strong>
-                    <p>稍后接入，先专注写作。</p>
-                  </div>
-                )}
-              </TabsContent>
-              <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
-            </aside>
-          </Tabs>,
+          <AssistantPanel
+            aria-label="写作助手"
+            title="写作助手"
+            className="writing-assistant"
+            style={{ width: shell.rightWidth }}
+            actions={
+              <IconButton label="关闭写作助手" onClick={shell.onClose}>
+                <X size={16} />
+              </IconButton>
+            }
+          >
+            <AssistantEmpty title="写作助手" icon={<Sparkles size={24} />}>
+              读取当前文档，帮你改写、续写、总结；每次修改都可以撤销。
+            </AssistantEmpty>
+            <ResizeHandle side="right" width={shell.rightWidth} onChange={shell.onWidth} />
+          </AssistantPanel>,
           shell.rightHost,
         )}
       <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>

@@ -287,7 +287,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('Excel 已导出');
     expect((await readBook(emptyPath)).getWorksheet('请求明细')!.rowCount).toBe(1);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('export-test');

@@ -343,7 +343,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       x: Math.round((point.x - point.origin.x - viewport.x) / viewport.zoom / 24) * 24,
       y: Math.round((point.y - point.origin.y - viewport.y) / viewport.zoom / 24) * 24,
     });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('另一个项目');
     mock.release();
@@ -355,7 +355,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       })
       .toBe('ready');
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect
       .poll(() =>
@@ -391,7 +391,7 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await drop(page, [{ name: 'image.png', mime: 'image/png', bytes: Array.from(png) }]);
     await expect(page.getByTestId('canvas-import-notice')).toContainText('req_from');
     expect(mock.calls).toHaveLength(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await configure(page, mock.base);
     await drop(page, [{ name: 'notes.txt', mime: 'text/plain', bytes: [1] }]);
     await expect(page.getByTestId('canvas-import-notice')).toContainText('只支持');

@@ -99,7 +99,7 @@ const storedSchema = z.object({
       tabViewSchema.extend({
         id: z.string().uuid(),
         rightPanelOpen: z.boolean(),
-        rightPanelWidth: z.number().min(340).max(560),
+        rightPanelWidth: z.number().min(240).max(560),
         visited: z.number(),
       }),
     )
