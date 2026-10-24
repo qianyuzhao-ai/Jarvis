@@ -42,6 +42,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 - [memory/figma-sync-2026-10-21/canvas-agent-v1-state.json](memory/figma-sync-2026-10-21/canvas-agent-v1-state.json)：画布 Agent、会话管理和视觉资产的组件/页面节点、原型链接与验证结果。
 
 - [memory/figma-sync-2026-10-21/agent-skills-state.json](memory/figma-sync-2026-10-21/agent-skills-state.json)：Skills 导入、斜杠选择、自动加载的组件/页面与验证记录。
+- [memory/figma-sync-2026-10-21/model-settings-v1-state.json](memory/figma-sync-2026-10-21/model-settings-v1-state.json)：模型配置改造（服务商 → 模型、添加服务商流程、分组模型选择器）的 V1 画面与本地组件节点、验证记录。
 
 ### 开始任务前
 
