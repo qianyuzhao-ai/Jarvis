@@ -8,6 +8,10 @@
 - 页面 `V1-视觉换新`（`319:27345`）新增 `Chat · Home / Light`（`385:26739`）与 `Chat · Home / Dark`（`385:26875`），各为 1440×900 渐变壁纸上的 1280×800 窗口，全部绑定 V1 变量与文字 / 阴影样式；图标为从 lucide-react 1.60.0 提取的路径（线宽 1.75）。
 - 结构：窗口 radius/window、底 color/sidebar（毛玻璃）、0.5px border、shadow-dialog。外壳顶栏高 44：交通灯 (18, 16)，后退 / 前进 / 侧栏开关 ghost 28；标签页（220×28，fill/default 底，与内容列对齐）+ 新建；右侧更多。外壳图标栏宽 52：首页（选中 fill/hover 底）/ 创作空间 / 写作 / 历史 / 更多，底部设置与头像。主面板 x 52、y 44，右与下内缩 6，radius/panel，color/content + 0.5px border；面板内侧栏列 248（fill/default 底 + 1px separator）：“Jarvis ▾”、搜索、新对话、最近对话列表（选中 fill/hover）、底部“本地工作台”；内容区居中欢迎语（brain 40 + title-1）与底部 720 宽输入框（上方上下文条“本地工作台 / 未关联项目”，输入框 surface-raised、radius 16、+ / 技能 / 模型 DeepSeek V3 ▾ / 麦克风 / accent 圆形发送）。
 - 待确认：标签页是 Codex 的结构，Jarvis 目前没有多标签；图标栏分区（首页 / 创作 / 写作 / 历史）与侧栏列表的分工；麦克风为示意。插件几何检查通过；截图下载仍被代理拒绝，未做截图复核。
+- 用户反馈（同日）：① 多标签页是后续要做的功能，保留；② 左侧图标栏为 首页 / AIGC 创作空间 / 写作空间 / 日历，日历未实现，只占位且为不可选中（disabled）状态；③ 页面应使用 V1 组件。
+- 已按反馈重建为 `Chat · Home / Light`（`389:26739`）与 `Chat · Home / Dark`（`389:27224`），旧的手绘版 `385:26739` / `385:26875` 已删除。窗口内 28 个控件均为 V1 组件实例：Icon Button（后退 / 前进 disabled / 侧栏开关 / 新标签 icon-sm / 更多 / 搜索 / 麦克风 / 上下文设置 icon-sm / 加号；发送为 default icon）、Tabs Trigger（segment active，图标 message-circle，closable）、Toggle default（图标栏首页 on、创作 / 写作 off、日历 disabled、设置 off；最近对话列表行 on / off，宽度填充、左对齐）、Button ghost（“Jarvis ▾” lg + trailing chevron、新对话 + square-pen、上下文“本地工作台 / 未关联项目” sm、技能 sm）、NativeSelect compact sm（模型 DeepSeek V3）。图标栏宽 48。交通灯（系统绘制）、头像、欢迎图标与输入框外壳仍为页面层元素。
+- 为图标替换在旧 Components 页 `Lucide / Icons`（`26:330`）新增 12 个 Lucide 组件（同原结构：24px、内层 SCALE、线宽 1.75、描边沿用原变量）：house `387:26739`、layout-grid `387:26743`、pen-line `387:26749`、calendar `387:26753`、arrow-left `387:26759`、square-pen `387:26763`、message-circle `387:26767`、mic `387:26770`、monitor `387:26775`、sparkles `387:26780`、settings `387:26786`、brain `387:26790`。已验证替换进 Icon Button / Toggle 后颜色仍取 V1 语义变量（fg/secondary、fg/disabled、on-accent、accent）。
+- 注意：现有组件没有列表行（ListRow）与侧栏导航项，暂以 Toggle / ghost Button 组合；标签页外观借用 Tabs Trigger segment，宽度随内容（84），与 Codex 的宽标签不同。
 
 ### V1 第三批暂停（2026-10-24）
 
