@@ -298,6 +298,7 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     await port.hover();
     await expect(page.getByRole('tooltip')).toContainText('拖向下游节点');
     expect(await port.evaluate((el) => getComputedStyle(el, '::after').width)).toBe('18px');
+    await page.screenshot({ path: resolve(dir, 'node-port-focus-dark.png') });
     await node('unknown').getByRole('button', { name: '查看任务信息' }).click();
     await expect(page.getByTestId('generation-details')).toHaveAttribute('data-state', 'open');
     await page.getByRole('button', { name: '关闭编辑面板' }).click();

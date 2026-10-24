@@ -1,5 +1,5 @@
 import * as Primitive from '@radix-ui/react-alert-dialog';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert } from '@jarvis/ui/icons';
 import {
   createContext,
   useContext,

@@ -49,3 +49,21 @@ test('writing identity includes its root and navigation cuts only the active for
   expect(s.tabs[1]?.history.map((v) => v.ref)).toEqual(['a.md', 'c.md']);
   expect(s.tabs[0]?.rootId).toBe('root-a');
 });
+
+test('restored tabs accept valid long document paths and reject duplicate identities', () => {
+  let state = initialTabs();
+  state = openTabView(state, {
+    kind: 'writing',
+    ref: 'folder/'.repeat(300) + 'file.md',
+    rootId: 'root',
+    title: '文档'.repeat(120),
+  });
+  const tab = state.tabs[0]!;
+  tab.rightPanelWidth = 500;
+  const restored = restoreTabs(
+    serializeTabs({ ...state, tabs: [tab, { ...tab, ref: 'other.md' }] }),
+  );
+  expect(restored.tabs).toHaveLength(1);
+  expect(restored.tabs[0]?.ref).toBe(tab.ref);
+  expect(restored.tabs[0]?.rightPanelWidth).toBe(400);
+});

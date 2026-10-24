@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';
-import { X } from '../icons';
+import { X } from '@jarvis/ui/icons';
 import { IconButton } from './Button';
 
 export function WindowTabs({ className, onKeyDown, ...props }: ComponentProps<'div'>) {

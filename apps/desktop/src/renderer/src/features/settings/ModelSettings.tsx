@@ -1,7 +1,7 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { Button } from '@jarvis/ui/components/Button';
 import { useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@jarvis/ui/icons';
 import { agentValue, type RelayView } from '../../../../shared/agent';
 import { RelaySettings } from '../agent/RelaySettings';
 

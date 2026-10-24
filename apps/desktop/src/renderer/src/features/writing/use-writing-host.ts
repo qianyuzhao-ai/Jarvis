@@ -11,7 +11,7 @@ import {
   type WritingCommand,
   type WritingReply,
 } from '../../../../shared/writing-agent';
-import { bufferVersion, WritingTransactions } from './writing-transactions';
+import { bufferVersion, textSliceEnd, WritingTransactions } from './writing-transactions';
 import { agentHistoryAnnotations, finishWritingAgent, lastAgentRun } from './writing-history';
 import type { useWriting } from './useWriting';
 export function useWritingHost(
@@ -46,8 +46,13 @@ export function useWritingHost(
         range = state?.selection.main ?? { from: 0, to: 0 };
       const start = selectionOnly ? range.from : Math.min(from, doc.content.length),
         end = selectionOnly
-          ? Math.min(range.to, start + limit)
-          : Math.min(doc.content.length, start + limit);
+          ? textSliceEnd(doc.content, start, Math.min(range.to - start, limit))
+          : textSliceEnd(doc.content, start, limit);
+      const selectionEnd = textSliceEnd(
+        doc.content,
+        range.from,
+        Math.min(range.to - range.from, 32000),
+      );
       return {
         name: doc.path.split('/').at(-1) ?? doc.path,
         version: await bufferVersion(doc.content),
@@ -58,8 +63,8 @@ export function useWritingHost(
         selection: {
           from: range.from,
           to: range.to,
-          text: doc.content.slice(range.from, Math.min(range.to, range.from + 32000)),
-          truncated: range.to - range.from > 32000,
+          text: doc.content.slice(range.from, selectionEnd),
+          truncated: selectionEnd < range.to,
         },
       };
     },

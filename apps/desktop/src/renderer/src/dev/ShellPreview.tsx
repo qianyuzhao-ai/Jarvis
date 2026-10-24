@@ -16,6 +16,7 @@ export function ShellPreview() {
           {['默认', '选中', '禁用', '缩进'].map((name, index) => (
             <SidebarItem
               key={name}
+              asChild={index === 0}
               selected={index === 1}
               disabled={index === 2}
               depth={index === 3 ? 1 : 0}
@@ -27,7 +28,7 @@ export function ShellPreview() {
                 </IconButton>
               }
             >
-              {name}
+              {index === 0 ? <a href="#/ui-preview">{name}</a> : name}
             </SidebarItem>
           ))}
         </div>

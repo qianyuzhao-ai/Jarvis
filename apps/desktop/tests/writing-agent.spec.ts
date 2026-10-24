@@ -82,7 +82,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Missing server');
   const directory = test.info().outputPath('notes'),
-    original = '# 甲\n\n原始段落。\n';
+    original = '# 甲🙂\n\n原始段落。\n';
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, '甲.md'), original);
   await writeFile(join(directory, '乙.md'), '# 乙\n\n独立文档。');

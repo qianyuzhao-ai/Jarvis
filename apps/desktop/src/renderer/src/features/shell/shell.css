@@ -76,15 +76,6 @@
     background: var(--color-fill);
     border-right: 1px solid var(--color-separator);
   }
-  .shell-panel .sidebar {
-    background: transparent;
-    padding-top: 8px;
-  }
-  .shell-panel .sidebar-chrome,
-  .shell-panel .sidebar-footer,
-  .shell-panel .workspace-toolbar .icon-button {
-    display: none;
-  }
   .shell-panel .workspace {
     border-radius: 0;
     border: 0;
@@ -93,10 +84,6 @@
   .shell-panel .workspace-content {
     min-height: 0;
     height: 100%;
-  }
-  .shell-panel .workspace-toolbar {
-    min-height: 48px;
-    padding-left: 16px;
   }
   .shell-view {
     height: 100%;
@@ -107,7 +94,6 @@
   .shell-view[hidden] {
     display: none;
   }
-  .shell-panel .canvas-shell,
   .shell-panel .writing-shell {
     height: 100%;
   }
@@ -164,10 +150,6 @@
     background: transparent;
     border: 0;
   }
-  .shell-writing-sidebar .writing-left-chrome,
-  .shell-panel .writing-tabs {
-    display: none;
-  }
   .shell-assistant-host {
     display: flex;
     flex-shrink: 0;
@@ -175,11 +157,6 @@
   }
   .shell-assistant-host > [hidden] {
     display: none;
-  }
-  .shell-assistant-host .writing-right {
-    width: 360px;
-    height: 100%;
-    background: transparent;
   }
   .shell-assistant-host .canvas-agent {
     background: transparent;
@@ -229,5 +206,32 @@
     transform: none;
     margin-inline: auto;
     flex-shrink: 0;
+  }
+}
+@layer components {
+  .shell-panel .canvas-page {
+    height: 100%;
+    min-height: 0;
+  }
+}
+@layer components {
+  .shell-sidebar-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 4px 12px 8px;
+    min-height: 28px;
+  }
+  .shell-sidebar-title h1 {
+    flex: 1;
+    margin: 0;
+  }
+}
+@layer utilities {
+  .shell-titlebar .ui-window-tabs {
+    -webkit-app-region: drag;
+  }
+  .shell-titlebar .ui-window-tab {
+    -webkit-app-region: no-drag;
   }
 }

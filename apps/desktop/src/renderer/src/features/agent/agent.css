@@ -182,7 +182,6 @@
     min-width: 8px;
   }
   .composer-action,
-  .composer-send,
   .model-trigger,
   .context-ring {
     display: flex;
@@ -199,20 +198,6 @@
   }
   .composer-action[aria-disabled='true'] {
     cursor: default;
-  }
-  .composer-auto {
-    padding-inline: 8px;
-    font-size: 14px;
-  }
-  .composer-send {
-    position: absolute;
-    bottom: 12px;
-    right: 10px;
-    width: 28px;
-    color: var(--color-ink);
-  }
-  .composer-send:disabled {
-    opacity: 0.4;
   }
   .composer-model,
   .composer-context {
@@ -270,7 +255,6 @@
     .composer-action:hover,
     .model-trigger:hover:not(:disabled),
     .context-ring:hover,
-    .composer-send:hover:not(:disabled),
     .chat-copy:hover {
       background: var(--node-field);
     }
@@ -442,33 +426,6 @@
     .chat-reply-logo.is-replying {
       animation: none;
     }
-  }
-  .chat-history {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    margin: 24px 0 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .chat-history small,
-  .chat-history p {
-    padding: 4px 10px;
-    color: var(--color-secondary);
-    font-size: 11px;
-  }
-  .chat-history .side-link {
-    width: 100%;
-    flex-shrink: 0;
-    color: var(--color-ink);
-    font-size: 12px;
-  }
-  .chat-history .side-link > span:first-of-type {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
   }
   .history-running {
     color: var(--legacy-color-accent);

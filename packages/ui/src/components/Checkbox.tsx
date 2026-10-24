@@ -1,6 +1,6 @@
 import * as Primitive from '@radix-ui/react-checkbox';
 import { useId, type ComponentProps, type ReactNode } from 'react';
-import { Check, Minus } from 'lucide-react';
+import { Check, Minus } from '@jarvis/ui/icons';
 import { cn } from '../lib/utils';
 import { useFieldControl } from './Field';
 export type CheckboxProps = ComponentProps<typeof Primitive.Root> & {

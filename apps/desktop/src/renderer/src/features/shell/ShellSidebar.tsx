@@ -13,8 +13,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@jarvis/ui/components/DropdownMenu';
-import { Ellipsis } from '@jarvis/ui/icons';
-import { useState } from 'react';
+import { Ellipsis, Search } from '@jarvis/ui/icons';
+import { useEffect, useRef, useState } from 'react';
 import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
 import { Input } from '@jarvis/ui/components/Input';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
@@ -69,6 +69,17 @@ export function ShellSidebar({
   busy: boolean;
 }) {
   const confirm = useConfirm();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null),
+    searchToggle = useRef<HTMLButtonElement>(null);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (searchOpen) searchInput.current?.focus();
+  }, [searchOpen]);
   const [editing, setEditing] = useState<{
     kind: 'canvas' | 'chat';
     id: string;
@@ -77,7 +88,7 @@ export function ShellSidebar({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const relativeTime = (time: number) => {
-    const minutes = Math.max(0, Math.floor((Date.now() - time) / 60000));
+    const minutes = Math.max(0, Math.floor((now - time) / 60000));
     return minutes < 1
       ? '刚刚'
       : minutes < 60
@@ -177,13 +188,38 @@ export function ShellSidebar({
         </>
       ) : kind === 'canvas' ? (
         <>
-          <h1>我的项目</h1>
-          <Input
-            aria-label="搜索项目"
-            placeholder="搜索项目"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          <div className="shell-sidebar-title">
+            <h1>我的项目</h1>
+            <IconButton
+              ref={searchToggle}
+              variant="ghost"
+              size="icon-sm"
+              aria-label={searchOpen ? '收起项目搜索' : '展开项目搜索'}
+              aria-expanded={searchOpen}
+              onClick={() => {
+                if (searchOpen) setQuery('');
+                setSearchOpen(!searchOpen);
+              }}
+            >
+              <Search />
+            </IconButton>
+          </div>
+          {searchOpen && (
+            <Input
+              ref={searchInput}
+              aria-label="搜索项目"
+              placeholder="搜索项目"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setQuery('');
+                  setSearchOpen(false);
+                  requestAnimationFrame(() => searchToggle.current?.focus());
+                }
+              }}
+            />
+          )}
           <SidebarItem icon={<Plus />} onClick={onCreate}>
             新建项目
           </SidebarItem>

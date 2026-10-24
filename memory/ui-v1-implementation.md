@@ -4,6 +4,8 @@
 
 ## 交付状态
 
+第三阶段 I → J → K → N → L → M 已完成，当前分支 `feature/ui-v1-shell`；最终完整回归 110/110、目录包 360 项依赖与真实启动验证通过。阶段提交与推送结果见本文末尾。
+
 第二批 E–H 已完成，`feature/ui-v1-overlays` 已推送并回读验证；完整回归 95/95，最终浮层复验 8/8。详见下方“第二批”章节。
 
 A–D 已完成并通过各阶段门禁，分支 `feature/ui-v1-foundation` 已推送，远端分支回读包含全部四阶段提交。工作区代码保持版本 0.2.5，没有 PR、合并、标签或发布。
@@ -277,3 +279,64 @@ H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.
 - 参数改为 NativeSelect compact、无前置图标，原模型/参数规范化不变；删除移出编辑栏。禁用原因、忙碌 Spinner、可关闭引用错误 Alert、参考数量折叠标题、普通叠卡与放大参考标题接入。PromptEditor 实例、组合输入、引用、Esc 两级恢复与焦点圈定保持。
 - 新增 node-visuals.spec.ts 2 项：尺寸/耗时纯校验，以及 12 节点状态板、浅深状态截图、端口热区/Tooltip/键盘焦点、失败重试、加载错误重试、视频/音频播放、删除、编辑栏翻转/边界/无参数图标。截图 `phase-l/`，另沿用真实上传/生成/连线测试。
 - 布局断言适配：编辑栏从旧窗口下留 60 改为实际画布四边 16；参数短模型固定 160 改为内容自适应，保留长名称扩宽与参数间距；生成文案保留忙碌断言并增加递增耗时。减少动态效果下节点 Spinner 仍静态。首轮失败及修复见 `shell-verification/l-*.log`。修复 Tooltip 覆盖 React Flow Handle 点击事件导致的键盘连接回归；操作条独立层级并以悬停交互验收，下载测试布局为增高媒体留出名称空间。检查与构建通过，最终完整门禁 **106/106（4.0m）** 通过。普通/放大编辑栏及节点状态浅深截图已采集，未删除任何生成、上传、下载、连接或导出业务断言。
+
+### M：清理、打包与总验收（已完成）
+
+- L 提交 `c992f02`。逐个删除已无引用的 `components/Sidebar.tsx` 与 `features/creation/ProjectList.tsx`，没有批量删除文件/目录。清理 legacy.css / writing.css / agent.css / shell.css 中 35 / 27 / 10 / 9 条失效选择器，并移除旧内部侧栏的 macOS 背景覆盖；外壳保留玻璃，主面板内侧栏使用 fill。
+- 剩余图标导入全部迁到统一出口；直接 lucide-react 导入白名单为空。token 白名单仅保留 canvas-vision.ts 的 `#ffffff`，用于视觉输入图片的固定白底合成，不随界面主题改变。新增依赖为零，pnpm-lock.yaml 和 desktop 生产依赖未改变。
+- 修复 SidebarItem.asChild 的链接组合与禁用 trailing 焦点；补齐同一设置分区点击不触发离开确认、长文档路径/重复标签 ID 恢复、写作文件夹切换后保持新空间激活、关闭文档清理旧编辑器缓存。新增/补充真实 UI 与纯状态回归，未删除业务断言。
+- 最终收尾专项 21/21（47.3s）通过，原 macOS 组件预览截图仍通过。首次全量 108/109：对话框第二次打开后立即点击遮罩出现一次未关闭，已增加可见/动画完成等待，保留遮罩关闭与焦点断言；同时补充标签栏拖动区与标签 no-drag 的精确 CSS 断言，防止通用组件样式覆盖外壳拖动区。
+- `pnpm package:dir` 已生成本地 macOS arm64 未签名目录包；真实打包启动在独立 userData、外部 cwd 下验证 ASAR、360 项生产依赖、窗口标签、写作 Agent claim IPC 和更新桥接。最终目录包为 `release/a7f82778-3064-4c36-879d-d682abf68194/mac-arm64/Jarvis.app`，未签名/公证、不发布。
+- 补充写作 UTF-16 / Unicode 边界校验，拒绝截断 emoji 的替换范围，分段读取也不拆开代理对；纯逻辑与含 emoji 文档的实窗专项 4/4（6.3s）通过。浮层和拖动区专项重复两轮 6/6（19.3s）通过。
+- 最终截图汇总目录：`apps/desktop/test-results/ui-v1/phase-m/`；共 36 张 PNG，覆盖页面浅深、真实对话/写作文档、写作 Agent、节点状态、上传中、端口焦点、编辑栏普通/放大态。20 张由 capture-ui 生成，16 张取自最终业务测试截图；screenshot-sources.json 保存后者来源及 SHA-256。门禁原始日志在 `shell-verification/m-*.log`。
+
+### 第三阶段迁移结果
+
+| 迁移点 | 结果 |
+| --- | --- |
+| 项目列表路由合并 | 已替换。创作空间侧栏含创建、搜索、排序、选中态及现有重命名；默认打开最近项目，无项目显示空态；移除原独立列表与画布返回按钮 |
+| 写作标签并入全局标签 | 已替换。文档与窗口标签同步，支持去重、快捷键、关闭确认、历史和恢复；切换根目录清理失效引用并留在写作空间 |
+| 画布 Agent 迁移 | 已替换。透明 AssistantPanel 位于主面板外；开关/宽度按标签保存；原项目会话、视觉附件、技能、修改回执与撤销保持；后台切换不取消运行 |
+| 写作 Agent | 已新增。仅 read_document / read_selection / replace_range / insert_text，作用域固定为当前文档；owner/mainFrame/URL/runId/超时/版本校验，缓冲区修改与同轮撤销，不提供保存或其他文件操作 |
+| 存储 | IndexedDB 与 Markdown 格式未改；新增 UI 状态只在 jarvis:window-tabs；会话与活动可选 writingScope 向后兼容；编辑事务与 manualSave 仅内存 |
+| 大纲 | 已移除。删除的标题导航相关断言在 K 节列明；Markdown 解析、编辑、保存、冲突及撤销回归保留 |
+| 窗口布局 | AppShell 管理顶栏、图标栏、全局标签和空间；SidebarLayout 仅保留已经验证的列宽拖动与动画，不再负责页面路由 |
+| 生成节点 | 已替换视觉与交互。保留生成、上传、引用、下载和导出协议；此前 Agent 非 UUID 节点生成修复 a1ec3a3 仍在分支中 |
+
+### 第三阶段与 Figma 的差异及取舍
+
+1. 按计划书覆盖设计稿：跨空间标签为真实功能；写作大纲不保留；写作助手只能操作当前文档缓冲区。首页/设置没有右栏，日历仅禁用占位，不增加头像、麦克风、更多菜单、生成取消或新的定位交互。
+2. 使用系统字体与系统强调色，保留固定 Light/Dark。Figma 的静态 SF Pro、桌面壁纸和系统交通灯示意不是应用内素材；采用 Electron 原生交通灯与 vibrancy。页面截图不包含系统窗口按钮，目标系统观感仍需实机确认。
+3. 业务截图采用隔离配置和本地模拟服务，项目/文档/图片/视频内容与 Figma 示例不同。节点高度由真实媒体比例决定；未知媒体时长显示未知，不使用示意值；生成耗时来自本地开始时间，不表示服务进度。
+4. 图标使用同版本 Lucide 的实际图形，统一线宽 1.75；播放后的暂停状态补充同家族 Pause 图标。未将 Figma 临时图片 URL 引入代码。
+5. 保留状态复杂的 PromptEditor/MarkdownEditor 及现有保存/确认流程。放大节点编辑栏保留原 CodeMirror 实例和 960×600 外壳，不替换为默认 800px Dialog；其他菜单、提示、输入与状态使用现有基础组件。
+6. 项目更多菜单只接入已有重命名；原项目列表没有删除能力，因此未新增项目删除。对话管理沿用现有重命名/删除能力。
+
+### 第三阶段待实机验收
+
+- 本机已验证 macOS 27.0.1 / arm64。macOS 13/26 的交通灯视觉居中、系统减少透明度与毛玻璃观感，以及 Windows 原生标题栏、字体、菜单、拖动和输入法仍需目标设备确认。
+- 真实内网生成服务和真实模型服务仍需用户环境联调；本轮测试使用隔离模拟服务。
+- 本轮只交付功能分支与本地目录包，不进行 PR、合入 main/develop、版本标签、签名公证或 Release 发布。
+
+
+### 第三阶段最终门禁与文件索引
+
+| 阶段 | 提交 | check / build | 完整 smoke |
+| --- | --- | --- | --- |
+| I | `e6a2783` | 均通过 | 98/98，3.7m |
+| J | `74fe52c` | 均通过 | 101/101，3.7m |
+| K | `25ae76e` | 均通过 | 101/101，3.7m |
+| N | `e307090` | 均通过 | 104/104，3.8m |
+| L | `c992f02` | 均通过 | 106/106，4.0m |
+| M | 本节随阶段提交，SHA 后续回填 | 均通过 | 110/110，4.3m |
+
+最终日志为 `shell-verification/m-smoke-final.log`、`m-package-final.log`、`m-packaged-startup-final.log`；check/build 使用 Turbo，部分复验命中缓存，不将缓存耗时当作重新编译耗时。token 检查器自身测试 1/1 通过。没有新增依赖，应用版本维持 0.2.5。
+
+- I：packages/ui 的 icons、SidebarItem、WindowTabs、Composer、AssistantPanel、base.css，以及 ShellPreview 和预览测试。
+- J：AppShell、features/shell、App、窗口外观配置，以及 window-tabs/window-shell 测试。
+- K：ChatComposer、CanvasAgentSidebar、WritingSpace、页面 CSS 与写作/画布行为测试。
+- N：shared/writing-agent、main/agent/writing-broker 与 writing-tools、最小 preload 桥接、写作 host/transactions/history/AgentSidebar，以及 writing-agent 测试。
+- L：画布节点组件、node-actions-context、节点媒体尺寸/时间辅助函数、MediaEditor、ParameterControl、nodes.css，以及 node-visuals 与原生成/上传/连接回归。
+- M：剩余图标出口、失效组件与 CSS、标签恢复/写作边界回归、打包启动 verifier、白名单与本验收记录。
+
+完整实现及自动化验收已完成；目标系统和真实内网联调边界见上节。截图及日志为本地测试产物，不提交 Git。

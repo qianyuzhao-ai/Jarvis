@@ -1,6 +1,6 @@
 import { toast } from '@jarvis/ui/components/Toast';
 import { useEffect, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download } from '@jarvis/ui/icons';
 
 export function CanvasExport({
   projectId,

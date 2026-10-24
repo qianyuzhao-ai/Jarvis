@@ -5,6 +5,8 @@ import { undo, isolateHistory } from '@codemirror/commands';
 import {
   WritingTransactions,
   bufferVersion,
+  editBuffer,
+  textSliceEnd,
 } from '../src/renderer/src/features/writing/writing-transactions';
 import {
   writingHistory,
@@ -129,4 +131,18 @@ test('writing broker binds owner, run, scope and expiry, and tools expose no fil
       undefined,
     ),
   ).rejects.toThrow('先读取');
+});
+
+test('writing edits and paged reads preserve UTF-16 emoji boundaries', () => {
+  const content = 'A🙂B',
+    version = '0'.repeat(64);
+  expect(
+    editBuffer(content, { kind: 'replace_range', from: 1, to: 3, text: 'X', version }).after,
+  ).toBe('AXB');
+  expect(() =>
+    editBuffer(content, { kind: 'replace_range', from: 1, to: 2, text: 'X', version }),
+  ).toThrow('Unicode');
+  expect(textSliceEnd(content, 0, 2)).toBe(1);
+  expect(textSliceEnd(content, 1, 2)).toBe(3);
+  expect(() => textSliceEnd(content, 1, 1)).toThrow('完整 Unicode');
 });

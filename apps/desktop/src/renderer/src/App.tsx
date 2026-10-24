@@ -99,6 +99,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     const current = shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId);
     if (current?.kind === view.kind && current.ref === view.ref && view.kind !== 'chat' && !newTab)
       return;
+    if (current?.kind === 'settings' && view.kind === 'settings' && current.ref === view.ref)
+      return;
     if (!(await mayLeave())) return;
     change((s) => openTabView(s, view, newTab));
     syncView(view);
@@ -231,18 +233,45 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   useEffect(() => {
     const rootId = writing.root?.id ?? '';
     if (!writing.ready || writing.loading || validatedWritingRoot.current === rootId) return;
+    const changedRoot = validatedWritingRoot.current !== null;
     validatedWritingRoot.current = rootId;
-    change((s) =>
-      pruneTabs(
+    change((s) => {
+      const current = s.tabs.find((t) => t.id === s.activeId);
+      const next = pruneTabs(
         s,
         (t) =>
           t.kind !== 'writing' ||
           !t.ref ||
           (t.rootId === writing.root?.id &&
             writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref)),
-      ),
-    );
-  }, [writing.ready, writing.loading, writing.root?.id, writing.documents, change]);
+      );
+      if (
+        changedRoot &&
+        current?.kind === 'writing' &&
+        !next.tabs.some((t) => t.id === current.id)
+      ) {
+        const doc = writing.documents.find((d) => d.id === writing.activeId && d.rootId === rootId);
+        return openTabView(
+          next,
+          {
+            kind: 'writing',
+            rootId: rootId || undefined,
+            ref: doc?.path ?? null,
+            title: doc?.path.split('/').at(-1) ?? '写作空间',
+          },
+          true,
+        );
+      }
+      return next;
+    });
+  }, [
+    writing.ready,
+    writing.loading,
+    writing.root?.id,
+    writing.documents,
+    writing.activeId,
+    change,
+  ]);
   const lastDocument = useRef('');
   useEffect(() => {
     if (!writing.ready || !writing.activeId || lastDocument.current === writing.activeId) return;

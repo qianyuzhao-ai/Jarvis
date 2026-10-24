@@ -126,6 +126,10 @@ export function WritingSpace({
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
   const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
+  useEffect(() => {
+    const ids = new Set(writing.documents.map((d) => d.id));
+    for (const id of editorCache.current.keys()) if (!ids.has(id)) editorCache.current.delete(id);
+  }, [writing.documents]);
   const writingHost = useWritingHost(writing, view, editorCache);
   const active = writing.documents.find(
     (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
@@ -455,7 +459,6 @@ export function WritingSpace({
           <MarkdownEditor
             document={active}
             onChange={writing.change}
-            onOutline={() => {}}
             onPosition={() => {
               const editor = view.current;
               const range = editor?.state.selection.main;

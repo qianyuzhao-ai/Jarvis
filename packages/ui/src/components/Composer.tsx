@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cva } from 'class-variance-authority';
 import { cn } from '../lib/utils';
-import { ArrowUp, Square } from '../icons';
+import { ArrowUp, Square } from '@jarvis/ui/icons';
 import { IconButton } from './Button';
 const composer = cva('ui-composer', {
   variants: { layout: { wide: 'ui-composer-wide', compact: 'w-full' } },

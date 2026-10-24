@@ -2,6 +2,11 @@
 
 最后更新：2026-10-24
 
+## UI V1 第三阶段功能分支（2026-10-24）
+
+从 origin/develop 的 d0e3219 创建 feature/ui-v1-shell，保留此前已授权集成的 Agent 节点生成修复 a1ec3a3；按 I → J → K → N → L → M 独立提交，每阶段检查、构建与完整回归通过。用户附件授权推送本功能分支，未授权 PR、合并、标签或发布。最终提交及远端回读结果见 [实施与验收](ui-v1-implementation.md) 第三阶段。
+
+
 ## Agent 生成修复重新集成（2026-10-24）
 
 - 按用户要求 fetch 并核对本地 develop 与 origin/develop 均为 `d0e32190bd019e8c1efc34b29f35543c2c1c1325`，从该点创建 `feature/agent-generation-fix`。

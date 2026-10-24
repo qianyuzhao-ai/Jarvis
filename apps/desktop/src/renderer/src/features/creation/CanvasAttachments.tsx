@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from '@jarvis/ui/icons';
 import type { CanvasAttachment } from './use-canvas-attachments';
 export function CanvasAttachments({
   entries,

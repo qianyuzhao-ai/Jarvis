@@ -20,10 +20,26 @@ export type WritingTransaction = {
   inserted: number;
   startedAt: number;
 };
+export function textBoundary(content: string, position: number) {
+  const before = content.charCodeAt(position - 1),
+    after = content.charCodeAt(position);
+  return !(before >= 0xd800 && before <= 0xdbff && after >= 0xdc00 && after <= 0xdfff);
+}
+export function textSliceEnd(content: string, from: number, limit: number) {
+  if (!textBoundary(content, from)) throw new Error('读取起点不能截断 Unicode 字符');
+  let end = Math.min(content.length, from + limit);
+  if (!textBoundary(content, end)) {
+    end--;
+    if (end === from) throw new Error('请增加读取长度以包含完整 Unicode 字符');
+  }
+  return end;
+}
 export function editBuffer(content: string, edit: WritingEdit) {
   const from = edit.kind === 'insert_text' ? edit.at : edit.from,
     to = edit.kind === 'insert_text' ? edit.at : edit.to;
   if (from > to || to > content.length) throw new Error('编辑范围超出当前文档');
+  if (!textBoundary(content, from) || !textBoundary(content, to))
+    throw new Error('编辑范围不能截断 Unicode 字符，请使用返回的选区范围');
   const after = content.slice(0, from) + edit.text + content.slice(to);
   if (after.length > 4 * 1024 * 1024) throw new Error('文档超过编辑上限');
   return { after, from, to };

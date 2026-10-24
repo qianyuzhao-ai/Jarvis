@@ -403,6 +403,10 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     mock.setHold(true);
     await drop(page, [{ name: 'removed.png', mime: 'image/png', bytes: Array.from(png) }]);
     await expect(page.locator('[data-node-kind="asset"]').last()).toContainText('正在上传');
+    for (const theme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.screenshot({ path: test.info().outputPath(`uploading-node-${theme}.png`) });
+    }
     await expect.poll(() => mock.calls.length).toBe(2);
     await page.locator('.react-flow__node-asset').last().click();
     await page.keyboard.press('Delete');

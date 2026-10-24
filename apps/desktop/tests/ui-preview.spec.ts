@@ -345,6 +345,8 @@ for (const theme of ['light', 'dark'] as const) {
     await page.keyboard.press('Escape');
     await expect(dialogTrigger).toBeFocused();
     await dialogTrigger.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveCSS('opacity', '1');
     await page.mouse.click(5, 5);
     await expect(dialog).toHaveCount(0);
     await page.getByRole('button', { name: '确认 destructive', exact: true }).click();
@@ -476,6 +478,10 @@ test('toast limits visible items, queues, pauses on hover and updates loading in
 });
 
 test('shell components preserve keyboard navigation, separate close actions and theme tokens', async () => {
+  const link = page.getByRole('link', { name: '默认 2 天' });
+  await expect(link).toHaveAttribute('href', '#/ui-preview');
+  await link.focus();
+  await expect(link).toBeFocused();
   const tabs = page.getByRole('tablist', { name: '预览窗口标签' });
   await tabs.getByRole('tab', { name: '聊天', exact: true }).focus();
   await page.keyboard.press('ArrowRight');

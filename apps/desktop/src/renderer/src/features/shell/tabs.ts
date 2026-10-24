@@ -1,8 +1,8 @@
 import { z } from 'zod';
 export const tabViewSchema = z.object({
   kind: z.enum(['chat', 'canvas', 'writing', 'settings']),
-  ref: z.string().max(2000).nullable(),
-  title: z.string().max(200),
+  ref: z.string().max(4096).nullable(),
+  title: z.string().max(500),
   rootId: z.string().optional(),
 });
 export type TabView = z.infer<typeof tabViewSchema>;
@@ -119,14 +119,20 @@ export function restoreTabs(raw: string | null): WindowState {
   try {
     const stored = storedSchema.parse(JSON.parse(raw));
     const seen: TabView[] = [];
+    const seenIds = new Set<string>();
     const tabs = stored.tabs
       .filter((t) => {
-        if (seen.some((v) => sameObject(v, t))) return false;
+        if (seenIds.has(t.id) || seen.some((v) => sameObject(v, t))) return false;
+        seenIds.add(t.id);
         seen.push(t);
         return true;
       })
       .map((t) => ({
         ...t,
+        rightPanelWidth:
+          t.kind === 'writing'
+            ? Math.min(400, Math.max(240, t.rightPanelWidth))
+            : Math.min(560, Math.max(340, t.rightPanelWidth)),
         history: [{ kind: t.kind, ref: t.ref, title: t.title, rootId: t.rootId }],
         cursor: 0,
       }));
