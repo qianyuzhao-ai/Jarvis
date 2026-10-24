@@ -8,7 +8,16 @@ import { payload, ServiceError } from '../src/main/generation/protocol';
 import { TaskService } from './helpers/task-service';
 import { getTask, submitTask } from '../src/main/generation/task-protocol';
 import { GenerationJobs } from '../src/main/generation/jobs';
-import type { GenerationInput, StartRequest } from '../src/shared/generation';
+import {
+  startRequestSchema,
+  uploadRequestSchema,
+  jobSchema,
+  requestRecordSchema,
+  type GenerationInput,
+  type StartRequest,
+} from '../src/shared/generation';
+import { applyCanvasOperations } from '../src/renderer/src/features/creation/canvas-commands';
+import { createProject, emptyWorkspace } from '../src/renderer/src/features/creation/types';
 
 const expect = baseExpect.configure({ timeout: 12_000 });
 test.setTimeout(60_000);
@@ -17,6 +26,33 @@ const png = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jS1kAAAAASUVORK5CYII=',
   'base64',
 );
+async function recordVideo() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 16;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillRect(0, 0, 16, 16);
+  const stream = canvas.captureStream(5);
+  const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+  const chunks: Blob[] = [];
+  const done = new Promise<Blob>((resolve) => {
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+  });
+  recorder.start();
+  let frame = 0;
+  const animation = setInterval(() => {
+    ctx.fillStyle = frame++ % 2 ? '#206080' : '#802060';
+    ctx.fillRect(0, 0, 16, 16);
+  }, 50);
+  await new Promise((r) => setTimeout(r, 900));
+  clearInterval(animation);
+  recorder.stop();
+  const blob = await done;
+  stream.getTracks().forEach((t) => t.stop());
+  return Array.from(new Uint8Array(await blob.arrayBuffer()));
+}
+
 function input(overrides: Partial<GenerationInput> = {}): GenerationInput {
   return {
     kind: 'image',
@@ -305,32 +341,7 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    const bytes = await page.evaluate(async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 16;
-      canvas.height = 16;
-      const ctx = canvas.getContext('2d')!;
-      ctx.fillRect(0, 0, 16, 16);
-      const stream = canvas.captureStream(5);
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-      const chunks: Blob[] = [];
-      const done = new Promise<Blob>((resolve) => {
-        recorder.ondataavailable = (e) => chunks.push(e.data);
-        recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
-      });
-      recorder.start();
-      let frame = 0;
-      const animation = setInterval(() => {
-        ctx.fillStyle = frame++ % 2 ? '#206080' : '#802060';
-        ctx.fillRect(0, 0, 16, 16);
-      }, 50);
-      await new Promise((r) => setTimeout(r, 900));
-      clearInterval(animation);
-      recorder.stop();
-      const blob = await done;
-      stream.getTracks().forEach((t) => t.stop());
-      return Array.from(new Uint8Array(await blob.arrayBuffer()));
-    });
+    const bytes = await page.evaluate(recordVideo);
     mock.setVideo(Buffer.from(bytes));
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
@@ -510,6 +521,124 @@ test('Electron uploads references, generates image and video, and restores resul
       path: test.info().outputPath('generated.png'),
     });
     expect(errors).toEqual([]);
+  } finally {
+    await app.close();
+    await mock.close();
+  }
+});
+
+test('generation identifiers follow canvas rules while request and project IDs remain UUIDs', () => {
+  for (const schema of [startRequestSchema, uploadRequestSchema, jobSchema, requestRecordSchema]) {
+    for (const id of ['agent-image', 'agent-video', randomUUID()])
+      expect(schema.shape.nodeId.safeParse(id).success).toBe(true);
+    for (const id of ['', 'x'.repeat(101)])
+      expect(schema.shape.nodeId.safeParse(id).success).toBe(false);
+    expect(schema.shape.requestId.safeParse('agent-request').success).toBe(false);
+    expect(schema.shape.projectId.safeParse('agent-project').success).toBe(false);
+  }
+});
+
+test('Agent-created image and video nodes upload, generate through Electron and survive restart', async () => {
+  const mock = await service();
+  const profile = test.info().outputPath('agent-profile');
+  const launch = () =>
+    electron.launch({
+      args: [resolve(import.meta.dirname, '..'), `--user-data-dir=${profile}`],
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(
+          (e): e is [string, string] => e[1] !== undefined && e[0] !== 'ELECTRON_RUN_AS_NODE',
+        ),
+      ),
+    });
+  let app = await launch();
+  try {
+    const project = applyCanvasOperations(createProject(), [
+      {
+        kind: 'create_node',
+        nodeId: 'agent-image',
+        media: 'image',
+        x: 0,
+        y: 0,
+        patch: { prompt: 'a cat' },
+      },
+      {
+        kind: 'create_node',
+        nodeId: 'agent-video',
+        media: 'video',
+        x: 450,
+        y: 0,
+        patch: { prompt: 'a moving cat' },
+      },
+      { kind: 'connect', source: 'agent-image', target: 'agent-video' },
+    ]).project;
+    project.name = 'Agent generation regression';
+    let page = await app.firstWindow();
+    mock.setVideo(Buffer.from(await page.evaluate(recordVideo)));
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).waitFor();
+    await page.evaluate(
+      async (workspace) => {
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          const request = indexedDB.open('jarvis-workspace', 1);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction('workspace', 'readwrite');
+          tx.objectStore('workspace').put(workspace, 'current');
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+      },
+      {
+        ...emptyWorkspace,
+        projects: [project],
+        settings: {
+          reqFrom: 'agent-test',
+          generateUrl: mock.base + '/generate',
+          imageUploadUrl: mock.base + '/upload',
+          audioUploadUrl: mock.base + '/upload-audio',
+        },
+      },
+    );
+    await page.reload();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: /Agent generation regression/ }).click();
+    await page.locator('[data-id="agent-image"]').click();
+    await page
+      .getByLabel('选择参考素材')
+      .setInputFiles([{ name: 'agent-ref.png', mimeType: 'image/png', buffer: png }]);
+    await page.getByRole('button', { name: '生成图像', exact: true }).click();
+    await expect(page.getByAltText('生成的图像')).toBeVisible();
+    await page.locator('[data-id="agent-video"]').click();
+    await page.getByRole('button', { name: '生成视频', exact: true }).click();
+    await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
+    const requests = mock.calls
+      .filter((c) => c.path === '/generate')
+      .map((c) => JSON.parse(c.body.toString()));
+    expect(requests).toHaveLength(2);
+    expect(requests[0].image_list).toEqual([mock.base + '/reference/agent-ref.png']);
+    expect(requests[1].image_list).toEqual([mock.base + '/image.png']);
+    await app.close();
+    app = await launch();
+    page = await app.firstWindow();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: /Agent generation regression/ }).click();
+    await expect(page.getByAltText('生成的图像')).toBeVisible();
+    await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
+    const jobs = new GenerationJobs(resolve(profile, 'generation-jobs.json'));
+    try {
+      await jobs.initialize();
+      expect(jobs.records(project.id)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ nodeId: 'agent-image', status: 'succeeded' }),
+          expect.objectContaining({ nodeId: 'agent-video', status: 'succeeded' }),
+        ]),
+      );
+    } finally {
+      jobs.dispose();
+    }
+    expect(mock.calls.filter((c) => c.path === '/generate')).toHaveLength(2);
   } finally {
     await app.close();
     await mock.close();
