@@ -2,6 +2,19 @@
 
 最后更新：2026-10-24
 
+## 模型配置当前状态（2026-10-24，改造五个阶段已完成）
+
+- 结构：`agent/connection.json` v3 = providers（builtin：sdkProvider；custom：name/baseUrl/api）+ models（自定义模型带能力与来源）+ defaultModelId；Key 由 safeStorage 加密，渲染层只见 hasKey。v2/v1 首次启动自动迁移并备份 `connection.v2.bak.json`。
+- 主进程：`catalog.ts`（pi-ai 内置目录、分组与排除名单、模型 ID 匹配）、`model-store.ts`、`key-cipher.ts`、`probe-image.ts`、`runtime.ts`（内置走 SDK provider，自定义注册 jarvis-custom；输出上限“自动”去掉参数）；IPC `models:*` 与 `agent:thinking`，旧 `agent:configuration` 等已删除。
+- 界面：设置“模型”页（服务商卡片、添加服务商三步、模型能力对话框）；Composer 的模型选择器按服务商分组并在带图时禁用仅文字 / 未确认模型，旁边是思考程度选择（首页与画布右边栏，写作 Agent 接入时复用）。
+- 与方案文档的差异（未做，待需要时再定）：服务商卡片只显示“需要重新填写 Key”，未做“已连接 / 未测试”状态；带图时未确认模型直接禁用，不支持在选择器内点击检测（需到模型能力对话框检测）；无模型时选择器显示“先添加模型”，跳转由页面上的“前往模型设置”按钮承担。
+- 未验证：真实服务商与真实中转站联调（含思考参数格式、输出上限省略）、macOS/Windows 实机钥匙串。Linux 容器下的实窗测试需要 keyring 与 loader 本地处理（见阶段 2）。
+
+## 模型配置改造阶段 5：收尾（2026-10-24）
+
+- 更新 AGENTS.md 当前范围、本文件当前状态、design.md 与 UI 计划书中的“模型服务”入口名；旧“我的模型 / RelaySettings / DeepSeek 4096”记录标注已被取代，保留为历史。
+- 回归（模拟服务）：check、build 通过；完整实窗 106 例中 104 通过，2 例 ui-preview 失败原因为仓库只有 darwin 截图基线、Linux 下“snapshot doesn't exist”，属环境限制，非本次改动；生成的 linux png 已逐个删除。真实服务商联调另行记录。
+
 ## 模型配置改造阶段 4：输入框思考程度与图片限制（2026-10-24）
 
 - `ModelPicker.tsx` 新增 `ThinkingPicker`（“思考：高”样式原生选择，aria-label 思考程度），首页 Composer 与画布右边栏共用；只列模型支持的档位，模型思考档位少于 2 个（不调节或只有关闭）时隐藏。显示值：会话用自身 thinkingLevel；新对话草稿用用户所选或该模型上次档位（`shared/models.ts` 的 `thinkingFor`）。`useAgent` 增加 `draftThinking` / `thinking()`：已有会话直接调 `setThinkingLevel`；草稿在首次发送建会话、切模型后按最近档位提交。
@@ -204,7 +217,7 @@ E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二�
 - `Jarvis-0.2.0-macos-arm64.zip`：235378407 字节，sha256:b5df633841c6d01ee70e787a058563326bc99fb72e54b22f555d1a413d8dded3。
 - `Jarvis-0.2.0-windows-x64-unsigned-setup.exe`：207043282 字节，sha256:44030c5f90a3633001865a17665cc4f3a2d8c412cc0a4b3d34089125e5c8ed96。
 
-## 我的模型与 DeepSeek 官方接入（2026-10-22）
+## 我的模型与 DeepSeek 官方接入（2026-10-22，已被 2026-10-24 模型配置改造取代，仅作历史）
 
 - 用户明确模型服务采用可持久化的“我的模型”列表，支持 DeepSeek 官方与多个自定义中转模型共存、Chat/画布按会话切换。实现留在当前 `feature/ui-style`；用户随后授权本地提交代码、测试及项目记忆，不推送或合并。
 - 已实际检查安装的 `@earendil-works/pi-ai` / `pi-coding-agent` 1.3.0：通过 `getBuiltinModels`（`@earendil-works/pi-ai/providers/all`）和 `ModelRuntime.getModel('deepseek', id)` 核对内置 DeepSeek。根包没有旧 `getModels` 命名导出，不沿用旧 API。官方文档 https://api-docs.deepseek.com/ 与 https://api-docs.deepseek.com/api/list-models/ 本轮读取确认 `deepseek-flash` / `deepseek-v4-pro` 和官方地址；思考/工具兼容规则见 https://api-docs.deepseek.com/guides/thinking_mode/ 。
