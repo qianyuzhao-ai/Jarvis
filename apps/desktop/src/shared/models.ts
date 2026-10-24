@@ -197,6 +197,15 @@ export function nearestThinkingLevel(levels: ThinkingLevel[], level: ThinkingLev
   )[0]!;
 }
 
+/** Level shown for a model: the session's own level, else the draft pick or the model's last level. */
+export function thinkingFor(
+  model: ModelView | undefined,
+  level: ThinkingLevel | undefined,
+): ThinkingLevel {
+  if (!model) return 'off';
+  return nearestThinkingLevel(model.thinkingLevels, level ?? model.lastThinkingLevel ?? 'off');
+}
+
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 /** Model settings bridge exposed to the renderer; Keys are only ever written, never returned. */
 export interface ModelsBridge {

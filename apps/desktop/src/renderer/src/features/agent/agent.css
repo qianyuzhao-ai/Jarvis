@@ -228,6 +228,10 @@
     color: var(--color-ink);
     font-size: 14px;
   }
+  .thinking-trigger {
+    max-width: 120px;
+    color: var(--color-secondary);
+  }
   .context-ring {
     width: 28px;
   }

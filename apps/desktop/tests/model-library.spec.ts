@@ -39,6 +39,22 @@ test('model settings migrate legacy credentials, add providers in the dialog and
         ),
       ),
     });
+  // Sends DeepSeek requests to the local mock; must be reinstalled after each relaunch.
+  const redirectDeepSeek = () =>
+    app.evaluate((_electron, origin) => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = async (input, init) => {
+        const request = new Request(input, init);
+        const url = new URL(request.url);
+        if (url.origin !== 'https://api.deepseek.com') return originalFetch(request);
+        return originalFetch(origin + '/official' + url.pathname, {
+          method: request.method,
+          headers: request.headers,
+          body: request.body,
+          duplex: 'half',
+        } as RequestInit);
+      };
+    }, origin);
   let app = await launch();
   try {
     let page = await app.firstWindow();
@@ -86,20 +102,7 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       JSON.parse(await readFile(join(userData, 'agent', 'connection.v2.bak.json'), 'utf8')).config
         .model,
     ).toBe('mock');
-    await app.evaluate((_electron, origin) => {
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = async (input, init) => {
-        const request = new Request(input, init);
-        const url = new URL(request.url);
-        if (url.origin !== 'https://api.deepseek.com') return originalFetch(request);
-        return originalFetch(origin + '/official' + url.pathname, {
-          method: request.method,
-          headers: request.headers,
-          body: request.body,
-          duplex: 'half',
-        } as RequestInit);
-      };
-    }, origin);
+    await redirectDeepSeek();
     let dialog = page.getByRole('dialog');
     await page.getByRole('button', { name: '添加服务商', exact: true }).click();
     await dialog.getByRole('button', { name: /^DeepSeek/ }).click();
@@ -150,6 +153,9 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await page.getByRole('button', { name: '返回工作台' }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
+    const thinking = page.getByRole('combobox', { name: '思考程度' });
+    await expect(thinking).toHaveValue('off');
+    await expect(thinking.locator('option')).toHaveCount(deepseek.thinkingLevels.length);
     let count = 0;
     for (const [profile, text] of [
       [relay, '第一条'],
@@ -157,6 +163,8 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       [beta, '第三条'],
     ] as const) {
       await page.getByRole('combobox', { name: '聊天模型' }).selectOption(profile.id);
+      if (profile === deepseek) await thinking.selectOption('high');
+      else await expect(thinking).toHaveCount(0);
       await page.getByLabel('消息', { exact: true }).fill(text);
       await page.getByRole('button', { name: '发送消息', exact: true }).click();
       await expect(
@@ -178,6 +186,8 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       'Bearer relay-beta-key',
     ]);
     expect(calls[2]?.path).toBe('/official/chat/completions');
+    expect(calls[2]?.body.thinking).not.toEqual({ type: 'disabled' });
+    expect(calls[3]?.body).not.toHaveProperty('reasoning_effort');
     expect(JSON.stringify(calls[2]?.body.messages)).toContain('第一条');
     expect(JSON.stringify(calls[3]?.body.messages)).toContain('继续第二条');
     const snapshot = await page.evaluate(async () => window.desktop!.agent.getSnapshot());
@@ -300,12 +310,26 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await writeFile(indexFile, JSON.stringify(legacyIndex));
     app = await launch();
     page = await app.firstWindow();
+    await redirectDeepSeek();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue('');
     await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText(
       '选择模型',
     );
     await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
+    // A new chat starts from the level last used with the model; a draft pick applies on send.
+    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    const thinkingAgain = page.getByRole('combobox', { name: '思考程度' });
+    await expect(thinkingAgain).toHaveValue('high');
+    await thinkingAgain.selectOption('off');
+    await page.getByLabel('消息', { exact: true }).fill('不要思考');
+    await page.getByRole('button', { name: '发送消息', exact: true }).click();
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toHaveCount(1);
+    expect(calls[4]?.body.thinking).toEqual({ type: 'disabled' });
   } finally {
     await app.close();
     server.closeAllConnections();

@@ -2,10 +2,17 @@
 
 最后更新：2026-10-24
 
+## 模型配置改造阶段 4：输入框思考程度与图片限制（2026-10-24）
+
+- `ModelPicker.tsx` 新增 `ThinkingPicker`（“思考：高”样式原生选择，aria-label 思考程度），首页 Composer 与画布右边栏共用；只列模型支持的档位，模型思考档位少于 2 个（不调节或只有关闭）时隐藏。显示值：会话用自身 thinkingLevel；新对话草稿用用户所选或该模型上次档位（`shared/models.ts` 的 `thinkingFor`）。`useAgent` 增加 `draftThinking` / `thinking()`：已有会话直接调 `setThinkingLevel`；草稿在首次发送建会话、切模型后按最近档位提交。
+- 模型选择器图片限制：对话已有图片或画布有待发送图片时，图片能力非“支持”的模型禁用并标注“· 仅文字”或“· 未确认 · 先检测”（与服务端 assertVision 一致）。
+- 样式：`.thinking-trigger` 最大 120px，画布右边栏模型 120px、思考 84px；400px 右边栏截图检查放得下。
+- 测试：model-library 覆盖 DeepSeek 档位数量、会话内切到“高”后请求带思考、自定义模型隐藏选择、新对话沿用上次档位并在草稿改为关闭后发出 disabled；canvas-agent-vision 覆盖带图时仅文字 / 未确认模型禁用、右边栏草稿选“中”后请求 reasoning_effort=medium。model-library 重启后需重新安装 DeepSeek fetch 重定向（否则请求发往真实 api.deepseek.com 得 401）。验证：check、build 通过；完整实窗 104 通过，ui-preview 2 例仍因无 linux 基线失败。
+
 ## 模型配置改造阶段 3：设置页重写（2026-10-24）
 
 - 设置页“我的模型”改为“模型”：`features/settings/ModelSettings.tsx`（默认模型下拉按服务商分组、服务商卡片列表、空状态）；新增 `features/settings/models/`：`ProviderCard`（服务商菜单 编辑连接 / 管理模型 / 删除；模型行徽标 默认 / 已下线 / 图片能力 / 可思考 / 上下文，菜单 设为默认 / 模型能力…（仅自定义）/ 移除）、`AddProviderDialog`（new 三步：选择 → 连接 → 勾选模型；edit 只改连接；models 只管理模型；自定义接口支持测试连接、/models 列表、仅支持图片筛选、手动添加 ID）、`ModelCapabilitiesDialog`（图片 自动/支持/不支持 + 检测、思考预设、上下文与输出上限留空为自动）、`model-format.ts`。
-- 删除 `RelaySettings.tsx` 与 v3 旧适配层（`agent:configuration/save/remove-model/default-model/test/models` IPC、preload 旧方法、shared 中 RelayInput/RelayView/ConfiguredModel）；`relaySchema` 与 DeepSeek 常量仅保留给迁移。agent 快照带 `models`，`useAgent` 直接读 `snapshot.models`；`ModelPicker` 按服务商 optgroup 分组。思考选择器、选择器图片限制仍属阶段 4。
+- 删除 `RelaySettings.tsx` 与 v3 旧适配层（`agent:configuration/save/remove-model/default-model/test/models` IPC、preload 旧方法、shared 中 RelayInput/RelayView/ConfiguredModel）；`relaySchema` 与 DeepSeek 常量仅保留给迁移。agent 快照带 `models`，`useAgent` 直接读 `snapshot.models`；`ModelPicker` 按服务商 optgroup 分组。思考选择器、选择器图片限制已在阶段 4 完成。
 - 修复：连接步“下一步”在 busy 未清除时切到模型步，导致候选列表加载被 run 守卫跳过——改为 run 结束后再切步。默认模型下拉外层 NativeSelect 包装为 w-full，需放进 `w-70` 容器，否则标签被挤成竖排。
 - 测试：新增 `tests/helpers/model-setup.ts`（经 models 桥添加中转模型）；agent / model-library 实窗测试改走新对话框，其余 Agent 用例改用 helper。验证：check、build 通过；完整实窗 104 通过，ui-preview 2 例因仓库无 linux 基线失败（环境限制，生成的 linux png 已逐个删除）。仍依赖阶段 2 记录的 keyring / loader 本地处理。
 
