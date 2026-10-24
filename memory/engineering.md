@@ -8,7 +8,7 @@
 - 新增共享 `canvas-node-id.ts`，画布操作与生成/上传/任务/账本统一使用相同的有界字符串规则。节点 ID 只用于本地关联，不参与文件路径或远端任务 URL；requestId、projectId 继续要求 UUID。保留现有节点 ID、连线和撤销记录，无需迁移或重建节点。
 - 保持 Agent 的创建/编辑权限边界：用户点击生成后正常发送请求，本次未新增 Agent 自动执行生成工具。
 - 验证：`pnpm check`、`pnpm build`、`git diff --check` 通过；生成与画布 Agent 相关 10 项回归同轮通过（47.0s）。新增用例使用真实 Agent 创建/连线函数产生非 UUID 节点并存入 IndexedDB，在 Electron 窗口上传参考图、点击生成图像/视频、检查图像 URL 沿连线进入视频请求，重启后恢复结果并回读任务账本，确认没有重复提交；同时验证 ID 长度限制及 projectId/requestId 的 UUID 校验仍生效。最初沙箱监听 EPERM，放行后正常运行；新增测试首次因未填充模拟视频而预览失败，复用原视频夹具后通过。本次使用本地模拟服务，不代表真实内网联调完成。
-- 本地修复分支 `feature/agent-node-generation`；用户于 2026-10-24 授权提交本轮修复、测试和工程记录，不推送或发布。
+- 修复已提交为 `a1ec3a3`（`feature/agent-node-generation`）。用户随后要求从最新 develop 新开分支并合入：当前分支 `feature/agent-generation-fix`，合并提交 `1c76472`，无冲突；检查及构建通过，未推送或发布。
 
 ## UI V1 第二批浮层与反馈（2026-10-24）
 
