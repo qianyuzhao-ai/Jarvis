@@ -2,6 +2,16 @@
 
 最后更新：2026-10-24
 
+### 第三阶段验收问题修复（2026-10-24）
+
+- 用户要求修复验收问题。在 `claude/personal-workbench-project-8xza4v` 合入 `origin/feature/ui-v1-shell` 后修复，修复提交 e7e115d：
+  - 横向滚动：`.window-shell` 和 `.shell-assistant-host` 加 `overflow: clip`。关闭的画布助手不再撑出页面，文档宽度 1619 → 1280。保留挂载，会话状态不丢。`sidebar.spec` 新增断言：关闭后文档无横向溢出。去掉 CSS 修复时该断言报 339px 溢出，可以拦住这个问题。
+  - 设置页“返回工作台”链接和对应 `onBack` / `.sidebar-back` 已删除；15 处测试改为点图标栏“AIGC 创作空间”（与原链接同为 `space('canvas')`）。
+  - `node-download`：被挡住的是左下节点的名称标签（测试素材为正方形，节点较高），挡住它的是缩放面板。这属于测试布局问题，画布控件盖住节点是正常行为，因此不改布局，只把测试初始视口从 `{40,40,0.8}` 改为 `{40,20,0.7}`。
+  - 像素断言：`sidebar.spec` 的 4 处位置检查（2 处 0、−320、320；后两处在原失败点之后，此前从未执行到）和 `writing.spec` 宽度 1385 均改为 ±1px，去掉为 2× 调的 `−0.5`。
+- 验证：`pnpm check`、`pnpm build` 通过；三个受影响文件 12/12；完整冒烟 107/110，剩余 3 项均为保存凭据失败（无钥匙串），与修复前相同。ui-preview 使用本地生成、未入库的 Linux 基线，所以本轮通过。
+- 另记：Windows 使用原生标题栏（无 `titleBarStyle`），会与 44px 自绘顶栏叠成双层标题栏，需在真机上确认，未改。
+
 ### 第三阶段交付验收：feature/ui-v1-shell e71b46a（2026-10-24）
 
 - 结果：未通过，需修复后再合入 develop。`pnpm check`、`pnpm build` 通过；Linux + Xvfb 冒烟 102/110。
