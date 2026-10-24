@@ -2,6 +2,11 @@
 
 最后更新：2026-10-24
 
+### UI V1 第三阶段实施（2026-10-24）
+
+- 已开始按用户附件执行计划书，分支 `feature/ui-v1-shell`；按 I → J → K → N → L → M 分阶段提交与验证。
+- 阶段 I：新增统一图标出口和 SidebarItem、WindowTabs、Composer、AssistantPanel；Figma 实际节点及截图核对、实现差异与门禁记录见 `memory/ui-v1-implementation.md` 第三阶段。设计文件未修改。
+
 ### 第三阶段计划书更新：跨空间标签与空间 Agent（2026-10-24）
 
 - 用户决定：跨空间标签页现在就做；写作空间右边栏去掉大纲；右边栏弹出后只是 Agent 对话，在哪个标签页打开就能操作该标签页的空间。要求写进计划书并 PR 到 develop。

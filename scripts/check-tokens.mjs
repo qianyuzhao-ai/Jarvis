@@ -15,12 +15,22 @@ export function violations(source) {
     ...source.matchAll(/#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\([^)]*\)|\b[\w-]+-\[[^\]\n]+\]/gi),
   ].map((match) => match[0]);
 }
+const iconAllowance = JSON.parse(
+  readFileSync(resolve(root, 'scripts/icon-legacy-allowlist.json'), 'utf8'),
+);
 const errors = [];
 for (const path of [
   ...files(resolve(root, 'apps/desktop/src/renderer/src')),
   ...files(resolve(root, 'packages/ui/src')),
 ]) {
   const name = relative(root, path);
+  const source = readFileSync(path, 'utf8');
+  if (
+    /from\s+['"]lucide-react['"]/.test(source) &&
+    name !== 'packages/ui/src/icons.ts' &&
+    !iconAllowance.includes(name)
+  )
+    errors.push(`${name}: import icons from @jarvis/ui/icons`);
   if (name === 'packages/ui/src/styles/tokens.css') continue;
   const allowed = [...(allowance[name] ?? [])];
   for (const value of violations(readFileSync(path, 'utf8'))) {

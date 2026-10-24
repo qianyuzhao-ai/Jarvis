@@ -213,7 +213,7 @@ for (const theme of ['light', 'dark']) {
     await expect(loading).not.toHaveCSS('box-shadow', 'none');
     for (const variant of ['default', 'destructive', 'ghost']) {
       const control = page.locator(
-        `[data-ui="button"][data-variant="${variant}"][data-disabled="true"]`,
+        `section[aria-label="Button"] [data-ui="button"][data-variant="${variant}"][data-disabled="true"]`,
       );
       await expect(control).toHaveCSS(
         'background-color',
@@ -473,4 +473,50 @@ test('toast limits visible items, queues, pauses on hover and updates loading in
   await expect(cards).toHaveCount(1);
   await page.mouse.move(5, 5);
   await expect(cards).toHaveCount(0, { timeout: 2500 });
+});
+
+test('shell components preserve keyboard navigation, separate close actions and theme tokens', async () => {
+  const tabs = page.getByRole('tablist', { name: '预览窗口标签' });
+  await tabs.getByRole('tab', { name: '聊天', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(tabs.getByRole('tab', { name: '视觉系统', exact: true })).toBeFocused();
+  await expect(tabs.getByRole('tab', { name: '视觉系统', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await tabs.getByRole('button', { name: '关闭 视觉系统' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(tabs.getByRole('tab', { name: '视觉系统', exact: true })).toHaveCount(0);
+  for (const theme of ['light', 'dark']) {
+    if (theme === 'dark') await page.getByRole('button', { name: '切换预览主题' }).click();
+    const colors = await page.evaluate(() => {
+      const color = (name: string) => {
+        const el = document.createElement('div');
+        el.style.backgroundColor = `var(${name})`;
+        document.body.append(el);
+        const value = getComputedStyle(el).backgroundColor;
+        el.remove();
+        return value;
+      };
+      return { selected: color('--color-fill-hover'), surface: color('--color-surface-raised') };
+    });
+    await expect(page.locator('.ui-sidebar-row[data-selected="true"]')).toHaveCSS(
+      'background-color',
+      colors.selected,
+    );
+    await expect(tabs.locator('[data-ui="window-tab"][data-active="true"]')).toHaveCSS(
+      'background-color',
+      colors.surface,
+    );
+    await expect(page.locator('[data-ui="composer-input"]').first()).toHaveCSS(
+      'background-color',
+      colors.surface,
+    );
+    await expect(page.getByRole('button', { name: '禁用 2 天', exact: true })).toBeDisabled();
+    const dir = resolve(import.meta.dirname, '../test-results/ui-v1/phase-i');
+    await mkdir(dir, { recursive: true });
+    await page
+      .locator('section[aria-label="Shell components"]')
+      .screenshot({ path: resolve(dir, `shell-components-${theme}.png`) });
+  }
 });

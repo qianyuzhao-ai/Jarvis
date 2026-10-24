@@ -230,3 +230,15 @@ H 最终证据：`h-smoke-verified.log` 95/95（3.4m），最终 `h-check-final.
 | H | `34871025f309e643d988ead219624d77feac7b7e` | 菜单、候选、Toast、Alert、旧规则清理与最终验收 |
 
 `git push -u origin feature/ui-v1-overlays` 成功；`git ls-remote --heads origin feature/ui-v1-overlays` 回读为阶段 H 完整 SHA。其后仅追加本验收索引和工程/Git 记忆的文档提交，并随同一功能分支推送。没有 PR、合并、版本标签或发布。
+
+## 第三阶段：窗口外壳、跨空间标签与空间 Agent
+
+2026-10-24 按用户附件 `codex-prompt-ui-v1-shell.md` 执行 I → J → K → N → L → M。以 `memory/ui-v1-shell-plan.md` 为准；从最新 origin/develop 创建 `feature/ui-v1-shell`，保留前一任务已授权合入的 Agent 节点生成修复 `a1ec3a3`。只推送功能分支，不创建 PR、合入 develop、打标签或发布。
+
+### I：基础组件与图标出口
+
+- 通过 Figma MCP 核对 Sidebar Item selected `392:32639`、Window Tab active `392:32674`、Composer `395:33742`、Assistant Panel `399:34448` 的设计上下文与截图，以及图标库 `391:32605` 的 60 个图标名。使用相同版本 Lucide 图标，统一出口默认线宽 1.75；额外导出旧业务所需图标以支持后续迁移，不改变图标内容。
+- 新增 SidebarItem、WindowTabs/WindowTab、Composer/ComposerAction、AssistantPanel/AssistantEmpty。侧栏行的更多按钮与主按钮、标签关闭与 tab 触发按钮均是独立可聚焦控件；状态样式放 utilities 层，未新增颜色变量或 token 白名单。
+- 图标直接导入白名单记录现有文件，新增/迁移文件只能从 @jarvis/ui/icons 导入；预览覆盖四种侧栏状态、标签、wide/compact 三态输入框、助手空态。浅深截图在 `apps/desktop/test-results/ui-v1/phase-i/`，已目视检查。
+- 新增键盘箭头切换、独立关闭、浅深精确颜色测试。原禁用按钮断言因新增 Composer 按钮匹配多元素，改为限定原 Button 家族，未减少断言。
+- 门禁日志：`apps/desktop/test-results/ui-v1/shell-verification/i-*.log`；`pnpm check`、`pnpm build` 通过，完整回归 **98/98（3.7m）** 通过。

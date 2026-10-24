@@ -5,7 +5,8 @@
   "exports": {
     "./components/*": "./src/components/*.tsx",
     "./lib/*": "./src/lib/*.ts",
-    "./styles/*": "./src/styles/*"
+    "./styles/*": "./src/styles/*",
+    "./icons": "./src/icons.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
