@@ -1,8 +1,6 @@
 import type { ThemePreference } from './theme';
 import { ToggleGroup, ToggleGroupItem } from '@jarvis/ui/components/ToggleGroup';
 import { DownloadSettings } from './DownloadSettings';
-import { UpdateStatus } from '../updates/UpdateStatus';
-import type { AppUpdates } from '../updates/use-app-updates';
 const choices = [
   ['system', '跟随系统', '跟随系统'],
   ['light', 'Light Mode', 'Light'],
@@ -11,11 +9,9 @@ const choices = [
 export function GeneralSettings({
   value,
   onChange,
-  updates,
 }: {
   value: ThemePreference;
   onChange: (value: ThemePreference) => void;
-  updates: AppUpdates;
 }) {
   return (
     <section
@@ -48,7 +44,6 @@ export function GeneralSettings({
         </ToggleGroup>
       </div>
       <DownloadSettings />
-      <UpdateStatus updates={updates} settings />
     </section>
   );
 }

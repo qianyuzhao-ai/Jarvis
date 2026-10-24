@@ -34,7 +34,7 @@ import {
 import type { Project } from '../creation/types';
 import type { ChatSession } from '../../../../shared/agent';
 import type { TabView } from './tabs';
-type Section = 'general' | 'services' | 'models' | 'plugins';
+type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
 export function ShellSidebar({
   kind,
   section,
@@ -176,7 +176,13 @@ export function ShellSidebar({
             <SidebarItem disabled icon={<Database />}>
               数据与隐私
             </SidebarItem>
-            <SidebarItem disabled icon={<Info />}>
+            <SidebarItem
+              data-testid="side-link"
+              icon={<Info />}
+              selected={section === 'about'}
+              aria-current={section === 'about' ? 'page' : undefined}
+              onClick={() => onSettings('about')}
+            >
               关于 Jarvis
             </SidebarItem>
           </nav>

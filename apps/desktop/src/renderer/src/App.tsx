@@ -16,6 +16,7 @@ import {
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
+import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
@@ -36,7 +37,7 @@ import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-type SettingsSection = 'general' | 'services' | 'models' | 'plugins';
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
 function Workbench({ initial }: { initial: WorkspaceData }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
@@ -367,9 +368,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
       inert={updates.state?.phase === 'installing'}
     >
       <GenerationNotice notice={notice} onDismiss={dismissNotice} />
-      {(route !== 'settings' || settingsSection !== 'general') && (
-        <UpdateStatus updates={updates} />
-      )}
+      {(route !== 'settings' || settingsSection !== 'about') && <UpdateStatus updates={updates} />}
       {saveError && (
         <Alert
           tone="error"
@@ -426,15 +425,23 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             <header className="shell-settings-toolbar">
               <span>
                 {
-                  { general: '通用', models: '模型', services: '内网地址', plugins: '插件' }[
-                    settingsSection
-                  ]
+                  {
+                    general: '通用',
+                    models: '模型',
+                    services: '内网地址',
+                    plugins: '插件',
+                    about: '关于 Jarvis',
+                  }[settingsSection]
                 }
               </span>
               <span
                 data-testid="save-status"
                 role="status"
-                hidden={settingsSection === 'models' || settingsSection === 'plugins'}
+                hidden={
+                  settingsSection === 'models' ||
+                  settingsSection === 'plugins' ||
+                  settingsSection === 'about'
+                }
               >
                 {status}
               </span>
@@ -442,10 +449,11 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           )}
           {route === 'settings' && settingsSection === 'general' ? (
             <GeneralSettings
-              updates={updates}
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />
+          ) : route === 'settings' && settingsSection === 'about' ? (
+            <AboutSettings updates={updates} />
           ) : route === 'settings' && settingsSection === 'models' ? (
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>

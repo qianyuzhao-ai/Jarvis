@@ -1,6 +1,13 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-24
+最后更新：2026-10-25
+
+## 关于 Jarvis 与更新入口迁移（2026-10-25）
+
+- 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
+- 更新测试入口迁到关于页，补充通用页无更新区、关于选中态及刷新恢复断言。`pnpm check`、`pnpm build` 与 updates / updates-http / updates-service / update-preparation 共 13/13（17.9s）通过，浅深/窄窗截图检查通过。实际发布和真实安装未执行。
+- 用户于同日授权提交，未推送或合并。上一任务模型配置修复提交 `d8d1d93` 保留在 `feature/model-dialog-lifecycle-fix`，不在本分支的 develop 基线内。
+
 
 ## 模型配置分支合入 develop 前的合并（2026-10-24）
 
