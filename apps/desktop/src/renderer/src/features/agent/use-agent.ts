@@ -75,11 +75,6 @@ export function useAgent(projectId?: string) {
     setError('');
     try {
       if (projectId && canvas?.projectId !== projectId) throw new Error('请选择当前画布上下文');
-      const chosen =
-        configuration.models?.find((entry) => entry.id === (session?.modelId ?? model))?.config ??
-        configuration.config;
-      if (images?.length && chosen?.provider === 'deepseek' && chosen.model === 'deepseek-v4-pro')
-        throw new Error('DeepSeek Pro 不支持图片，请切换到 Flash');
       const id =
         session?.id ??
         agentValue(

@@ -3,8 +3,16 @@ import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
 import type { AgentEvent, ChatMessage, RelayInput } from '../../shared/agent';
-import { RelayConfiguration } from './configuration';
+import {
+  nearestThinkingLevel,
+  type ProbeResult,
+  type ProviderInput,
+  type ThinkingLevel,
+  type UpdateModelInput,
+} from '../../shared/models';
+import { listRemoteModels, type ModelStore, type ResolvedModel } from './model-store';
 import { openAgent, replyFailure } from './runtime';
+import { digitsPng, probeCode } from './probe-image';
 import { AgentStore } from './store';
 import { CanvasBroker } from './canvas-broker';
 import { canvasTools } from './canvas-tools';
@@ -36,7 +44,7 @@ export class AgentService {
   private persistenceError = '';
   onChange: (event: AgentEvent) => void = () => {};
   constructor(
-    readonly config: RelayConfiguration,
+    readonly config: ModelStore,
     readonly store: AgentStore,
     private root: string,
   ) {
@@ -95,28 +103,60 @@ export class AgentService {
     return this.exclusive(async () => {
       this.idle();
       const selected = this.config.resolve();
-      const id = await this.store.create(selected.config, projectId, selected.modelId);
+      const remembered = this.config.view().models.find((m) => m.id === selected.id);
+      const level = nearestThinkingLevel(
+        selected.thinkingLevels,
+        remembered?.lastThinkingLevel ?? 'off',
+      );
+      const id = await this.store.create(selected, projectId, level);
       this.emit();
       return id;
+    });
+  }
+  /** Runs a model-settings change while no request is in flight and returns the new settings. */
+  private configure(action: () => Promise<unknown>) {
+    return this.exclusive(async () => {
+      this.idle();
+      await action();
+      return this.config.view();
     });
   }
   saveConfiguration(input: RelayInput) {
     return this.exclusive(async () => {
       this.idle();
-      return this.config.save(input);
+      return this.config.legacySave(input);
     });
   }
   removeModel(id: string) {
-    return this.exclusive(async () => {
-      this.idle();
-      return this.config.remove(id);
-    });
+    return this.configure(() => this.config.removeModel(id));
   }
   setDefaultModel(id: string) {
+    return this.configure(() => this.config.setDefault(id));
+  }
+  saveProvider(input: ProviderInput) {
     return this.exclusive(async () => {
       this.idle();
-      return this.config.setDefault(id);
+      const id = await this.config.saveProvider(input);
+      return { id, settings: this.config.view() };
     });
+  }
+  setProviderModels(providerId: string, models: Parameters<ModelStore['setProviderModels']>[1]) {
+    return this.configure(() => this.config.setProviderModels(providerId, models));
+  }
+  updateModel(input: UpdateModelInput) {
+    return this.configure(() => this.config.updateModel(input));
+  }
+  removeProvider(id: string) {
+    return this.configure(() => this.config.removeProvider(id));
+  }
+  /** Refuses image conversations on models that are not known to read images. */
+  private assertVision(model: ResolvedModel, hasImages: boolean) {
+    if (!hasImages || model.vision === 'supported') return;
+    throw new Error(
+      model.vision === 'unknown'
+        ? `${model.name} 的图片能力未确认，请先检测或切换支持图片的模型`
+        : `${model.name} 不支持图片，请切换支持图片的模型或新建文字对话`,
+    );
   }
   rename(id: string, title: string) {
     return this.exclusive(async () => {
@@ -160,24 +200,46 @@ export class AgentService {
       this.idle();
       const r = this.store.record(id);
       const before = structuredClone(r);
-      const selected = this.config.resolveModel(model);
-      if (
-        selected.config.provider === 'deepseek' &&
-        selected.config.model === 'deepseek-v4-pro' &&
-        r.view.messages.some((message) => message.visionAssets?.length)
-      )
-        throw new Error('DeepSeek Pro 不支持当前对话中的图片，请使用 Flash 或新建文字对话');
-      r.config = selected.config;
-      r.view.model = selected.config.model;
+      const selected = this.config.resolve(model);
+      this.assertVision(
+        selected,
+        r.view.messages.some((message) => message.visionAssets?.length),
+      );
+      delete r.config;
+      r.view.model = selected.modelId;
       r.view.modelId = model;
-      r.view.contextWindow = selected.config.contextWindow;
+      r.view.contextWindow = selected.contextWindow;
       r.view.contextTokens = null;
+      r.view.thinkingLevel = nearestThinkingLevel(
+        selected.thinkingLevels,
+        r.view.thinkingLevel ?? 'off',
+      );
       try {
         await this.store.save();
       } catch (error) {
         Object.assign(r, before);
         throw error;
       }
+      this.emit();
+    });
+  }
+  setThinkingLevel(id: string, level: ThinkingLevel) {
+    return this.exclusive(async () => {
+      this.idle();
+      const r = this.store.record(id);
+      if (!r.view.modelId) throw new Error('请先为此对话选择一个已保存的模型');
+      const selected = this.config.resolve(r.view.modelId);
+      if (level !== 'off' && !selected.thinkingLevels.includes(level))
+        throw new Error(`${selected.name} 不支持这个思考档位`);
+      const before = r.view.thinkingLevel;
+      r.view.thinkingLevel = level;
+      try {
+        await this.store.save();
+      } catch (error) {
+        r.view.thinkingLevel = before;
+        throw error;
+      }
+      await this.config.rememberThinking(selected.id, level);
       this.emit();
     });
   }
@@ -212,28 +274,20 @@ export class AgentService {
         return prior.runId;
       }
       this.idle();
-      const record = this.store.record(id),
-        current = record.view.modelId
-          ? this.config.resolveModel(record.view.modelId)
-          : this.config.resolve();
-      if (
-        !record.view.modelId &&
-        (record.config.baseUrl !== current.config.baseUrl ||
-          record.config.api !== current.config.api ||
-          (record.config.provider ?? 'relay') !== (current.config.provider ?? 'relay'))
-      )
-        throw new Error('此对话使用旧配置，请重新选择一个已保存的模型');
-      if (record.view.modelId) {
-        record.config = current.config;
-        record.view.model = current.config.model;
-        record.view.contextWindow = current.config.contextWindow;
-      }
-      if (
-        record.config.provider === 'deepseek' &&
-        record.config.model === 'deepseek-v4-pro' &&
-        (images.length || record.view.messages.some((message) => message.visionAssets?.length))
-      )
-        throw new Error('DeepSeek Pro 不支持图片，请使用 Flash 或新建文字对话');
+      const record = this.store.record(id);
+      if (!record.view.modelId) throw new Error('此对话使用旧配置，请重新选择一个已保存的模型');
+      const current = this.config.resolve(record.view.modelId);
+      delete record.config;
+      record.view.model = current.modelId;
+      record.view.contextWindow = current.contextWindow;
+      this.assertVision(
+        current,
+        images.length > 0 || record.view.messages.some((message) => message.visionAssets?.length),
+      );
+      const thinking = nearestThinkingLevel(
+        current.thinkingLevels,
+        record.view.thinkingLevel ?? 'off',
+      );
       if (record.view.messages.reduce((sum, m) => sum + m.text.length, 0) + text.length > 60000)
         throw new Error('这段对话较长，请新建对话后继续，历史不会删除');
       const run = { id: randomUUID(), sessionId: id, owner, cancelled: false };
@@ -274,8 +328,8 @@ export class AgentService {
       this.emit();
       this.completion = this.perform(
         run,
-        record.config,
-        current.apiKey,
+        current,
+        thinking,
         assistant,
         text,
         canvas,
@@ -287,8 +341,8 @@ export class AgentService {
   }
   private async perform(
     run: NonNullable<AgentService['active']>,
-    config: Parameters<typeof openAgent>[2],
-    key: string,
+    model: ResolvedModel,
+    thinking: ThinkingLevel,
     output: ChatMessage,
     text: string,
     canvas?: CanvasSnapshot,
@@ -306,8 +360,7 @@ export class AgentService {
       const runtime = await openAgent(
         this.root,
         run.sessionId,
-        config,
-        key,
+        model,
         false,
         canvas
           ? {
@@ -316,6 +369,7 @@ export class AgentService {
             }
           : undefined,
         skill,
+        thinking,
       );
       run.sdk = runtime.session;
       if (run.cancelled) {
@@ -427,38 +481,124 @@ export class AgentService {
     await this.operations;
     clearTimeout(this.timer);
   }
-  async test(input: RelayInput, owner: number) {
+  test(input: RelayInput, owner: number) {
     return this.exclusive(async () => {
       this.idle();
-      this.testing = true;
-      const run = { owner, cancelled: false, sdk: undefined as AgentSession | undefined };
-      this.testRun = run;
-      let sdk: AgentSession | undefined;
-      let timeout: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const c = this.config.resolve(input);
-        const runtime = await openAgent(this.root, randomUUID(), c.config, c.apiKey, true);
-        sdk = runtime.session;
-        run.sdk = sdk;
-        if (run.cancelled) throw new Error('连接测试已取消');
-        timeout = setTimeout(() => {
-          void sdk?.abort();
-        }, 20000);
-        await sdk.prompt('仅回复 OK', { expandPromptTemplates: false });
-        const last = sdk.messages.filter((m) => m.role === 'assistant').at(-1);
-        if (
-          !last ||
-          last.stopReason !== 'stop' ||
-          !last.content.some((b) => b.type === 'text' && b.text.trim())
-        )
-          throw new Error(replyFailure(runtime.httpStatus()));
-        return '连接成功 · 已收到流式回复';
-      } finally {
-        clearTimeout(timeout);
-        sdk?.dispose();
-        this.testing = false;
-        this.testRun = null;
-      }
+      const model = this.config.legacyTransient(input);
+      await this.ask(model, owner, '仅回复 OK');
+      return '连接成功 · 已收到流式回复';
     });
+  }
+  /** Built-in providers answer a short prompt; custom ones list models unless a model ID is given. */
+  testProvider(input: ProviderInput, owner: number, modelId?: string) {
+    return this.exclusive(async () => {
+      this.idle();
+      if (input.kind === 'custom' && !modelId) {
+        const { apiKey } = this.config.connection(input);
+        const listed = await listRemoteModels(input.baseUrl, apiKey);
+        return `连接成功 · 获取到 ${listed.length} 个模型`;
+      }
+      const model = this.config.transient(input, modelId);
+      await this.ask(model, owner, '仅回复 OK');
+      return `连接成功 · ${model.name} 已回复`;
+    });
+  }
+  fetchProviderModels(input: ProviderInput) {
+    return this.exclusive(async () => this.config.candidates(input));
+  }
+  /**
+   * Sends a small image with four random digits and asks for them back. A correct answer means
+   * the model reads images; a wrong answer or an explicit rejection means it does not; network
+   * failures leave the capability unconfirmed.
+   */
+  probeVision(id: string, owner: number) {
+    return this.exclusive(async (): Promise<ProbeResult> => {
+      this.idle();
+      const model = this.config.resolve(id);
+      if (model.kind === 'builtin') throw new Error('内置服务商的模型能力来自模型目录，无需检测');
+      const code = probeCode();
+      const image = {
+        type: 'image' as const,
+        data: digitsPng(code).toString('base64'),
+        mimeType: 'image/png',
+      };
+      let reply: string;
+      try {
+        reply = await this.ask(
+          { ...model, vision: 'supported', thinkingLevels: [] },
+          owner,
+          '图片中是一个 4 位数字。只回复这 4 位数字，不要回复其他内容。',
+          [image],
+        );
+      } catch (error) {
+        const status = error instanceof ProbeError ? error.status : 0;
+        if ([400, 415, 422].includes(status)) {
+          await this.config.recordProbe(id, 'unsupported');
+          return {
+            vision: 'unsupported',
+            message: `服务拒绝了图片输入（${status}），已标为不支持图片`,
+          };
+        }
+        return { vision: 'unknown', message: '检测请求失败或超时，图片能力仍未确认，可稍后重试' };
+      }
+      const supported = reply.replace(/\s/g, '').includes(code);
+      await this.config.recordProbe(id, supported ? 'supported' : 'unsupported');
+      return supported
+        ? { vision: 'supported', message: `检测通过：模型正确读出了测试图片中的数字 ${code}` }
+        : {
+            vision: 'unsupported',
+            message: `模型没有读出测试图片中的数字 ${code}，已标为不支持图片`,
+          };
+    });
+  }
+  /** Runs one transient prompt for tests and probes, returning the reply text. */
+  private async ask(
+    model: ResolvedModel,
+    owner: number,
+    prompt: string,
+    images: { type: 'image'; data: string; mimeType: string }[] = [],
+  ) {
+    this.testing = true;
+    const run = { owner, cancelled: false, sdk: undefined as AgentSession | undefined };
+    this.testRun = run;
+    let sdk: AgentSession | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const runtime = await openAgent(this.root, randomUUID(), model, true);
+      sdk = runtime.session;
+      run.sdk = sdk;
+      if (run.cancelled) throw new Error('连接测试已取消');
+      timeout = setTimeout(() => {
+        void sdk?.abort();
+      }, 20000);
+      try {
+        await sdk.prompt(prompt, { expandPromptTemplates: false, images });
+      } catch {
+        throw new ProbeError(replyFailure(runtime.httpStatus()), runtime.httpStatus());
+      }
+      const last = sdk.messages.filter((m) => m.role === 'assistant').at(-1);
+      const text =
+        last?.content
+          .map((b) => (b.type === 'text' ? b.text : ''))
+          .join('')
+          .trim() ?? '';
+      if (!last || last.stopReason !== 'stop' || !text)
+        throw new ProbeError(replyFailure(runtime.httpStatus()), runtime.httpStatus());
+      return text;
+    } finally {
+      clearTimeout(timeout);
+      sdk?.dispose();
+      this.testing = false;
+      this.testRun = null;
+    }
+  }
+}
+
+class ProbeError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
   }
 }

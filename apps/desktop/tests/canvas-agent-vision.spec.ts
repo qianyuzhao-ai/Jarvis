@@ -128,6 +128,13 @@ test('selected images and sampled video frames reach the vision model; failed as
           clearKey: false,
         });
         if (!configured?.ok) throw new Error('Cannot save configuration');
+        const modelId = configured.value.defaultModelId;
+        if (!modelId) throw new Error('Missing model');
+        const marked = await window.desktop?.models.updateModel({
+          id: modelId,
+          vision: 'supported',
+        });
+        if (!marked?.ok) throw new Error('Cannot mark image support');
         const db = await new Promise<IDBDatabase>((resolve, reject) => {
           const r = indexedDB.open('jarvis-workspace', 1);
           r.onsuccess = () => resolve(r.result);

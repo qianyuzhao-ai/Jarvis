@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
+import { apiKeySchema, baseUrlSchema, thinkingLevelSchema, type ThinkingLevel } from './models';
 import {
   canvasChangeSchema,
   canvasSnapshotSchema,
@@ -15,22 +16,7 @@ export const relaySchema = z
   .object({
     provider: z.enum(['relay', 'deepseek']).optional(),
     name: z.string().trim().min(1).max(100),
-    baseUrl: z
-      .string()
-      .trim()
-      .url()
-      .max(2000)
-      .refine((value) => {
-        const url = new URL(value);
-        return (
-          ['https:', 'http:'].includes(url.protocol) &&
-          !url.username &&
-          !url.password &&
-          !url.search &&
-          !url.hash
-        );
-      }, '地址不能包含账号、密码、查询参数或锚点')
-      .transform((value) => value.replace(/\/+$/, '')),
+    baseUrl: baseUrlSchema,
     api: z.enum(['openai-completions', 'openai-responses']),
     model: z.string().trim().min(1).max(200),
     contextWindow: z.number().int().min(8192).max(2_000_000).nullable().default(null),
@@ -53,12 +39,7 @@ export const relayInputSchema = z
     config: relaySchema,
     modelId: z.string().uuid().optional(),
     create: z.boolean().optional(),
-    apiKey: z
-      .string()
-      .trim()
-      .max(4000)
-      .refine((key) => !/[\r\n]/.test(key))
-      .default(''),
+    apiKey: apiKeySchema,
     clearKey: z.boolean().default(false),
   })
   .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key')
@@ -69,12 +50,7 @@ export const relayModelsInputSchema = z
     config: relaySchema.safeExtend({ model: z.string().trim().max(200) }),
     modelId: z.string().uuid().optional(),
     create: z.boolean().optional(),
-    apiKey: z
-      .string()
-      .trim()
-      .max(4000)
-      .refine((key) => !/[\r\n]/.test(key))
-      .default(''),
+    apiKey: apiKeySchema,
     clearKey: z.boolean().default(false),
   })
   .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key');
@@ -132,6 +108,7 @@ export const chatSessionSchema = z.object({
   contextTokens: z.number().nullable(),
   contextWindow: z.number().nullable(),
   projectId: z.string().uuid().optional(),
+  thinkingLevel: thinkingLevelSchema.optional(),
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type RelayInput = z.infer<typeof relayInputSchema>;
@@ -177,6 +154,7 @@ export interface AgentBridge {
   renameSession(input: { sessionId: string; title: string }): Promise<AgentResult<void>>;
   deleteSession(sessionId: string): Promise<AgentResult<void>>;
   setModel(input: { sessionId: string; model: string }): Promise<AgentResult<void>>;
+  setThinkingLevel(input: { sessionId: string; level: ThinkingLevel }): Promise<AgentResult<void>>;
   send(input: z.infer<typeof agentSendSchema>): Promise<AgentResult<string>>;
   cancel(runId: string): Promise<AgentResult<void>>;
   copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 import { openAgent } from '../src/main/agent/runtime';
 import { AgentStore } from '../src/main/agent/store';
 import { JsonFile } from '../src/main/agent/json-file';
-import { relaySchema } from '../src/shared/agent';
+import { relayModel } from './helpers/models';
 
 test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and supports abort', async () => {
   const requests: Record<string, unknown>[] = [];
@@ -28,19 +28,17 @@ test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and suppo
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   const addr = server.address();
   if (!addr || typeof addr === 'string') throw Error('server');
-  const config = relaySchema.parse({
-    name: 'Mock',
+  const config = relayModel({
     baseUrl: `http://127.0.0.1:${addr.port}/v1`,
-    api: 'openai-completions',
     model: 'complete',
+    apiKey: 'test-secret',
   });
   try {
     for (const model of ['complete', 'incomplete', 'abort']) {
       const { session } = await openAgent(
         test.info().outputPath('runtime'),
         randomUUID(),
-        { ...config, model },
-        'test-secret',
+        { ...config, modelId: model, name: model },
         true,
       );
       try {
@@ -78,13 +76,7 @@ test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and suppo
 test('agent records recover unfinished runs without reissuing requests', async () => {
   const file = new JsonFile(test.info().outputPath('index.json'));
   const store = new AgentStore(file);
-  const config = relaySchema.parse({
-    name: 'Mock',
-    baseUrl: 'http://localhost:1234/v1',
-    api: 'openai-completions',
-    model: 'mock',
-  });
-  const id = await store.create(config);
+  const id = await store.create(relayModel({ baseUrl: 'http://localhost:1234/v1', model: 'mock' }));
   const r = store.record(id);
   r.view.runId = randomUUID();
   r.view.messages.push({
@@ -112,13 +104,12 @@ test('upstream authentication errors cannot persist a reflected API Key in SDK h
   if (!address || typeof address === 'string') throw Error('server');
   const id = randomUUID(),
     root = test.info().outputPath('runtime');
-  const config = relaySchema.parse({
-    name: 'Mock',
+  const config = relayModel({
     baseUrl: `http://127.0.0.1:${address.port}/v1`,
-    api: 'openai-completions',
     model: 'mock',
+    apiKey: secret,
   });
-  const { session } = await openAgent(root, id, config, secret);
+  const { session } = await openAgent(root, id, config);
   try {
     await session.prompt('Hello', { expandPromptTemplates: false });
     expect(session.messages.filter((m) => m.role === 'assistant').at(-1)?.stopReason).toBe('error');

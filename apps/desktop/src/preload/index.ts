@@ -57,6 +57,7 @@ const desktop: DesktopInfo = {
     renameSession: (input) => ipcRenderer.invoke('agent:rename', input),
     deleteSession: (id) => ipcRenderer.invoke('agent:delete', id),
     setModel: (input) => ipcRenderer.invoke('agent:model', input),
+    setThinkingLevel: (input) => ipcRenderer.invoke('agent:thinking', input),
     send: (input) => ipcRenderer.invoke('agent:send', input),
     cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
     copyReply: (input) => ipcRenderer.invoke('agent:copy-reply', input),
@@ -67,6 +68,19 @@ const desktop: DesktopInfo = {
         ipcRenderer.removeListener('agent:event', handle);
       };
     },
+  },
+  models: {
+    getSettings: () => ipcRenderer.invoke('models:settings'),
+    getCatalog: () => ipcRenderer.invoke('models:catalog'),
+    saveProvider: (input) => ipcRenderer.invoke('models:save-provider', input),
+    testProvider: (input) => ipcRenderer.invoke('models:test-provider', input),
+    listCandidates: (input) => ipcRenderer.invoke('models:candidates', input),
+    setProviderModels: (input) => ipcRenderer.invoke('models:set-provider-models', input),
+    updateModel: (input) => ipcRenderer.invoke('models:update', input),
+    removeModel: (id) => ipcRenderer.invoke('models:remove', id),
+    removeProvider: (id) => ipcRenderer.invoke('models:remove-provider', id),
+    setDefaultModel: (id) => ipcRenderer.invoke('models:default', id),
+    probeVision: (id) => ipcRenderer.invoke('models:probe-vision', id),
   },
   writing: {
     getRoots: () => ipcRenderer.invoke('writing:roots'),

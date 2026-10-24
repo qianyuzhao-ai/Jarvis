@@ -2,6 +2,14 @@
 
 最后更新：2026-10-24
 
+## 模型配置改造阶段 2：数据与运行时（2026-10-24）
+
+- 用户确认设计稿后开始阶段 2（方案见 Google 文档“模型配置方案”，设计节点见 design.md 与 figma-sync-2026-10-21/model-settings-v1-state.json）。分支 ccr-56156863-qdlw6l（基于 develop）。
+- 新增 `shared/models.ts`（思考档位、服务商/模型输入与视图、ModelsBridge）、`main/agent/catalog.ts`（懒加载 pi-ai 内置目录；第一期排除 Bedrock/Vertex/Azure/Cloudflare/Codex/Copilot/Radius/TypeSafe；按模型 ID 精确匹配并优先原厂数据）、`model-store.ts`（v3：providers + models + defaultModelId；v2/v1 自动迁移按“来源+地址+协议+Key 明文”合并，保留模型 id，备份 `connection.v2.bak.json`，密钥存储不可用时中止并保留原文件；能力优先级 手动 > 检测 > 中转站 > 目录）、`key-cipher.ts`（safeStorage 封装，store 可在纯 Node 测试）、`probe-image.ts`（随机 4 位数字 PNG）。删除 `configuration.ts`。
+- runtime：内置服务商直接用目录模型（不再把 DeepSeek 输出上限改成 4096）；自定义模型按能力注册 input/reasoning/thinkingLevelMap；输出上限“自动”通过 onPayload 去掉上限参数（Anthropic 协议回退 8192）；思考档位由会话传入；运行时 Key 优先于环境变量；HTTP 状态改在 fetch 包装中记录（SDK 对错误响应不调用 onResponse）。
+- service：去掉 DeepSeek Pro 特判，图片校验统一读模型能力（不支持 / 未确认分别提示）；会话记录 thinkingLevel，切模型降到最近档位，新会话沿用该模型上次档位；新增 saveProvider / setProviderModels / updateModel / removeProvider / testProvider / fetchProviderModels / probeVision / setThinkingLevel 与 `models:*`、`agent:thinking` IPC。旧 `agent:configuration/save/test/models` 等保留为 v3 适配层，阶段 3 随旧设置页删除。
+- 环境记录：Linux 容器下 Playwright 的 Electron loader 固定追加 `--password-store=basic`，safeStorage 恒为 basic_text，凡保存 Key 的实窗测试在 Linux 必然失败（基线即如此，非代码问题）。本地验证方式：安装 gnome-keyring，在 dbus-run-session 内解锁 keyring、设置 XDG_CURRENT_DESKTOP=GNOME，并临时把 node_modules 中 playwright-core electron/loader.js 的该参数改为 gnome-libsecret（不入库，验证后还原）。
+
 ## UI V1 第二批浮层与反馈（2026-10-24）
 
 E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二批十个家族（含 CandidateList）、异步 ConfirmProvider 和最多三条的 Toast；页面接入不新增原生接口、不改数据格式。最终检查、构建、完整实窗 95/95（3.4m），浮层复验 8/8（25.5s）通过。phase-h 36 张浅深截图与所有阶段 SHA、取舍、失败修复记录见 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。MediaEditor 外壳、ContextUsage 混合提示按评估保留；macOS 13/26 和 Windows 仍待实机验收。

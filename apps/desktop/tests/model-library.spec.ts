@@ -60,11 +60,20 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     const file = join(userData, 'agent', 'connection.json');
     await app.close();
     const before = JSON.parse(await readFile(file, 'utf8'));
+    expect(before.version).toBe(3);
+    // Rewrite as the original single-relay file to exercise the full legacy migration path.
     await writeFile(
       file,
       JSON.stringify({
-        config: before.models[0].config,
-        encryptedKey: before.models[0].encryptedKey,
+        config: {
+          name: '旧中转站',
+          baseUrl: origin + '/v1',
+          api: 'openai-completions',
+          model: 'mock',
+          contextWindow: null,
+          maxTokens: 4096,
+        },
+        encryptedKey: before.providers[0].encryptedKey,
       }),
     );
     app = await launch();
@@ -72,7 +81,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '模型服务', exact: true }).click();
     await expect(page.getByTestId('configured-model')).toHaveCount(1);
-    expect(JSON.parse(await readFile(file, 'utf8')).version).toBe(2);
+    expect(JSON.parse(await readFile(file, 'utf8')).version).toBe(3);
     await app.evaluate((_electron, origin) => {
       const originalFetch = globalThis.fetch;
       globalThis.fetch = async (input, init) => {

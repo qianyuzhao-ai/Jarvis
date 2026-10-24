@@ -1,16 +1,24 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
-import type { RelayConfig } from '../../shared/agent';
+import type { ThinkingLevel } from '../../shared/models';
+import type { ResolvedModel } from './model-store';
+
+/** Local protection when a custom model's context window is unknown; no usage percentage is shown for it. */
+export const UNKNOWN_CONTEXT_WINDOW = 128_000;
+/** Internal ceiling used for thinking budgets when the output limit is automatic. */
+const AUTO_MAX_TOKENS = 32_768;
+/** Anthropic Messages requires max_tokens, so "automatic" falls back to this value there. */
+const ANTHROPIC_AUTO_MAX_TOKENS = 8192;
 
 export async function openAgent(
   root: string,
   id: string,
-  config: RelayConfig,
-  key: string,
+  model: ResolvedModel,
   transient = false,
   canvas?: { tools: ToolDefinition[]; context: string },
   skills?: { tools: ToolDefinition[]; context: string },
+  thinkingLevel: ThinkingLevel = 'off',
 ) {
   const tools = [...(canvas?.tools ?? []), ...(skills?.tools ?? [])];
   const sdk = await import('@earendil-works/pi-coding-agent');
@@ -27,36 +35,40 @@ export async function openAgent(
     allowModelNetwork: false,
     refreshOnCreate: false,
   });
-  if (config.provider !== 'deepseek')
-    models.registerProvider('jarvis-relay', {
-      name: config.name,
-      baseUrl: config.baseUrl,
-      api: config.api,
+  const key = model.apiKey;
+  const autoLimit = model.kind === 'custom' && !model.maxTokens;
+  let provider: string;
+  if (model.kind === 'custom') {
+    if (!model.baseUrl || !model.api) throw new Error('自定义接口缺少地址或协议');
+    provider = 'jarvis-custom';
+    models.registerProvider(provider, {
+      name: model.providerName,
+      baseUrl: model.baseUrl,
+      api: model.api,
       models: [
         {
-          id: config.model,
-          name: config.model,
-          reasoning: false,
-          input: canvas ? ['text', 'image'] : ['text'],
+          id: model.modelId,
+          name: model.name,
+          reasoning: model.thinkingLevels.length > 0,
+          ...(model.thinkingLevelMap ? { thinkingLevelMap: model.thinkingLevelMap } : {}),
+          input: model.vision === 'supported' ? ['text', 'image'] : ['text'],
           cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-          contextWindow: config.contextWindow ?? 32768,
-          maxTokens: config.maxTokens,
+          contextWindow: model.contextWindow ?? UNKNOWN_CONTEXT_WINDOW,
+          maxTokens:
+            model.maxTokens ??
+            (model.api === 'anthropic-messages' ? ANTHROPIC_AUTO_MAX_TOKENS : AUTO_MAX_TOKENS),
         },
       ],
     });
-  const provider = config.provider === 'deepseek' ? 'deepseek' : 'jarvis-relay';
-  if (provider === 'deepseek' && !key) throw new Error('请填写 DeepSeek API Key');
+  } else {
+    if (!model.sdkProvider) throw new Error('服务商不存在');
+    provider = model.sdkProvider;
+    if (!key) throw new Error(`请填写 ${model.providerName} API Key`);
+  }
+  // A runtime Key always wins over environment variables such as DEEPSEEK_API_KEY.
   await models.setRuntimeApiKey(provider, key || 'jarvis-no-auth');
-  const selectedModel = models.getModel(provider, config.model);
+  const selectedModel = models.getModel(provider, model.modelId);
   if (!selectedModel) throw new Error('当前 SDK 不支持此模型，请选择可用模型');
-  const model =
-    config.provider === 'deepseek'
-      ? {
-          ...selectedModel,
-          contextWindow: config.contextWindow ?? selectedModel.contextWindow,
-          maxTokens: config.maxTokens,
-        }
-      : selectedModel;
   const settings = sdk.SettingsManager.inMemory({
     retry: { enabled: false },
     compaction: { enabled: false },
@@ -85,8 +97,8 @@ export async function openAgent(
     cwd,
     agentDir: root,
     modelRuntime: models,
-    model,
-    thinkingLevel: 'off',
+    model: selectedModel,
+    thinkingLevel: thinkingLevel as never,
     tools: tools.map((t) => t.name),
     noTools: tools.length ? 'builtin' : 'all',
     customTools: tools,
@@ -118,13 +130,21 @@ export async function openAgent(
     if (++requests > (canvas || tools.length ? 8 : 1)) throw new Error('本轮请求次数已达上限');
     const source = stream(m, context, {
       ...options,
-      maxTokens: config.maxTokens,
       maxRetries: 0,
+      ...(autoLimit && m.api !== 'anthropic-messages'
+        ? {
+            onPayload: (payload: unknown) => withoutOutputLimit(payload),
+          }
+        : {}),
       transport: 'sse',
-      fetch: (url, init) => {
+      fetch: async (url, init) => {
         const request = new Request(url, init);
-        if (!key) request.headers.delete('authorization');
-        return fetch(request, { redirect: 'error' });
+        if (!key)
+          for (const header of ['authorization', 'x-api-key', 'x-goog-api-key'])
+            request.headers.delete(header);
+        const response = await fetch(request, { redirect: 'error' });
+        httpStatus = response.status;
+        return response;
       },
       onResponse: (response) => {
         httpStatus = response.status;
@@ -169,6 +189,20 @@ export async function openAgent(
     return result;
   };
   return { session, httpStatus: () => httpStatus };
+}
+/** Removes the output limit so the relay applies its own default ("automatic"). */
+export function withoutOutputLimit(payload: unknown) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const next: Record<string, unknown> = { ...(payload as Record<string, unknown>) };
+  delete next.max_tokens;
+  delete next.max_completion_tokens;
+  delete next.max_output_tokens;
+  const config = next.generationConfig;
+  if (config && typeof config === 'object') {
+    const { maxOutputTokens: _drop, ...rest } = config as Record<string, unknown>;
+    next.generationConfig = rest;
+  }
+  return next;
 }
 export function replyFailure(status: number) {
   return status >= 400
