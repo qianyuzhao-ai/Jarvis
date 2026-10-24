@@ -1,28 +1,102 @@
 {
   "updatedAt": "2026-10-24",
   "fileKey": "mIwnyR5nAlECFMam1NvmER",
-  "page": { "id": "319:27345", "name": "V1-视觉换新" },
+  "page": {
+    "id": "319:27345",
+    "name": "V1-视觉换新"
+  },
   "status": "初稿，待用户确认",
   "plan": "https://docs.google.com/document/d/1WRecrTkcJNEq0BtekdvhhXqz87Q4glzOiWH_BKiXNVc/edit",
   "localComponents": {
-    "partsFrame": "427:29675",
-    "Model Row": { "id": "427:29676", "props": ["name", "modelId", "isDefault", "vision", "textOnly", "showContext"], "exposed": ["Badge / 上下文"] },
-    "Provider Tile": { "id": "429:29979", "variants": ["state=default", "state=selected"], "props": ["name", "meta"] },
-    "Model Option": { "id": "429:29980", "props": ["name", "modelId", "vision", "textOnly", "showContext"], "exposed": ["Checkbox", "Badge / 上下文"] }
+    "Model Row": {
+      "id": "427:29676",
+      "props": [
+        "name",
+        "modelId",
+        "isDefault",
+        "vision",
+        "textOnly",
+        "showContext"
+      ],
+      "exposed": [
+        "Badge / 上下文"
+      ]
+    },
+    "Provider Tile": {
+      "id": "429:29979",
+      "variants": [
+        "state=default",
+        "state=selected"
+      ],
+      "props": [
+        "name",
+        "meta"
+      ]
+    },
+    "Model Option": {
+      "id": "429:29980",
+      "props": [
+        "name",
+        "modelId",
+        "vision",
+        "textOnly",
+        "showContext"
+      ],
+      "exposed": [
+        "Checkbox",
+        "Badge / 上下文"
+      ]
+    },
+    "section": {
+      "page": "332:28013 V1-Components",
+      "id": "432:37742",
+      "name": "28 Model Settings",
+      "description": "432:37743",
+      "review": {
+        "frame": "432:45756",
+        "light": "432:45757",
+        "dark": "432:45928"
+      }
+    }
   },
   "frames": {
-    "Settings · Models": { "light": "428:29687", "dark": "431:43867" },
-    "Add provider 1 Choose": { "light": "430:29985", "dark": "431:43966" },
-    "Add provider 2 Connect (DeepSeek)": { "light": "430:30332", "dark": "431:44100" },
-    "Add provider 3 Models (DeepSeek)": { "light": "430:30544", "dark": "431:44221" },
-    "Add provider 2 Connect custom": { "light": "430:30863", "dark": "431:44341" },
-    "Add provider 3 Models custom": { "light": "430:31124", "dark": "431:44473" },
-    "Chat · Model picker": { "light": "431:31910", "dark": "431:44605" },
-    "Chat · Model picker with image": { "light": "431:32341", "dark": "431:44664" }
+    "Settings · Models": {
+      "light": "428:29687",
+      "dark": "431:43867"
+    },
+    "Add provider 1 Choose": {
+      "light": "430:29985",
+      "dark": "431:43966"
+    },
+    "Add provider 2 Connect (DeepSeek)": {
+      "light": "430:30332",
+      "dark": "431:44100"
+    },
+    "Add provider 3 Models (DeepSeek)": {
+      "light": "430:30544",
+      "dark": "431:44221"
+    },
+    "Add provider 2 Connect custom": {
+      "light": "430:30863",
+      "dark": "431:44341"
+    },
+    "Add provider 3 Models custom": {
+      "light": "430:31124",
+      "dark": "431:44473"
+    },
+    "Chat · Model picker": {
+      "light": "431:31910",
+      "dark": "431:44605"
+    },
+    "Chat · Model picker with image": {
+      "light": "431:32341",
+      "dark": "431:44664"
+    }
   },
   "notes": [
     "外壳克隆自 Chat · Home / Light 389:26739；暗色帧通过 V1 / Semantic 集合显式 Dark 模式 334:2 并复制 389:27224 壁纸。",
     "对话框由 Dialog size=default 实例分离后填充内容区；Badge accent subtle 在浅色下文字不可见，默认标记改用 accent solid（组件库问题待查）。",
-    "已截图检查：设置页浅/深、第 1/2/3 步、自定义第 2/3 步、带图选择器浅色、第 1 步深色。"
+    "已截图检查：设置页浅/深、第 1/2/3 步、自定义第 2/3 步、带图选择器浅色、第 1 步深色。",
+    "2026-10-24：三个组件按用户要求移到 V1-Components 页 Section 28 Model Settings（描述 + 组件 + 浅/深 Review），原 V1 页临时容器 427:29675 已删除，页面实例保持链接；Section 截图检查通过。"
   ]
 }
