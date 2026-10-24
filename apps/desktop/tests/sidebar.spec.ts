@@ -41,11 +41,7 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     await expect.poll(offset).toBe(0);
     await expect(sidebar).not.toHaveAttribute('inert');
     const exit = await sidebar.evaluate(async (n) => {
-      (
-        document.querySelector(
-          '[data-testid="canvas-toolbar"] [aria-label="收起画布助手"]',
-        ) as HTMLButtonElement
-      ).click();
+      (document.querySelector('[aria-label="收起画布助手"]') as HTMLButtonElement).click();
       const deadline = performance.now() + 1500;
       while (performance.now() < deadline) {
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -102,7 +98,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const handle = page.getByRole('separator', { name: '调整侧栏宽度' });
-    await expect(handle).toHaveAttribute('aria-valuenow', '230');
+    await expect(handle).toHaveAttribute('aria-valuenow', '248');
     async function dragBy(delta: number) {
       const initial = Number(await handle.getAttribute('aria-valuenow'));
       const target = Math.min(320, Math.max(230, initial + delta));
@@ -131,7 +127,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     await page.keyboard.press('ArrowRight');
     await expect(handle).toHaveAttribute('aria-valuenow', '290');
     await handle.dblclick();
-    await expect(handle).toHaveAttribute('aria-valuenow', '230');
+    await expect(handle).toHaveAttribute('aria-valuenow', '248');
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const intermediate = await page.evaluate(async () => {
       (document.querySelector('[aria-label="收起侧栏"]') as HTMLButtonElement).click();
@@ -139,26 +135,49 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
       const deadline = performance.now() + 1500;
       while (performance.now() < deadline) {
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        const x = node.getBoundingClientRect().x;
+        const x =
+          node.getBoundingClientRect().x -
+          node.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+          0.5;
         if (x < 0 && x > -node.clientWidth) break;
       }
-      return node.getBoundingClientRect().x;
+      return (
+        node.getBoundingClientRect().x -
+        node.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+        0.5
+      );
     });
     expect(intermediate).toBeLessThan(0);
-    expect(intermediate).toBeGreaterThan(-230);
+    expect(intermediate).toBeGreaterThan(-248);
     // Reverse before the exit has completed.
     await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect
       .poll(() =>
-        page.getByTestId('sidebar-shell').evaluate((n) => Math.round(n.getBoundingClientRect().x)),
+        page
+          .getByTestId('sidebar-shell')
+          .evaluate((n) =>
+            Math.round(
+              n.getBoundingClientRect().x -
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+                0.5,
+            ),
+          ),
       )
       .toBe(0);
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('button', { name: '展开侧栏' })).toBeFocused();
     await expect
       .poll(() =>
-        page.getByTestId('workspace').evaluate((n) => Math.round(n.getBoundingClientRect().x)),
+        page
+          .getByTestId('workspace')
+          .evaluate((n) =>
+            Math.round(
+              n.getBoundingClientRect().x -
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+                0.5,
+            ),
+          ),
       )
       .toBe(0);
     await expect(page.getByTestId('sidebar-shell')).toHaveAttribute('inert', '');
@@ -166,7 +185,7 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     await page.getByRole('button', { name: '展开侧栏' }).click();
     await expect(page.getByRole('button', { name: '收起侧栏' })).toBeFocused();
     await page.getByRole('button', { name: '设置', exact: true }).click();
-    await expect(handle).toHaveAttribute('aria-valuenow', '230');
+    await expect(handle).toHaveAttribute('aria-valuenow', '248');
     await handle.focus();
     await page.keyboard.press('End');
     await expect(handle).toHaveAttribute('aria-valuenow', '320');
@@ -174,13 +193,29 @@ test('sidebar resizes, persists width, animates and respects reduced motion', as
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect
       .poll(() =>
-        page.getByTestId('sidebar-shell').evaluate((n) => Math.round(n.getBoundingClientRect().x)),
+        page
+          .getByTestId('sidebar-shell')
+          .evaluate((n) =>
+            Math.round(
+              n.getBoundingClientRect().x -
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+                0.5,
+            ),
+          ),
       )
       .toBe(-320);
     await page.getByRole('button', { name: '展开侧栏' }).click();
     await expect
       .poll(() =>
-        page.getByTestId('workspace').evaluate((n) => Math.round(n.getBoundingClientRect().x)),
+        page
+          .getByTestId('workspace')
+          .evaluate((n) =>
+            Math.round(
+              n.getBoundingClientRect().x -
+                n.closest('[data-testid="shell-panel"]')!.getBoundingClientRect().x -
+                0.5,
+            ),
+          ),
       )
       .toBe(320);
     expect(errors).toEqual([]);

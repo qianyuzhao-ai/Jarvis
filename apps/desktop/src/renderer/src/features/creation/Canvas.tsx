@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -33,9 +34,8 @@ import {
   Plus,
   Video,
   Upload,
-  PanelRightOpen,
   Link2,
-} from 'lucide-react';
+} from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
@@ -58,6 +58,13 @@ import {
 } from './types';
 const nodeTypes = { media: MediaPlaceholder, asset: AssetNode };
 type Props = {
+  shell: {
+    active: boolean;
+    rightHost: HTMLElement | null;
+    open: boolean;
+    width: number;
+    onWidth: (n: number) => void;
+  };
   project: Project;
   onChange: (update: (project: Project) => Project) => void;
   onCommit: (update: (project: Project) => Project) => Promise<void>;
@@ -74,20 +81,18 @@ type Props = {
   ) => Promise<void>;
 };
 function CanvasContent({
+  shell,
   project,
   onChange,
   onCommit,
   onConfigureAgent,
-  agentBusy,
   onBack,
   theme,
   status,
   onGenerate,
   onImport,
 }: Props) {
-  const [agentOpen, setAgentOpen] = useState(
-    () => localStorage.getItem('jarvis:canvas-agent-open') === 'true',
-  );
+  const agentOpen = shell.open;
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editorId, setEditorId] = useState<string | null>(null);
   const [connectingIds, setConnectingIds] = useState<string[] | null>(null);
@@ -99,7 +104,6 @@ function CanvasContent({
   const [editorHeight, setEditorHeight] = useState(200);
   const container = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const agentToggle = useRef<HTMLButtonElement>(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [importNotice, setImportNotice] = useState('');
@@ -122,13 +126,6 @@ function CanvasContent({
     [flow, project.nodes],
   );
   useCanvasHost(project, onCommit, focusNodes, setConnectionNotice);
-  function toggleAgent() {
-    if (agentOpen) agentToggle.current?.focus();
-    setAgentOpen((value) => {
-      localStorage.setItem('jarvis:canvas-agent-open', String(!value));
-      return !value;
-    });
-  }
 
   useEffect(
     () =>
@@ -473,17 +470,6 @@ function CanvasContent({
           projectName={project.name}
           status={status}
         />
-        <IconButton
-          ref={agentToggle}
-          label={agentOpen ? '收起画布助手' : '展开画布助手'}
-          aria-controls="canvas-agent"
-          aria-expanded={agentOpen}
-          title={agentBusy ? '画布助手正在回复' : '画布助手'}
-          onClick={toggleAgent}
-        >
-          <PanelRightOpen size={18} />
-          {agentBusy && <span className="canvas-agent-running-dot" />}
-        </IconButton>
       </header>
       <div className="canvas-workspace">
         <div
@@ -742,15 +728,24 @@ function CanvasContent({
             </motion.div>
           )}
         </div>
-        <CanvasAgentSidebar
-          key={project.id}
-          project={project}
-          selectedIds={selectedIds}
-          open={agentOpen}
-          focus={focusNodes}
-          commit={onCommit}
-          configure={onConfigureAgent}
-        />
+        {shell.rightHost &&
+          createPortal(
+            <div hidden={!shell.active}>
+              {' '}
+              <CanvasAgentSidebar
+                key={project.id}
+                project={project}
+                selectedIds={selectedIds}
+                open={agentOpen}
+                width={shell.width}
+                onWidth={shell.onWidth}
+                focus={focusNodes}
+                commit={onCommit}
+                configure={onConfigureAgent}
+              />
+            </div>,
+            shell.rightHost,
+          )}
       </div>
     </main>
   );

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Button } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
 import {
@@ -27,7 +28,7 @@ import {
   PanelRightOpen,
   Search,
   X,
-} from 'lucide-react';
+} from '@jarvis/ui/icons';
 import type { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import type { WritingEntry } from '../../../../shared/writing';
@@ -96,8 +97,21 @@ function ResizeHandle({
   );
 }
 
-export function WritingSpace({ onBack }: { onBack: () => void }) {
-  const writing = useWriting();
+export function WritingSpace({
+  onBack,
+  writing,
+  shell,
+}: {
+  onBack: () => void;
+  writing: ReturnType<typeof useWriting>;
+  shell: {
+    active: boolean;
+    leftHost: HTMLElement | null;
+    rightHost: HTMLElement | null;
+    rightOpen: boolean;
+    onOpen: (path: string, newTab: boolean) => void;
+  };
+}) {
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [leftWidth, setLeftWidth] = useState(260);
@@ -192,6 +206,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
   }, [creation]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!shell.active || e.isComposing) return;
       if (e.key === 'Escape') {
         setFolderMenu(false);
         setMoreMenu(false);
@@ -209,7 +224,7 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [writing.root]);
+  }, [writing.root, shell.active]);
   function toggleLeft() {
     setLeftOpen((open) => !open);
     requestAnimationFrame(() => leftToggle.current?.focus());
@@ -247,9 +262,18 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
           style={{ paddingLeft: 8 + depth * 16 }}
           title={entry.path}
           aria-expanded={entry.kind === 'directory' ? writing.expanded.has(entry.path) : undefined}
-          onClick={() => {
+          onAuxClick={(event) => {
+            if (event.button === 1 && entry.kind === 'file') {
+              event.preventDefault();
+              void writing.openDocument(entry).then(() => shell.onOpen(entry.path, true));
+            }
+          }}
+          onClick={(event) => {
             if (entry.kind === 'directory') void writing.toggleDirectory(entry.path);
-            else void writing.openDocument(entry);
+            else
+              void writing
+                .openDocument(entry)
+                .then(() => shell.onOpen(entry.path, event.metaKey || event.ctrlKey));
           }}
         >
           {entry.kind === 'directory' ? (
@@ -279,161 +303,174 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
       data-platform={window.desktop?.platform}
       style={
         {
-          '--writing-left': `${leftOpen ? leftWidth : 0}px`,
-          '--writing-right': `${rightOpen ? rightWidth : 0}px`,
+          '--writing-left': '0px',
+          '--writing-right': '0px',
         } as CSSProperties
       }
     >
-      {leftOpen && (
-        <aside className="writing-left" aria-label="写作文件目录">
-          <div className="writing-left-chrome window-drag">
-            <IconButton
-              ref={leftToggle}
-              label="收起左侧栏"
-              onClick={toggleLeft}
-              aria-expanded={true}
-            >
-              <PanelLeftClose size={18} />
-            </IconButton>
-          </div>
-          <button className="writing-back" onClick={() => void leave()}>
-            <ArrowLeft size={14} />
-            返回工作台
-          </button>
-          <div className="writing-folder-area">
-            <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
-              <DropdownMenuTrigger asChild>
-                <button className="writing-folder-picker" disabled={writing.loading}>
-                  <Folder size={20} />
-                  <strong>{writing.root?.name ?? '打开文件夹'}</strong>
-                  <ChevronDown size={14} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent aria-label="切换文件夹" align="start">
-                <DropdownMenuLabel>切换文件夹</DropdownMenuLabel>
-                {writing.roots.map((root) => (
+      {shell.leftHost &&
+        createPortal(
+          <aside className="writing-left" aria-label="写作文件目录">
+            <div className="writing-left-chrome window-drag" hidden>
+              <IconButton
+                ref={leftToggle}
+                label="收起左侧栏"
+                onClick={toggleLeft}
+                aria-expanded={true}
+              >
+                <PanelLeftClose size={18} />
+              </IconButton>
+            </div>
+            <button hidden className="writing-back" onClick={() => void leave()}>
+              <ArrowLeft size={14} />
+              返回工作台
+            </button>
+            <div className="writing-folder-area">
+              <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
+                <DropdownMenuTrigger asChild>
+                  <button className="writing-folder-picker" disabled={writing.loading}>
+                    <Folder size={20} />
+                    <strong>{writing.root?.name ?? '打开文件夹'}</strong>
+                    <ChevronDown size={14} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent aria-label="切换文件夹" align="start">
+                  <DropdownMenuLabel>切换文件夹</DropdownMenuLabel>
+                  {writing.roots.map((root) => (
+                    <DropdownMenuItem
+                      key={root.id}
+                      title={root.directory}
+                      onSelect={() => {
+                        setQuery('');
+                        void writing.switchRoot(root);
+                      }}
+                    >
+                      <Folder />
+                      <span>{root.name}</span>
+                      {writing.root?.id === root.id && (
+                        <DropdownMenuShortcut>当前</DropdownMenuShortcut>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
                   <DropdownMenuItem
-                    key={root.id}
-                    title={root.directory}
                     onSelect={() => {
-                      setQuery('');
-                      void writing.switchRoot(root);
+                      void writing.chooseDirectory();
                     }}
                   >
-                    <Folder />
-                    <span>{root.name}</span>
-                    {writing.root?.id === root.id && (
-                      <DropdownMenuShortcut>当前</DropdownMenuShortcut>
-                    )}
+                    <FolderPlus />
+                    打开其他文件夹…
                   </DropdownMenuItem>
-                ))}
-                <DropdownMenuItem
-                  onSelect={() => {
-                    void writing.chooseDirectory();
-                  }}
-                >
-                  <FolderPlus />
-                  打开其他文件夹…
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          {writing.root && (
-            <>
-              <div className="writing-file-tools">
-                <span>文件</span>
-                <div>
-                  <IconButton
-                    ref={searchToggle}
-                    label="搜索文件"
-                    aria-expanded={searchOpen}
-                    onClick={toggleSearch}
-                  >
-                    <Search size={18} />
-                  </IconButton>
-                  <IconButton
-                    label="新建文件"
-                    onClick={() => {
-                      setCreation('file');
-                      setName('');
-                    }}
-                  >
-                    <FilePlus size={18} />
-                  </IconButton>
-                  <IconButton
-                    label="新建文件夹"
-                    onClick={() => {
-                      setCreation('directory');
-                      setName('');
-                    }}
-                  >
-                    <FolderPlus size={18} />
-                  </IconButton>
-                  <DropdownMenu open={moreMenu} onOpenChange={setMoreMenu}>
-                    <DropdownMenuTrigger asChild>
-                      <IconButton label="更多文件操作">
-                        <MoreHorizontal size={18} />
-                      </IconButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent aria-label="更多文件操作" align="end">
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          void writing.refresh();
-                          for (const path of writing.expanded) void writing.refresh(path);
-                        }}
-                      >
-                        刷新文件列表
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            {writing.root && (
+              <>
+                <div className="writing-file-tools">
+                  <span>文件</span>
+                  <div>
+                    <IconButton
+                      ref={searchToggle}
+                      label="搜索文件"
+                      aria-expanded={searchOpen}
+                      onClick={toggleSearch}
+                    >
+                      <Search size={18} />
+                    </IconButton>
+                    <IconButton
+                      label="新建文件"
+                      onClick={() => {
+                        setCreation('file');
+                        setName('');
+                      }}
+                    >
+                      <FilePlus size={18} />
+                    </IconButton>
+                    <IconButton
+                      label="新建文件夹"
+                      onClick={() => {
+                        setCreation('directory');
+                        setName('');
+                      }}
+                    >
+                      <FolderPlus size={18} />
+                    </IconButton>
+                    <DropdownMenu open={moreMenu} onOpenChange={setMoreMenu}>
+                      <DropdownMenuTrigger asChild>
+                        <IconButton label="更多文件操作">
+                          <MoreHorizontal size={18} />
+                        </IconButton>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent aria-label="更多文件操作" align="end">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            void writing.refresh();
+                            for (const path of writing.expanded) void writing.refresh(path);
+                          }}
+                        >
+                          刷新文件列表
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
-              {searchOpen && (
-                <div className="writing-search">
-                  <Search size={16} />
-                  <input
-                    ref={searchInput}
-                    aria-label="搜索文件名"
-                    placeholder="搜索文件…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') toggleSearch();
-                    }}
-                  />
-                </div>
-              )}
-              <nav className="writing-tree" aria-label="文件列表">
-                {query.trim() && searchOpen ? (
-                  <>
-                    {searching && <p role="status">正在搜索…</p>}
-                    {results?.map((entry) => (
-                      <button
-                        className="writing-file"
-                        key={entry.path}
-                        title={entry.path}
-                        onClick={() => void writing.openDocument(entry)}
-                      >
-                        <FileText size={16} />
-                        <span>{entry.path}</span>
-                      </button>
-                    ))}
-                    {results?.length === 0 && <p>没有匹配的文件</p>}
-                  </>
-                ) : (
-                  fileTree('')
+                {searchOpen && (
+                  <div className="writing-search">
+                    <Search size={16} />
+                    <input
+                      ref={searchInput}
+                      aria-label="搜索文件名"
+                      placeholder="搜索文件…"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') toggleSearch();
+                      }}
+                    />
+                  </div>
                 )}
-                {!query && writing.directories['']?.length === 0 && (
-                  <p>文件夹为空，新建一篇文档吧。</p>
-                )}
-              </nav>
-            </>
-          )}
-          <ResizeHandle side="left" width={leftWidth} onChange={setLeftWidth} />
-        </aside>
-      )}
+                <nav className="writing-tree" aria-label="文件列表">
+                  {query.trim() && searchOpen ? (
+                    <>
+                      {searching && <p role="status">正在搜索…</p>}
+                      {results?.map((entry) => (
+                        <button
+                          className="writing-file"
+                          key={entry.path}
+                          title={entry.path}
+                          onClick={(event) =>
+                            void writing
+                              .openDocument(entry)
+                              .then(() => shell.onOpen(entry.path, event.metaKey || event.ctrlKey))
+                          }
+                          onAuxClick={(event) => {
+                            if (event.button === 1) {
+                              event.preventDefault();
+                              void writing
+                                .openDocument(entry)
+                                .then(() => shell.onOpen(entry.path, true));
+                            }
+                          }}
+                        >
+                          <FileText size={16} />
+                          <span>{entry.path}</span>
+                        </button>
+                      ))}
+                      {results?.length === 0 && <p>没有匹配的文件</p>}
+                    </>
+                  ) : (
+                    fileTree('')
+                  )}
+                  {!query && writing.directories['']?.length === 0 && (
+                    <p>文件夹为空，新建一篇文档吧。</p>
+                  )}
+                </nav>
+              </>
+            )}
+          </aside>,
+          shell.leftHost,
+        )}
       <main data-testid="writing-main" className="writing-main">
-        <header className="writing-tabs window-drag">
+        <header hidden className="writing-tabs window-drag">
           {!leftOpen && (
             <div className="writing-collapsed-controls">
               <IconButton
@@ -587,66 +624,70 @@ export function WritingSpace({ onBack }: { onBack: () => void }) {
           </span>
         </footer>
       </main>
-      {rightOpen && (
-        <Tabs appearance="underline" value={rightTab} onValueChange={setRightTab} asChild>
-          <aside className="writing-right" aria-label="写作辅助面板">
-            <TabsList className="writing-right-tabs" aria-label="辅助功能">
-              <TabsTrigger value="outline" aria-label="文章大纲">
-                <ListTree />
-              </TabsTrigger>
-              <TabsTrigger value="assistant" aria-label="写作助手">
-                <MessageSquare />
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent
-              value={rightTab}
-              className="writing-right-content"
-              aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
-            >
-              <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
-              {rightTab === 'outline' ? (
-                !active ? (
-                  <p>打开文档后显示标题导航</p>
-                ) : outline.length ? (
-                  <nav aria-label="文章标题">
-                    {outline.map((heading) => (
-                      <button
-                        key={heading.from}
-                        className={currentHeading === heading.from ? 'current' : ''}
-                        style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
-                        onClick={() => {
-                          const editor = view.current;
-                          if (editor) {
-                            editor.dispatch({
-                              selection: { anchor: heading.from },
-                              effects: EditorView.scrollIntoView(heading.from, {
-                                y: 'start',
-                                yMargin: 32,
-                              }),
-                            });
-                            editor.focus();
-                          }
-                        }}
-                      >
-                        {heading.title || '未命名标题'}
-                      </button>
-                    ))}
-                  </nav>
+      {shell.rightHost &&
+        shell.active &&
+        shell.rightOpen &&
+        createPortal(
+          <Tabs appearance="underline" value={rightTab} onValueChange={setRightTab} asChild>
+            <aside className="writing-right" aria-label="写作辅助面板">
+              <TabsList className="writing-right-tabs" aria-label="辅助功能">
+                <TabsTrigger value="outline" aria-label="文章大纲">
+                  <ListTree />
+                </TabsTrigger>
+                <TabsTrigger value="assistant" aria-label="写作助手">
+                  <MessageSquare />
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent
+                value={rightTab}
+                className="writing-right-content"
+                aria-label={rightTab === 'outline' ? '文章大纲' : '写作助手'}
+              >
+                <h2>{rightTab === 'outline' ? '文章大纲' : '写作助手'}</h2>
+                {rightTab === 'outline' ? (
+                  !active ? (
+                    <p>打开文档后显示标题导航</p>
+                  ) : outline.length ? (
+                    <nav aria-label="文章标题">
+                      {outline.map((heading) => (
+                        <button
+                          key={heading.from}
+                          className={currentHeading === heading.from ? 'current' : ''}
+                          style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
+                          onClick={() => {
+                            const editor = view.current;
+                            if (editor) {
+                              editor.dispatch({
+                                selection: { anchor: heading.from },
+                                effects: EditorView.scrollIntoView(heading.from, {
+                                  y: 'start',
+                                  yMargin: 32,
+                                }),
+                              });
+                              editor.focus();
+                            }
+                          }}
+                        >
+                          {heading.title || '未命名标题'}
+                        </button>
+                      ))}
+                    </nav>
+                  ) : (
+                    <p>使用 # 标题组织文章结构。</p>
+                  )
                 ) : (
-                  <p>使用 # 标题组织文章结构。</p>
-                )
-              ) : (
-                <div className="writing-ai-placeholder">
-                  <MessageSquare size={24} />
-                  <strong>AI 写作助手</strong>
-                  <p>稍后接入，先专注写作。</p>
-                </div>
-              )}
-            </TabsContent>
-            <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
-          </aside>
-        </Tabs>
-      )}
+                  <div className="writing-ai-placeholder">
+                    <MessageSquare size={24} />
+                    <strong>AI 写作助手</strong>
+                    <p>稍后接入，先专注写作。</p>
+                  </div>
+                )}
+              </TabsContent>
+              <ResizeHandle side="right" width={rightWidth} onChange={setRightWidth} />
+            </aside>
+          </Tabs>,
+          shell.rightHost,
+        )}
       <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>
         <form onSubmit={(e) => void submitCreation(e)}>
           <h2>{creation === 'directory' ? '新建文件夹' : '新建文档'}</h2>

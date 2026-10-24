@@ -299,7 +299,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     }, workspace);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /节点下载测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();
     for (const index of [2, 3]) {
       const generated = page.locator(`.react-flow__node[data-id="${ids[index]}"]`);
       const name = index === 2 ? '图像生成' : '视频生成';
@@ -366,7 +366,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /节点下载测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();
     for (let index = 0; index < 4; index++) {
       await expect(
         page.locator(`.react-flow__node[data-id="${ids[index]}"]`).getByRole('button', {

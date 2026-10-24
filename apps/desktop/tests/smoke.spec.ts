@@ -168,15 +168,16 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '返回工作台' }).click();
-    await page.getByRole('button', { name: /画布交互测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-dark.png') });
     await expect(page.getByTestId('canvas-status')).toContainText('已保存到本机');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /画布交互测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await expect(nodes).toHaveCount(2);
     await expect(page.getByRole('button', { name: '磁力吸附' })).toHaveAttribute(
       'aria-pressed',

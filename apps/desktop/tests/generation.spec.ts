@@ -383,7 +383,7 @@ test('Electron uploads references, generates image and video, and restores resul
     expect(upload.body.toString()).toContain('test-client');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /生成联调测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '生成联调测试' }).click();
     await expect(page.getByTestId('node-generating')).toHaveText('正在生成…');
     await expect(page.getByText('点击编辑图像', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '重命名 图像生成', exact: true })).toBeVisible();
@@ -502,7 +502,7 @@ test('Electron uploads references, generates image and video, and restores resul
     expect(submitted).toBe(4);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /生成联调测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '生成联调测试' }).click();
     await page.locator('.react-flow__node-media').last().click();
     await expect(page.getByTestId('editor-notice')).toContainText('结果未知');
     await page.getByRole('button', { name: '生成视频', exact: true }).click();
@@ -603,7 +603,10 @@ test('Agent-created image and video nodes upload, generate through Electron and 
     );
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /Agent generation regression/ }).click();
+    await page
+      .getByTestId('project-row')
+      .filter({ hasText: 'Agent generation regression' })
+      .click();
     await page.locator('[data-id="agent-image"]').click();
     await page
       .getByLabel('选择参考素材')
@@ -623,7 +626,10 @@ test('Agent-created image and video nodes upload, generate through Electron and 
     app = await launch();
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /Agent generation regression/ }).click();
+    await page
+      .getByTestId('project-row')
+      .filter({ hasText: 'Agent generation regression' })
+      .click();
     await expect(page.getByAltText('生成的图像')).toBeVisible();
     await expect(page.getByLabel('生成的视频', { exact: true })).toBeVisible();
     const jobs = new GenerationJobs(resolve(profile, 'generation-jobs.json'));

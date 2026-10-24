@@ -321,7 +321,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     app = await launch();
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /删除节点后导出/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '删除节点后导出' }).click();
     await expect(page.locator('.react-flow__node')).toHaveCount(0);
     const badPath = test.info().outputPath('missing-dir', 'report.xlsx');
     await app.evaluate(({ dialog }, filePath) => {

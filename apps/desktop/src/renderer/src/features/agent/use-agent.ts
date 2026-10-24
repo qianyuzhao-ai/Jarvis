@@ -8,11 +8,13 @@ import {
 import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
 
-export function useAgent(projectId?: string) {
+export function useAgent(projectId?: string, initialSelection?: string | null) {
   const storageKey = projectId ? `jarvis:canvas-chat:${projectId}` : 'jarvis:chat-session';
   const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
   const [configuration, setConfiguration] = useState<RelayView>({ config: null, hasKey: false });
-  const [selected, setSelected] = useState<string | null>(() => localStorage.getItem(storageKey));
+  const [selected, setSelected] = useState<string | null>(() =>
+    initialSelection === undefined ? localStorage.getItem(storageKey) : initialSelection,
+  );
   const [draftKey, setDraftKey] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);

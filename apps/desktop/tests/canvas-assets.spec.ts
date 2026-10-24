@@ -173,7 +173,7 @@ async function drop(page: Page, files: { name: string; mime: string; bytes: numb
   });
   await transfer.dispose();
   await expect(page.getByTestId('canvas-drop-hint')).toHaveCount(0);
-  return point;
+  return { ...point, origin: { x: rect.x, y: rect.y } };
 }
 function readWorkspace(page: Page) {
   return page.evaluate(async () => {
@@ -285,8 +285,8 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     const state = workspaceSchema.parse(await readWorkspace(page));
     const first = state.projects[0]!.nodes[0]!;
     expect(first.position).toEqual({
-      x: Math.round(point.x / 24) * 24,
-      y: Math.round((point.y - 60) / 24) * 24,
+      x: Math.round((point.x - point.origin.x) / 24) * 24,
+      y: Math.round((point.y - point.origin.y) / 24) * 24,
     });
     for (const node of state.projects[0]!.nodes) {
       expect(node.type).toBe('asset');
@@ -301,7 +301,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     app = await launch();
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(3);
     await expect
       .poll(() =>
@@ -340,8 +340,8 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     await expect.poll(() => mock.calls.length).toBe(1);
     const initial = workspaceSchema.parse(await readWorkspace(page));
     expect(initial.projects[0]!.nodes[0]!.position).toEqual({
-      x: Math.round((point.x - viewport.x) / viewport.zoom / 24) * 24,
-      y: Math.round((point.y - 60 - viewport.y) / viewport.zoom / 24) * 24,
+      x: Math.round((point.x - point.origin.x - viewport.x) / viewport.zoom / 24) * 24,
+      y: Math.round((point.y - point.origin.y - viewport.y) / viewport.zoom / 24) * 24,
     });
     await page.getByRole('button', { name: '返回项目列表' }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
@@ -356,7 +356,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       .toBe('ready');
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(0);
     await page.getByRole('button', { name: '返回项目列表' }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect
       .poll(() =>
         page.getByAltText('background.png').evaluate((n) => (n as HTMLImageElement).naturalWidth),
@@ -365,7 +365,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     mock.files.delete('background.png');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect(page.getByTestId('result-error')).toContainText('媒体暂时无法加载');
     mock.files.set('background.png', { bytes: png, mime: 'image/png' });
     await page.getByRole('button', { name: '重新加载媒体' }).click();
@@ -412,7 +412,7 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect(page.locator('[data-node-kind="asset"]')).toContainText([
       'files[0].url',
       '上传已中断',

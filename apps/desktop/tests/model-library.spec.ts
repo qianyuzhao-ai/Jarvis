@@ -124,6 +124,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     for (const key of ['relay-old-key', 'deepseek-own-key', 'relay-beta-key'])
       expect(savedText).not.toContain(key);
     await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
     let count = 0;
@@ -288,6 +289,7 @@ test('my models migrates legacy credentials, persists multiple providers and swi
     await writeFile(indexFile, JSON.stringify(legacyIndex));
     app = await launch();
     page = await app.firstWindow();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue('');
     await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText('beta');
     await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);

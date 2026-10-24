@@ -1,0 +1,233 @@
+@layer components {
+  .window-shell {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template: 44px minmax(0, 1fr) / 48px minmax(0, 1fr);
+    background: var(--color-sidebar);
+    color: var(--color-fg);
+  }
+  .shell-titlebar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+    min-width: 0;
+  }
+  .shell-navigation {
+    display: flex;
+    align-items: center;
+    width: max(100px, calc(var(--shell-sidebar-width) + 40px));
+    flex-shrink: 0;
+  }
+  [data-platform='darwin'] .shell-navigation {
+    padding-left: 76px;
+    min-width: 168px;
+  }
+  .shell-tabs {
+    flex: 1;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      var(--color-fg) 6px,
+      var(--color-fg) calc(100% - 6px),
+      transparent
+    );
+  }
+  .shell-titlebar-end {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 32px;
+    margin-left: auto;
+  }
+  .shell-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0 12px;
+  }
+  .shell-rail svg {
+    width: 16px;
+    height: 16px;
+  }
+  .shell-body {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 6px 6px 0;
+  }
+  .shell-panel {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-content);
+  }
+  .shell-panel .app-shell {
+    height: 100%;
+    background: transparent;
+  }
+  .shell-panel .sidebar-shell {
+    background: var(--color-fill);
+    border-right: 1px solid var(--color-separator);
+  }
+  .shell-panel .sidebar {
+    background: transparent;
+    padding-top: 8px;
+  }
+  .shell-panel .sidebar-chrome,
+  .shell-panel .sidebar-footer,
+  .shell-panel .workspace-toolbar .icon-button {
+    display: none;
+  }
+  .shell-panel .workspace {
+    border-radius: 0;
+    border: 0;
+    height: 100%;
+  }
+  .shell-panel .workspace-content {
+    min-height: 0;
+    height: 100%;
+  }
+  .shell-panel .workspace-toolbar {
+    min-height: 48px;
+    padding-left: 16px;
+  }
+  .shell-view {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .shell-view[hidden] {
+    display: none;
+  }
+  .shell-panel .canvas-shell,
+  .shell-panel .writing-shell {
+    height: 100%;
+  }
+  .shell-panel .canvas-toolbar {
+    padding-left: 16px;
+  }
+  .shell-panel .writing-shell {
+    background: var(--color-content);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .window-shell {
+      background: var(--color-window);
+    }
+  }
+  :root:not([data-platform='darwin']) .window-shell {
+    background: var(--color-window);
+  }
+}
+@layer components {
+  .shell-sidebar {
+    padding: 12px 8px;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .shell-sidebar h1 {
+    font-size: var(--text-title-3);
+    margin: 0 8px 16px;
+  }
+  .shell-sidebar p,
+  .shell-sidebar small {
+    color: var(--color-fg-tertiary);
+    font-size: var(--text-callout);
+  }
+  .shell-sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-block: 12px;
+    font-size: var(--text-callout);
+    color: var(--color-fg-tertiary);
+  }
+  .shell-chat-history {
+    margin-top: 20px;
+  }
+  .shell-writing-sidebar {
+    height: 100%;
+  }
+  .shell-writing-sidebar[hidden] {
+    display: none;
+  }
+  .shell-writing-sidebar .writing-left {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: 0;
+  }
+  .shell-writing-sidebar .writing-left-chrome,
+  .shell-panel .writing-tabs {
+    display: none;
+  }
+  .shell-assistant-host {
+    display: flex;
+    flex-shrink: 0;
+    min-height: 0;
+  }
+  .shell-assistant-host > [hidden] {
+    display: none;
+  }
+  .shell-assistant-host .writing-right {
+    width: 360px;
+    height: 100%;
+    background: transparent;
+  }
+  .shell-assistant-host .canvas-agent {
+    background: transparent;
+    border: 0;
+  }
+  .shell-panel .writing-main {
+    border-radius: 0;
+  }
+}
+@layer components {
+  .shell-assistant-host > div,
+  .shell-assistant-host .canvas-agent-shell {
+    height: 100%;
+  }
+}
+@layer components {
+  .shell-settings-toolbar {
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: var(--text-body);
+    border-bottom: 1px solid var(--color-separator);
+  }
+  .shell-settings-toolbar [role='status'] {
+    color: var(--color-fg-secondary);
+    font-size: var(--text-callout);
+  }
+}
+@layer components {
+  .shell-panel .canvas-toolbar {
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .shell-panel .canvas-title {
+    min-width: 100px;
+    flex: 1;
+  }
+  .shell-panel .canvas-title input {
+    width: 100%;
+    min-width: 0;
+  }
+  .shell-panel .canvas-create {
+    position: static;
+    transform: none;
+    margin-inline: auto;
+    flex-shrink: 0;
+  }
+}

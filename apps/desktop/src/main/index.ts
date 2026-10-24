@@ -53,7 +53,7 @@ async function createWindow(): Promise<void> {
     ...(process.platform === 'darwin'
       ? {
           titleBarStyle: 'hiddenInset' as const,
-          trafficLightPosition: { x: 16, y: 23 },
+          trafficLightPosition: { x: 18, y: 16 },
           vibrancy: 'sidebar' as const,
           visualEffectState: 'followWindow' as const,
         }

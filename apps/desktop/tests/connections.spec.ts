@@ -524,7 +524,7 @@ async function fixture(page: Page, imageName = 'source.png') {
   }, workspace);
   await page.reload();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  await page.getByRole('button', { name: /连线验证/ }).click();
+  await page.getByTestId('project-row').filter({ hasText: '连线验证' }).click();
   return {
     ids,
     base,
@@ -642,7 +642,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
     await expect(page.getByTestId('canvas-import-notice')).toContainText('已连接');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /连线验证/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '连线验证' }).click();
     await expect(page.locator('.react-flow__edge')).toHaveCount(6);
     await expect(page.locator('[aria-description="highlighted"]')).toHaveCount(0);
     await node(page, ids.imageA)

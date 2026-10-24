@@ -1,6 +1,6 @@
 import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronLeft, History, Plus } from 'lucide-react';
+import { ArrowDown, ChevronLeft, History, Plus } from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
 import { visualSource } from './canvas-vision';
 import { CanvasAttachments } from './CanvasAttachments';
@@ -20,7 +20,11 @@ export function CanvasAgentSidebar({
   focus,
   commit,
   configure,
+  width,
+  onWidth,
 }: {
+  width: number;
+  onWidth: (n: number) => void;
   project: Project;
   selectedIds: string[];
   open: boolean;
@@ -32,9 +36,6 @@ export function CanvasAgentSidebar({
   const attachments = useCanvasAttachments(project, selectedIds, agent.setError);
   const [text, setText] = useState('');
   const [draftModel, setDraftModel] = useState('');
-  const [width, setWidth] = useState(() =>
-    Math.max(340, Math.min(560, Number(localStorage.getItem('jarvis:canvas-agent-width')) || 400)),
-  );
   const resize = useRef<{ x: number; width: number } | null>(null);
   const panelWidth = Math.min(width, window.innerWidth - 360);
   const session = agent.session;
@@ -173,8 +174,7 @@ export function CanvasAgentSidebar({
                   resize.current.width + resize.current.x - e.clientX,
                 ),
               );
-              setWidth(value);
-              localStorage.setItem('jarvis:canvas-agent-width', String(value));
+              onWidth(value);
             }
           }}
           onPointerUp={() => {
@@ -190,8 +190,7 @@ export function CanvasAgentSidebar({
                 340,
                 Math.min(560, width + (e.key === 'ArrowLeft' ? 10 : -10)),
               );
-              setWidth(value);
-              localStorage.setItem('jarvis:canvas-agent-width', String(value));
+              onWidth(value);
             }
           }}
         />
