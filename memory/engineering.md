@@ -6,7 +6,13 @@
 
 - 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
 - 更新测试入口迁到关于页，补充通用页无更新区、关于选中态及刷新恢复断言。`pnpm check`、`pnpm build` 与 updates / updates-http / updates-service / update-preparation 共 13/13（17.9s）通过，浅深/窄窗截图检查通过。实际发布和真实安装未执行。
-- 用户于同日授权提交，未推送或合并。上一任务模型配置修复提交 `d8d1d93` 保留在 `feature/model-dialog-lifecycle-fix`，不在本分支的 develop 基线内。
+- 用户于同日授权两个分支推送、提 PR 并合入 develop。模型修复已由 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`），随后同步到本分支；仅两份记忆顶部记录冲突，保留两侧完整记录，应用代码自动合并。关于页 PR 继续完成集成。
+
+## 模型配置开发模式卡住修复（2026-10-25）
+
+- 用户截图：添加 DeepSeek 第 2 步点击“下一步”后持续转圈。根因是 `AddProviderDialog` 的 mounted ref 在 StrictMode 开发模式的 effect 清理后永久变为 false，随后校验报错、busy 清除、模型列表更新和步骤跳转均被跳过；此步新建服务商尚未发送网络请求。
+- 修复：effect 每次 setup 恢复 mounted=true，真实卸载时仍置 false。分支 `feature/model-dialog-lifecycle-fix`，用户于同日授权推送与 PR 集成，已由 PR #74 合入 develop（`59f7dd5`）；未发布，不改变凭据和 IPC 边界。
+- 新增 `model-dialog-dev.spec.ts`：实际 Vite 开发 renderer + Electron（隔离 profile、测试 Key），旧代码复现缺少 Key 后无报错且卡住；修复后校验恢复、DeepSeek 目录加载、选择添加、编辑连接与刷新恢复通过（1/1，3.6s）。现有 model-library / model-store / model-runtime 12/12 通过；check、build 通过。未调用真实 DeepSeek，真实服务联调仍待验证。新增测试要求开发端口 5173 空闲，与主进程可信来源限制一致。
 
 
 ## 模型配置分支合入 develop 前的合并（2026-10-24）
