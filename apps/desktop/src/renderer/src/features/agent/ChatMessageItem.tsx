@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Check, CircleAlert, Copy } from 'lucide-react';
+import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import logo from '../../../../../resources/icon.png';
-import { ChatActivity, type CanvasActivityActions } from './ChatActivity';
+import {
+  ChatActivity,
+  type CanvasActivityActions,
+  type WritingActivityActions,
+} from './ChatActivity';
 
 function replyTime(time: number, now: number) {
   const minutes = Math.max(0, Math.floor((now - time) / 60000));
@@ -18,12 +22,14 @@ export function ChatMessageItem({
   now,
   onError,
   canvas,
+  writing,
 }: {
   message: ChatMessage;
   sessionId: string;
   now: number;
   onError: (message: string) => void;
   canvas?: CanvasActivityActions;
+  writing?: WritingActivityActions;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -88,7 +94,9 @@ export function ChatMessageItem({
           ))}
         </div>
       )}
-      {m.role === 'assistant' && <ChatActivity activities={m.activities} canvas={canvas} />}
+      {m.role === 'assistant' && (
+        <ChatActivity activities={m.activities} canvas={canvas} writing={writing} />
+      )}
       <div className="chat-bubble">
         <div data-testid="chat-text" className="chat-text">
           {m.text || (m.status === 'running' ? '正在等待模型回复…' : '未收到回复内容')}

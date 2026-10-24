@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, LoaderCircle, X } from 'lucide-react';
+import { Download, LoaderCircle, X } from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
 import type { DownloadMedia } from '../../../../shared/generation';
 

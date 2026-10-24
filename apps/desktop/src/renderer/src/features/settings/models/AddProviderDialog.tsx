@@ -16,7 +16,7 @@ import { InputGroup, InputGroupAddon } from '@jarvis/ui/components/InputGroup';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import { Spinner } from '@jarvis/ui/components/Spinner';
 import { Toggle } from '@jarvis/ui/components/Toggle';
-import { Image, Plus, Search } from 'lucide-react';
+import { Image, Plus, Search } from '@jarvis/ui/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { agentValue } from '../../../../../shared/agent';
 import {

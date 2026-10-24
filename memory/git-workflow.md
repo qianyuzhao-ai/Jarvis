@@ -2,6 +2,17 @@
 
 最后更新：2026-10-24
 
+## UI V1 第三阶段功能分支（2026-10-24）
+
+从 origin/develop 的 d0e3219 创建 feature/ui-v1-shell，保留此前已授权集成的 Agent 节点生成修复 a1ec3a3；按 I → J → K → N → L → M 独立提交，每阶段检查、构建与完整回归通过。六阶段提交 e6a2783 / 74fe52c / 25ae76e / e307090 / c992f02 / 426b8d3 已推送，远端回读与 M 一致；随后仅补充验收索引文档。用户附件授权推送本功能分支，未授权 PR、合并、标签或发布。最终提交及远端回读结果见 [实施与验收](ui-v1-implementation.md) 第三阶段。
+
+
+## Agent 生成修复重新集成（2026-10-24）
+
+- 按用户要求 fetch 并核对本地 develop 与 origin/develop 均为 `d0e32190bd019e8c1efc34b29f35543c2c1c1325`，从该点创建 `feature/agent-generation-fix`。
+- 将 `feature/agent-node-generation` 的修复提交 `a1ec3a3` 合入新分支，合并提交 `1c76472`，无冲突；原修复分支保留。新分支同时包含最新 develop 和修复提交。
+- `pnpm check`、`pnpm build`、diff 检查通过。相对原已验证修复，新增内容仅为 develop 的 AGENTS/设计文档，应用代码一致，沿用此前 10 项回归结果。未推送、未合回 develop、未发布。
+
 ## UI V1 第二批功能分支（2026-10-24）
 
 按用户任务从最新 origin/develop 创建 feature/ui-v1-overlays；设计分支仅只读参考，没有合入。E/F/G/H 独立提交 157ce2d / a73903a / d7ed150 / 3487102，阶段门禁全部通过，分支已推送且远端回读包含四阶段提交。随后追加验收文档记录。授权只到功能分支推送，未创建 PR、合并、打标签或发布；版本仍为 0.2.5。详情见 [UI V1 实施与验收](ui-v1-implementation.md)。

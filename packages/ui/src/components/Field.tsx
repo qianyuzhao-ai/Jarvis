@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type ElementType,
 } from 'react';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert } from '@jarvis/ui/icons';
 import { cn } from '../lib/utils';
 const FieldContext = createContext<{
   controlId: string;

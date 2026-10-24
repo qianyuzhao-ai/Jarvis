@@ -1,3 +1,4 @@
+import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import {
   THINKING_LABELS,
   type ModelSettingsView,
@@ -28,9 +29,11 @@ export function ModelPicker({
   const provider = settings.providers.find((p) => p.id === selected?.providerId);
   return (
     <div className="composer-model">
-      <select
+      <NativeSelect
+        appearance="compact"
+        size="sm"
         data-testid="model-trigger"
-        className="model-trigger"
+        className="composer-select"
         aria-label="聊天模型"
         value={selected?.id ?? ''}
         disabled={disabled || !settings.models.length}
@@ -61,7 +64,7 @@ export function ModelPicker({
             </optgroup>
           ) : null;
         })}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -81,9 +84,11 @@ export function ThinkingPicker({
   if (!model || model.thinkingLevels.length < 2) return null;
   return (
     <div className="composer-model">
-      <select
+      <NativeSelect
+        appearance="compact"
+        size="sm"
         data-testid="thinking-trigger"
-        className="model-trigger thinking-trigger"
+        className="composer-select composer-thinking"
         aria-label="思考程度"
         value={value}
         disabled={disabled}
@@ -95,7 +100,7 @@ export function ThinkingPicker({
             思考：{THINKING_LABELS[level]}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

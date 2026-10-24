@@ -65,6 +65,21 @@ try {
   assert.equal(await realpath(info.path), await realpath(archive));
   assert.equal(await realpath(info.profile), await realpath(profile));
   assert(page.url().includes('app.asar/out/renderer/index.html'));
+  await expect(page.getByRole('tablist', { name: '窗口标签', exact: true })).toBeVisible();
+  const writingBridge = await page.evaluate(() =>
+    [
+      'createWritingSession',
+      'claimWritingCommand',
+      'completeWritingCommand',
+      'onWritingCommand',
+    ].every((name) => typeof Reflect.get(window.desktop.agent, name) === 'function'),
+  );
+  assert(writingBridge, 'Packaged writing Agent bridge is missing');
+  const claim = await page.evaluate(() =>
+    window.desktop.agent.claimWritingCommand(crypto.randomUUID()),
+  );
+  assert.deepEqual(claim, { ok: true, value: false });
+
   const state = await page.evaluate(() => window.desktop.updates.getState());
   assert.equal(state.ok, true);
   assert.equal(state.value.currentVersion, version);
@@ -72,7 +87,7 @@ try {
   await expect(page.getByRole('heading', { name: '通用设置', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '应用更新', exact: true })).toBeVisible();
   console.log(
-    `Verified packaged ${process.platform} startup, ASAR renderer and updater bridge: ${version}`,
+    `Verified packaged ${process.platform} startup, ASAR window tabs, writing Agent and updater bridges: ${version}`,
   );
 } catch (error) {
   console.error(stderr);

@@ -34,15 +34,25 @@ for (const theme of ['light', 'dark']) {
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('视觉基线');
     await snap('canvas');
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    if (phase === 'phase-k' || phase === 'phase-m') {
+      await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
+      await snap('canvas-assistant');
+      await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
+    }
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '写作空间', exact: true }).click();
     await snap('writing');
+    if (phase === 'phase-k' || phase === 'phase-m') {
+      await page.getByRole('button', { name: '展开右侧栏', exact: true }).click();
+      await snap('writing-assistant');
+      await page.getByRole('button', { name: '收起右侧栏', exact: true }).click();
+    }
     if (phase === 'phase-h') {
       await page.getByRole('button', { name: '打开文件夹', exact: true }).click();
       await snap('writing-menu-open');
       await page.keyboard.press('Escape');
     }
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await snap('general');
     for (const [name, label] of [

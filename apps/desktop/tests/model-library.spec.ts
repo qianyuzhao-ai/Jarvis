@@ -150,7 +150,8 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     const savedText = await readFile(file, 'utf8');
     for (const key of ['relay-old-key', 'deepseek-own-key', 'relay-beta-key'])
       expect(savedText).not.toContain(key);
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
     const thinking = page.getByRole('combobox', { name: '思考程度' });
@@ -311,6 +312,7 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     app = await launch();
     page = await app.firstWindow();
     await redirectDeepSeek();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue('');
     await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText(
       '选择模型',

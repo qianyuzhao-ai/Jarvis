@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Info, X } from 'lucide-react';
+import { Check, CircleAlert, Info, X } from '@jarvis/ui/icons';
 import { cva } from 'class-variance-authority';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/utils';

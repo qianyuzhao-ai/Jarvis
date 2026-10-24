@@ -1,5 +1,5 @@
 import * as Primitive from '@radix-ui/react-toast';
-import { Check, CircleAlert, Info, X } from 'lucide-react';
+import { Check, CircleAlert, Info, X } from '@jarvis/ui/icons';
 import { useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';

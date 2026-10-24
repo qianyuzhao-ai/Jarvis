@@ -200,7 +200,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     expect(rejected.every((r) => r?.ok === false)).toBe(true);
     await page.getByRole('separator', { name: '调整画布助手宽度' }).focus();
     await page.keyboard.press('ArrowLeft');
-    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(410);
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(370);
     await page.screenshot({ path: test.info().outputPath('canvas-agent-light.png') });
     await sidebar.getByRole('button', { name: '撤销本次修改' }).last().click();
     await expect.poll(async () => (await workspace(page)).projects[0]?.nodes.length).toBe(1);
@@ -213,6 +213,12 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await expect(sidebar).toBeHidden();
     const running = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
     expect(running?.ok && running.value.snapshot.busySessionId).toBeTruthy();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
+    const background = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
+    expect(background?.ok && background.value.snapshot.busySessionId).toBe(
+      running?.ok && running.value.snapshot.busySessionId,
+    );
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     await sidebar.getByRole('button', { name: '停止回复' }).click();
     await expect(
@@ -224,10 +230,10 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     const bounds = await sidebar.boundingBox();
     expect(bounds?.width).toBeLessThanOrEqual(540);
     await page.screenshot({ path: test.info().outputPath('canvas-agent-compact.png') });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await expect(page.getByRole('log', { name: '画布对话消息' })).toHaveCount(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await page.getByRole('button', { name: '画布对话历史' }).click();
     await page
@@ -247,10 +253,11 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await expect(
       page.locator('[data-testid="canvas-agent"] [data-testid="chat-message"]'),
     ).not.toHaveCount(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('canvas-agent-dark.png') });

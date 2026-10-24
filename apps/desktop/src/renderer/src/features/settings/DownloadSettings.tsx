@@ -1,7 +1,7 @@
 import { Button } from '@jarvis/ui/components/Button';
 import { Checkbox } from '@jarvis/ui/components/Checkbox';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, FolderOpen } from 'lucide-react';
+import { ChevronDown, FolderOpen } from '@jarvis/ui/icons';
 import type { DownloadPreferences } from '../../../../shared/generation';
 
 export function DownloadSettings() {

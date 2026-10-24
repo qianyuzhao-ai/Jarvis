@@ -1,3 +1,4 @@
+import { sameWritingScope, type WritingScope } from '../../../../shared/writing-agent';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { agentValue, type AgentSnapshot, type AgentEvent } from '../../../../shared/agent';
 import {
@@ -10,10 +11,24 @@ import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
 
 const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
 
-export function useAgent(projectId?: string) {
-  const storageKey = projectId ? `jarvis:canvas-chat:${projectId}` : 'jarvis:chat-session';
+export function useAgent(
+  projectId?: string,
+  initialSelection?: string | null,
+  writingScope?: WritingScope,
+) {
+  const storageKey = writingScope
+    ? null
+    : projectId
+      ? `jarvis:canvas-chat:${projectId}`
+      : 'jarvis:chat-session';
   const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
-  const [selected, setSelected] = useState<string | null>(() => localStorage.getItem(storageKey));
+  const [selected, setSelected] = useState<string | null>(() =>
+    initialSelection === undefined
+      ? storageKey
+        ? localStorage.getItem(storageKey)
+        : null
+      : initialSelection,
+  );
   const [draftKey, setDraftKey] = useState(0);
   const [draftThinking, setDraftThinking] = useState<ThinkingLevel>();
   const [error, setError] = useState('');
@@ -24,8 +39,10 @@ export function useAgent(projectId?: string) {
   const select = useCallback(
     (id: string | null) => {
       setSelected(id);
-      if (id) localStorage.setItem(storageKey, id);
-      else localStorage.removeItem(storageKey);
+      if (storageKey) {
+        if (id) localStorage.setItem(storageKey, id);
+        else localStorage.removeItem(storageKey);
+      }
     },
     [storageKey],
   );
@@ -63,8 +80,14 @@ export function useAgent(projectId?: string) {
     };
   }, []);
   const configuration: ModelSettingsView = snapshot.models ?? EMPTY_MODELS;
-  const sessions = snapshot.sessions.filter((s) => s.projectId === projectId);
-  const session = sessions.find((s) => s.id === selected) ?? null;
+  const sessions = snapshot.sessions.filter(
+    (s) => s.projectId === projectId && sameWritingScope(s.writingScope, writingScope),
+  );
+  const session =
+    sessions.find((s) => s.id === selected) ??
+    (writingScope && !draftKey
+      ? ([...sessions].sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null)
+      : null);
   async function send(
     text: string,
     model?: string,
@@ -81,7 +104,11 @@ export function useAgent(projectId?: string) {
       const id =
         session?.id ??
         agentValue(
-          await (projectId ? bridge.createCanvasSession(projectId) : bridge.createSession()),
+          await (writingScope
+            ? bridge.createWritingSession(writingScope)
+            : projectId
+              ? bridge.createCanvasSession(projectId)
+              : bridge.createSession()),
         );
       if (!session && model && model !== configuration.defaultModelId)
         agentValue(await bridge.setModel({ sessionId: id, model }));
@@ -101,6 +128,7 @@ export function useAgent(projectId?: string) {
           requestId: crypto.randomUUID(),
           text,
           ...(canvas ? { canvas } : {}),
+          ...(writingScope ? { writing: writingScope } : {}),
           ...(images?.length ? { images } : {}),
         }),
       );
@@ -166,9 +194,10 @@ export function useAgent(projectId?: string) {
     if (!window.desktop?.agent || !sessions.some((s) => s.id === id)) return false;
     try {
       agentValue(await window.desktop.agent.deleteSession(id));
+      if (writingScope && session?.id === id) setDraftKey((v) => v + 1);
       setSelected((current) => {
         if (current !== id) return current;
-        localStorage.removeItem(storageKey);
+        if (storageKey) localStorage.removeItem(storageKey);
         return null;
       });
       return true;
@@ -180,6 +209,7 @@ export function useAgent(projectId?: string) {
   return {
     snapshot: { ...snapshot, sessions },
     projectId,
+    writingScope,
     busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
     configuration,
     configured: !!configuration.defaultModelId,

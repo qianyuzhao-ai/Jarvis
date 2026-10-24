@@ -14,7 +14,7 @@ import { Input } from '@jarvis/ui/components/Input';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import { Separator } from '@jarvis/ui/components/Separator';
 import { ToggleGroup, ToggleGroupItem } from '@jarvis/ui/components/ToggleGroup';
-import { Image } from 'lucide-react';
+import { Image } from '@jarvis/ui/icons';
 import { useState } from 'react';
 import { agentValue } from '../../../../../shared/agent';
 import {

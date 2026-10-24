@@ -36,3 +36,11 @@ Tabs 的 appearance 为 segment / underline。文档关闭按钮用 TabsClose，
 在应用根挂载一个 Toaster。toast({title, description, tone, action, onDismiss}) 返回 id，toast.update(id, changes) 更新同一条通知，toast.dismiss(id) 关闭；最多显示三条，其余排队。info/success 默认五秒，error/loading 常驻，悬停和聚焦暂停计时。业务可以传 duration 延续原有阅读时长；卸载业务展示时用 toast.dismiss(id, false) 清理而不推进业务队列。
 
 Alert 用于持续提示；临时反馈才使用 Toast。Badge 为只读状态，BadgeCount 自动显示 99+，StatusDot 必须配合文字。Progress value 为 null/undefined 时表示不确定，ProgressField 组合标签、数值和提示，ProgressRing 只用于确定进度。组件不解释业务数据或发起原生操作。
+
+## 窗口与对话外观
+
+图标统一从 `@jarvis/ui/icons` 导入，默认线宽 1.75；不要在调用方直接引用 lucide-react。
+
+SidebarItem 支持 icon/meta/trailing/depth/selected，以及 asChild 导航链接。主操作和 trailing 更多菜单是并列控件，避免嵌套按钮。WindowTabs 提供 tablist 与方向键/Home/End 切换；WindowTab 的关闭按钮与 tab 按钮独立，业务层负责对象去重、关闭确认及持久化。
+
+Composer 只负责 wide/compact 输入外观和 context/toolbar/actions 插槽；输入法、发送与停止由调用方处理。ComposerAction 的 state 控制空/可发送/停止外观，不会自行发起请求。AssistantPanel 提供透明右栏、头部/正文/Composer 插槽，AssistantEmpty 组合图标、说明与建议按钮。所有业务工具、文档/项目作用域与保存逻辑留在 desktop。

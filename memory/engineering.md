@@ -2,6 +2,13 @@
 
 最后更新：2026-10-24
 
+## 模型配置分支合入 develop 前的合并（2026-10-24）
+
+- 用户要求提 PR 合入 develop。develop 已含 UI V1 第三阶段（AppShell、跨空间标签、Composer/AssistantPanel、写作 Agent），先把 origin/develop 合并进 `ccr-56156863-qdlw6l` 再提 PR。
+- 冲突处理：保留 develop 的外壳与写作会话（writingScope、createWritingSession、ChatTab），模型相关改用 v3：`store.create(model, projectId, thinkingLevel, writingScope)`；自定义模型 input 只在“支持图片且非写作会话”时含 image；ChatTab 去掉旧 configuration 同步；画布与写作右边栏按 modelId / defaultModelId 选模型，未配置按钮统一“前往模型设置”；设置导航“模型服务”改“模型”；新文件图标改从 `@jarvis/ui/icons` 导入（check-tokens 规则）；develop 新增的 `writing-agent.spec` 改用 `addRelayModel`。
+- 新 Composer 中原生 select 溢出导致右边栏“思考”与模型选择重叠：模型与思考选择改用 `NativeSelect appearance="compact" size="sm"`（与 Figma Composer 一致），宽版上限 240 / 120px，compact 112 / 92px；首页与画布右边栏截图检查通过。
+- 验证：check、build 通过；完整实窗 119 例通过，ui-preview 2 例仍无仓库 linux 基线（第二轮因上一轮生成的 linux png 存在而显示通过，已删除，不作为通过依据）。
+
 ## 模型配置当前状态（2026-10-24，改造五个阶段已完成）
 
 - 结构：`agent/connection.json` v3 = providers（builtin：sdkProvider；custom：name/baseUrl/api）+ models（自定义模型带能力与来源）+ defaultModelId；Key 由 safeStorage 加密，渲染层只见 hasKey。v2/v1 首次启动自动迁移并备份 `connection.v2.bak.json`。
@@ -36,6 +43,19 @@
 - runtime：内置服务商直接用目录模型（不再把 DeepSeek 输出上限改成 4096）；自定义模型按能力注册 input/reasoning/thinkingLevelMap；输出上限“自动”通过 onPayload 去掉上限参数（Anthropic 协议回退 8192）；思考档位由会话传入；运行时 Key 优先于环境变量；HTTP 状态改在 fetch 包装中记录（SDK 对错误响应不调用 onResponse）。
 - service：去掉 DeepSeek Pro 特判，图片校验统一读模型能力（不支持 / 未确认分别提示）；会话记录 thinkingLevel，切模型降到最近档位，新会话沿用该模型上次档位；新增 saveProvider / setProviderModels / updateModel / removeProvider / testProvider / fetchProviderModels / probeVision / setThinkingLevel 与 `models:*`、`agent:thinking` IPC。旧 `agent:configuration/save/test/models` 等适配层已在阶段 3 删除。
 - 环境记录：Linux 容器下 Playwright 的 Electron loader 固定追加 `--password-store=basic`，safeStorage 恒为 basic_text，凡保存 Key 的实窗测试在 Linux 必然失败（基线即如此，非代码问题）。本地验证方式：安装 gnome-keyring，在 dbus-run-session 内解锁 keyring、设置 XDG_CURRENT_DESKTOP=GNOME，并临时把 node_modules 中 playwright-core electron/loader.js 的该参数改为 gnome-libsecret（不入库，验证后还原）。
+
+## UI V1 第三阶段完成（2026-10-24）
+
+窗口外壳、跨空间标签、页面迁移、当前文档写作 Agent、节点与编辑栏更新已完成。最终 check/build、完整 Electron 模拟服务回归 110/110（4.3m）通过；本地 macOS arm64 目录包在外部 cwd、隔离 userData 下通过 360 项生产依赖及 ASAR 实窗启动，窗口标签、写作 Agent 与更新桥接均验证。版本仍为 0.2.5，无新依赖；保留 Agent 节点生成修复 a1ec3a3。分支 feature/ui-v1-shell，提交/推送与 36 张截图索引见 [实施与验收](ui-v1-implementation.md) 第三阶段。真实内网与其他目标系统仍待联调。
+
+
+## Agent 节点生成 ID 兼容修复（2026-10-24）
+
+- 根因：画布 Agent 创建允许 1–100 字符的节点 ID（如 `agent-image`），但生成提交、参考素材上传、任务回读及请求账本只接受 UUID；手动节点使用 UUID 因此未受影响。UUID 限制早于任务接口迁移，属于两个本地协议之间的衔接缺陷。
+- 新增共享 `canvas-node-id.ts`，画布操作与生成/上传/任务/账本统一使用相同的有界字符串规则。节点 ID 只用于本地关联，不参与文件路径或远端任务 URL；requestId、projectId 继续要求 UUID。保留现有节点 ID、连线和撤销记录，无需迁移或重建节点。
+- 保持 Agent 的创建/编辑权限边界：用户点击生成后正常发送请求，本次未新增 Agent 自动执行生成工具。
+- 验证：`pnpm check`、`pnpm build`、`git diff --check` 通过；生成与画布 Agent 相关 10 项回归同轮通过（47.0s）。新增用例使用真实 Agent 创建/连线函数产生非 UUID 节点并存入 IndexedDB，在 Electron 窗口上传参考图、点击生成图像/视频、检查图像 URL 沿连线进入视频请求，重启后恢复结果并回读任务账本，确认没有重复提交；同时验证 ID 长度限制及 projectId/requestId 的 UUID 校验仍生效。最初沙箱监听 EPERM，放行后正常运行；新增测试首次因未填充模拟视频而预览失败，复用原视频夹具后通过。本次使用本地模拟服务，不代表真实内网联调完成。
+- 修复已提交为 `a1ec3a3`（`feature/agent-node-generation`）。用户随后要求从最新 develop 新开分支并合入：当前分支 `feature/agent-generation-fix`，合并提交 `1c76472`，无冲突；检查及构建通过，未推送或发布。
 
 ## UI V1 第二批浮层与反馈（2026-10-24）
 

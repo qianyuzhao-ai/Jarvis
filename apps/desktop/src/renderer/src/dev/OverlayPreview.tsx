@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, File, Plus } from 'lucide-react';
+import { BookOpen, File, Plus } from '@jarvis/ui/icons';
 import { Button } from '@jarvis/ui/components/Button';
 import { Input } from '@jarvis/ui/components/Input';
 import {

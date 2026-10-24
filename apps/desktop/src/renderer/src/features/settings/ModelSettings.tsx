@@ -1,7 +1,7 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { Button } from '@jarvis/ui/components/Button';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
-import { Plus } from 'lucide-react';
+import { Plus } from '@jarvis/ui/icons';
 import { useEffect, useRef, useState } from 'react';
 import { agentValue } from '../../../../shared/agent';
 import type { CatalogProvider, ModelSettingsView, ModelView } from '../../../../shared/models';

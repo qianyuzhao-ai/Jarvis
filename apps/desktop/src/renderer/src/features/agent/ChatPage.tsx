@@ -1,7 +1,7 @@
 import { Button } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, FileText, Pencil } from 'lucide-react';
+import { ArrowDown, ArrowUp, FileText, Pencil, Brain } from '@jarvis/ui/icons';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 import { IconButton } from '../../components/IconButton';
@@ -133,7 +133,8 @@ export function ChatPage({
       >
         {!session?.messages.length ? (
           <div className="chat-welcome">
-            <h1>{configured ? '今天想做些什么？' : '先添加一个模型'}</h1>
+            <Brain size={40} aria-hidden="true" />
+            <h1>{configured ? '今天想让 Jarvis 帮你做什么？' : '先添加一个模型'}</h1>
             <p>
               {configured
                 ? '聊一个想法，读一份资料，或继续手头的工作。'

@@ -139,7 +139,8 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).uncheck();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).not.toBeChecked();
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).check();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     let input = page.getByLabel('消息', { exact: true });
     await input.fill('/');
@@ -166,6 +167,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     expect(JSON.stringify(requests[0])).toContain('SKILL_BODY');
     expect(JSON.stringify(requests[0])).toContain('三个镜头');
     await expect(page.getByTestId('chat-activities')).toContainText('主动选择');
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     input = page.getByLabel('消息', { exact: true });
     await input.fill('自动规划三个镜头');
@@ -194,7 +196,8 @@ test('skills import, slash selection, automatic activation, disablement and rest
       path: test.info().outputPath('skills-settings-dark.png'),
     });
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await input.fill('/manual');
     await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(0);
@@ -207,7 +210,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('button', { name: '插件', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: '启用 manual-plan' })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).toBeChecked();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();

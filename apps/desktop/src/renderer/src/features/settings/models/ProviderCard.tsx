@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@jarvis/ui/components/DropdownMenu';
 import { Separator } from '@jarvis/ui/components/Separator';
-import { Ellipsis, Plus } from 'lucide-react';
+import { Ellipsis, Plus } from '@jarvis/ui/icons';
 import type { ModelView, ProviderView } from '../../../../../shared/models';
 import { capabilityTitle, providerMeta, tokens, visionBadge } from './model-format';
 

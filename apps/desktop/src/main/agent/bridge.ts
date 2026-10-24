@@ -1,3 +1,4 @@
+import { writingScopeSchema, writingReplySchema } from '../../shared/writing-agent';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -53,6 +54,12 @@ export async function registerAgent() {
       throw new Error('画布窗口已关闭');
     target.contents.send('agent:canvas-command', command);
   };
+  service.writing.dispatch = (owner, command) => {
+    const target = trusted.get(owner);
+    if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
+      throw new Error('写作窗口已关闭');
+    target.contents.send('agent:writing-command', command);
+  };
   const handlers: Record<string, (request: unknown, owner: number) => unknown> = {
     'agent:skills': () => service.skills.list(),
     'agent:import-skill': async (_r, owner) => {
@@ -95,6 +102,10 @@ export async function registerAgent() {
     'agent:snapshot': () => service.snapshot(),
     'agent:create': () => service.create(),
     'agent:create-canvas': (r) => service.create(agentId.parse(r)),
+    'agent:create-writing': (r) => service.create(undefined, writingScopeSchema.parse(r)),
+    'agent:claim-writing': (r, owner) => service.writing.claim(owner, agentId.parse(r)),
+    'agent:complete-writing': (r, owner) =>
+      service.writing.complete(owner, writingReplySchema.parse(r)),
     'agent:claim-canvas': (r, owner) => service.canvas.claim(owner, agentId.parse(r)),
     'agent:complete-canvas': (r, owner) =>
       service.canvas.complete(owner, canvasReplySchema.parse(r)),
@@ -109,7 +120,7 @@ export async function registerAgent() {
     },
     'agent:send': (r, owner) => {
       const v = agentSendSchema.parse(r);
-      return service.send(v.sessionId, v.requestId, v.text, owner, v.canvas, v.images);
+      return service.send(v.sessionId, v.requestId, v.text, owner, v.canvas, v.images, v.writing);
     },
     'agent:cancel': (r, owner) => service.cancel(agentId.parse(r), owner),
     'agent:copy-reply': (r) => {
