@@ -2,6 +2,15 @@
 
 最后更新：2026-10-24
 
+### V1 Composer 对话输入框组件（2026-10-24）
+
+- 用户要求：把首页聊天输入框做成组件；写作空间、创作空间、日历都会有可通过对话调用模型的右边栏，同样使用该输入框。
+- 新 Section `25 Composer`（`395:33743`），组件集 `Composer`（`395:33742`，6 个变体）：layout（wide 首页 720 / compact 右边栏 340，实例可填充栏宽）× state（empty 占位 + 发送禁用 / filled 有内容 / busy 回复中，发送换为 secondary 停止按钮）。全 auto-layout：上方上下文条（fill/default、radius 12、藏于输入框后 12px，两个公开 ghost sm 按钮 Context 1 / 2 + 右侧设置 icon-sm），输入框 surface-raised + 0.5px border + shadow-control、radius 16、文本 body-relaxed 自动增高；工具栏 + 附件 / 技能 / 模型（公开 NativeSelect compact sm）/ 麦克风 / 发送。属性 `placeholder`、`value`、`showContext`、`showSkill`、`showModel`、`showMic`（默认关）。行为约定：Enter 发送、Shift+Enter 换行、输入法组合期间不发送，/ 与 @ 候选浮于输入框上方。
+- 图标库新增 `Icon / square`（停止，`394:32605`）与 `Icon / clock`（`396:33280`），共 45 个。
+- 审阅板 `Composer / Review`（`397:33074`）：wide 三态；360 宽“画布助手”右边栏示意（标题 + 历史 / 新对话 / 关闭、消息、compact 输入框）；写作（周报草稿.md / 已选 2 段）与日历（10 月 24 日 / 日历，隐藏技能）上下文示例。总览 Index 行已追加。
+- 首页 Chat（`389:26739` / `389:27224`）的手绘输入框已替换为 Composer wide/empty 实例，底边距 24。插件几何检查通过，截图下载仍被代理拒绝。
+- 待确认：右边栏本身（标题栏、消息样式、宽度 360）尚未做成组件；麦克风默认隐藏。
+
 ### V1 图标库独立 · Sidebar Item · Window Tab（2026-10-24）
 
 - 用户要求：补侧栏列表行与窗口标签页组件；新风格用到的图标全部放进新的组件库，不与旧图标混用，便于以后批量替换。
