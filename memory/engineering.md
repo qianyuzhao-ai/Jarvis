@@ -2,6 +2,12 @@
 
 最后更新：2026-10-25
 
+## 右侧栏窄输入框技能按钮隐藏（2026-10-25）
+
+- PR 准备：用户授权推送并向 develop 提 PR；保留原提交 `a045777`，合入最新 origin/develop `f6efcf4`。仅两份记忆顶部冲突，保留双方记录，应用代码自动合并。按锁文件同步新增 pi-mcp 依赖后 check、build 通过；画布 Agent / sidebar / 写作 Agent 实窗 4/4（15.5s）通过，四种宽度隐藏/恢复、无重叠与 `/` 入口复验通过。已创建 [PR #86](https://github.com/qianyuzhao-ai/Jarvis/pull/86) 指向 develop；GitHub 插件创建返回 integration 403，改用已登录 gh 完成。此次不合并 PR、不发布。
+- 分支 `feature/sidebar-composer-skills` 从本地 develop 创建。用户要求先尝试空间不足时隐藏技能按钮；ChatComposer 按钮增加 `composer-skills` 类，agent.css 在 compact Composer 上建立 inline-size 容器，宽度不超过 400px 时隐藏按钮。隐藏样式位于 utilities 层，避免被 Button 的 inline-flex 工具类覆盖。未改变模型、思考、上下文与发送逻辑。
+- `pnpm check`、`pnpm build` 通过；临时真实 Electron 脚本使用隔离 profile 和本地测试模型配置，无服务商请求。侧栏 340 / 360 / 440 / 560px 的隐藏与恢复、长模型名和思考选择器并存无重叠、`/` 技能入口通过，最窄浅深截图已检查。验证脚本及截图位于 `/private/tmp/jarvis-sidebar-skills-check.mjs`、`/private/tmp/jarvis-sidebar-skills-340.png`、`/private/tmp/jarvis-sidebar-skills-340-dark.png`。未运行完整冒烟，写作侧栏复用规则但未单独实窗复验；用户随后授权本地提交，未推送。
+
 ## Agent 架构改造 A6：日历（2026-10-25）
 
 - 提供者：`main/agent/calendar/provider.ts` 定义 CalendarProvider；macOS 用 `apple.ts`（AppleCalendar）：通过 `osascript -l JavaScript` 运行内嵌的 JXA 脚本（ObjC 桥接 EventKit：授权状态、`requestFullAccessToEvents`（旧系统 `requestAccessToEntityType`）、日历列表、按时间段查询、新建/修改/删除，单次 JSON 命令与回复），无需编译原生模块，覆盖系统日历中所有已登录账户；其他系统用 `local.ts`（LocalCalendar，`agent/calendar.json` 中的“Jarvis 日历”）。未授权时报“请在 系统设置 › 隐私与安全性 › 日历 中允许”，不悄悄改写到别的日历。打包：electron-builder `mac.extendInfo` 增加 NSCalendarsUsageDescription / NSCalendarsFullAccessUsageDescription，entitlements 增加 `com.apple.security.personal-information.calendars`。

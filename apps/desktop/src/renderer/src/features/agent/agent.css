@@ -243,6 +243,9 @@
   .ui-composer[data-layout='compact'] .composer-thinking {
     max-width: 92px;
   }
+  .ui-composer[data-layout='compact'] {
+    container: sidebar-composer / inline-size;
+  }
   .context-ring {
     width: 28px;
   }
@@ -530,5 +533,13 @@
   .skill-picker-list {
     max-height: min(var(--popover-width), 40vh);
     overflow-y: auto;
+  }
+}
+
+@layer utilities {
+  @container sidebar-composer (max-width: 400px) {
+    .ui-button.composer-skills {
+      display: none;
+    }
   }
 }
