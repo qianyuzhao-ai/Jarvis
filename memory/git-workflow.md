@@ -2,6 +2,13 @@
 
 最后更新：2026-10-26
 
+## 写作空间计划 W1（2026-10-26）
+
+- 用户要求执行 `writing-space-plan.md`，授权阶段提交和功能分支推送，不创建 PR、合并、标签或发布。
+- 从 fetch 后的 origin/develop `48d698e` 创建 `feature/writing-space`，合并原会话的三项方案/设计记录，合并提交 `b982f02`；design 顶部冲突保留双方记录。
+- 实现提交 `631e6df`，最终 check/build 和目录专项 3/3 通过；完整回归 182/183，唯一为已知 macOS 日历未授权环境用例。保留失败证据，不把 W1 标为阶段通过，不进入 W2。详情见 [写作实施记录](writing-space-implementation.md)。
+
+
 ## 0.4.0 已发布（2026-10-26）
 
 - [v0.4.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.4.0) 已于北京时间 **2026-10-26 00:18:05** 发布，非草稿、按当前流程为预发布，12 个资产全部 uploaded。新标签注释对象 `050a88cfbee89b576bb065e8290ad55069a118b9`，保持指向 main 发布合并提交 `a804786b56a425161cd24921f2c153194aee8a04`，未移动任何旧标签。
