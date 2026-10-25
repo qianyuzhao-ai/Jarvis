@@ -1,3 +1,4 @@
+import { IconButton } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
 import {
   Collapsible,
@@ -90,10 +91,15 @@ export function GenerationDetails({
             <div className="generation-result">
               <span>返回 URL</span>
               <code tabIndex={0}>{result.url}</code>
-              <button type="button" onClick={() => void copy()} aria-label="复制返回 URL">
+              <IconButton
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => void copy()}
+                aria-label="复制返回 URL"
+              >
                 {copied === result.requestId ? <Check size={14} /> : <Copy size={14} />}
                 {copied === result.requestId ? '已复制' : '复制 URL'}
-              </button>
+              </IconButton>
             </div>
           )}
           {error && <Alert tone="error">{error}</Alert>}

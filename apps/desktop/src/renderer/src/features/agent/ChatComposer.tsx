@@ -185,16 +185,16 @@ export function ChatComposer({
           />
         </div>
         <div className="composer-controls">
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
+            size="icon"
             className="composer-action"
             aria-label={onAttach ? '添加选中画布资产' : '添加附件（暂不支持）'}
-            aria-disabled={!onAttach || preparing}
+            disabled={!onAttach || preparing}
             onClick={onAttach}
-            title={onAttach ? '添加画布选中的图片与视频' : '暂不支持附件'}
           >
             <Plus size={20} />
-          </button>
+          </IconButton>
           <Button
             className="composer-skills"
             variant="ghost"

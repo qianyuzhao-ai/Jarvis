@@ -1,3 +1,4 @@
+import { Button } from '@jarvis/ui/components/Button';
 import { Toaster } from '@jarvis/ui/components/Toast';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { ConfirmProvider, useConfirm } from '@jarvis/ui/components/AlertDialog';
@@ -441,7 +442,11 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       {saveError && (
         <Alert
           tone="error"
-          action={<button onClick={() => update((p) => ({ ...p }))}>重试保存</button>}
+          action={
+            <Button variant="secondary" size="sm" onClick={() => update((p) => ({ ...p }))}>
+              重试保存
+            </Button>
+          }
         >
           {saveError}
         </Alert>
@@ -617,9 +622,9 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         {route === 'canvas' && !active.ref && (
           <div className="empty-projects">
             <h1>开始你的第一个创作项目</h1>
-            <button className="secondary-button" onClick={create}>
+            <Button variant="secondary" onClick={create}>
               创建项目
-            </button>
+            </Button>
             <span data-testid="save-status">{status}</span>
           </div>
         )}
@@ -700,7 +705,9 @@ export function App() {
       <main className="launch-message">
         <h1>无法读取本地工作台</h1>
         <p role="alert">{error}</p>
-        <button onClick={() => location.reload()}>重新加载</button>
+        <Button variant="secondary" onClick={() => location.reload()}>
+          重新加载
+        </Button>
       </main>
     );
   if (!initial)

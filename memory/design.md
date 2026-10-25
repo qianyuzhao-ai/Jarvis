@@ -2,6 +2,16 @@
 
 最后更新：2026-10-25
 
+### V1 遗留控件迁移（2026-10-25）
+
+- 用户授权按“写作新建弹窗 → 重命名/历史 → 旧图标按钮 → 更新提醒 → 空状态与引导 → CSS/旧颜色清理”推进；明确只使用现有 V1 组件，遇到无法覆盖的组件需求先告知并等待决定。未新增组件、变体或设计 token，未修改 Figma 文件。
+- 只读核对文件 `mIwnyR5nAlECFMam1NvmER` 的 V1-Components 页 `332:28013`（页级设计上下文返回未选择图层，改查已有子节点）；Dialog `362:31494`、Input `340:28052`、Field `341:28089`、Button `336:27571`、Icon Button `337:27595`、Sidebar Item `392:32639`、Alert `370:32084`、Progress `378:32536`、Popover `358:30609` 均返回设计上下文与截图。来源：[V1 组件库](https://www.figma.com/design/mIwnyR5nAlECFMam1NvmER/Jarvis?node-id=332-28013)。
+- 写作新建文档/文件夹使用 Dialog sm + Field/Input + Button，保留创建、不覆盖、位置说明、快捷键；补齐名称首焦点、Esc/取消、关闭后焦点恢复与提交锁。首页重命名使用 Field/Input/Button；画布与写作历史共用 SidebarItem，时间移到 meta，操作用既有 IconButton。
+- 7 个文件、22 处旧 IconButton JSX 已迁移；不再引用本地旧组件，并单独删除该文件。图标按 V1 尺寸和 Tooltip；编辑栏纵向“放大/还原”采用 Button + Tooltip side=right，实窗复现并修复顶部 Tooltip 遮挡关闭按钮。画布开关使用现有 Toggle，聊天活动、复制、导出、工具栏、空态和引导复用现有 Button/Alert。
+- 用户明确选择上下文显示改为现有线性 Progress + Tooltip/Popover，保留 hover 用量、点击详情、Esc/外部关闭与焦点恢复。此前误报缺少圆环组件，已向用户更正：源码确有 ProgressRing；按用户新选择实现线性方案。
+- 移除 51 个 legacy-static-color 兼容定义与所有 renderer legacy 颜色/字体/圆角引用，改用现有 V1 语义变量；保留 legacy 层中的有效布局、CodeMirror 和媒体业务规则，不以文件名判断废弃。依赖与打包清单不变，未使用的字体依赖仍按既有记录保留。
+- 已检查真实 Electron 浅深写作新建弹窗、上下文详情与历史列表截图；现有组件浅深截图基准通过。截图见 `apps/desktop/test-results/4e34bdb5-bb08-4ecd-bfa6-8f57691220fb/`（写作）与 `4f2234ff-73b6-4df2-a942-94e4237be222/`（上下文）；不含真实服务验证。最终 check/build/diff 检查通过，排除未授权 macOS 日历的既有环境用例后，完整实窗/模拟服务回归 176/176（5.3m）通过；首次 176/177 的失败证据与环境限制见 engineering.md 对应记录。
+
 ### 右侧栏输入框窄宽度技能入口（2026-10-25）
 
 - 用户确认先采用空间不足时隐藏“技能”按钮的方案，保留单行工具栏。画布与写作共用的 compact ChatComposer 以自身宽度为容器查询依据：不超过 400px 隐藏按钮，更宽时恢复；输入 `/` 的技能选择入口保留，首页 wide 输入框不受影响。

@@ -2,6 +2,14 @@
 
 最后更新：2026-10-25
 
+## V1 遗留 UI 迁移（2026-10-25）
+
+- 从干净的本地 develop `ae9a57b` 创建 `feature/ui-v1-legacy-migration`。用户授权本地迁移现有控件，遇到组件覆盖缺口先询问；用户随后授权提交本轮改动，未授权推送、PR、合并或发布。版本与依赖不变。
+- 写作原生创建 dialog 迁移到现有 V1 Dialog/Field/Input/Button；重命名、空间历史、22 处旧 IconButton、更新提醒、空态/引导及相邻通用操作复用现有控件。用户另确认上下文采用线性 Progress + Tooltip/Popover，移除手写圆环/浮层。组件家族与 API 未扩展。
+- 保留创建与文件边界、历史/删除确认、同轮撤销、下载/导出、生成与编辑器状态。实窗新增写作弹窗首焦点、空名称禁用、Esc 关闭/焦点恢复、浅深截图；上下文详情进度值、Esc 与焦点恢复断言。画布助手新建对话原断言读取 CSS 隐藏文字，改为验证现有 V1 Tooltip 的可访问名称，原新建/历史/删除业务断言保留。
+- 旧图标按钮移除后发现编辑栏 Tooltip 挡住关闭按钮，保留失败证据并用既有 Tooltip side=right 修正；node-visuals 2/2 复验通过。写作 6/6、重命名/历史相关 10/10、更新 4/4、空态相关 9/9 分步通过；最终收尾专项首轮 19/20 的唯一失败为上述已隐藏文字断言，更新后画布 Agent 1/1 通过。
+- `pnpm check` / `pnpm build` 已通过；首次完整实窗/模拟服务为 176/177（5.4m），包括组件浅深像素基准。日历用例 `agent-calendar-ui.spec.ts` 假定 Jarvis 本地日历；实际 macOS 状态只读核对为 `{provider: apple, access: not_determined}`，因此没有 7 天列表。未请求系统授权、读取个人日程、改日历源码或删改该测试断言。最终代码以 `playwright test --grep-invert 'the calendar view shows the week'` 复跑其余用例，**176/176（5.3m）通过**，包括组件浅深像素基准；该日历用例仍保留失败记录，不称全量 177 项通过。最终 check、build、diff 检查通过。
+
 ## 右侧栏窄输入框技能按钮隐藏（2026-10-25）
 
 - PR 准备：用户授权推送并向 develop 提 PR；保留原提交 `a045777`，合入最新 origin/develop `f6efcf4`。仅两份记忆顶部冲突，保留双方记录，应用代码自动合并。按锁文件同步新增 pi-mcp 依赖后 check、build 通过；画布 Agent / sidebar / 写作 Agent 实窗 4/4（15.5s）通过，四种宽度隐藏/恢复、无重叠与 `/` 入口复验通过。已创建 [PR #86](https://github.com/qianyuzhao-ai/Jarvis/pull/86) 指向 develop；GitHub 插件创建返回 integration 403，改用已登录 gh 完成。此次不合并 PR、不发布。

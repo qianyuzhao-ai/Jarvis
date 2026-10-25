@@ -62,6 +62,18 @@ test('writing reads real directories, edits, creates, searches and restores tabs
       .toContain('编辑后的标题');
     await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible();
     await page.getByRole('button', { name: '新建文件', exact: true }).click();
+    const creationDialog = page.getByRole('dialog', { name: '新建文档', exact: true });
+    await expect(creationDialog).toHaveAttribute('data-ui', 'dialog');
+    await expect(page.getByLabel('文档名称')).toBeFocused();
+    await expect(creationDialog.getByRole('button', { name: '创建', exact: true })).toBeDisabled();
+    await page.screenshot({
+      path: test.info().outputPath('writing-create-light.png'),
+      animations: 'disabled',
+    });
+    await page.keyboard.press('Escape');
+    await expect(creationDialog).toBeHidden();
+    await expect(page.getByRole('button', { name: '新建文件', exact: true })).toBeFocused();
+    await page.getByRole('button', { name: '新建文件', exact: true }).click();
     await page.getByLabel('文档名称').fill('新的草稿');
     await page.getByRole('button', { name: '创建', exact: true }).click();
     await expect(page.getByRole('tab', { name: '新的草稿.md' })).toBeVisible();
@@ -270,6 +282,17 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('writing-dark.png') });
+    await page.getByRole('button', { name: '新建文件', exact: true }).click();
+    await expect(page.getByLabel('文档名称')).toBeFocused();
+    await page.screenshot({
+      path: test.info().outputPath('writing-create-dark.png'),
+      animations: 'disabled',
+    });
+    await page
+      .getByRole('dialog', { name: '新建文档', exact: true })
+      .getByRole('button', { name: '取消', exact: true })
+      .click();
+
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

@@ -1,3 +1,4 @@
+import { Button } from '@jarvis/ui/components/Button';
 import { toast } from '@jarvis/ui/components/Toast';
 import { useEffect, useRef, useState } from 'react';
 import { Download } from '@jarvis/ui/icons';
@@ -57,7 +58,9 @@ export function CanvasExport({
       <span className="sr-only" role="status">
         {status}
       </span>
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
         className="canvas-export-button"
         type="button"
         disabled={busy}
@@ -66,7 +69,7 @@ export function CanvasExport({
       >
         <Download size={16} />
         <span>{busy ? '正在导出…' : '导出 Excel'}</span>
-      </button>
+      </Button>
     </div>
   );
 }

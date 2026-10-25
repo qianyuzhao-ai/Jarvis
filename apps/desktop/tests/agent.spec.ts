@@ -174,7 +174,16 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       'aria-expanded',
       'true',
     );
+    const usage = page.getByRole('dialog', { name: '上下文用量', exact: true });
+    await expect(usage.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '11');
+    await expect(usage).toContainText('Context 106.6k / 1M (11%)');
+    await page.screenshot({
+      path: test.info().outputPath('context-usage-popover.png'),
+      animations: 'disabled',
+    });
     await page.keyboard.press('Escape');
+    await expect(usage).toBeHidden();
+    await expect(page.getByRole('button', { name: '上下文占用', exact: true })).toBeFocused();
     await expect(page.getByRole('button', { name: '上下文占用', exact: true })).toHaveAttribute(
       'aria-expanded',
       'false',

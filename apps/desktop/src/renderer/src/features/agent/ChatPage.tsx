@@ -1,10 +1,11 @@
-import { Button } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
+import { Field, FieldLabel } from '@jarvis/ui/components/Field';
+import { Input } from '@jarvis/ui/components/Input';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, FileText, Pencil, Brain } from '@jarvis/ui/icons';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
-import { IconButton } from '../../components/IconButton';
 import type { useAgent } from './use-agent';
 
 export function ChatPage({
@@ -79,7 +80,9 @@ export function ChatPage({
         <div className="chat-title">
           <span>{session.title}</span>
           <IconButton
-            label="重命名对话"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="重命名对话"
             onClick={() => {
               setTitle(session.title);
               setRenaming(true);
@@ -105,18 +108,21 @@ export function ChatPage({
               });
           }}
         >
-          <label htmlFor="chat-title">对话名称</label>
-          <input
-            id="chat-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={100}
-            required
-          />
-          <button type="submit">保存名称</button>
-          <button type="button" onClick={() => setRenaming(false)}>
+          <Field controlId="chat-title" className="flex-1" orientation="horizontal">
+            <FieldLabel>对话名称</FieldLabel>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+              required
+            />
+          </Field>
+          <Button type="submit" disabled={!title.trim()}>
+            保存名称
+          </Button>
+          <Button variant="secondary" onClick={() => setRenaming(false)}>
             取消
-          </button>
+          </Button>
         </form>
       )}
       <div
@@ -140,16 +146,14 @@ export function ChatPage({
                 ? '聊一个想法，读一份资料，或继续手头的工作。'
                 : '填写 API 地址和 Key，选择模型后即可开始对话。'}
             </p>
-            {!configured && (
-              <button className="agent-primary" onClick={onConfigure}>
-                前往模型设置
-              </button>
-            )}
+            {!configured && <Button onClick={onConfigure}>前往模型设置</Button>}
             {!session?.messages.length && configured && (
               <div className="chat-suggestions">
                 <small>也可以从这里开始</small>
                 {suggestions.map((s) => (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     key={s}
                     type="button"
                     onClick={() => {
@@ -160,7 +164,7 @@ export function ChatPage({
                     <FileText size={16} />
                     {s}
                     <ArrowUp size={14} />
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -182,7 +186,9 @@ export function ChatPage({
       </div>
       <div data-testid="chat-dock" className="chat-dock">
         {!atBottom && !!session?.messages.length && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             className="chat-latest"
             onClick={() => {
               const n = viewport.current;
@@ -193,7 +199,7 @@ export function ChatPage({
           >
             <ArrowDown size={14} />
             回到最新
-          </button>
+          </Button>
         )}
 
         <ChatComposer

@@ -1,6 +1,6 @@
+import { IconButton } from '@jarvis/ui/components/Button';
 import { useRef, useState } from 'react';
-import { Download, LoaderCircle, X } from '@jarvis/ui/icons';
-import { IconButton } from '../../components/IconButton';
+import { Download, X } from '@jarvis/ui/icons';
 import type { DownloadMedia } from '../../../../shared/generation';
 
 export function NodeDownload({ url, kind, fileName }: DownloadMedia) {
@@ -29,16 +29,17 @@ export function NodeDownload({ url, kind, fileName }: DownloadMedia) {
   return (
     <>
       <IconButton
+        variant="ghost"
+        size="icon-sm"
         className="node-download-button"
-        label={`下载${{ image: '图像', video: '视频', audio: '音频' }[kind]}`}
-        disabled={busy}
-        aria-busy={busy}
+        aria-label={`下载${{ image: '图像', video: '视频', audio: '音频' }[kind]}`}
+        loading={busy}
         onClick={(event) => {
           event.stopPropagation();
           void download();
         }}
       >
-        {busy ? <LoaderCircle size={16} /> : <Download size={16} />}
+        <Download size={16} />
       </IconButton>
       {notice && (
         <div
@@ -49,7 +50,9 @@ export function NodeDownload({ url, kind, fileName }: DownloadMedia) {
           <span>{notice.message}</span>
           {!busy && (
             <IconButton
-              label="关闭下载提示"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="关闭下载提示"
               onClick={(event) => {
                 event.stopPropagation();
                 setNotice(null);

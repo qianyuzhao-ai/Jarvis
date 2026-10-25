@@ -129,7 +129,8 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await expect(sidebar.locator('[data-testid="canvas-agent-header"] strong')).toHaveText(
       '新聊天',
     );
-    await expect(sidebar.getByRole('button', { name: '新建画布对话' })).toHaveText('新聊天');
+    await sidebar.getByRole('button', { name: '新建画布对话' }).hover();
+    await expect(page.getByRole('tooltip')).toHaveText('新建画布对话');
     await expect(sidebar.getByRole('button', { name: '收起画布助手' })).toHaveCount(0);
     await expect(sidebar.getByTestId('canvas-context-scope')).toContainText('1 个选中节点');
     await sidebar.getByLabel('消息', { exact: true }).fill('修改提示词，创建和连接视频节点');

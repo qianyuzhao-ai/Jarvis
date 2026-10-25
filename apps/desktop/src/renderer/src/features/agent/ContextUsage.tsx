@@ -1,4 +1,14 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useState } from 'react';
+import { Button } from '@jarvis/ui/components/Button';
+import { Progress, ProgressField } from '@jarvis/ui/components/Progress';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverTitle,
+  PopoverDescription,
+} from '@jarvis/ui/components/Popover';
+import { Tooltip } from '@jarvis/ui/components/Tooltip';
 
 function tokens(value: number | null | undefined) {
   if (value === null || value === undefined) return '—';
@@ -15,69 +25,37 @@ export function ContextUsage({
   capacity?: number | null;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const id = useId();
-  const percent =
-    used !== null && used !== undefined && capacity ? Math.round((used / capacity) * 100) : null;
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const percent = used != null && capacity ? Math.round((used / capacity) * 100) : null;
   const label = `Context ${tokens(used)} / ${tokens(capacity)}${percent === null ? '' : ` (${percent}%)`}`;
-  useEffect(() => {
-    if (!open) return;
-    function dismiss(event: PointerEvent) {
-      if (event.target instanceof Node && !ref.current?.contains(event.target)) setOpen(false);
-    }
-    function escape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        trigger.current?.focus();
-      }
-    }
-    document.addEventListener('pointerdown', dismiss);
-    document.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('pointerdown', dismiss);
-      document.removeEventListener('keydown', escape);
-    };
-  }, [open]);
   return (
-    <div className="composer-context" ref={ref} data-open={open}>
-      <button
-        type="button"
-        ref={trigger}
-        className="context-ring"
-        aria-label="上下文占用"
-        aria-expanded={open}
-        aria-describedby={id}
-        onClick={() => setOpen(!open)}
-      >
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            opacity=".25"
-          />
-          {percent !== null && (
-            <circle
-              className="context-used"
-              cx="12"
-              cy="12"
-              r="9"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeDasharray={`${Math.min(100, percent) * 0.5655} 56.55`}
-              transform="rotate(-90 12 12)"
-            />
-          )}
-        </svg>
-      </button>
-      <div id={id} className="context-summary" role="tooltip">
-        {label}
-      </div>
-    </div>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        setTooltipOpen(false);
+      }}
+    >
+      <Tooltip content={label} open={!open && tooltipOpen} onOpenChange={setTooltipOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-12" aria-label="上下文占用">
+            <span className="w-8">
+              <Progress size="small" value={percent} aria-label="上下文使用进度" />
+            </span>
+          </Button>
+        </PopoverTrigger>
+      </Tooltip>
+      <PopoverContent side="top" align="end" aria-label="上下文用量" className="w-70">
+        <PopoverTitle>上下文用量</PopoverTitle>
+        <ProgressField
+          size="small"
+          label="已使用 / 上下文容量"
+          value={percent}
+          valueLabel={percent === null ? '未知' : `${percent}%`}
+          hint={label}
+        />
+        <PopoverDescription>系统指令、消息与工具结果都会计入上下文。</PopoverDescription>
+      </PopoverContent>
+    </Popover>
   );
 }

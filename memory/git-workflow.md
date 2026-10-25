@@ -2,6 +2,10 @@
 
 最后更新：2026-10-25
 
+## V1 遗留 UI 迁移功能分支（2026-10-25）
+
+- 从干净的本地 develop `ae9a57b` 创建 `feature/ui-v1-legacy-migration`，已完成本地迁移和验证，用户随后授权提交本轮改动；未推送、创建 PR、合并、打标签或发布。版本维持 0.3.0。实现/验收见 engineering.md 与 ui-v1-implementation.md。
+
 ## Agent 架构改造 PR（2026-10-25）
 
 - 用户要求将云端会话分支 `ccr-1c636605-o0pprj`（A0–A6 及插话设置，基于 main `6761f10`，已包含 develop `81beb13`，领先 26 个提交）提 PR 合入 develop：[PR #84](https://github.com/qianyuzhao-ai/Jarvis/pull/84)。PR 由用户于 2026-10-25 合并到 develop（合并提交 `a358672`）；未打标签、未发布，版本号未改动。之后会话分支按“已合并 PR 后重新从 develop 起分支”规则重置到 `a358672`，后续记录作为新改动提交。这两条记录提交（`c418996`、`58147bd`）经 [PR #85](https://github.com/qianyuzhao-ai/Jarvis/pull/85) 提交合入 develop，只创建了 PR，没有合并。

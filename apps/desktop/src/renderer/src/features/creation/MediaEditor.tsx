@@ -1,10 +1,10 @@
-import { IconButton as UiIconButton } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
+import { Tooltip } from '@jarvis/ui/components/Tooltip';
 import { Toggle } from '@jarvis/ui/components/Toggle';
 import { Spinner } from '@jarvis/ui/components/Spinner';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { useRef, useState } from 'react';
 import { ArrowUp, Maximize, Minimize, Volume2, VolumeX, X } from '@jarvis/ui/icons';
-import { IconButton } from '../../components/IconButton';
 import { normalizeMedia } from './models';
 import { ImageControls } from './ImageControls';
 import { VideoControls } from './VideoControls';
@@ -116,17 +116,21 @@ export function MediaEditor({
             onChange={(prompt) => update({ prompt })}
           />
           <div className="editor-window-actions">
-            <IconButton label="关闭编辑面板" onClick={onClose}>
+            <IconButton variant="ghost" size="icon-sm" aria-label="关闭编辑面板" onClick={onClose}>
               <X size={20} />
             </IconButton>
-            <IconButton
-              ref={expandedButton}
-              label={expanded ? '还原面板' : '放大编辑'}
-              aria-expanded={expanded}
-              onClick={() => toggleExpanded(!expanded)}
-            >
-              {expanded ? <Minimize size={18} /> : <Maximize size={18} />}
-            </IconButton>
+            <Tooltip side="right" content={expanded ? '还原面板' : '放大编辑'}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                ref={expandedButton}
+                aria-label={expanded ? '还原面板' : '放大编辑'}
+                aria-expanded={expanded}
+                onClick={() => toggleExpanded(!expanded)}
+              >
+                {expanded ? <Minimize size={18} /> : <Maximize size={18} />}
+              </Button>
+            </Tooltip>
           </div>
         </div>
         <div className="editor-bottom node-editor-bottom">
@@ -158,7 +162,7 @@ export function MediaEditor({
               </span>
             )
           )}
-          <UiIconButton
+          <IconButton
             size="icon-lg"
             aria-label={`生成${label}`}
             className="generate-button"
@@ -166,7 +170,7 @@ export function MediaEditor({
             onClick={onGenerate}
           >
             <ArrowUp size={20} />
-          </UiIconButton>
+          </IconButton>
         </div>
         {referenceError && (
           <Alert

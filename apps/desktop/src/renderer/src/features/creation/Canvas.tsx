@@ -1,8 +1,10 @@
 import { NodeActionsContext } from './node-actions-context';
-import { Button } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { createPortal } from 'react-dom';
 import { Alert } from '@jarvis/ui/components/Alert';
 import { BadgeCount } from '@jarvis/ui/components/Badge';
+import { Toggle } from '@jarvis/ui/components/Toggle';
+import { Tooltip } from '@jarvis/ui/components/Tooltip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { DownloadMedia } from '../../../../shared/generation';
@@ -37,7 +39,6 @@ import {
   Upload,
   Link2,
 } from '@jarvis/ui/icons';
-import { IconButton } from '../../components/IconButton';
 import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
@@ -470,7 +471,12 @@ function CanvasContent({
               <Video size={18} />
               视频
             </Button>
-            <IconButton label="导入素材" onClick={() => fileInput.current?.click()}>
+            <IconButton
+              variant="secondary"
+              size="icon-sm"
+              aria-label="导入素材"
+              onClick={() => fileInput.current?.click()}
+            >
               <Upload size={18} />
             </IconButton>
             <input
@@ -611,62 +617,84 @@ function CanvasContent({
                   className="canvas-minimap"
                   pannable
                   zoomable
-                  nodeColor="var(--color-secondary)"
-                  maskColor="var(--minimap-mask)"
+                  nodeColor="var(--color-fg-secondary)"
+                  maskColor="var(--color-scrim)"
                   ariaLabel="画布缩略图"
                 />
               )}
               <Panel position="bottom-left" className="floating-controls">
-                <IconButton label="缩小" onClick={() => void flow.zoomOut()}>
+                <IconButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="缩小"
+                  onClick={() => void flow.zoomOut()}
+                >
                   <Minus size={18} />
                 </IconButton>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   data-testid="zoom-value"
                   className="zoom-value"
                   title="重置为 100%"
                   onClick={() => void flow.zoomTo(1)}
                 >
                   {Math.round(viewport.zoom * 100)}%
-                </button>
-                <IconButton label="放大" onClick={() => void flow.zoomIn()}>
+                </Button>
+                <IconButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="放大"
+                  onClick={() => void flow.zoomIn()}
+                >
                   <Plus size={18} />
                 </IconButton>
                 <span className="control-divider" />
                 <IconButton
-                  label="适应视图"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="适应视图"
                   onClick={() => void flow.fitView({ padding: 0.3, maxZoom: 1 })}
                 >
                   <Maximize size={18} />
                 </IconButton>
               </Panel>
               <Panel position="bottom-right" className="floating-controls">
-                <IconButton
-                  label="缩略图显示"
-                  aria-pressed={project.minimap}
-                  onClick={() => patch({ minimap: !project.minimap })}
-                >
-                  <Map size={18} />
-                </IconButton>
-                <IconButton
-                  label="背景点阵显示"
-                  aria-pressed={project.dots}
-                  onClick={() => patch({ dots: !project.dots })}
-                >
-                  <LayoutGrid size={18} />
-                </IconButton>
-                <IconButton
-                  label="磁力吸附"
-                  aria-pressed={project.snap}
-                  onClick={() => patch({ snap: !project.snap })}
-                >
-                  <Magnet size={18} />
-                </IconButton>
+                <Tooltip content="缩略图显示">
+                  <Toggle
+                    aria-label="缩略图显示"
+                    pressed={project.minimap}
+                    onPressedChange={(pressed) => patch({ minimap: pressed })}
+                  >
+                    <Map size={18} />
+                  </Toggle>
+                </Tooltip>
+                <Tooltip content="背景点阵显示">
+                  <Toggle
+                    aria-label="背景点阵显示"
+                    pressed={project.dots}
+                    onPressedChange={(pressed) => patch({ dots: pressed })}
+                  >
+                    <LayoutGrid size={18} />
+                  </Toggle>
+                </Tooltip>
+                <Tooltip content="磁力吸附">
+                  <Toggle
+                    aria-label="磁力吸附"
+                    pressed={project.snap}
+                    onPressedChange={(pressed) => patch({ snap: pressed })}
+                  >
+                    <Magnet size={18} />
+                  </Toggle>
+                </Tooltip>
               </Panel>
             </ReactFlow>
             {selectedIds.length > 1 && (
               <div className="canvas-selection-actions" role="toolbar" aria-label="多选节点操作">
                 <span>已选择 {selectedIds.length} 个节点</span>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   aria-pressed={Boolean(connectingIds)}
                   onClick={() => {
@@ -677,8 +705,10 @@ function CanvasContent({
                 >
                   <Link2 size={16} />
                   {connectingIds ? '取消连接' : '连接到节点'}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   disabled={batchBusy || !downloadable.length}
                   aria-label={batchBusy ? '正在下载' : `下载可用文件 (${downloadable.length})`}
@@ -692,7 +722,7 @@ function CanvasContent({
                     count={downloadable.length}
                     aria-label={`${downloadable.length} 个可下载文件`}
                   />
-                </button>
+                </Button>
                 {connectingIds && <span>点击目标图像或视频节点</span>}
               </div>
             )}

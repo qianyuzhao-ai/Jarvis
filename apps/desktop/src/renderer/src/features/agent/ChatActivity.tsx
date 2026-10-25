@@ -104,17 +104,24 @@ export function ChatActivity({
             )}
             {canvas && activity.nodeIds?.length ? (
               <div className="canvas-activity-actions">
-                <button type="button" onClick={() => canvas.focus(activity.nodeIds ?? [])}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  onClick={() => canvas.focus(activity.nodeIds ?? [])}
+                >
                   定位节点
-                </button>
+                </Button>
                 {activity.transactionId && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     type="button"
                     disabled={!canvas.canUndo(activity.transactionId)}
                     onClick={() => canvas.undo(activity.transactionId ?? '')}
                   >
                     撤销本次修改
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : null}
@@ -134,13 +141,15 @@ export function ChatActivity({
             )}
             {firstOfRound.has(activity.id) && activity.transactionId && (
               <div className="canvas-activity-actions">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   disabled={undoing || replying || !!activity.undone}
                   onClick={() => void undoFiles(activity.transactionId ?? '')}
                 >
                   {activity.undone ? '本轮文件修改已撤销' : '撤销本轮文件修改'}
-                </button>
+                </Button>
               </div>
             )}
             {activity.files.length > 0 && (

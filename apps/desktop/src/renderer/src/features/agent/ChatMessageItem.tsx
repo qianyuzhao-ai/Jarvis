@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
-import { Button } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import logo from '../../../../../resources/icon.png';
 import {
@@ -114,14 +114,15 @@ export function ChatMessageItem({
       {!!m.canvasReferences?.length && (
         <div data-testid="canvas-message-references" className="canvas-message-references">
           {m.canvasReferences.map((node) => (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="xs"
               key={node.id}
               disabled={!canvas}
               onClick={() => canvas?.focus([node.id])}
             >
               {node.name}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -178,15 +179,14 @@ export function ChatMessageItem({
           {m.status !== 'running' && (
             <div data-testid="chat-reply-meta" className="chat-reply-meta">
               {m.text && (
-                <button
-                  type="button"
-                  className="chat-copy"
+                <IconButton
+                  variant="ghost"
+                  size="icon"
                   onClick={() => void copy()}
                   aria-label={copied ? '已复制回复' : '复制回复'}
-                  title={copied ? '已复制' : '复制回复'}
                 >
                   {copied ? <Check size={16} /> : <Copy size={16} />}
-                </button>
+                </IconButton>
               )}
               {m.completedAt !== undefined && (
                 <time

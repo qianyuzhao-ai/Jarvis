@@ -1,7 +1,10 @@
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useRef, useState } from 'react';
 import { MessageSquare, Pencil, Trash2 } from '@jarvis/ui/icons';
-import { IconButton } from '../../components/IconButton';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
+import { Input } from '@jarvis/ui/components/Input';
+import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
+import { Spinner } from '@jarvis/ui/components/Spinner';
 import type { ChatSessionMeta } from '../../../../shared/agent';
 
 const conversationTime = (session: ChatSessionMeta) => session.lastReplyAt ?? session.updatedAt;
@@ -92,7 +95,7 @@ export function CanvasConversations({
                   <label className="sr-only" htmlFor="canvas-conversation-title">
                     {label}对话名称
                   </label>
-                  <input
+                  <Input
                     id="canvas-conversation-title"
                     value={title}
                     maxLength={100}
@@ -102,60 +105,69 @@ export function CanvasConversations({
                       if (e.key === 'Escape') setEditing('');
                     }}
                   />
-                  <button type="submit" disabled={pending || !title.trim()}>
+                  <Button type="submit" size="sm" loading={pending} disabled={!title.trim()}>
                     保存
-                  </button>
-                  <button type="button" disabled={pending} onClick={() => setEditing('')}>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => setEditing('')}
+                  >
                     取消
-                  </button>
+                  </Button>
                 </form>
               ) : (
-                <>
-                  <button
-                    data-testid="side-link"
-                    className={`side-link canvas-conversation-title ${currentId === s.id ? 'selected' : ''}`}
-                    type="button"
-                    disabled={pending}
-                    aria-current={currentId === s.id ? 'true' : undefined}
-                    onClick={() => select(s.id)}
-                  >
-                    <MessageSquare size={18} />
-                    <span
-                      data-testid="canvas-conversation-summary"
-                      className="canvas-conversation-summary"
-                    >
-                      <span title={s.title}>{s.title}</span>
+                <SidebarItem
+                  data-testid="side-link"
+                  selected={currentId === s.id}
+                  disabled={pending}
+                  aria-current={currentId === s.id ? 'true' : undefined}
+                  onClick={() => select(s.id)}
+                  icon={<MessageSquare />}
+                  meta={
+                    s.runId ? (
+                      <Spinner size="sm" aria-label="回复中" />
+                    ) : (
                       <time
                         dateTime={new Date(conversationTime(s)).toISOString()}
+                        title={dateTime.format(conversationTime(s))}
                         aria-label="上次对话时间"
                       >
                         {dateTime.format(conversationTime(s))}
                       </time>
-                    </span>
-                    {s.runId && (
-                      <span className="history-running" aria-label="回复中">
-                        •
-                      </span>
-                    )}
-                  </button>
-                  <IconButton
-                    disabled={pending}
-                    label={`重命名${label}对话：${s.title}`}
-                    onClick={() => {
-                      setEditing(s.id);
-                      setTitle(s.title);
-                    }}
-                  >
-                    <Pencil size={18} />
-                  </IconButton>
-                  <IconButton
-                    disabled={busy || pending}
-                    label={`删除${label}对话：${s.title}`}
-                    onClick={() => void deleteChat(s)}
-                  >
-                    <Trash2 size={18} />
-                  </IconButton>
-                </>
+                    )
+                  }
+                  trailing={
+                    <>
+                      <IconButton
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`重命名${label}对话：${s.title}`}
+                        disabled={pending}
+                        onClick={() => {
+                          setEditing(s.id);
+                          setTitle(s.title);
+                        }}
+                      >
+                        <Pencil />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={`删除${label}对话：${s.title}`}
+                        disabled={busy || pending}
+                        onClick={() => void deleteChat(s)}
+                      >
+                        <Trash2 />
+                      </IconButton>
+                    </>
+                  }
+                >
+                  <span data-testid="canvas-conversation-summary" title={s.title}>
+                    <span>{s.title}</span>
+                  </span>
+                </SidebarItem>
               )}
             </div>
           ))
