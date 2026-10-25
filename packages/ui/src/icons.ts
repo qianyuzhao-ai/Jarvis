@@ -119,3 +119,23 @@ export const Link = /* @__PURE__ */ icon(Lucide.Link);
 
 export const GripVertical = /* @__PURE__ */ icon(Lucide.GripVertical);
 export const Code = /* @__PURE__ */ icon(Lucide.Code);
+
+export const TriangleAlert = /* @__PURE__ */ icon(Lucide.TriangleAlert);
+
+export const Network = /* @__PURE__ */ icon(Lucide.Network);
+
+export const Pilcrow = /* @__PURE__ */ icon(Lucide.Pilcrow);
+
+export const Heading1 = /* @__PURE__ */ icon(Lucide.Heading1);
+
+export const Heading2 = /* @__PURE__ */ icon(Lucide.Heading2);
+
+export const Heading3 = /* @__PURE__ */ icon(Lucide.Heading3);
+
+export const ListOrdered = /* @__PURE__ */ icon(Lucide.ListOrdered);
+
+export const ListTodo = /* @__PURE__ */ icon(Lucide.ListTodo);
+
+export const Quote = /* @__PURE__ */ icon(Lucide.Quote);
+
+export const Table = /* @__PURE__ */ icon(Lucide.Table);

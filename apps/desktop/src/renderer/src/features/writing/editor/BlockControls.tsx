@@ -42,7 +42,7 @@ export function BlockControls({
   content: string;
   onSource(): void;
   onOpenLink(target: string, newTab: boolean): void;
-  onAsk(): void;
+  onAsk(prompt?: string): void;
 }) {
   const [menu, setMenu] = useState(false),
     [href, setHref] = useState('');
@@ -101,18 +101,26 @@ export function BlockControls({
             if (!block) return;
             const node = editor.state.doc.nodeAt(block.position);
             if (node?.type.name === 'paragraph' && !node.textContent) {
-              editor.commands.setTextSelection(block.position + 1);
-              setMenu(true);
+              editor
+                .chain()
+                .focus()
+                .setTextSelection(block.position + 1)
+                .insertContent('/')
+                .run();
+              editor.view.focus();
+              editor.view.dom.dispatchEvent(new Event('jarvis:slash-open'));
               return;
             }
             const at = block.position + block.size;
             editor
               .chain()
               .focus()
-              .insertContentAt(at, { type: 'paragraph' })
-              .setTextSelection(at + 1)
+              .insertContentAt(at, { type: 'paragraph', content: [{ type: 'text', text: '/' }] })
+              .setTextSelection(at + 2)
               .run();
-            setMenu(true);
+            // The chain defers focus; settle the DOM caret before the next keystroke.
+            editor.view.focus();
+            editor.view.dom.dispatchEvent(new Event('jarvis:slash-open'));
           }}
         >
           <Plus size={14} />
@@ -146,7 +154,7 @@ export function BlockControls({
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onSelect={onAsk}>AI 润色</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAsk()}>AI 润色</DropdownMenuItem>
             <DropdownMenuSeparator />
             {choices.map(([kind, label]) => (
               <DropdownMenuItem key={kind} onSelect={() => convert(kind!)}>
@@ -177,7 +185,7 @@ export function BlockControls({
         }
       >
         <div className="writing-bubble-menu">
-          <Button variant="ghost" size="sm" onClick={onAsk}>
+          <Button variant="ghost" size="sm" onClick={() => onAsk()}>
             <Sparkles />
             AI 润色
           </Button>

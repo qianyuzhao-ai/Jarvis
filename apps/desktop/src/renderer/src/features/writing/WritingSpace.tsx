@@ -45,7 +45,7 @@ import {
 import type { WritingEntry } from '../../../../shared/writing';
 import { EditorHost } from './editor/EditorHost';
 import { createViewCache, type BufferView } from './editor/buffer-view';
-import { requestWritingAssistant } from './assistant-request';
+import { askWritingAssistant } from './assistant-bridge';
 import { unwrap, useWriting } from './useWriting';
 
 function ResizeHandle({
@@ -646,9 +646,8 @@ export function WritingSpace({
                 writing.setNotice(e instanceof Error ? e.message : '无法打开文档'),
               );
             }}
-            onAsk={() => {
-              requestWritingAssistant(active.id, '请润色当前选中的内容，保持原意，仅修改选区。');
-              shell.onAssistant();
+            onAsk={(prompt = '请润色当前选中的内容，保持原意，仅修改选区。') => {
+              askWritingAssistant(active.id, prompt, shell.onAssistant);
             }}
           />
         ) : (

@@ -10,6 +10,8 @@ import { blockRanges, blockText, parse, serialize, textPatch } from './markdown/
 import { positionToSource, sourceToPosition } from './markdown/selection';
 import type { BufferView, ViewCache } from './buffer-view';
 import type { DocumentSession } from '../useWriting';
+import { withWritingNodeViews } from '../blocks/node-views';
+import { SlashMenu } from './SlashMenu';
 import { BlockControls } from './BlockControls';
 import { toast } from '@jarvis/ui/components/Toast';
 
@@ -32,7 +34,7 @@ export function BlockEditor({
   onSave(): void;
   onSource(): void;
   onOpenLink(target: string, newTab: boolean): void;
-  onAsk(): void;
+  onAsk(prompt?: string): void;
 }) {
   const callbacks = useRef({ onChange, onPosition, onSave, onSource, onOpenLink });
   callbacks.current = { onChange, onPosition, onSave, onSource, onOpenLink };
@@ -41,6 +43,7 @@ export function BlockEditor({
     agentRun = useRef<string | null>(null),
     firstAgent = useRef<Transaction | null>(null);
   const host = useRef<HTMLDivElement>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
   const [, render] = useState(0);
   const missing = useRef(new Set<string>());
   const [hovered, setHovered] = useState<number | null>(null);
@@ -51,7 +54,10 @@ export function BlockEditor({
       immediatelyRender: false,
       onCreate: () => render((n) => n + 1),
       extensions: [
-        ...writingExtensions((source) => assetUrl(document.rootId, document.path, source)),
+        ...withWritingNodeViews(
+          writingExtensions((source) => assetUrl(document.rootId, document.path, source)),
+          (source) => assetUrl(document.rootId, document.path, source),
+        ),
         references(
           (target, newTab) => callbacks.current.onOpenLink(target, newTab),
           () => missing.current,
@@ -254,7 +260,7 @@ export function BlockEditor({
     };
   }, [linkKey, document.rootId, editor, mounted]);
   async function upload(file: File) {
-    if (!editor || !mounted || !window.desktop) return;
+    if (!editor || !window.desktop) return;
     if (
       !['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type) ||
       file.size > 10 * 1024 * 1024
@@ -272,7 +278,15 @@ export function BlockEditor({
         bytes: new Uint8Array(await file.arrayBuffer()),
       });
       if (!result.ok) throw new Error(result.error);
+      const deadline = Date.now() + 1000;
+      while (
+        !editor.isDestroyed &&
+        (!editor.isInitialized || !bufferRef.current) &&
+        Date.now() < deadline
+      )
+        await new Promise((resolve) => setTimeout(resolve, 16));
       if (editor.isDestroyed || bufferRef.current?.id !== id) return;
+      if (!editor.isInitialized) throw new Error('编辑器尚未就绪，请重试插入图片');
       editor
         .chain()
         .focus()
@@ -289,6 +303,16 @@ export function BlockEditor({
     <div
       className="writing-block-editor"
       ref={host}
+      onKeyDownCapture={(event) => {
+        if (
+          !event.nativeEvent.isComposing &&
+          (event.metaKey || event.ctrlKey) &&
+          event.key.toLowerCase() === 's'
+        ) {
+          event.preventDefault();
+          callbacks.current.onSave();
+        }
+      }}
       onMouseMove={(e) => {
         if (
           !editor ||
@@ -364,6 +388,21 @@ export function BlockEditor({
         />
       )}
       {dropTop !== null && <div className="writing-drop-indicator" style={{ top: dropTop }} />}
+      {editor && mounted && (
+        <SlashMenu editor={editor} onAsk={onAsk} onImage={() => imageInput.current?.click()} />
+      )}
+      <input
+        ref={imageInput}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        aria-label="插入图片文件"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+          event.target.value = '';
+        }}
+      />
       <EditorContent editor={editor} />
     </div>
   );

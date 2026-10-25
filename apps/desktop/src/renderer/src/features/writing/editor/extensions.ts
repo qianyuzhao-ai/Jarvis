@@ -1,3 +1,8 @@
+import { BlockHighlight } from '../blocks/block-highlight';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { lowlight } from '../blocks/highlight';
+
+import { Callout, ToggleBlock, MermaidBlock, MindMapBlock } from '../blocks/schema';
 import { Plugin } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
 import { Extension, Node, getSchema } from '@tiptap/core';
@@ -82,6 +87,10 @@ const Source = Extension.create({
         'table',
         'image',
         'rawBlock',
+        'callout',
+        'toggleBlock',
+        'mermaid',
+        'mindMap',
       ],
       attributes: Object.fromEntries(
         ['source', 'sourceHash', 'leading', 'blockId'].map((key) => [
@@ -97,6 +106,7 @@ export function writingExtensions(resolveImage: (source: string) => string = (so
     Document,
     StarterKit.configure({
       document: false,
+      codeBlock: false,
       trailingNode: false,
       underline: false,
       link: { openOnClick: false },
@@ -104,8 +114,28 @@ export function writingExtensions(resolveImage: (source: string) => string = (so
     }),
     Table.configure({ resizable: false }),
     TableRow,
-    TableCell,
-    TableHeader,
+    TableCell.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          align: {
+            default: null,
+            renderHTML: (attrs) => (attrs.align ? { style: `text-align: ${attrs.align}` } : {}),
+          },
+        };
+      },
+    }),
+    TableHeader.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          align: {
+            default: null,
+            renderHTML: (attrs) => (attrs.align ? { style: `text-align: ${attrs.align}` } : {}),
+          },
+        };
+      },
+    }),
     TaskList,
     TaskItem.configure({ nested: true }),
     Image.extend({
@@ -114,8 +144,17 @@ export function writingExtensions(resolveImage: (source: string) => string = (so
         { ...HTMLAttributes, src: resolveImage(HTMLAttributes.src) },
       ],
     }).configure({ allowBase64: false }),
+    CodeBlockLowlight.configure({
+      lowlight,
+      defaultLanguage: null,
+    }),
+    Callout,
+    ToggleBlock,
+    MermaidBlock,
+    MindMapBlock,
     RawBlock,
     Source,
+    BlockHighlight,
   ];
 }
 export const writingSchema = getSchema(writingExtensions());

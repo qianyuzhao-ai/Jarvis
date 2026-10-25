@@ -34,7 +34,14 @@ console.log(dependencies.stdout.trim());
 const profile = await mkdtemp(join(tmpdir(), 'jarvis-packaged-writing-'));
 const folder = join(profile, 'notes');
 await mkdir(folder);
-await writeFile(join(folder, 'package.md'), '# 打包验证\n\n原始内容\n');
+const rich = process.argv.includes('--rich');
+await writeFile(
+  join(folder, 'package.md'),
+  '# 打包验证\n\n原始内容\n' +
+    (rich
+      ? '\n```mermaid\nflowchart LR\n A[开始] --> B[完成]\n```\n\n```mindmap\n- 打包导图\n  - 分支\n```\n'
+      : ''),
+);
 const instance = await electron.launch({
   executablePath: executable,
   args: [`--user-data-dir=${join(profile, 'profile')}`],
@@ -57,6 +64,12 @@ try {
     .click();
   const editor = page.getByRole('textbox', { name: '块编辑器' });
   await expect(editor).toContainText('原始内容');
+  if (rich) {
+    await expect(page.getByTestId('writing-mermaid').getByRole('img').locator('svg')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByTestId('writing-mindmap')).toContainText('打包导图');
+  }
   await editor.press('ControlOrMeta+a');
   await page.keyboard.insertText('打包块编辑通过');
   await editor.press('ControlOrMeta+s');
@@ -68,6 +81,7 @@ try {
     JSON.stringify({
       version: await instance.evaluate(({ app }) => app.getVersion()),
       blockEditor: true,
+      richPreviews: rich,
       persisted: true,
       screenshot,
     }),

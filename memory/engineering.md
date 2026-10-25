@@ -2,6 +2,13 @@
 
 最后更新：2026-10-26
 
+## 写作空间 W3（2026-10-26）
+
+用户明确继续 W3。新增 Mermaid 12.1.0、pinyin-pro 3.29.5、lowlight 3.3.0、highlight.js 11.12.0、CodeBlockLowlight 3.31.4，全部精确版本；Mermaid 动态加载，不在写作首屏请求。
+
+新增富模块 schema/NodeView、Markdown 转换、24 份往返 fixture、/ 菜单筛选与键盘/组合输入处理；无新增 IPC/权限。图表 strict 与安全配置隔离、导图缩进列表、图片与模块显示状态不落盘均有专项验证。综合专项 16/16（22.8s）通过；完整回归 197/199（5.9m），日历与真实窗口焦点两项失败保留；焦点在 W2 基线也复现。最终转换/往返 9/9；未签名目录包 593 项依赖、ASAR 富模块预览与编辑保存通过。详情见 [写作实施记录](writing-space-implementation.md)。
+
+
 ## 写作空间 W2（2026-10-26）
 
 用户明确要求继续 W2，保留 W1 日历环境失败记录。新增 Tiptap 3.31.4 与 remark/unified 精确依赖、块级原文转换层、BufferView、双视图编辑、共享 writing-links 解析；没有新增通用文件/IPC 能力，现有 writing read/save 仅补可选 mtime。

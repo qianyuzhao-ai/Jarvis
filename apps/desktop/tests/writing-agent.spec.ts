@@ -158,6 +158,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     await panel.getByLabel('消息', { exact: true }).fill('改写选中段落并修改两处');
     await panel.getByRole('button', { name: '发送消息' }).click();
     await expect(editor).toContainText('口语化段落。');
+    await expect(page.getByTestId('writing-agent-highlight').first()).toBeVisible();
     await expect(editor).toContainText('补充结尾。');
     await expect(editor).not.toContainText('原始段落。');
     await expect(panel.getByRole('button', { name: '撤销本次修改' })).toBeEnabled();

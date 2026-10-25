@@ -38,13 +38,7 @@ test('editing one top-level block preserves every other source byte and its sepa
   expect(source.slice(0, patch.from) + patch.text + source.slice(patch.to)).toBe(result);
 });
 test('unknown HTML and reference structures are inert source blocks; extensions retain syntax', () => {
-  for (const content of [
-    '<script>alert(1)</script>',
-    '[^note]: source',
-    '---\nicon: 😀\n---',
-    '> [!NOTE]\n> original',
-    '```mindmap\n- center\n```',
-  ]) {
+  for (const content of ['<script>alert(1)</script>', '[^note]: source', '---\nicon: 😀\n---']) {
     const { doc } = parse(content);
     expect(doc.firstChild?.type.name).toBe('rawBlock');
     expect(serialize(doc)).toBe(content);

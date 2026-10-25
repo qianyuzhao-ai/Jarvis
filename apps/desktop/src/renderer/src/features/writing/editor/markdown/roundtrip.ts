@@ -1,4 +1,5 @@
-import { defaultHandlers } from 'mdast-util-to-markdown';
+import { richFromAst, detailsEnd } from '../../blocks/markdown';
+import { writingTextHandler } from './text-handler';
 import type { JSONContent } from '@tiptap/core';
 import type { Node as PMNode } from '@tiptap/pm/model';
 import { unified } from 'unified';
@@ -47,12 +48,29 @@ export function parse(markdown: string) {
   const ast = parser.parse(markdown) as Ast;
   let offset = 0;
   const content: JSONContent[] = [];
-  for (const node of ast.children ?? []) {
-    const from = node.position?.start.offset ?? offset,
-      to = node.position?.end.offset ?? from;
+  const nodes = ast.children ?? [];
+  for (let index = 0; index < nodes.length; index++) {
+    const node = nodes[index]!;
+    const from = node.position?.start.offset ?? offset;
+    let to = node.position?.end.offset ?? from;
+    const end = detailsEnd(markdown, from);
+    if (end !== null) {
+      to = end;
+      while (index + 1 < nodes.length && (nodes[index + 1]!.position?.start.offset ?? to) < to)
+        index++;
+    }
     const source = markdown.slice(from, to),
       kind = rawKind(node, source);
-    let converted = kind ? [{ type: 'rawBlock', attrs: { raw: source, kind } }] : fromAst(node);
+    const rich = richFromAst(
+      node,
+      source,
+      (text) => parse(text).doc.toJSON().content as JSONContent[],
+    );
+    let converted = rich
+      ? [rich]
+      : kind
+        ? [{ type: 'rawBlock', attrs: { raw: source, kind } }]
+        : fromAst(node);
     // An inline image cannot live inside a paragraph in the block image schema.
     if (
       converted.length === 1 &&
@@ -113,34 +131,10 @@ export function blockText(node: PMNode): string {
   const bullet = /^\s*([*+-])\s/.exec(old)?.[1] as '*' | '+' | '-' | undefined;
   const fence = /^\s*(~{3,}|`{3,})/.exec(old)?.[1];
   const ast = toAst(json);
-  if (ast.type === 'table') {
-    const alignment = old
-      .split(/\r?\n/)[1]
-      ?.split('|')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (alignment && alignment.length === ast.children?.[0]?.children?.length)
-      ast.align = alignment.map((s) =>
-        s.startsWith(':')
-          ? s.endsWith(':')
-            ? 'center'
-            : 'left'
-          : s.endsWith(':')
-            ? 'right'
-            : null,
-      );
-  }
   const writer = unified()
     .use(remarkGfm)
     .use(remarkStringify, {
-      handlers: {
-        text(node, parent, state, info) {
-          return defaultHandlers
-            .text(node, parent, state, info)
-            .replace(/\\\[(\\?\[)/g, '[[')
-            .replace(/\\\](\\?\])/g, ']]');
-        },
-      },
+      handlers: { text: writingTextHandler },
       bullet: bullet ?? '-',
       emphasis: /(^|\W)\*[^*]/.test(old) ? '*' : '_',
       strong: old.includes('__') ? '_' : '*',

@@ -35,7 +35,7 @@ export function EditorHost({
   onSave(): void;
   onRename(name: string): Promise<void>;
   onOpenLink(target: string, newTab: boolean): void;
-  onAsk(): void;
+  onAsk(prompt?: string): void;
 }) {
   const text = document.fileType === 'text';
   const storageKey = 'jarvis:writing-view:' + document.rootId + ':' + document.path;

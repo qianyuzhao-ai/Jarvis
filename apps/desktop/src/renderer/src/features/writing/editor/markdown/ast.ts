@@ -1,3 +1,8 @@
+import { writingTextHandler } from './text-handler';
+import { unified } from 'unified';
+import remarkGfm from 'remark-gfm';
+import remarkStringify from 'remark-stringify';
+import { calloutMarker, escapeSummary } from '../../blocks/markdown';
 import type { JSONContent } from '@tiptap/core';
 export interface Ast {
   type: string;
@@ -90,14 +95,18 @@ export function fromAst(node: Ast, marks: NonNullable<JSONContent['marks']> = []
             leaf(
               'tableRow',
               undefined,
-              (row.children ?? []).map((cell) =>
-                leaf(index === 0 ? 'tableHeader' : 'tableCell', undefined, [
-                  leaf(
-                    'paragraph',
-                    undefined,
-                    (cell.children ?? []).flatMap((n) => fromAst(n)),
-                  ),
-                ]),
+              (row.children ?? []).map((cell, column) =>
+                leaf(
+                  index === 0 ? 'tableHeader' : 'tableCell',
+                  { align: node.align?.[column] ?? null },
+                  [
+                    leaf(
+                      'paragraph',
+                      undefined,
+                      (cell.children ?? []).flatMap((n) => fromAst(n)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -153,6 +162,40 @@ export function toAst(node: JSONContent): Ast {
         ...(node.type === 'taskItem' ? { checked: !!node.attrs?.checked } : {}),
         children: children(),
       };
+    case 'callout':
+      return {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{ type: 'html', value: calloutMarker(node.attrs ?? {}) }],
+          },
+          ...children(),
+        ],
+      };
+    case 'toggleBlock': {
+      const writer = unified()
+        .use(remarkGfm)
+        .use(remarkStringify, {
+          bullet: '-',
+          fences: true,
+          handlers: { text: writingTextHandler },
+        });
+      const body = writer
+        .stringify({ type: 'root', children: children() } as Parameters<typeof writer.stringify>[0])
+        .trimEnd();
+      return {
+        type: 'html',
+        value: `<details><summary>${escapeSummary(String(node.attrs?.summary ?? ''))}</summary>\n\n${body}\n\n</details>`,
+      };
+    }
+    case 'mermaid':
+    case 'mindMap':
+      return {
+        type: 'code',
+        lang: node.type === 'mermaid' ? 'mermaid' : 'mindmap',
+        value: node.attrs?.code ?? '',
+      };
     case 'codeBlock':
       return {
         type: 'code',
@@ -173,7 +216,7 @@ export function toAst(node: JSONContent): Ast {
     case 'table':
       return {
         type: 'table',
-        align: (node.content?.[0]?.content ?? []).map(() => null),
+        align: (node.content?.[0]?.content ?? []).map((cell) => cell.attrs?.align ?? null),
         children: children(),
       };
     case 'tableRow':
