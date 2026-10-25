@@ -1,42 +1,4 @@
 @layer legacy {
-  .update-notice {
-    flex: 0 0 auto;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--legacy-color-border);
-    background: var(--legacy-color-surface);
-    font-size: 13px;
-  }
-  .update-notice p {
-    margin: 0;
-    line-height: 1.5;
-  }
-  .update-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    min-height: 44px;
-  }
-  .update-heading > div:first-child {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-  .update-heading [role='status'] {
-    font-variant-numeric: tabular-nums;
-  }
-  .update-actions .secondary-button {
-    min-height: 44px;
-  }
-  .update-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  .update-notice [role='alert'] {
-    margin-top: 8px;
-    color: var(--color-ink);
-  }
   .theme-root {
     display: flex;
     flex-direction: column;
@@ -47,9 +9,5 @@
     flex: 1 1 0;
     min-height: 0;
     height: 0;
-  }
-  .update-notice[data-platform='darwin'] {
-    padding-left: 96px;
-    min-height: 60px;
   }
 }

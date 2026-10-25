@@ -21,9 +21,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border-left: 1px solid var(--legacy-color-border);
-    background: var(--legacy-color-sidebar);
-    color: var(--color-ink);
+    border-left: 1px solid var(--color-border);
+    background: var(--color-sidebar);
+    color: var(--color-fg);
     transform: translateX(100%);
     visibility: hidden;
     transition:
@@ -63,7 +63,7 @@
   .canvas-agent-resizer:hover::after,
   .canvas-agent-resizer:focus-visible::after,
   .canvas-agent-resizer:active::after {
-    background: var(--legacy-color-accent);
+    background: var(--color-accent);
   }
   .canvas-agent-header {
     display: flex;
@@ -83,23 +83,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  .canvas-agent-new-chat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-    height: 32px;
-    padding: 0 10px;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--color-ink);
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .canvas-agent-new-chat:hover:not(:disabled) {
-    background: var(--legacy-color-border);
-  }
+
   .canvas-agent-scroll {
     min-height: 0;
     flex: 1;
@@ -121,7 +105,7 @@
   .canvas-agent-welcome p {
     font-size: 12px;
     line-height: 21px;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
   }
   .canvas-agent-welcome button {
     text-align: left;
@@ -140,19 +124,19 @@
     gap: 6px;
     font-size: 11px;
     line-height: 20px;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
     margin-bottom: 8px;
   }
   .canvas-context-scope button,
   .canvas-message-references button {
-    border: 1px solid var(--legacy-color-border);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
-    background: var(--legacy-color-surface);
+    background: var(--color-surface-raised);
     font-size: 11px;
     padding: 2px 6px;
   }
   .canvas-context-scope button[aria-pressed='true'] {
-    background: var(--color-selected);
+    background: var(--color-selection);
   }
   .canvas-agent .model-trigger {
     max-width: 120px;
@@ -175,7 +159,7 @@
   }
   .canvas-agent-history > p {
     padding: 4px 10px;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
     font-size: 11px;
   }
   .canvas-activity-actions {
@@ -186,9 +170,9 @@
   }
   .canvas-activity-actions button,
   .canvas-agent-latest {
-    border: 1px solid var(--legacy-color-border);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
-    background: var(--legacy-color-surface);
+    background: var(--color-surface-raised);
     font-size: 12px;
     padding: 4px 8px;
   }
@@ -211,7 +195,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--legacy-color-accent);
+    background: var(--color-accent);
     top: 4px;
     right: 4px;
   }
@@ -248,62 +232,20 @@
     padding: 6px 16px;
     align-items: center;
     font-size: 12px;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
   }
   .canvas-agent-recovery button {
-    border: 1px solid var(--legacy-color-border);
+    border: 1px solid var(--color-border);
     border-radius: 6px;
     padding: 4px 8px;
-    background: var(--legacy-color-surface);
+    background: var(--color-surface-raised);
   }
 
-  .canvas-conversation-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .canvas-conversation-row .canvas-conversation-title {
-    flex: 1;
-    min-width: 0;
-    color: var(--color-ink);
-    font-size: 12px;
-  }
-  .canvas-conversation-summary {
-    display: grid;
-    gap: 4px;
-    min-width: 0;
-    text-align: left;
-  }
-  .canvas-conversation-summary > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .canvas-conversation-summary time {
-    color: var(--color-secondary);
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-  .canvas-conversation-row > .icon-button {
-    flex: 0 0 auto;
-  }
   .canvas-conversation-row form {
     display: flex;
     align-items: center;
     gap: 4px;
     width: 100%;
-  }
-  .canvas-conversation-row form input {
-    width: 100%;
-    min-width: 0;
-    border: 1px solid var(--legacy-color-border);
-    border-radius: 6px;
-    background: var(--legacy-color-surface);
-    padding: 6px;
-  }
-  .canvas-conversation-row form button {
-    width: auto;
-    flex-shrink: 0;
   }
 
   .canvas-attachments {
@@ -318,9 +260,9 @@
     align-items: center;
     gap: 6px;
     padding: 4px;
-    border: 1px solid var(--legacy-color-border);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    background: var(--legacy-color-surface);
+    background: var(--color-surface-raised);
   }
   .canvas-attachment-preview {
     display: flex;
@@ -348,7 +290,7 @@
   .canvas-attachment-preview small {
     display: block;
     font-size: 11px;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
   }
   .canvas-attachment > button:last-child {
     flex-shrink: 0;
@@ -381,6 +323,6 @@
     font-size: 10px;
     line-height: 16px;
     overflow-wrap: anywhere;
-    color: var(--color-secondary);
+    color: var(--color-fg-secondary);
   }
 }

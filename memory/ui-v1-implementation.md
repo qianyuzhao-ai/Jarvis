@@ -1,6 +1,13 @@
 # UI V1 实施与验收
 
-最后更新：2026-10-24
+最后更新：2026-10-25
+
+## V1 遗留迁移收尾（2026-10-25）
+
+- 用户授权按原审计顺序迁移，只复用现有 V1 组件；没有新增组件、变体或 token。分支 `feature/ui-v1-legacy-migration`，详细代码/测试记录见 engineering.md，设计来源与用户决定见 design.md 本日记录。
+- 写作新建弹窗、首页重命名和空间对话历史已接入现有基础组件；7 文件/22 处旧 IconButton 已替换并单独移除旧文件；更新提醒使用 Alert/Button/ProgressField；空态与通用操作使用现有 Button/Toggle/IconButton。上下文按用户确认采用线性 Progress + Tooltip/Popover，保留悬停、点击、Esc 与焦点恢复。
+- 旧配色兼容层的 51 个 legacy-static-color 定义已移除，renderer 旧颜色/字体/圆角引用归并到已有 V1 token；旧布局/编辑器/媒体业务规则保留，不改数据和原生安全边界。Figma 未修改，生产依赖清单未改。
+- 已通过分步实窗检查、浅深截图目视与组件像素基准；首次全量 176/177，唯一失败为当前 macOS 系统日历未授权与既有本地日历测试假设不一致。最终代码复跑除该环境用例外的完整回归 **176/176（5.3m）通过**，check、build、diff 检查通过，详细结果见 engineering.md；不称全部 177 项全绿。
 
 ## 交付状态
 

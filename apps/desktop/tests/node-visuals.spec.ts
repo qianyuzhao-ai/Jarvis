@@ -245,6 +245,13 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     await node('flip').click();
     const editor = page.getByRole('region', { name: '图像编辑面板' });
     await expect(editor).toContainText('选择模型并填写提示词后可生成');
+    await expect
+      .poll(async () => {
+        const panel = await editor.boundingBox();
+        const anchor = await node('flip').boundingBox();
+        return panel && anchor ? anchor.y - panel.y - panel.height : 0;
+      })
+      .toBeGreaterThanOrEqual(15);
     const box = await editor.boundingBox(),
       target = await node('flip').boundingBox(),
       canvas = await page.getByTestId('canvas-body').boundingBox();

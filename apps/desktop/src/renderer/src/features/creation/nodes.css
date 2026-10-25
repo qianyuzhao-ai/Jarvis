@@ -179,11 +179,7 @@
     opacity: 1;
     pointer-events: auto;
   }
-  .asset-actions .icon-button {
-    width: 24px;
-    height: 24px;
-    border-radius: var(--radius-small);
-  }
+
   .node-failure-strip {
     position: absolute;
     bottom: 0;
@@ -233,11 +229,7 @@
     color: var(--color-accent);
     border-radius: var(--radius-small);
   }
-  .media-editor .editor-window-actions .icon-button {
-    height: 24px;
-    width: 24px;
-    border-radius: var(--radius-small);
-  }
+
   .media-editor .reference-empty {
     display: flex;
     flex-direction: column;

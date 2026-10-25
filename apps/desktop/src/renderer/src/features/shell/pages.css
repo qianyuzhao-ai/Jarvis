@@ -21,8 +21,16 @@
     color: var(--color-fg-secondary);
   }
   .window-shell .chat-suggestions {
+    width: min(100%, 320px);
+    margin-inline: auto;
     margin-top: 24px;
     text-align: left;
+  }
+  .window-shell .chat-suggestions small {
+    padding-inline: 8px;
+  }
+  .window-shell .chat-suggestions .ui-button-content {
+    width: 100%;
   }
   .window-shell .agent-composer {
     gap: 0;
@@ -91,20 +99,7 @@
     font-weight: 400;
     color: var(--color-fg-secondary);
   }
-  .window-shell .canvas-agent-new-chat {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    justify-content: center;
-  }
-  .window-shell .canvas-agent-new-chat span {
-    display: none;
-  }
-  .window-shell .canvas-agent-header .icon-button {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-control);
-  }
+
   .window-shell .canvas-agent .ui-assistant-body {
     padding: 0;
     display: flex;
@@ -165,14 +160,7 @@
   .window-shell .canvas-create {
     gap: 4px;
   }
-  .window-shell .canvas-create .icon-button {
-    width: 24px;
-    height: 24px;
-    border-radius: var(--radius-small);
-    background: var(--color-surface-raised);
-    border: var(--border-hairline) solid var(--color-border);
-    box-shadow: var(--shadow-control);
-  }
+
   .window-shell .canvas-create > [data-ui='button'] {
     min-height: 24px;
   }
@@ -198,15 +186,7 @@
     background: var(--color-surface-raised);
     padding: 4px;
   }
-  .window-shell .floating-controls .icon-button {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-control);
-  }
-  .window-shell .floating-controls .icon-button[aria-pressed='true'] {
-    background: var(--color-selection);
-    color: var(--color-accent);
-  }
+
   .window-shell .zoom-value {
     font-size: var(--text-callout);
     min-width: 44px;

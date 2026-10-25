@@ -2,6 +2,30 @@
 
 最后更新：2026-10-25
 
+## 0.4.0 发布准备（2026-10-25）
+
+- 用户明确授权提交首页建议布局修复并发布新版本，包含提交、推送、feature → develop → main PR 合并、新版本标签与云端发布。远端最新已发布为 v0.3.0，无开放 PR、无 v0.4.0 标签；当前 feature 基于最新 origin/develop `ae9a57b`，develop 比 main 多 32 个提交，包含 A0–A6 Agent 架构能力。
+- 首页修复提交 `e35dfaa`；连同 V1 遗留迁移 `fae6fcf` 纳入本次发布。版本选择 0.4.0，以覆盖尚未发布的 Agent 权限、委派、文件、MCP、日历与并发能力；根包、桌面包及 README 统一版本，CHANGELOG 列明范围与实机验证限制。
+- 另一项写作组件设计的 memory/design.md 段落及两份新 JSON 保留在工作区，不纳入提交或发布。不移动旧标签、不覆盖旧 Release。本地验证与云端结果见下方记录。
+- 发布验收：check、build、v0.4.0 版本一致性、13 项 Node 发布工具测试与 Apple 网络重试测试通过。本地未签名 arm64 目录包 `release/104e5f04-1559-4489-8605-9a77bc601cec` 实际启动通过，360 项生产依赖、0.4.0 版本、ASAR 标签与写作 Agent/更新桥接通过。
+- 保留发布前失败证据：首轮 174/176（5.9m），参考连线缺一条与下载 hover 点击超时；参考用例单跑通过，独占窗口串行后两项均在完整回归中通过。第二轮 175/176（5.2m）发现 node-visuals 在 ResizeObserver/RAF 更新前立即读取编辑栏位置，补充等待实际翻转间距 ≥15px，原几何边界断言保留，应用源码不改。
+- 最后整套 175/176（5.4m），编辑栏翻转、生成/下载、参考连线及其余业务通过；唯一为 UI 预览 hover 色未触发，保留原测试并单独连续复验 3/3（6.0s）通过。hover/焦点环境波动未作为功能修复，不称该次整套全绿。macOS 日历未授权用例继续单列。日志：`/private/tmp/jarvis-040-smoke-serial.log` 与 `/private/tmp/jarvis-040-smoke-final.log`。
+- 功能 PR：[PR #87](https://github.com/qianyuzhao-ai/Jarvis/pull/87)，待合入 develop 后向 main 提发布 PR。GitHub 连接器创建 PR 返回 integration 403，使用本机已登录 gh 完成授权操作；不绕过分支规则。
+
+
+## 首页快捷建议布局修复（2026-10-25）
+
+- 在 `feature/ui-v1-legacy-migration`、`fae6fcf` 后修复用户截图指出的首页标题与快捷建议分离问题；只改 ChatPage 内容布局、pages.css 建议组宽度/对齐，并清理 agent.css 的旧按钮规则。没有改 Button 组件或业务点击行为。
+- check、build 通过；现有首页 Chat 实窗回归增加浅深主题与 900/1280 窗口几何/截图验证，1/1（10.1s）通过；没有重复运行上一轮完整 176 项。未提交、推送；另一项写作组件设计记忆及其新文件保留。
+
+## V1 遗留 UI 迁移（2026-10-25）
+
+- 从干净的本地 develop `ae9a57b` 创建 `feature/ui-v1-legacy-migration`。用户授权本地迁移现有控件，遇到组件覆盖缺口先询问；用户随后授权提交本轮改动，未授权推送、PR、合并或发布。版本与依赖不变。
+- 写作原生创建 dialog 迁移到现有 V1 Dialog/Field/Input/Button；重命名、空间历史、22 处旧 IconButton、更新提醒、空态/引导及相邻通用操作复用现有控件。用户另确认上下文采用线性 Progress + Tooltip/Popover，移除手写圆环/浮层。组件家族与 API 未扩展。
+- 保留创建与文件边界、历史/删除确认、同轮撤销、下载/导出、生成与编辑器状态。实窗新增写作弹窗首焦点、空名称禁用、Esc 关闭/焦点恢复、浅深截图；上下文详情进度值、Esc 与焦点恢复断言。画布助手新建对话原断言读取 CSS 隐藏文字，改为验证现有 V1 Tooltip 的可访问名称，原新建/历史/删除业务断言保留。
+- 旧图标按钮移除后发现编辑栏 Tooltip 挡住关闭按钮，保留失败证据并用既有 Tooltip side=right 修正；node-visuals 2/2 复验通过。写作 6/6、重命名/历史相关 10/10、更新 4/4、空态相关 9/9 分步通过；最终收尾专项首轮 19/20 的唯一失败为上述已隐藏文字断言，更新后画布 Agent 1/1 通过。
+- `pnpm check` / `pnpm build` 已通过；首次完整实窗/模拟服务为 176/177（5.4m），包括组件浅深像素基准。日历用例 `agent-calendar-ui.spec.ts` 假定 Jarvis 本地日历；实际 macOS 状态只读核对为 `{provider: apple, access: not_determined}`，因此没有 7 天列表。未请求系统授权、读取个人日程、改日历源码或删改该测试断言。最终代码以 `playwright test --grep-invert 'the calendar view shows the week'` 复跑其余用例，**176/176（5.3m）通过**，包括组件浅深像素基准；该日历用例仍保留失败记录，不称全量 177 项通过。最终 check、build、diff 检查通过。
+
 ## 右侧栏窄输入框技能按钮隐藏（2026-10-25）
 
 - PR 准备：用户授权推送并向 develop 提 PR；保留原提交 `a045777`，合入最新 origin/develop `f6efcf4`。仅两份记忆顶部冲突，保留双方记录，应用代码自动合并。按锁文件同步新增 pi-mcp 依赖后 check、build 通过；画布 Agent / sidebar / 写作 Agent 实窗 4/4（15.5s）通过，四种宽度隐藏/恢复、无重叠与 `/` 入口复验通过。已创建 [PR #86](https://github.com/qianyuzhao-ai/Jarvis/pull/86) 指向 develop；GitHub 插件创建返回 integration 403，改用已登录 gh 完成。此次不合并 PR、不发布。
