@@ -536,7 +536,11 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
             agent.loading ? (
               <p className="launch-message">正在读取插件…</p>
             ) : (
-              <PluginSettings skills={agent.snapshot.skills ?? []} busy={agent.anyBusy} />
+              <PluginSettings
+                skills={agent.snapshot.skills ?? []}
+                busy={agent.anyBusy}
+                mcp={agent.snapshot.mcp ?? []}
+              />
             )
           ) : route === 'settings' ? (
             <ServiceSettings

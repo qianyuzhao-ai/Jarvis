@@ -11,6 +11,7 @@ import type { UndoRequest } from './agent-ledger';
 import { resultCardSchema } from './agent-cards';
 import type { AgentSettings, ReplyMode } from './agent-settings';
 import type { AuthorizedFolder } from './agent-files';
+import type { McpServerInput, McpServerView } from './agent-mcp';
 import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
@@ -183,6 +184,8 @@ export interface AgentSnapshot {
   models?: ModelSettingsView;
   /** Metadata only; a conversation's messages come from `getSession` and session events. */
   sessions: ChatSessionMeta[];
+  /** The user's MCP servers and their status; credential values are never included. */
+  mcp?: McpServerView[];
   /** What sending during a reply does; see the General settings. */
   replyMode?: ReplyMode;
   /** Conversations with a round in progress; several may reply at once. */
@@ -220,6 +223,15 @@ export interface AgentBridge {
   /** Lets the user pick a folder to authorize; null when they cancel. */
   addFolder(): Promise<AgentResult<AuthorizedFolder[] | null>>;
   removeFolder(id: string): Promise<AgentResult<AuthorizedFolder[]>>;
+  addMcpServer(input: McpServerInput): Promise<AgentResult<McpServerView[]>>;
+  removeMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
+  setMcpServerEnabled(input: {
+    id: string;
+    enabled: boolean;
+  }): Promise<AgentResult<McpServerView[]>>;
+  reconnectMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
+  /** Opens the server's sign-in page in the browser and connects once signed in. */
+  signInMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
   /** Hands a queued message to the running reply now instead of after it. */
   steer(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   /** One conversation with its messages, as of `seq`. */

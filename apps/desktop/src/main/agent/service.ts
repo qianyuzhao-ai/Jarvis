@@ -33,6 +33,8 @@ import { generationPack } from './packs/generation';
 import { writingLibraryPack } from './packs/writing-library';
 import { navigationPack, type Navigator } from './packs/navigation';
 import { filesPack } from './packs/files';
+import { mcpPack } from './packs/mcp';
+import type { McpService } from './mcp/service';
 import type { LocalFiles } from './local-files';
 import { graphRevision } from '../projects/canvas-engine';
 import { validateVisionInput } from './vision-input';
@@ -112,6 +114,8 @@ export type AgentDeps = {
   files?: WritingFiles;
   /** Folders the user authorized for the main Agent's local file tools. */
   folders?: LocalFiles;
+  /** The user's MCP servers, whose tools the main Agent may use. */
+  mcp?: McpService;
 };
 
 export class AgentService {
@@ -119,6 +123,7 @@ export class AgentService {
   readonly generation?: GenerationRunner;
   readonly files?: WritingFiles;
   readonly folders?: LocalFiles;
+  readonly mcp?: McpService;
   /** Shows a project or document in a window (the given one if it is still open). */
   onNavigate: (owner: number, target: NavigationTarget) => void = () => {};
   readonly skills: SkillStore;
@@ -157,6 +162,8 @@ export class AgentService {
     this.generation = deps.generation;
     this.files = deps.files;
     this.folders = deps.folders;
+    this.mcp = deps.mcp;
+    if (this.mcp) this.mcp.onChange = () => this.emit();
     if (this.generation) this.generation.onFinished = (task) => this.taskFinished(task);
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
     this.ledger = new Ledger(join(root, 'ledger'));
@@ -174,6 +181,7 @@ export class AgentService {
         skills: this.skills.list(),
         models: this.config.view(),
         replyMode: this.settings.get().whileReplying,
+        ...(this.mcp ? { mcp: this.mcp.view() } : {}),
         sessions: structuredClone(this.store.records.map((r) => this.store.meta(r.view))),
         runs: this.runStates(),
         currentSegmentId: this.currentSegment(),
@@ -1232,6 +1240,7 @@ export class AgentService {
                 agentControlPack(context, this.control),
                 ...(this.files ? [writingLibraryPack(context, this.files)] : []),
                 ...(this.folders ? [filesPack(context, this.folders)] : []),
+                ...(this.mcp ? [mcpPack(this.mcp)] : []),
                 navigationPack(context, this.navigator(run)),
                 skill,
               ]

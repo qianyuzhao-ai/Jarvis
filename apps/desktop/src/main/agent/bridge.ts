@@ -1,5 +1,5 @@
 import { writingScopeSchema, writingReplySchema } from '../../shared/writing-agent';
-import { app, BrowserWindow, clipboard, dialog, ipcMain, type WebContents } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { agentId, agentSendSchema, type AgentResult } from '../../shared/agent';
@@ -23,6 +23,8 @@ import { concurrencySchema, replyModeSchema } from '../../shared/agent-settings'
 import { openTargetsSchema } from '../../shared/agent-targets';
 import { folderId } from '../../shared/agent-files';
 import { LocalFiles } from './local-files';
+import { McpService } from './mcp/service';
+import { mcpServerInputSchema } from '../../shared/agent-mcp';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
 import { writingFiles } from '../writing/bridge';
@@ -48,8 +50,29 @@ export async function registerAgent() {
   const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
   const folders = new LocalFiles(join(root, 'folders.json'), join(root, 'file-snapshots'));
+  const mcp = new McpService(join(root, 'mcp.json'), join(root, 'mcp-oauth'), systemKeyCipher, {
+    openExternal: (url) => void shell.openExternal(url),
+    // A local command runs only after the user agrees in a native dialog, not in the renderer.
+    confirmCommand: async ({ name, commandLine }) => {
+      const owner = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+      const options = {
+        type: 'warning' as const,
+        buttons: ['允许运行', '取消'],
+        defaultId: 1,
+        cancelId: 1,
+        title: '添加本地 MCP 服务',
+        message: `允许 Jarvis 运行 MCP 服务“${name}”吗？`,
+        detail: `将以你的账户权限运行以下命令：\n${commandLine.slice(0, 1000)}\n只添加你信任的服务。`,
+      };
+      const result = owner
+        ? await dialog.showMessageBox(owner, options)
+        : await dialog.showMessageBox(options);
+      return result.response === 0;
+    },
+  });
   service = new AgentService(config, store, root, {
     folders,
+    mcp,
     projects: projectStore(),
     generation: generationRunner(),
     files: writingFiles(),
@@ -62,6 +85,7 @@ export async function registerAgent() {
     await service.skills.initialize();
     await service.loadSettings();
     await folders.initialize();
+    await mcp.initialize();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
   }
@@ -155,6 +179,14 @@ export async function registerAgent() {
       return folders.add(result.filePaths[0]);
     },
     'agent:remove-folder': (r) => folders.remove(folderId.parse(r)),
+    'agent:mcp-add': (r) => mcp.add(mcpServerInputSchema.parse(r)),
+    'agent:mcp-remove': (r) => mcp.remove(agentId.parse(r)),
+    'agent:mcp-enable': (r) => {
+      const v = z.object({ id: agentId, enabled: z.boolean() }).strict().parse(r);
+      return mcp.setEnabled(v.id, v.enabled);
+    },
+    'agent:mcp-reconnect': (r) => mcp.reconnect(agentId.parse(r)),
+    'agent:mcp-sign-in': (r) => mcp.signIn(agentId.parse(r)),
     'agent:steer': (r, owner) => {
       const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
       return service.steer(v.sessionId, v.messageId, owner);
@@ -199,11 +231,13 @@ export async function registerAgent() {
     },
   };
   let quitting = false;
+  // Local MCP servers are child processes; stop them with the app.
+  app.on('will-quit', () => void mcp.dispose());
   app.on('before-quit', (event) => {
     if (quitting || !service.isBusy) return;
     event.preventDefault();
     quitting = true;
-    void service.shutdown().finally(() => app.quit());
+    void Promise.all([service.shutdown(), mcp.dispose()]).finally(() => app.quit());
   });
   for (const [channel, handler] of Object.entries(handlers))
     ipcMain.handle(channel, async (event, request): Promise<AgentResult<unknown>> => {
