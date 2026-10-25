@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。已实现 Pi 首页 Chat、带画布 Agent 的 AIGC 创作空间和本地 Markdown 写作空间。
 
-当前源码版本：`0.3.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`0.4.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 [0.3.0 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.3.0) 已发布：包含 UI V1、跨空间标签页、写作助手与服务商模型配置，以及 macOS arm64、Intel x64 和 Windows x64 安装包。三个平台均通过云端打包应用启动验证，两种 macOS 包均通过签名、公证和 Gatekeeper；macOS 最低系统目标为 13.0，13 实机仍待验收。
 

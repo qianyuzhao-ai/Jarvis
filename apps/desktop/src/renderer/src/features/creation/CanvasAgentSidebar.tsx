@@ -1,10 +1,10 @@
 import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
-import { Button } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Sparkles, X } from '@jarvis/ui/icons';
 import { Alert } from '@jarvis/ui/components/Alert';
+import { Toggle } from '@jarvis/ui/components/Toggle';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ChevronLeft, History, Plus } from '@jarvis/ui/icons';
-import { IconButton } from '../../components/IconButton';
 import { visualSource } from './canvas-vision';
 import { CanvasAttachments } from './CanvasAttachments';
 import { useCanvasAttachments } from './use-canvas-attachments';
@@ -13,7 +13,6 @@ import { useAgent } from '../agent/use-agent';
 import { ChatComposer } from '../agent/ChatComposer';
 import { ChatMessageItem } from '../agent/ChatMessageItem';
 import { canvasSnapshot } from './canvas-context';
-import { prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
 
 export function CanvasAgentSidebar({
@@ -21,7 +20,6 @@ export function CanvasAgentSidebar({
   selectedIds,
   open,
   focus,
-  commit,
   configure,
   width,
   onWidth,
@@ -34,7 +32,6 @@ export function CanvasAgentSidebar({
   selectedIds: string[];
   open: boolean;
   focus: (ids: string[]) => void;
-  commit: (change: (p: Project) => Project) => Promise<void>;
   configure: () => void;
 }) {
   const agent = useAgent(project.id);
@@ -76,8 +73,7 @@ export function CanvasAgentSidebar({
       pending.current ||
       attachments.preparing ||
       attachments.blocked ||
-      (!text.trim() && !attachments.images.length) ||
-      agent.snapshot.busySessionId
+      (!text.trim() && !attachments.images.length)
     )
       return;
     pending.current = true;
@@ -117,18 +113,12 @@ export function CanvasAgentSidebar({
     }
   }
   async function undo(id: string) {
-    if (pending.current || agent.snapshot.busySessionId) return;
+    if (pending.current || agent.scopeBusy) return;
     pending.current = true;
     setUndoing(true);
     agent.setError('');
     try {
-      const next = await prepareCanvasUndo(project, id);
-      await commit((current) => {
-        if (current !== project) throw new Error('画布已发生修改，请重试');
-        return next;
-      });
-    } catch (error) {
-      agent.setError(error instanceof Error ? error.message : '撤销失败');
+      await agent.undoChange(id);
     } finally {
       pending.current = false;
       setUndoing(false);
@@ -137,8 +127,7 @@ export function CanvasAgentSidebar({
   const actions = {
     focus,
     undo: (id: string) => void undo(id),
-    canUndo: (id: string) =>
-      !undoing && !agent.snapshot.busySessionId && project.agentEdits.at(-1)?.id === id,
+    canUndo: (id: string) => !undoing && !agent.scopeBusy && project.agentEdits.at(-1)?.id === id,
   };
   return (
     <div
@@ -151,7 +140,12 @@ export function CanvasAgentSidebar({
         header={
           <header data-testid="canvas-agent-header" className="canvas-agent-header">
             {history && (
-              <IconButton label="返回当前聊天" onClick={() => setHistory(false)}>
+              <IconButton
+                variant="ghost"
+                size="icon-sm"
+                aria-label="返回当前聊天"
+                onClick={() => setHistory(false)}
+              >
                 <ChevronLeft size={18} />
               </IconButton>
             )}
@@ -163,15 +157,18 @@ export function CanvasAgentSidebar({
             </div>
             {!history && (
               <IconButton
-                label="画布对话历史"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="画布对话历史"
                 disabled={attachments.preparing}
                 onClick={() => setHistory(true)}
               >
                 <History size={18} />
               </IconButton>
             )}
-            <button
-              type="button"
+            <IconButton
+              variant="ghost"
+              size="icon"
               className="canvas-agent-new-chat"
               aria-label="新建画布对话"
               disabled={attachments.preparing}
@@ -183,9 +180,8 @@ export function CanvasAgentSidebar({
               }}
             >
               <Plus size={18} />
-              <span>新聊天</span>
-            </button>
-            <IconButton label="关闭画布助手" onClick={onClose}>
+            </IconButton>
+            <IconButton variant="ghost" size="icon-sm" aria-label="关闭画布助手" onClick={onClose}>
               <X size={16} />
             </IconButton>
           </header>
@@ -193,7 +189,9 @@ export function CanvasAgentSidebar({
         composer={
           <div className="canvas-agent-dock" hidden={history}>
             {!atBottom && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 className="canvas-agent-latest"
                 type="button"
                 onClick={() => {
@@ -205,7 +203,7 @@ export function CanvasAgentSidebar({
               >
                 <ArrowDown size={14} />
                 回到最新
-              </button>
+              </Button>
             )}
             <CanvasAttachments
               entries={attachments.entries}
@@ -219,13 +217,13 @@ export function CanvasAgentSidebar({
                 <div data-testid="canvas-context-scope" className="canvas-context-scope">
                   <span>当前画布 · {project.nodes.length} 个节点</span>
                   {selectedIds.length > 0 && (
-                    <button
-                      type="button"
-                      aria-pressed={includeSelected}
-                      onClick={() => setIncludeSelected(!includeSelected)}
+                    <Toggle
+                      size="sm"
+                      pressed={includeSelected}
+                      onPressedChange={setIncludeSelected}
                     >
                       {includeSelected ? '已引用' : '引用'} {selectedIds.length} 个选中节点
-                    </button>
+                    </Toggle>
                   )}
                 </div>
               }
@@ -309,23 +307,25 @@ export function CanvasAgentSidebar({
           ) && (
             <div className="canvas-agent-recovery">
               <span>最近的画布修改</span>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
-                disabled={!!agent.snapshot.busySessionId || undoing}
+                disabled={agent.scopeBusy || undoing}
                 onClick={() => {
                   const id = project.agentEdits.at(-1)?.id;
                   if (id) void undo(id);
                 }}
               >
                 撤销最近修改
-              </button>
+              </Button>
             </div>
           )}
         {history && (
           <CanvasConversations
             sessions={agent.snapshot.sessions}
             currentId={session?.id}
-            busy={!!agent.snapshot.busySessionId || agent.sending || attachments.preparing}
+            busy={agent.scopeBusy || agent.sending || attachments.preparing}
             select={(id) => {
               if (attachments.preparing) return;
               agent.select(id);
@@ -368,7 +368,9 @@ export function CanvasAgentSidebar({
                 </Button>
               ) : (
                 ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     type="button"
                     data-testid="side-link"
                     className="side-link"
@@ -379,7 +381,7 @@ export function CanvasAgentSidebar({
                     }}
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))
               )}
             </AssistantEmpty>
@@ -389,6 +391,7 @@ export function CanvasAgentSidebar({
                 <ChatMessageItem
                   key={m.id}
                   message={m}
+                  waiting={agent.waiting}
                   sessionId={session.id}
                   now={now}
                   onError={agent.setError}

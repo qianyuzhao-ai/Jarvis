@@ -101,10 +101,10 @@ test('skills import, slash selection, automatic activation, disablement and rest
     expect(rightGap).toBeLessThan(1);
     await page.getByRole('tab', { name: 'MCP', exact: true }).click();
     await expect(
-      page.getByTestId('plugins-toolbar').getByRole('button', { name: '添加mcp', exact: true }),
-    ).toBeDisabled();
+      page.getByTestId('plugins-toolbar').getByRole('button', { name: '添加 MCP', exact: true }),
+    ).toBeEnabled();
     await expect(page.getByRole('tabpanel', { name: 'MCP', exact: true })).toContainText(
-      '暂未接入',
+      '还没有 MCP 服务',
     );
     await expect(page.getByRole('button', { name: '添加 skill', exact: true })).toBeHidden();
     await page.screenshot({

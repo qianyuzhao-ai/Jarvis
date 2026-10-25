@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { ledgerStatuses } from './helpers/ledger';
 
 test('writing Agent edits only its document buffer, groups undo, survives tab switches and rejects stale versions', async () => {
   test.setTimeout(90000);
@@ -166,8 +167,10 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     await expect(editor).not.toContainText('补充结尾。');
     await editor.press('ControlOrMeta+Shift+z');
     await expect(editor).toContainText('补充结尾。');
+    await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['applied']);
     await panel.getByRole('button', { name: '撤销本次修改' }).click();
     await expect(editor).toContainText('原始段落。');
+    await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['undone']);
     await editor.press('ControlOrMeta+a');
     await panel.getByLabel('消息', { exact: true }).fill('后台修改');
     await panel.getByRole('button', { name: '发送消息' }).click();
@@ -182,10 +185,10 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .poll(async () =>
         page.evaluate(async () => {
           const r = await window.desktop!.agent.getSnapshot();
-          return r.ok ? r.value.snapshot.busySessionId : 'error';
+          return r.ok ? Object.keys(r.value.snapshot.runs).length : 'error';
         }),
       )
-      .toBeNull();
+      .toBe(0);
     await expect(editor).toContainText('独立文档。');
     expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe(original);
     await page
@@ -231,7 +234,14 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .parse(requests[0]?.tools)
       .map((t) => t.function.name)
       .sort();
-    expect(toolNames).toEqual(['insert_text', 'read_document', 'read_selection', 'replace_range']);
+    expect(toolNames).toEqual([
+      'handoff_to_main',
+      'insert_text',
+      'read_document',
+      'read_selection',
+      'replace_range',
+      'report_result',
+    ]);
   } catch (error) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
     throw error;

@@ -118,6 +118,49 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
+    const suggestions = page.locator('.chat-suggestions');
+    await expect(suggestions.getByRole('button')).toHaveCount(3);
+    const originalTheme = await page.locator('html').getAttribute('data-theme');
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate((value) => {
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      for (const width of [1280, 900]) {
+        await app.evaluate(
+          ({ BrowserWindow }, value) => BrowserWindow.getAllWindows()[0]?.setSize(value, 820),
+          width,
+        );
+        await expect
+          .poll(() =>
+            suggestions.evaluate((group) => {
+              const box = group.getBoundingClientRect();
+              const welcome = group.parentElement!.getBoundingClientRect();
+              const title = group.querySelector('small')!;
+              const titleStart =
+                title.getBoundingClientRect().left +
+                parseFloat(getComputedStyle(title).paddingLeft);
+              const icons = Array.from(
+                group.querySelectorAll('button .ui-button-content > svg:first-child'),
+              );
+              return (
+                box.width <= 320 &&
+                Math.abs(box.left + box.width / 2 - welcome.left - welcome.width / 2) < 1 &&
+                icons.length === 3 &&
+                icons.every((icon) => Math.abs(icon.getBoundingClientRect().left - titleStart) < 1)
+              );
+            }),
+          )
+          .toBe(true);
+        await page.screenshot({
+          path: test.info().outputPath(`chat-suggestions-${theme}-${width}.png`),
+          animations: 'disabled',
+        });
+      }
+    }
+    await page.evaluate((value) => {
+      if (value) document.documentElement.dataset.theme = value;
+    }, originalTheme);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     const messageInput = page.getByLabel('消息', { exact: true });
     const dockGap = () =>
       page.evaluate(() => {
@@ -174,7 +217,16 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       'aria-expanded',
       'true',
     );
+    const usage = page.getByRole('dialog', { name: '上下文用量', exact: true });
+    await expect(usage.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '11');
+    await expect(usage).toContainText('Context 106.6k / 1M (11%)');
+    await page.screenshot({
+      path: test.info().outputPath('context-usage-popover.png'),
+      animations: 'disabled',
+    });
     await page.keyboard.press('Escape');
+    await expect(usage).toBeHidden();
+    await expect(page.getByRole('button', { name: '上下文占用', exact: true })).toBeFocused();
     await expect(page.getByRole('button', { name: '上下文占用', exact: true })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -187,7 +239,9 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await expect.poll(dockGap).toBeLessThan(2);
     const first = await page.evaluate(async () => {
       const r = await window.desktop?.agent.getSnapshot();
-      return r?.ok ? r.value.snapshot.sessions[0] : null;
+      const id = r?.ok ? r.value.snapshot.sessions[0]?.id : undefined;
+      const full = id ? await window.desktop?.agent.getSession(id) : undefined;
+      return full?.ok ? full.value.session : null;
     });
     expect(first?.title).toBe('本周工作安排');
     const rejectedCopy = await page.evaluate(async (session) => {
@@ -230,9 +284,10 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByLabel('对话名称', { exact: true }).fill('已保存的对话');
     await page.getByRole('button', { name: '保存名称' }).click();
     await app.close();
-    const indexPath = join(userData, 'agent', 'index.json');
-    const fixture = JSON.parse(await readFile(indexPath, 'utf8'));
-    fixture.sessions[0].view.messages[1].activities = [
+    const index = JSON.parse(await readFile(join(userData, 'agent', 'index.json'), 'utf8'));
+    const viewPath = join(userData, 'agent', 'sessions', `${index.sessions[0].meta.id}.view.json`);
+    const fixture = JSON.parse(await readFile(viewPath, 'utf8'));
+    fixture.messages[1].activities = [
       {
         id: 'fixture-file-edit',
         label: '修改 1 个文件',
@@ -249,7 +304,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         ],
       },
     ];
-    await writeFile(indexPath, JSON.stringify(fixture));
+    await writeFile(viewPath, JSON.stringify(fixture));
     app = await launch();
     page = await app.firstWindow();
     await expect(
@@ -379,8 +434,48 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         '[data-testid="chat-message"][data-message-role="assistant"][data-status="failed"]',
       ),
     ).toContainText('你好🙂');
+    // Home chat streams and carries only the main Agent's tools for sub-agents, writing
+    // documents, navigation, files in authorized folders and the calendar; no shell tools.
+    const control = [
+      'create_document',
+      'create_event',
+      'create_file',
+      'create_folder',
+      'create_project',
+      'delegate_task',
+      'delete_event',
+      'delete_file',
+      'list_agents',
+      'list_calendars',
+      'list_documents',
+      'list_events',
+      'list_files',
+      'list_folders',
+      'list_writing_folders',
+      'message_agent',
+      'move_file',
+      'open_document',
+      'open_project',
+      'overwrite_file',
+      'read_agent_transcript',
+      'read_document',
+      'read_file',
+      'read_result_card',
+      'search_documents',
+      'search_files',
+      'stop_agent',
+      'update_event',
+    ];
     expect(
-      requests.every((r) => r.stream === true && (!r.tools || (r.tools as unknown[]).length === 0)),
+      requests.every(
+        (r) =>
+          r.stream === true &&
+          JSON.stringify(
+            ((r.tools ?? []) as { function: { name: string } }[])
+              .map((t) => t.function.name)
+              .sort(),
+          ) === JSON.stringify(control),
+      ),
     ).toBe(true);
     expect(errors).toEqual([]);
     expect(await readFile(join(userData, 'agent', 'index.json'), 'utf8')).not.toContain(

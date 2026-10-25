@@ -1,9 +1,11 @@
 import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
-import type { AgentEvent } from '../shared/agent';
+import type { AgentEvent, NavigationTarget, SessionEvent } from '../shared/agent';
+import type { ApprovalRequest } from '../shared/agent-approval';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
+import type { ProjectChange } from '../shared/project';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
@@ -39,6 +41,27 @@ const desktop: DesktopInfo = {
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
+    getSettings: () => ipcRenderer.invoke('agent:settings'),
+    setConcurrency: (value) => ipcRenderer.invoke('agent:set-concurrency', value),
+    setReplyMode: (value) => ipcRenderer.invoke('agent:set-reply-mode', value),
+    steer: (input) => ipcRenderer.invoke('agent:steer', input),
+    listFolders: () => ipcRenderer.invoke('agent:folders'),
+    calendarStatus: () => ipcRenderer.invoke('agent:calendar-status'),
+    requestCalendarAccess: () => ipcRenderer.invoke('agent:calendar-request'),
+    calendarEvents: (range) => ipcRenderer.invoke('agent:calendar-events', range),
+    addMcpServer: (input) => ipcRenderer.invoke('agent:mcp-add', input),
+    removeMcpServer: (id) => ipcRenderer.invoke('agent:mcp-remove', id),
+    setMcpServerEnabled: (input) => ipcRenderer.invoke('agent:mcp-enable', input),
+    reconnectMcpServer: (id) => ipcRenderer.invoke('agent:mcp-reconnect', id),
+    signInMcpServer: (id) => ipcRenderer.invoke('agent:mcp-sign-in', id),
+    addFolder: () => ipcRenderer.invoke('agent:add-folder'),
+    removeFolder: (id) => ipcRenderer.invoke('agent:remove-folder', id),
+    getSession: (id) => ipcRenderer.invoke('agent:session', id),
+    onSessionEvent: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);
+      ipcRenderer.on('agent:session-event', handle);
+      return () => ipcRenderer.removeListener('agent:session-event', handle);
+    },
     createSession: () => ipcRenderer.invoke('agent:create'),
     createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
     createWritingSession: (scope) => ipcRenderer.invoke('agent:create-writing', scope),
@@ -50,6 +73,16 @@ const desktop: DesktopInfo = {
       ipcRenderer.on('agent:writing-command', handle);
       return () => ipcRenderer.removeListener('agent:writing-command', handle);
     },
+    undo: (input) => ipcRenderer.invoke('agent:undo', input),
+    listApprovals: () => ipcRenderer.invoke('agent:approvals'),
+    respondApproval: (input) => ipcRenderer.invoke('agent:respond-approval', input),
+    onApprovals: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, requests: ApprovalRequest[]) =>
+        listener(requests);
+      ipcRenderer.on('agent:approvals', handle);
+      return () => ipcRenderer.removeListener('agent:approvals', handle);
+    },
+    setOpenTargets: (targets) => ipcRenderer.invoke('agent:open-targets', targets),
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
     completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),
     onCanvasCommand: (listener) => {
@@ -72,6 +105,12 @@ const desktop: DesktopInfo = {
         ipcRenderer.removeListener('agent:event', handle);
       };
     },
+    onNavigate: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: NavigationTarget) =>
+        listener(value);
+      ipcRenderer.on('agent:navigate', handle);
+      return () => ipcRenderer.removeListener('agent:navigate', handle);
+    },
   },
   models: {
     getSettings: () => ipcRenderer.invoke('models:settings'),
@@ -85,6 +124,22 @@ const desktop: DesktopInfo = {
     removeProvider: (id) => ipcRenderer.invoke('models:remove-provider', id),
     setDefaultModel: (id) => ipcRenderer.invoke('models:default', id),
     probeVision: (id) => ipcRenderer.invoke('models:probe-vision', id),
+  },
+  projects: {
+    migrated: () => ipcRenderer.invoke('projects:migrated'),
+    migrate: (input) => ipcRenderer.invoke('projects:migrate', input),
+    list: () => ipcRenderer.invoke('projects:list'),
+    get: (id) => ipcRenderer.invoke('projects:get', id),
+    readBlob: (input) => ipcRenderer.invoke('projects:read-blob', input),
+    putBlob: (input) => ipcRenderer.invoke('projects:put-blob', input),
+    create: (input) => ipcRenderer.invoke('projects:create', input),
+    apply: (input) => ipcRenderer.invoke('projects:apply', input),
+    remove: (input) => ipcRenderer.invoke('projects:remove', input),
+    onChange: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, change: ProjectChange) => listener(change);
+      ipcRenderer.on('projects:changed', handle);
+      return () => ipcRenderer.removeListener('projects:changed', handle);
+    },
   },
   writing: {
     getRoots: () => ipcRenderer.invoke('writing:roots'),
@@ -110,6 +165,7 @@ const desktop: DesktopInfo = {
     upload: (request) => ipcRenderer.invoke('generation:upload', request),
     start: (request) => ipcRenderer.invoke('generation:start', request),
     get: (requestId) => ipcRenderer.invoke('generation:get', requestId),
+    setAgentSettings: (settings) => ipcRenderer.invoke('generation:agent-settings', settings),
   },
   versions: {
     electron: process.versions.electron,

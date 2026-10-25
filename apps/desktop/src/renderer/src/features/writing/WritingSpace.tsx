@@ -4,8 +4,19 @@ import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantP
 import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
 import { Sparkles } from '@jarvis/ui/icons';
 import { createPortal } from 'react-dom';
-import { Button } from '@jarvis/ui/components/Button';
+import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@jarvis/ui/components/Dialog';
+import { Field, FieldLabel } from '@jarvis/ui/components/Field';
+import { Input } from '@jarvis/ui/components/Input';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -29,7 +40,6 @@ import {
 import type { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import type { WritingEntry } from '../../../../shared/writing';
-import { IconButton } from '../../components/IconButton';
 import { MarkdownEditor } from './MarkdownEditor';
 import { unwrap, useWriting } from './useWriting';
 
@@ -121,7 +131,8 @@ export function WritingSpace({
   const [creation, setCreation] = useState<'file' | 'directory' | null>(null);
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
+  const creationTrigger = useRef<HTMLElement | null>(null);
+  const creationInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
   const view = useRef<EditorView | null>(null);
@@ -165,22 +176,13 @@ export function WritingSpace({
     if (searchOpen) searchInput.current?.focus();
   }, [searchOpen]);
   useEffect(() => {
-    if (creation) dialog.current?.showModal();
-    else dialog.current?.close();
-  }, [creation]);
-  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!shell.active || e.isComposing) return;
       if (e.key === 'Escape') {
         setFolderMenu(false);
         setMoreMenu(false);
       }
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        e.key.toLowerCase() === 'n' &&
-        writing.root &&
-        !dialog.current?.open
-      ) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n' && writing.root && !creation) {
         e.preventDefault();
         setCreation('file');
         setName('');
@@ -188,7 +190,7 @@ export function WritingSpace({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [writing.root, shell.active]);
+  }, [writing.root, shell.active, creation]);
   function toggleSearch() {
     setSearchOpen((open) => !open);
     setQuery('');
@@ -256,11 +258,16 @@ export function WritingSpace({
             <div className="writing-folder-area">
               <DropdownMenu open={folderMenu} onOpenChange={setFolderMenu}>
                 <DropdownMenuTrigger asChild>
-                  <button className="writing-folder-picker" disabled={writing.loading}>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="writing-folder-picker"
+                    disabled={writing.loading}
+                  >
                     <Folder size={20} />
                     <strong>{writing.root?.name ?? '打开文件夹'}</strong>
                     <ChevronDown size={14} />
-                  </button>
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent aria-label="切换文件夹" align="start">
                   <DropdownMenuLabel>切换文件夹</DropdownMenuLabel>
@@ -297,7 +304,9 @@ export function WritingSpace({
                   <span>文件</span>
                   <div>
                     <IconButton
-                      label="新建文件"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="新建文件"
                       onClick={() => {
                         setCreation('file');
                         setName('');
@@ -306,7 +315,9 @@ export function WritingSpace({
                       <FilePlus size={18} />
                     </IconButton>
                     <IconButton
-                      label="新建文件夹"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="新建文件夹"
                       onClick={() => {
                         setCreation('directory');
                         setName('');
@@ -316,7 +327,7 @@ export function WritingSpace({
                     </IconButton>
                     <DropdownMenu open={moreMenu} onOpenChange={setMoreMenu}>
                       <DropdownMenuTrigger asChild>
-                        <IconButton label="更多文件操作">
+                        <IconButton variant="ghost" size="icon-sm" aria-label="更多文件操作">
                           <MoreHorizontal size={18} />
                         </IconButton>
                       </DropdownMenuTrigger>
@@ -336,7 +347,8 @@ export function WritingSpace({
                 {searchOpen && (
                   <div className="writing-search">
                     <Search size={16} />
-                    <input
+                    <Input
+                      appearance="ghost"
                       ref={searchInput}
                       aria-label="搜索文件名"
                       placeholder="搜索文件…"
@@ -353,7 +365,8 @@ export function WritingSpace({
                     <>
                       {searching && <p role="status">正在搜索…</p>}
                       {results?.map((entry) => (
-                        <button
+                        <SidebarItem
+                          icon={<FileText />}
                           className="writing-file"
                           key={entry.path}
                           title={entry.path}
@@ -371,9 +384,8 @@ export function WritingSpace({
                             }
                           }}
                         >
-                          <FileText size={16} />
-                          <span>{entry.path}</span>
-                        </button>
+                          {entry.path}
+                        </SidebarItem>
                       ))}
                       {results?.length === 0 && <p>没有匹配的文件</p>}
                     </>
@@ -400,15 +412,22 @@ export function WritingSpace({
               : '本地 Markdown 工作区'}
           </span>
           {active && (
-            <button onClick={() => setSource((s) => !s)} title="切换 Markdown 源码与实时预览">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSource((s) => !s)}
+              title="切换 Markdown 源码与实时预览"
+            >
               {source ? '源码模式' : '实时预览'}
               <ChevronDown size={12} />
-            </button>
+            </Button>
           )}
           {writing.root && (
             <IconButton
+              variant="ghost"
+              size="icon-sm"
               ref={searchToggle}
-              label="搜索文件"
+              aria-label="搜索文件"
               aria-expanded={searchOpen}
               onClick={toggleSearch}
             >
@@ -482,9 +501,8 @@ export function WritingSpace({
                 ? '从左侧选择 Markdown 文件，或新建一篇文档。'
                 : '选择存放 Markdown 的目录，继续你已有的写作。'}
             </p>
-            <button
-              className="primary-button"
-              disabled={writing.loading}
+            <Button
+              loading={writing.loading}
               onClick={() => {
                 if (writing.root) {
                   setCreation('file');
@@ -492,8 +510,8 @@ export function WritingSpace({
                 } else void writing.chooseDirectory();
               }}
             >
-              {writing.root ? '新建文档' : writing.loading ? '正在打开…' : '打开本地文件夹'}
-            </button>
+              {writing.root ? '新建文档' : '打开本地文件夹'}
+            </Button>
             <small>{writing.root ? '⌘ / Ctrl + N 新建文档' : '直接读写本地 .md 文件'}</small>
           </div>
         )}
@@ -539,7 +557,12 @@ export function WritingSpace({
                 className="writing-assistant"
                 style={{ width: shell.rightWidth }}
                 actions={
-                  <IconButton label="关闭写作助手" onClick={shell.onClose}>
+                  <IconButton
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="关闭写作助手"
+                    onClick={shell.onClose}
+                  >
                     <X size={16} />
                   </IconButton>
                 }
@@ -556,39 +579,62 @@ export function WritingSpace({
           </div>,
           shell.rightHost,
         )}
-      <dialog ref={dialog} className="writing-create-dialog" onCancel={() => setCreation(null)}>
-        <form onSubmit={(e) => void submitCreation(e)}>
-          <h2>{creation === 'directory' ? '新建文件夹' : '新建文档'}</h2>
-          <p>
-            位置：{writing.root?.name}
-            {writing.selectedDirectory ? ' / ' + writing.selectedDirectory : ''}
-          </p>
-          <label htmlFor="writing-new-name">
-            {creation === 'directory' ? '文件夹名称' : '文档名称'}
-          </label>
-          <input
-            id="writing-new-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={200}
-            required
-            autoComplete="off"
-          />
-          <small>
-            {creation === 'file'
-              ? '自动添加 .md 后缀，同名文件不会覆盖。'
-              : '在当前目录中创建文件夹。'}
-          </small>
-          <div>
-            <button type="button" disabled={creating} onClick={() => setCreation(null)}>
-              取消
-            </button>
-            <button className="primary-button" disabled={creating || !name.trim()}>
-              {creating ? '正在创建…' : '创建'}
-            </button>
-          </div>
-        </form>
-      </dialog>
+      <Dialog open={!!creation} onOpenChange={(open) => !open && !creating && setCreation(null)}>
+        <DialogContent
+          size="sm"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            creationTrigger.current =
+              document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            creationInput.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (creationTrigger.current?.isConnected) creationTrigger.current.focus();
+          }}
+          onEscapeKeyDown={(e) => creating && e.preventDefault()}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <form onSubmit={(e) => void submitCreation(e)}>
+            <DialogHeader showClose={!creating}>
+              <DialogTitle>{creation === 'directory' ? '新建文件夹' : '新建文档'}</DialogTitle>
+              <DialogDescription className="break-words">
+                位置：{writing.root?.name}
+                {writing.selectedDirectory ? ' / ' + writing.selectedDirectory : ''}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <Field
+                controlId="writing-new-name"
+                disabled={creating}
+                description={
+                  creation === 'file'
+                    ? '自动添加 .md 后缀，同名文件不会覆盖。'
+                    : '在当前目录中创建文件夹。'
+                }
+              >
+                <FieldLabel>{creation === 'directory' ? '文件夹名称' : '文档名称'}</FieldLabel>
+                <Input
+                  ref={creationInput}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={200}
+                  required
+                  autoComplete="off"
+                />
+              </Field>
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="secondary" disabled={creating} onClick={() => setCreation(null)}>
+                取消
+              </Button>
+              <Button type="submit" loading={creating} disabled={!name.trim()}>
+                创建
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

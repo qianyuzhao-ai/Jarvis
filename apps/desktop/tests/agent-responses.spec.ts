@@ -85,13 +85,12 @@ test('Responses SSE validates terminal events and rejects redirects without leak
         model,
         vision: model === 'vision' ? 'supported' : 'unknown',
       });
-      const { session } = await openAgent(
-        test.info().outputPath('runtime'),
-        randomUUID(),
-        config,
-        true,
-        model === 'vision' ? { tools: [], context: 'Vision input test.' } : undefined,
-      );
+      const { session } = await openAgent(test.info().outputPath('runtime'), randomUUID(), config, {
+        transient: true,
+        ...(model === 'vision'
+          ? { packs: [{ id: 'vision', prompt: 'Vision input test.', tools: [] }] }
+          : {}),
+      });
       try {
         let text = '';
         session.subscribe((e) => {

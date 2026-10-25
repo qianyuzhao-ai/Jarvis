@@ -1,3 +1,4 @@
+import { seedWorkspace } from './helpers/workspace';
 import { generationInputSchema } from '../src/shared/generation';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -219,24 +220,7 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
       },
     );
     busy.generation = { requestId: job.requestId, status: job.status, startedAt: job.startedAt };
-    await page.evaluate(
-      async (workspace) => {
-        const db = await new Promise<IDBDatabase>((r, j) => {
-          const q = indexedDB.open('jarvis-workspace', 1);
-          q.onsuccess = () => r(q.result);
-          q.onerror = () => j(q.error);
-        });
-        await new Promise<void>((r, j) => {
-          const tx = db.transaction('workspace', 'readwrite');
-          tx.objectStore('workspace').put(workspace, 'current');
-          tx.oncomplete = () => r();
-          tx.onerror = () => j(tx.error);
-        });
-        db.close();
-      },
-      { ...emptyWorkspace, projects: [p], settings },
-    );
-    await page.reload();
+    await seedWorkspace(app, page, { ...emptyWorkspace, projects: [p], settings });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     const node = (id: string) => page.locator(`.react-flow__node[data-id="${id}"]`);
     await expect(node('empty').getByTestId('media-placeholder')).toHaveCSS('width', '320px');
@@ -261,6 +245,13 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     await node('flip').click();
     const editor = page.getByRole('region', { name: '图像编辑面板' });
     await expect(editor).toContainText('选择模型并填写提示词后可生成');
+    await expect
+      .poll(async () => {
+        const panel = await editor.boundingBox();
+        const anchor = await node('flip').boundingBox();
+        return panel && anchor ? anchor.y - panel.y - panel.height : 0;
+      })
+      .toBeGreaterThanOrEqual(15);
     const box = await editor.boundingBox(),
       target = await node('flip').boundingBox(),
       canvas = await page.getByTestId('canvas-body').boundingBox();

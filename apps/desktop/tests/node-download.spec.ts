@@ -1,3 +1,4 @@
+import { seedWorkspace } from './helpers/workspace';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
@@ -285,19 +286,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       theme: 'system',
       sidebarWidth: 230,
     };
-    await page.evaluate(async (workspace) => {
-      const db = await new Promise<IDBDatabase>((resolve) => {
-        const request = indexedDB.open('jarvis-workspace', 1);
-        request.onsuccess = () => resolve(request.result);
-      });
-      await new Promise<void>((resolve) => {
-        const tx = db.transaction('workspace', 'readwrite');
-        tx.objectStore('workspace').put(workspace, 'current');
-        tx.oncomplete = () => resolve();
-      });
-      db.close();
-    }, workspace);
-    await page.reload();
+    await seedWorkspace(app, page, workspace);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '节点下载测试' }).click();
     for (const index of [2, 3]) {

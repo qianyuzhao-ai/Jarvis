@@ -1,6 +1,13 @@
 import { sameWritingScope, type WritingScope } from '../../../../shared/writing-agent';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { agentValue, type AgentSnapshot, type AgentEvent } from '../../../../shared/agent';
+import {
+  agentValue,
+  type AgentSnapshot,
+  type AgentEvent,
+  type ChatMessage,
+  type ChatSession,
+  type SessionEvent,
+} from '../../../../shared/agent';
 import {
   nearestThinkingLevel,
   type ModelSettingsView,
@@ -8,8 +15,26 @@ import {
 } from '../../../../shared/models';
 import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
+import { focusKey, onFocusRequest, takeFocus } from './conversation-focus';
 
 const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
+type MessageView = { id: string; seq: number; messages: ChatMessage[] };
+
+/** Applies a session event: changed messages replace theirs, new ones are appended. */
+function applyEvent(view: MessageView, event: SessionEvent): MessageView {
+  if (event.seq <= view.seq) return view;
+  const messages = [...view.messages];
+  for (const message of event.messages) {
+    const index = messages.findIndex((m) => m.id === message.id);
+    if (index >= 0) messages[index] = message;
+    else messages.push(message);
+  }
+  if (event.order) {
+    const position = new Map(event.order.map((id, i) => [id, i]));
+    messages.sort((a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity));
+  }
+  return { ...view, seq: event.seq, messages };
+}
 
 export function useAgent(
   projectId?: string,
@@ -21,7 +46,7 @@ export function useAgent(
     : projectId
       ? `jarvis:canvas-chat:${projectId}`
       : 'jarvis:chat-session';
-  const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
+  const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], runs: {} });
   const [selected, setSelected] = useState<string | null>(() =>
     initialSelection === undefined
       ? storageKey
@@ -46,6 +71,17 @@ export function useAgent(
     },
     [storageKey],
   );
+  // A card on the home page can ask this assistant to show one of its conversations.
+  const scopeKey = focusKey(projectId, writingScope);
+  useEffect(() => {
+    if (!scopeKey) return;
+    const apply = () => {
+      const id = takeFocus(scopeKey);
+      if (id) select(id);
+    };
+    apply();
+    return onFocusRequest(apply);
+  }, [scopeKey, select]);
   useEffect(() => {
     const bridge = window.desktop?.agent;
     if (!bridge) {
@@ -83,11 +119,57 @@ export function useAgent(
   const sessions = snapshot.sessions.filter(
     (s) => s.projectId === projectId && sameWritingScope(s.writingScope, writingScope),
   );
-  const session =
+  const meta =
     sessions.find((s) => s.id === selected) ??
     (writingScope && !draftKey
       ? ([...sessions].sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null)
       : null);
+  const sessionId = meta?.id ?? null;
+  // Only the open conversation's messages are loaded and kept up to date.
+  const [view, setView] = useState<MessageView | null>(null);
+  const wanted = useRef<string | null>(null);
+  const loaded = useRef<string | null>(null);
+  const pending = useRef<SessionEvent[]>([]);
+  useEffect(() => {
+    const bridge = window.desktop?.agent;
+    if (!bridge) return;
+    return bridge.onSessionEvent((event) => {
+      if (event.sessionId !== wanted.current) return;
+      if (loaded.current !== event.sessionId) pending.current.push(event);
+      else setView((v) => (v?.id === event.sessionId ? applyEvent(v, event) : v));
+    });
+  }, []);
+  useEffect(() => {
+    wanted.current = sessionId;
+    loaded.current = null;
+    pending.current = [];
+    const bridge = window.desktop?.agent;
+    if (!sessionId || !bridge) {
+      setView(null);
+      return;
+    }
+    let active = true;
+    void bridge
+      .getSession(sessionId)
+      .then((result) => {
+        if (!active) return;
+        const { seq, session } = agentValue(result);
+        const start: MessageView = { id: sessionId, seq, messages: session.messages };
+        const next = pending.current.reduce(applyEvent, start);
+        pending.current = [];
+        loaded.current = sessionId;
+        setView(next);
+      })
+      .catch((e: unknown) => {
+        if (active) setError(e instanceof Error ? e.message : '读取对话失败');
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
+  const session: ChatSession | null = meta
+    ? { ...meta, messages: view?.id === meta.id ? view.messages : [] }
+    : null;
   async function send(
     text: string,
     model?: string,
@@ -95,7 +177,7 @@ export function useAgent(
     images?: VisionAsset[],
   ) {
     const bridge = window.desktop?.agent;
-    if (!bridge || sendingRef.current || snapshot.busySessionId) return false;
+    if (!bridge || sendingRef.current) return false;
     sendingRef.current = true;
     setSending(true);
     setError('');
@@ -170,6 +252,20 @@ export function useAgent(
       setError(e instanceof Error ? e.message : '切换思考程度失败');
     }
   }
+  /** Undoes one recorded change in this hook's project or document; errors go to `error`. */
+  async function undoChange(transactionId: string) {
+    if (!window.desktop?.agent) return false;
+    try {
+      if (projectId) agentValue(await window.desktop.agent.undo({ transactionId, projectId }));
+      else if (writingScope)
+        agentValue(await window.desktop.agent.undo({ transactionId, writingScope }));
+      else return false;
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '撤销失败');
+      return false;
+    }
+  }
   async function rename(title: string) {
     if (!session || !window.desktop?.agent) return;
     try {
@@ -210,7 +306,19 @@ export function useAgent(
     snapshot: { ...snapshot, sessions },
     projectId,
     writingScope,
-    busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
+    /** Any conversation is replying: settings that affect every conversation wait. */
+    anyBusy: Object.keys(snapshot.runs).length > 0,
+    /** A conversation of this hook's project or document is replying. */
+    scopeBusy: sessions.some((s) => s.id in snapshot.runs),
+    /** The open conversation's round waits for a free slot under the concurrency limit. */
+    waiting: !!session && snapshot.runs[session.id] === 'waiting',
+    /** Space conversations with a result card, most recently updated first. */
+    cards: snapshot.sessions
+      .filter((s) => s.agent.kind !== 'main' && s.card)
+      .sort((a, b) => (b.card?.updatedAt ?? 0) - (a.card?.updatedAt ?? 0)),
+    busyProjectIds: snapshot.sessions.flatMap((s) =>
+      s.projectId && s.id in snapshot.runs ? [s.projectId] : [],
+    ),
     configuration,
     configured: !!configuration.defaultModelId,
     session,
@@ -225,6 +333,7 @@ export function useAgent(
     send,
     cancel,
     model,
+    undoChange,
     rename,
     renameConversation,
     deleteConversation,

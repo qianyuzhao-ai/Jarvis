@@ -139,6 +139,9 @@
   .shell-chat-history {
     margin-top: 20px;
   }
+  .shell-chat-group + .shell-chat-group {
+    margin-top: 12px;
+  }
   .shell-writing-sidebar {
     height: 100%;
   }

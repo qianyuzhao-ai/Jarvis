@@ -5,7 +5,8 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from '@jarvis/ui/components/Collapsible';
-import type { ChatMessage } from '../../../../shared/agent';
+import { useState } from 'react';
+import { agentValue, type ChatMessage } from '../../../../shared/agent';
 
 function diffLines(diff: string) {
   let oldLine: number | undefined;
@@ -45,12 +46,38 @@ export function ChatActivity({
   activities,
   canvas,
   writing,
+  replying = false,
+  onError,
 }: {
   activities: ChatMessage['activities'];
   canvas?: CanvasActivityActions;
   writing?: WritingActivityActions;
+  /** The reply is still running; its file changes cannot be undone yet. */
+  replying?: boolean;
+  onError?: (message: string) => void;
 }) {
+  const [undoing, setUndoing] = useState(false);
   if (!activities?.length) return null;
+  // Local file changes of one round share a transaction; its undo sits on the first of them.
+  const fileRounds = new Set<string>();
+  const firstOfRound = new Set(
+    activities.flatMap((a) =>
+      a.files.length && a.transactionId && !fileRounds.has(a.transactionId)
+        ? (fileRounds.add(a.transactionId), [a.id])
+        : [],
+    ),
+  );
+  async function undoFiles(transactionId: string) {
+    setUndoing(true);
+    try {
+      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.agent.undo({ transactionId, files: true }));
+    } catch (error) {
+      onError?.(error instanceof Error ? error.message : '撤销失败');
+    } finally {
+      setUndoing(false);
+    }
+  }
   return (
     <div data-testid="chat-activities" className="chat-activities">
       {activities.map((activity) => (
@@ -77,17 +104,24 @@ export function ChatActivity({
             )}
             {canvas && activity.nodeIds?.length ? (
               <div className="canvas-activity-actions">
-                <button type="button" onClick={() => canvas.focus(activity.nodeIds ?? [])}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  onClick={() => canvas.focus(activity.nodeIds ?? [])}
+                >
                   定位节点
-                </button>
+                </Button>
                 {activity.transactionId && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     type="button"
                     disabled={!canvas.canUndo(activity.transactionId)}
                     onClick={() => canvas.undo(activity.transactionId ?? '')}
                   >
                     撤销本次修改
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : null}
@@ -105,6 +139,19 @@ export function ChatActivity({
                 </CollapsibleContent>
               </Collapsible>
             )}
+            {firstOfRound.has(activity.id) && activity.transactionId && (
+              <div className="canvas-activity-actions">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  disabled={undoing || replying || !!activity.undone}
+                  onClick={() => void undoFiles(activity.transactionId ?? '')}
+                >
+                  {activity.undone ? '本轮文件修改已撤销' : '撤销本轮文件修改'}
+                </Button>
+              </div>
+            )}
             {activity.files.length > 0 && (
               <div className="chat-files">
                 {activity.files.map((file, index) => (
@@ -115,7 +162,11 @@ export function ChatActivity({
                   >
                     <CollapsibleTrigger>
                       <span>
-                        {{ created: '创建', edited: '修改', deleted: '删除' }[file.action]}
+                        {
+                          { created: '创建', edited: '修改', deleted: '删除', moved: '移动' }[
+                            file.action
+                          ]
+                        }
                       </span>
                       <span className="chat-file-name">{file.path.split(/[\\/]/).at(-1)}</span>
                       <span className="diff-added">+{file.added}</span>

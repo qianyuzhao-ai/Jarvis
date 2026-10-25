@@ -14,6 +14,8 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { GenerationJobs } from './jobs';
+import { GenerationRunner } from './agent-runner';
+import { projectStore } from '../projects/bridge';
 import { GenerationSessions } from './platform-session';
 import { platformLoginSchema } from '../../shared/generation-login';
 import { UploadHistory } from './upload-history';
@@ -30,6 +32,9 @@ import {
 } from '../../shared/generation';
 
 const trusted = new Map<number, string>();
+let runner: GenerationRunner | undefined;
+/** Generation for the canvas Agent; absent when the project store could not be opened. */
+export const generationRunner = () => runner;
 let activeRequests = 0;
 let runningJobs = () => false;
 export const isGenerationBusy = () => activeRequests > 0 || runningJobs();
@@ -77,6 +82,16 @@ export async function registerGeneration(file: string) {
     await jobs.initialize();
   } catch {
     storageError = true;
+  }
+  const projects = projectStore();
+  if (projects && !storageError && !uploadHistoryError) {
+    runner = new GenerationRunner(
+      jobs,
+      uploads,
+      projects,
+      join(dirname(file), 'agent-generation.json'),
+    );
+    await runner.initialize().catch(() => {});
   }
   function handle<T>(
     channel: string,
@@ -140,6 +155,8 @@ export async function registerGeneration(file: string) {
     false,
   );
   handle('generation:start', (request) => jobs.start(startRequestSchema.parse(request)));
+  // The window's service settings, for generation the canvas Agent starts without a window.
+  handle('generation:agent-settings', (request) => runner?.setSettings(request), false);
   handle('generation:get', (request) => jobs.get(z.uuid().parse(request)));
   handle('generation:copy-result-url', (request) => {
     const job = jobs.get(z.uuid().parse(request));

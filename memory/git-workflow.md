@@ -2,6 +2,25 @@
 
 最后更新：2026-10-25
 
+## 0.4.0 发布准备（2026-10-25）
+
+- 用户明确授权提交首页建议布局修复并发布新版本，包含提交、推送、feature → develop → main PR 合并、新版本标签与云端发布。远端最新已发布为 v0.3.0，无开放 PR、无 v0.4.0 标签；当前 feature 基于最新 origin/develop `ae9a57b`，develop 比 main 多 32 个提交，包含 A0–A6 Agent 架构能力。
+- 首页修复提交 `e35dfaa`；连同 V1 遗留迁移 `fae6fcf` 纳入本次发布。版本选择 0.4.0，以覆盖尚未发布的 Agent 权限、委派、文件、MCP、日历与并发能力；根包、桌面包及 README 统一版本，CHANGELOG 列明范围与实机验证限制。
+- 另一项写作组件设计的 memory/design.md 段落及两份新 JSON 保留在工作区，不纳入提交或发布。不移动旧标签、不覆盖旧 Release。本地验证与云端结果见下方记录。
+- 发布验收：check、build、v0.4.0 版本一致性、13 项 Node 发布工具测试与 Apple 网络重试测试通过。本地未签名 arm64 目录包 `release/104e5f04-1559-4489-8605-9a77bc601cec` 实际启动通过，360 项生产依赖、0.4.0 版本、ASAR 标签与写作 Agent/更新桥接通过。
+- 保留发布前失败证据：首轮 174/176（5.9m），参考连线缺一条与下载 hover 点击超时；参考用例单跑通过，独占窗口串行后两项均在完整回归中通过。第二轮 175/176（5.2m）发现 node-visuals 在 ResizeObserver/RAF 更新前立即读取编辑栏位置，补充等待实际翻转间距 ≥15px，原几何边界断言保留，应用源码不改。
+- 最后整套 175/176（5.4m），编辑栏翻转、生成/下载、参考连线及其余业务通过；唯一为 UI 预览 hover 色未触发，保留原测试并单独连续复验 3/3（6.0s）通过。hover/焦点环境波动未作为功能修复，不称该次整套全绿。macOS 日历未授权用例继续单列。日志：`/private/tmp/jarvis-040-smoke-serial.log` 与 `/private/tmp/jarvis-040-smoke-final.log`。
+- 功能 PR：[PR #87](https://github.com/qianyuzhao-ai/Jarvis/pull/87)，待合入 develop 后向 main 提发布 PR。GitHub 连接器创建 PR 返回 integration 403，使用本机已登录 gh 完成授权操作；不绕过分支规则。
+
+
+## V1 遗留 UI 迁移功能分支（2026-10-25）
+
+- 从干净的本地 develop `ae9a57b` 创建 `feature/ui-v1-legacy-migration`，已完成本地迁移和验证，用户随后授权提交本轮改动；未推送、创建 PR、合并、打标签或发布。版本维持 0.3.0。实现/验收见 engineering.md 与 ui-v1-implementation.md。
+
+## Agent 架构改造 PR（2026-10-25）
+
+- 用户要求将云端会话分支 `ccr-1c636605-o0pprj`（A0–A6 及插话设置，基于 main `6761f10`，已包含 develop `81beb13`，领先 26 个提交）提 PR 合入 develop：[PR #84](https://github.com/qianyuzhao-ai/Jarvis/pull/84)。PR 由用户于 2026-10-25 合并到 develop（合并提交 `a358672`）；未打标签、未发布，版本号未改动。之后会话分支按“已合并 PR 后重新从 develop 起分支”规则重置到 `a358672`，后续记录作为新改动提交。这两条记录提交（`c418996`、`58147bd`）经 [PR #85](https://github.com/qianyuzhao-ai/Jarvis/pull/85) 提交合入 develop，只创建了 PR，没有合并。
+
 ## 0.3.0 已发布（2026-10-25）
 
 - 用户要求以本地最新代码集成 develop（dev）并发布 0.3.0；未合入远端 `ccr*` 分支。本地功能经 [PR #76](https://github.com/qianyuzhao-ai/Jarvis/pull/76) 合入 develop（`da1510d`），再由 [PR #77](https://github.com/qianyuzhao-ai/Jarvis/pull/77) 合入 main（`c393e46`）。发布前 feature / develop / main 完整树一致；新标签 `v0.3.0` 保持指向 `c393e460a48ca0cd6cd995f79da972e399728922`，未移动旧标签。
