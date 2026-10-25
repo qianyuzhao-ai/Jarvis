@@ -20,6 +20,7 @@ import { Input } from '@jarvis/ui/components/Input';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import {
   LayoutGrid,
+  PenLine,
   SquarePen,
   MessageCircle,
   Settings,
@@ -34,6 +35,15 @@ import {
 import type { Project } from '../creation/types';
 import type { ChatSessionMeta } from '../../../../shared/agent';
 import { groupByDay } from './conversation-groups';
+import type { ResultCard } from '../../../../shared/agent-cards';
+
+const cardStatus: Record<ResultCard['status'], string> = {
+  running: '进行中',
+  waiting: '等待中',
+  done: '已完成',
+  failed: '失败',
+  needs_user: '需你处理',
+};
 import type { TabView } from './tabs';
 type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
 export function ShellSidebar({
@@ -52,6 +62,8 @@ export function ShellSidebar({
   onRenameChat,
   onDeleteChat,
   busy,
+  cards = [],
+  onOpenCard,
 }: {
   kind: TabView['kind'];
   section: Section;
@@ -68,6 +80,9 @@ export function ShellSidebar({
   onRenameChat: (id: string, title: string) => Promise<boolean>;
   onDeleteChat: (id: string) => Promise<boolean>;
   busy: boolean;
+  /** Canvas and writing conversations with a result card, newest first. */
+  cards?: ChatSessionMeta[];
+  onOpenCard?: (session: ChatSessionMeta) => void;
 }) {
   const confirm = useConfirm();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -294,6 +309,24 @@ export function ShellSidebar({
           >
             新对话
           </SidebarItem>
+          {cards.length > 0 && (
+            <section data-testid="space-cards" className="shell-chat-history" aria-label="空间任务">
+              <small>空间任务</small>
+              {cards.slice(0, 5).map((s) => (
+                <SidebarItem
+                  key={s.id}
+                  data-testid="space-card"
+                  aria-label={`打开空间任务：${s.title}`}
+                  icon={s.agent.kind === 'canvas' ? <LayoutGrid /> : <PenLine />}
+                  meta={s.card ? cardStatus[s.card.status] : undefined}
+                  title={s.card?.summary || undefined}
+                  onClick={() => onOpenCard?.(s)}
+                >
+                  {s.title}
+                </SidebarItem>
+              ))}
+            </section>
+          )}
           <div data-testid="chat-history" className="shell-chat-history" aria-label="聊天记录">
             {groupByDay(sessions).map((group) => (
               <section key={group.label} aria-label={group.label} className="shell-chat-group">

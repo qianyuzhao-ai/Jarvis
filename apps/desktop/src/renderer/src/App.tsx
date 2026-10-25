@@ -28,6 +28,8 @@ import { useGeneration } from './features/creation/useGeneration';
 import { GenerationNotice } from './features/creation/GenerationNotice';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
+import { focusConversation, focusKey } from './features/agent/conversation-focus';
+import type { ChatSessionMeta } from '../../shared/agent';
 import { ChatTab } from './features/shell/ChatTab';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
@@ -131,6 +133,27 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     syncView(shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId)!);
   }
   const projectView = (p: Project): TabView => ({ kind: 'canvas', ref: p.id, title: p.name });
+  /** Opens the space and conversation behind a home-page result card, with its assistant shown. */
+  async function openCard(session: ChatSessionMeta) {
+    const key = focusKey(session.projectId, session.writingScope);
+    if (session.projectId) {
+      const project = data.projects.find((p) => p.id === session.projectId);
+      if (!project) return agent.setError('这个任务所在的项目已删除');
+      if (key) focusConversation(key, session.id);
+      await open(projectView(project));
+    } else if (session.writingScope) {
+      const { rootId, path } = session.writingScope;
+      if (writing.root?.id !== rootId)
+        return agent.setError('请先在写作空间打开这个文档所在的文件夹');
+      await writing.openDocument({ kind: 'file', path, name: path.split('/').at(-1) ?? path });
+      if (key) focusConversation(key, session.id);
+      await open({ kind: 'writing', ref: path, rootId, title: path.split('/').at(-1) ?? path });
+    } else return;
+    change((s) => ({
+      ...s,
+      tabs: s.tabs.map((t) => (t.id === s.activeId ? { ...t, rightPanelOpen: true } : t)),
+    }));
+  }
   async function space(kind: TabView['kind']) {
     const recent = [...shell.current.current.tabs]
       .filter((t) => t.kind === kind)
@@ -361,6 +384,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           }}
           onDeleteChat={agent.deleteConversation}
           busy={agent.anyBusy}
+          cards={agent.cards}
+          onOpenCard={(session) => void openCard(session)}
           onSettings={openSettings}
         />
       )}

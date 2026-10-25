@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import type { UndoRequest } from './agent-ledger';
+import { resultCardSchema } from './agent-cards';
 import type { AgentSettings } from './agent-settings';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
@@ -129,10 +130,15 @@ export const agentRoleSchema = z
     parentId: agentId.optional(),
   })
   .strict();
-/** v2 conversation metadata, without messages; `lastReplyAt` is when the last message finished. */
-export const sessionMetaSchema = chatSessionSchema
-  .omit({ messages: true })
-  .extend({ agent: agentRoleSchema, lastReplyAt: z.number().optional() });
+/**
+ * v2 conversation metadata, without messages; `lastReplyAt` is when the last message finished and
+ * `card` is a space sub-agent's latest result card.
+ */
+export const sessionMetaSchema = chatSessionSchema.omit({ messages: true }).extend({
+  agent: agentRoleSchema,
+  lastReplyAt: z.number().optional(),
+  card: resultCardSchema.optional(),
+});
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type AgentRole = z.infer<typeof agentRoleSchema>;

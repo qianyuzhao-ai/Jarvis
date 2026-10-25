@@ -15,6 +15,7 @@ import {
 } from '../../../../shared/models';
 import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
+import { focusKey, onFocusRequest, takeFocus } from './conversation-focus';
 
 const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
 type MessageView = { id: string; seq: number; messages: ChatMessage[] };
@@ -66,6 +67,17 @@ export function useAgent(
     },
     [storageKey],
   );
+  // A card on the home page can ask this assistant to show one of its conversations.
+  const scopeKey = focusKey(projectId, writingScope);
+  useEffect(() => {
+    if (!scopeKey) return;
+    const apply = () => {
+      const id = takeFocus(scopeKey);
+      if (id) select(id);
+    };
+    apply();
+    return onFocusRequest(apply);
+  }, [scopeKey, select]);
   useEffect(() => {
     const bridge = window.desktop?.agent;
     if (!bridge) {
@@ -296,6 +308,10 @@ export function useAgent(
     scopeBusy: sessions.some((s) => s.id in snapshot.runs),
     /** The open conversation's round waits for a free slot under the concurrency limit. */
     waiting: !!session && snapshot.runs[session.id] === 'waiting',
+    /** Space conversations with a result card, most recently updated first. */
+    cards: snapshot.sessions
+      .filter((s) => s.agent.kind !== 'main' && s.card)
+      .sort((a, b) => (b.card?.updatedAt ?? 0) - (a.card?.updatedAt ?? 0)),
     busyProjectIds: snapshot.sessions.flatMap((s) =>
       s.projectId && s.id in snapshot.runs ? [s.projectId] : [],
     ),

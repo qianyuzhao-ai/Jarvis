@@ -234,7 +234,13 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .parse(requests[0]?.tools)
       .map((t) => t.function.name)
       .sort();
-    expect(toolNames).toEqual(['insert_text', 'read_document', 'read_selection', 'replace_range']);
+    expect(toolNames).toEqual([
+      'insert_text',
+      'read_document',
+      'read_selection',
+      'replace_range',
+      'report_result',
+    ]);
   } catch (error) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
     throw error;

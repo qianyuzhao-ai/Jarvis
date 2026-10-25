@@ -2,7 +2,7 @@
 
 最后更新：2026-10-25
 
-来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0、A1a、A1b-1 已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0、A1a、A1b-1、A1b-2 已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
 
 详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。
 
@@ -106,6 +106,7 @@ main/agent/
 - 2026-10-25：A1a-1 完成。与文档差异：v2 元数据暂不含 `status` / `card`（分别在 A1a-2 / A1b-2 加入）；没有主进程侧的按窗口订阅，消息事件广播、渲染层只应用当前会话；新增派生字段 `lastReplyAt` 供对话列表显示时间。
 - 2026-10-25：A1a-2 完成。与文档差异：插话（steer）未做，待设计输入框控件后补；排队（followUp）由 service 自己的队列实现（新一轮），没有用 SDK followUp；线程常驻只在轮次内，空闲 10 分钟常驻未做；运行状态放在快照 `runs` 而不是持久化元数据的 `status` 字段；模型配置变更仍需所有对话空闲（文档写“只等待使用该模型的线程”）。
 - 2026-10-25：A1a-3 完成，并发上限为设置 - 常规中的“同时运行的 Agent 数”（1–6，默认 3），与文档一致。
+- 2026-10-25：A1b-2 完成。结果卡片 report_result 优先、自动生成兜底；总线目前只有卡片事件；新分段首轮注入未完成卡片概要（A1b-1 推迟项已补）；首页侧栏“空间任务”区可跳回对应空间对话。
 - 2026-10-25：A1b-1 完成。与文档差异：新分段注入未完成卡片概要推迟到 A1b-2（卡片届时才存在）；当前分段只在快照提供，界面不标示。
 
 ### 待用户决策（A1a-2 起）
