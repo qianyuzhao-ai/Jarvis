@@ -11,6 +11,9 @@ mac:
   icon: resources/icon.icns
   category: public.app-category.productivity
   minimumSystemVersion: '13.0'
+  extendInfo:
+    NSCalendarsUsageDescription: Jarvis 读取和修改你的日历，以便按你的要求查看、安排和调整日程。
+    NSCalendarsFullAccessUsageDescription: Jarvis 读取和修改你的日历，以便按你的要求查看、安排和调整日程。
 dmg:
   icon: resources/icon.icns
 win:

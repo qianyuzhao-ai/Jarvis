@@ -12,6 +12,7 @@ import { resultCardSchema } from './agent-cards';
 import type { AgentSettings, ReplyMode } from './agent-settings';
 import type { AuthorizedFolder } from './agent-files';
 import type { McpServerInput, McpServerView } from './agent-mcp';
+import type { CalendarEvent, CalendarStatus } from './agent-calendar';
 import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
@@ -223,6 +224,10 @@ export interface AgentBridge {
   /** Lets the user pick a folder to authorize; null when they cancel. */
   addFolder(): Promise<AgentResult<AuthorizedFolder[] | null>>;
   removeFolder(id: string): Promise<AgentResult<AuthorizedFolder[]>>;
+  calendarStatus(): Promise<AgentResult<CalendarStatus>>;
+  /** Shows the system's calendar permission prompt when it has not been answered yet. */
+  requestCalendarAccess(): Promise<AgentResult<CalendarStatus>>;
+  calendarEvents(range: { from: string; to: string }): Promise<AgentResult<CalendarEvent[]>>;
   addMcpServer(input: McpServerInput): Promise<AgentResult<McpServerView[]>>;
   removeMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
   setMcpServerEnabled(input: {

@@ -34,6 +34,8 @@ import { writingLibraryPack } from './packs/writing-library';
 import { navigationPack, type Navigator } from './packs/navigation';
 import { filesPack } from './packs/files';
 import { mcpPack } from './packs/mcp';
+import { calendarPack } from './packs/calendar';
+import type { CalendarProvider } from './calendar/provider';
 import type { McpService } from './mcp/service';
 import type { LocalFiles } from './local-files';
 import { graphRevision } from '../projects/canvas-engine';
@@ -116,6 +118,8 @@ export type AgentDeps = {
   folders?: LocalFiles;
   /** The user's MCP servers, whose tools the main Agent may use. */
   mcp?: McpService;
+  /** The system calendar on macOS, Jarvis's own calendar elsewhere. */
+  calendar?: CalendarProvider;
 };
 
 export class AgentService {
@@ -124,6 +128,7 @@ export class AgentService {
   readonly files?: WritingFiles;
   readonly folders?: LocalFiles;
   readonly mcp?: McpService;
+  readonly calendar?: CalendarProvider;
   /** Shows a project or document in a window (the given one if it is still open). */
   onNavigate: (owner: number, target: NavigationTarget) => void = () => {};
   readonly skills: SkillStore;
@@ -163,6 +168,7 @@ export class AgentService {
     this.files = deps.files;
     this.folders = deps.folders;
     this.mcp = deps.mcp;
+    this.calendar = deps.calendar;
     if (this.mcp) this.mcp.onChange = () => this.emit();
     if (this.generation) this.generation.onFinished = (task) => this.taskFinished(task);
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
@@ -1240,6 +1246,7 @@ export class AgentService {
                 agentControlPack(context, this.control),
                 ...(this.files ? [writingLibraryPack(context, this.files)] : []),
                 ...(this.folders ? [filesPack(context, this.folders)] : []),
+                ...(this.calendar ? [calendarPack(context, this.calendar)] : []),
                 ...(this.mcp ? [mcpPack(this.mcp)] : []),
                 navigationPack(context, this.navigator(run)),
                 skill,

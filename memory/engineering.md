@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A6：日历（2026-10-25）
+
+- 提供者：`main/agent/calendar/provider.ts` 定义 CalendarProvider；macOS 用 `apple.ts`（AppleCalendar）：通过 `osascript -l JavaScript` 运行内嵌的 JXA 脚本（ObjC 桥接 EventKit：授权状态、`requestFullAccessToEvents`（旧系统 `requestAccessToEntityType`）、日历列表、按时间段查询、新建/修改/删除，单次 JSON 命令与回复），无需编译原生模块，覆盖系统日历中所有已登录账户；其他系统用 `local.ts`（LocalCalendar，`agent/calendar.json` 中的“Jarvis 日历”）。未授权时报“请在 系统设置 › 隐私与安全性 › 日历 中允许”，不悄悄改写到别的日历。打包：electron-builder `mac.extendInfo` 增加 NSCalendarsUsageDescription / NSCalendarsFullAccessUsageDescription，entitlements 增加 `com.apple.security.personal-information.calendars`。
+- **未在真实 macOS 上验证**：容器为 Linux，EventKit 路径只用伪造的 ObjC/EventKit 桥在 Node vm 中运行同一脚本验证逻辑与回复格式；真实授权弹窗（由 osascript 子进程发起、归属 Jarvis）、JXA 对 EventKit 块回调/Ref 出参/nil 参数的处理、签名公证后的权限，需在 Mac 上联调确认。
+- calendar 能力包（主 Agent）：list_calendars、list_events（≤92 天）只读；create_event、update_event、delete_event 为 confirm（确认框标题“新建/修改/删除日程”，正文为标题、本地时间、地点或改动项）。时间参数须为带时区偏移的 ISO 8601（SDK 按 JSON Schema 先行拦截不合格时间）；提示词给出当前本地时间与时区、要求换算自然语言时间、默认 1 小时、先查当天日程并说明冲突；新建/修改返回与之重叠的日程（冲突检测）。需要授权时先请求系统授权。
+- 日历视图：左侧栏“日历”按钮启用（原“即将推出”占位），新增标签类型 `calendar`（单例）与 `features/calendar/CalendarSpace.tsx`：按周（周一起）列出 7 天日程（时间段、标题、日历名与地点，今天高亮），上一周/本周/下一周/刷新，显示时每 30 秒及窗口聚焦时刷新；未决定授权时显示“允许访问日历”，被拒时显示系统设置指引。IPC：`agent:calendar-status` / `-request` / `-events`。
+- 测试：新增 `agent-calendar.spec` 3 例（本地日历增改删、时间段过滤、时间校验、重启读取；EventKit 脚本在伪造桥上：未决定→请求→已授权、日历、事件字段与 UTC 时间、新建指定/默认日历、修改、找不到、删除、拒绝时的指引、无法解析的回复；主 Agent：查当天→新建（确认，返回与周会的冲突）→改期（确认）→删除（拒绝未执行）→非 ISO 时间被拦截，最终日历内容正确，提示词含当前时间与时区）与实窗 `agent-calendar-ui.spec`（侧栏进入日历周视图 → 首页请 Jarvis 约会议并在确认框允许 → 周视图显示 15:00–16:00 会议与地点 → 下一周/本周切换）；window-shell.spec 改为断言“日历”按钮可用，agent.spec 首页工具清单加入日历工具。
+- 验证：check、build 通过；完整实窗 177 例中 174 通过：ui-preview 2 例无 linux 基线（png 已逐个删除），agent.spec 因工具清单变化失败、更新后复跑通过；截图检查通过。
+
 ## Agent 架构改造 A5：MCP / Google / 邮件（2026-10-25）
 
 - 方案：不启用 Pi CLI 的 MCP 扩展（依赖 mcp.json 与 /mcp 交互界面），改用其底层独立客户端 `@earendil-works/pi-mcp`（新增为 desktop 直接依赖，版本 1.3.0 与 SDK 一致，lockfile 只增 3 行）。Google Workspace 与邮件经用户接入的 MCP 服务提供（没有 Jarvis 自己的 Google OAuth 客户端）。

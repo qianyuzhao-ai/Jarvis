@@ -24,6 +24,9 @@ import { openTargetsSchema } from '../../shared/agent-targets';
 import { folderId } from '../../shared/agent-files';
 import { LocalFiles } from './local-files';
 import { McpService } from './mcp/service';
+import { AppleCalendar } from './calendar/apple';
+import { LocalCalendar } from './calendar/local';
+import { rangeSchema } from '../../shared/agent-calendar';
 import { mcpServerInputSchema } from '../../shared/agent-mcp';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
@@ -70,7 +73,13 @@ export async function registerAgent() {
       return result.response === 0;
     },
   });
+  // The macOS system calendar through EventKit; Jarvis's own calendar on other systems.
+  const calendar =
+    process.platform === 'darwin'
+      ? new AppleCalendar()
+      : new LocalCalendar(join(root, 'calendar.json'));
   service = new AgentService(config, store, root, {
+    calendar,
     folders,
     mcp,
     projects: projectStore(),
@@ -179,6 +188,14 @@ export async function registerAgent() {
       return folders.add(result.filePaths[0]);
     },
     'agent:remove-folder': (r) => folders.remove(folderId.parse(r)),
+    'agent:calendar-status': () => calendar.status(),
+    'agent:calendar-request': () => calendar.requestAccess(),
+    'agent:calendar-events': async (r) => {
+      const v = rangeSchema.parse(r);
+      const status = await calendar.status();
+      if (status.access !== 'granted') throw new Error(status.message ?? '没有日历访问权限');
+      return calendar.events(v.from, v.to);
+    },
     'agent:mcp-add': (r) => mcp.add(mcpServerInputSchema.parse(r)),
     'agent:mcp-remove': (r) => mcp.remove(agentId.parse(r)),
     'agent:mcp-enable': (r) => {

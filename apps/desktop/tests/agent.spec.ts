@@ -383,16 +383,20 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       ),
     ).toContainText('你好🙂');
     // Home chat streams and carries only the main Agent's tools for sub-agents, writing
-    // documents, navigation and files in authorized folders; no shell tools.
+    // documents, navigation, files in authorized folders and the calendar; no shell tools.
     const control = [
       'create_document',
+      'create_event',
       'create_file',
       'create_folder',
       'create_project',
       'delegate_task',
+      'delete_event',
       'delete_file',
       'list_agents',
+      'list_calendars',
       'list_documents',
+      'list_events',
       'list_files',
       'list_folders',
       'list_writing_folders',
@@ -408,6 +412,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       'search_documents',
       'search_files',
       'stop_agent',
+      'update_event',
     ];
     expect(
       requests.every(

@@ -21,6 +21,7 @@ import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
+import { CalendarSpace } from './features/calendar/CalendarSpace';
 import { FileAccessSettings } from './features/settings/FileAccessSettings';
 import { loadWorkspace } from './features/creation/workspace-load';
 import type { ProjectRecord } from '../../shared/project';
@@ -214,7 +215,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           : {
               kind,
               ref: kind === 'settings' ? 'general' : null,
-              title: kind === 'settings' ? '设置' : '新对话',
+              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : '新对话',
             },
       true,
     );
@@ -488,6 +489,9 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
               />
             </div>
           ))}
+        <div className="shell-view" hidden={route !== 'calendar'}>
+          {route === 'calendar' && <CalendarSpace active />}
+        </div>
         <div className="shell-view" hidden={route !== 'settings'}>
           {route === 'settings' && (
             <header className="shell-settings-toolbar">
