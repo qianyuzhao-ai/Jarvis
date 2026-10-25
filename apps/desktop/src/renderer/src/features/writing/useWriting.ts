@@ -2,6 +2,8 @@ import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useUpdateGuard } from '../updates/use-update-guard';
 import { z } from 'zod';
+import { restoreTabs } from '../shell/tabs';
+import { isWritingText, writingFileType } from '../../../../shared/writing';
 import type {
   WritingEntry,
   WritingFile,
@@ -16,6 +18,8 @@ export interface DocumentSession {
   content: string;
   savedContent: string;
   manualSave?: boolean;
+  fileType?: import('../../../../shared/writing').WritingFileType;
+  size?: number;
   revision: string;
   status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
   error: string;
@@ -35,6 +39,7 @@ export const parentPath = (path: string) => path.split('/').slice(0, -1).join('/
 export function useWriting() {
   const confirm = useConfirm();
   const reloading = useRef(new Set<string>());
+  const [legacyKeys, setLegacyKeys] = useState<string[]>([]);
   const [ready, setReady] = useState(false);
   const [roots, setRoots] = useState<WritingRoot[]>([]);
   const [root, setRoot] = useState<WritingRoot | null>(null);
@@ -50,7 +55,7 @@ export function useWriting() {
   const [loading, setLoading] = useState(false);
   const saves = useRef(new Map<string, Promise<boolean>>());
   const restoring = useRef(false);
-  const lastTabSettings = useRef('');
+
   const updateDocuments = useCallback(
     (change: (documents: DocumentSession[]) => DocumentSession[]) => {
       documentsRef.current = change(documentsRef.current);
@@ -172,39 +177,6 @@ export function useWriting() {
         } catch {
           setNotice('无法记录最近目录，下次启动需要重新选择');
         }
-        let remembered = documentsRef.current.find((d) => d.rootId === next.id);
-        let preferred = remembered?.id ?? '';
-        if (!remembered) {
-          const raw = localStorage.getItem('jarvis:writing-tabs:' + next.id);
-          if (raw) {
-            const saved = tabsSchema.parse(JSON.parse(raw));
-            for (const path of [...new Set(saved.paths)]) {
-              const file = await bridge().readFile({ rootId: next.id, path });
-              if (!file.ok) {
-                setNotice('部分上次打开的文档已失效，其他文档已恢复');
-                continue;
-              }
-              const id = idFor(next.id, path);
-              updateDocuments((docs) => [
-                ...docs,
-                {
-                  id,
-                  rootId: next.id,
-                  path,
-                  ...file.value,
-                  savedContent: file.value.content,
-                  status: 'saved',
-                  error: '',
-                },
-              ]);
-            }
-            preferred = saved.active;
-          }
-          remembered = documentsRef.current.find((d) => d.rootId === next.id);
-        }
-        setActiveId(
-          documentsRef.current.some((d) => d.id === preferred) ? preferred : (remembered?.id ?? ''),
-        );
       } catch (error) {
         setNotice(error instanceof Error ? error.message : '目录无法打开');
       } finally {
@@ -215,21 +187,6 @@ export function useWriting() {
     [flush, updateDocuments],
   );
   useEffect(() => {
-    if (!root || restoring.current) return;
-    const current = documents.filter((d) => d.rootId === root.id);
-    const value = JSON.stringify({
-      paths: current.map((d) => d.path).slice(0, 30),
-      active: activeId,
-    });
-    if (lastTabSettings.current === root.id + value) return;
-    try {
-      localStorage.setItem('jarvis:writing-tabs:' + root.id, value);
-      lastTabSettings.current = root.id + value;
-    } catch {
-      setNotice('无法保存文档标签，下次启动需要重新打开文档');
-    }
-  }, [root, documents, activeId]);
-  useEffect(() => {
     let active = true;
     void (async () => {
       try {
@@ -239,6 +196,56 @@ export function useWriting() {
         const last = localStorage.getItem('jarvis:writing-root');
         const next = recent.find((r) => r.id === last);
         if (next) await switchRoot(next);
+        const stored = restoreTabs(localStorage.getItem('jarvis:window-tabs'));
+        const wanted = stored.tabs
+          .filter((t) => t.kind === 'writing' && t.rootId && t.ref)
+          .map((t) => ({ rootId: t.rootId!, path: t.ref! }));
+        const legacyKeys: string[] = [];
+        for (const r of recent) {
+          const key = 'jarvis:writing-tabs:' + r.id,
+            raw = localStorage.getItem(key);
+          if (!raw) continue;
+          try {
+            const saved = tabsSchema.parse(JSON.parse(raw));
+            for (const path of saved.paths)
+              if (!wanted.some((d) => d.rootId === r.id && d.path === path))
+                wanted.push({ rootId: r.id, path });
+            legacyKeys.push(key);
+          } catch {
+            setNotice('旧文档标签无法读取，原记录已保留');
+          }
+        }
+        for (const item of wanted) {
+          if (!recent.some((r) => r.id === item.rootId)) continue;
+          const file = isWritingText(item.path)
+            ? await bridge().readFile(item)
+            : { ok: true as const, value: { content: '', revision: '' } };
+          if (!file.ok) {
+            setNotice('部分上次打开的文档已失效，其他文档已恢复');
+            continue;
+          }
+          updateDocuments((docs) => [
+            ...docs,
+            {
+              ...item,
+              id: idFor(item.rootId, item.path),
+              ...file.value,
+              fileType: writingFileType(item.path),
+              savedContent: file.value.content,
+              status: 'saved',
+              error: '',
+            },
+          ]);
+        }
+        const activeTab = stored.tabs.find((t) => t.id === stored.activeId);
+        const preferred =
+          activeTab?.rootId && activeTab.ref ? idFor(activeTab.rootId, activeTab.ref) : '';
+        setActiveId(
+          documentsRef.current.find((d) => d.id === preferred)?.id ??
+            documentsRef.current.at(-1)?.id ??
+            '',
+        );
+        setLegacyKeys(legacyKeys);
       } catch (error) {
         if (active) setNotice(error instanceof Error ? error.message : '读取目录记录失败');
       } finally {
@@ -248,7 +255,7 @@ export function useWriting() {
     return () => {
       active = false;
     };
-  }, [switchRoot]);
+  }, [switchRoot, updateDocuments]);
   const chooseDirectory = async () => {
     if (!(await flush())) {
       setNotice('请先处理未保存文档，再切换文件夹');
@@ -263,8 +270,10 @@ export function useWriting() {
       setNotice(error instanceof Error ? error.message : '打开目录失败');
     }
   };
-  const openDocument = async (entry: WritingEntry) => {
-    const current = rootRef.current;
+  const openDocument = async (entry: WritingEntry, rootId = rootRef.current?.id) => {
+    const current =
+      roots.find((r) => r.id === rootId) ??
+      (rootRef.current?.id === rootId ? rootRef.current : null);
     if (!current || entry.kind !== 'file') return;
     const id = idFor(current.id, entry.path);
     if (documentsRef.current.some((d) => d.id === id)) {
@@ -272,8 +281,9 @@ export function useWriting() {
       return;
     }
     try {
-      const file = unwrap(await bridge().readFile({ rootId: current.id, path: entry.path }));
-      if (rootRef.current?.id !== current.id) return;
+      const file = isWritingText(entry.path)
+        ? unwrap(await bridge().readFile({ rootId: current.id, path: entry.path }))
+        : { content: '', revision: '' };
       updateDocuments((docs) =>
         docs.some((d) => d.id === id)
           ? docs
@@ -283,6 +293,8 @@ export function useWriting() {
                 id,
                 rootId: current.id,
                 path: entry.path,
+                fileType: writingFileType(entry.path),
+                size: entry.size,
                 ...file,
                 savedContent: file.content,
                 status: 'saved',
@@ -338,8 +350,7 @@ export function useWriting() {
       if (pending) await pending;
       const remaining = documentsRef.current.filter((d) => d.id !== id);
       updateDocuments(() => remaining);
-      if (activeId === id)
-        setActiveId(remaining.filter((d) => d.rootId === rootRef.current?.id).at(-1)?.id ?? '');
+      if (activeId === id) setActiveId(remaining.at(-1)?.id ?? '');
       return true;
     } finally {
       closing.current.delete(id);
@@ -388,47 +399,106 @@ export function useWriting() {
           revision: empty.revision,
         }),
       );
+      await openDocument(entry, doc.rootId);
       updateDocuments((docs) => docs.filter((d) => d.id !== id));
-      await openDocument(entry);
       await refresh(parentPath(doc.path));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '副本保存失败');
     }
   };
   useEffect(() => {
-    if (!activeId) return;
-    let reading = false;
-    const check = async () => {
-      const doc = documentsRef.current.find((d) => d.id === activeId);
-      if (!doc || reading || saves.current.has(activeId) || doc.status === 'conflict') return;
-      reading = true;
-      try {
-        const file: WritingFile = unwrap(
-          await bridge().readFile({ rootId: doc.rootId, path: doc.path }),
-        );
-        const current = documentsRef.current.find((d) => d.id === activeId);
-        if (!current || saves.current.has(activeId) || current.revision === file.revision) return;
-        if (current.content !== current.savedContent)
-          update(activeId, { status: 'conflict', error: '文件已在外部修改，当前编辑内容已保留' });
-        else update(activeId, { ...file, savedContent: file.content, status: 'saved', error: '' });
-      } catch (error) {
-        update(activeId, {
-          status: 'error',
-          error: error instanceof Error ? error.message : '无法读取磁盘文档',
-        });
-      } finally {
-        reading = false;
+    const reading = new Set<string>();
+    const check = async (rootId?: string, paths?: string[]) => {
+      for (const doc of documentsRef.current) {
+        if (rootId && doc.rootId !== rootId) continue;
+        if (paths && !paths.includes('') && !paths.includes(doc.path)) continue;
+        if (
+          !isWritingText(doc.path) ||
+          reading.has(doc.id) ||
+          saves.current.has(doc.id) ||
+          doc.status === 'conflict'
+        )
+          continue;
+        reading.add(doc.id);
+        try {
+          const file: WritingFile = unwrap(
+            await bridge().readFile({ rootId: doc.rootId, path: doc.path }),
+          );
+          const current = documentsRef.current.find((d) => d.id === doc.id);
+          if (!current || saves.current.has(doc.id) || current.revision === file.revision) continue;
+          if (current.content !== current.savedContent)
+            update(doc.id, { status: 'conflict', error: '文件已在外部修改，当前编辑内容已保留' });
+          else update(doc.id, { ...file, savedContent: file.content, status: 'saved', error: '' });
+        } catch (error) {
+          update(doc.id, {
+            status: 'error',
+            error: error instanceof Error ? error.message : '无法读取磁盘文档',
+          });
+        } finally {
+          reading.delete(doc.id);
+        }
       }
     };
+    const off = bridge().onChanged(({ rootId, paths }) => void check(rootId, paths));
     const timer = window.setInterval(() => void check(), 2500);
-    window.addEventListener('focus', check);
+    const focus = () => void check();
+    window.addEventListener('focus', focus);
     return () => {
+      off();
       clearInterval(timer);
-      window.removeEventListener('focus', check);
+      window.removeEventListener('focus', focus);
     };
-  }, [activeId, update]);
+  }, [update]);
+  const watchKey = JSON.stringify([
+    ...new Set([root?.id, ...documents.map((d) => d.rootId)].filter((id): id is string => !!id)),
+  ]);
+  useEffect(() => {
+    const ids = JSON.parse(watchKey) as string[];
+    for (const rootId of ids) void bridge().watch({ rootId });
+    return () => {
+      for (const rootId of ids) void bridge().unwatch({ rootId });
+    };
+  }, [watchKey]);
+  useEffect(
+    () =>
+      bridge().onChanged(({ rootId }) => {
+        if (rootRef.current?.id !== rootId) return;
+        void refresh();
+        for (const path of expanded) void refresh(path);
+      }),
+    [refresh, expanded],
+  );
+  useEffect(
+    () =>
+      bridge().onRenamed(({ rootId, from, to }) => {
+        const rename = (path: string) =>
+          path === from || path.startsWith(from + '/') ? to + path.slice(from.length) : path;
+        updateDocuments((docs) =>
+          docs.map((d) =>
+            d.rootId === rootId
+              ? {
+                  ...d,
+                  path: rename(d.path),
+                  id: idFor(rootId, rename(d.path)),
+                  fileType: writingFileType(rename(d.path)),
+                }
+              : d,
+          ),
+        );
+        setActiveId((id) =>
+          id.startsWith(rootId + ':') ? idFor(rootId, rename(id.slice(rootId.length + 1))) : id,
+        );
+        if (rootRef.current?.id === rootId) {
+          setExpanded((paths) => new Set([...paths].map(rename)));
+          setSelectedDirectory(rename);
+          void refresh();
+        }
+      }),
+    [updateDocuments, refresh],
+  );
   return {
     ready,
+    legacyKeys,
     getDocuments: () => documentsRef.current,
     roots,
     root,

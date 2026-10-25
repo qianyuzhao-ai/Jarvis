@@ -333,14 +333,14 @@ test('writing reload preserves a conflicted buffer on cancel and reads disk on c
   }
 });
 
-test('switching writing folders clears obsolete tabs and keeps the new document space active', async () => {
+test('switching writing folders preserves documents from both folders', async () => {
   const first = test.info().outputPath('第一目录'),
     second = test.info().outputPath('第二目录');
   await mkdir(first, { recursive: true });
   await mkdir(second, { recursive: true });
   await writeFile(join(first, '第一.md'), '# 第一个目录的内容');
   await writeFile(join(second, '第二.md'), '# 第二个目录的内容');
-  const app = await launch(test.info().outputPath('profile'));
+  let app = await launch(test.info().outputPath('profile'));
   try {
     const page = await app.firstWindow();
     await choose(app, page, first);
@@ -360,7 +360,7 @@ test('switching writing folders clears obsolete tabs and keeps the new document 
       'aria-pressed',
       'true',
     );
-    await expect(page.getByRole('tab', { name: '第一.md', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: '第一.md', exact: true })).toBeVisible();
     await page
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '第二.md', exact: true })
@@ -370,10 +370,20 @@ test('switching writing folders clears obsolete tabs and keeps the new document 
     );
     await page.getByRole('button', { name: '第二目录', exact: true }).click();
     await page.getByRole('menuitem', { name: '第一目录', exact: true }).click();
+    await page.getByRole('tab', { name: '第一.md', exact: true }).click();
     await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
       '第一个目录',
     );
-    await expect(page.getByRole('tab', { name: '第二.md', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: '第二.md', exact: true })).toBeVisible();
+    await app.close();
+    app = await launch(test.info().outputPath('profile'));
+    const restored = await app.firstWindow();
+    await expect(restored.getByRole('tab', { name: '第一.md', exact: true })).toBeVisible();
+    await expect(restored.getByRole('tab', { name: '第二.md', exact: true })).toBeVisible();
+    await restored.getByRole('tab', { name: '第二.md', exact: true }).click();
+    await expect(restored.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
+      '第二个目录',
+    );
   } finally {
     await app.close();
   }

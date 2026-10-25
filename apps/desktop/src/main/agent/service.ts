@@ -180,6 +180,42 @@ export class AgentService {
     };
     this.scheduler.onChange = () => this.emit();
   }
+  relocateWriting(
+    rootId: string,
+    from: string,
+    operation: () => Promise<import('../../shared/writing').WritingEntry>,
+  ) {
+    return this.exclusive(async () => {
+      const matches = (scope?: WritingScope) =>
+        scope?.rootId === rootId && (scope.path === from || scope.path.startsWith(from + '/'));
+      if (
+        this.store.records.some(
+          (r) =>
+            matches(r.view.writingScope) &&
+            (this.runs.has(r.view.id) || this.queues.get(r.view.id)?.length),
+        )
+      )
+        throw new Error('写作助手正在修改这个文档，请稍后再改名');
+      const entry = await operation();
+      for (const record of this.store.records) {
+        const scope = record.view.writingScope;
+        if (!scope || !matches(scope)) continue;
+        scope.path = entry.path + scope.path.slice(from.length);
+        for (const artifact of record.view.card?.artifacts ?? []) {
+          if (
+            artifact.kind === 'document' &&
+            (artifact.ref === from || artifact.ref.startsWith(from + '/'))
+          )
+            artifact.ref = entry.path + artifact.ref.slice(from.length);
+        }
+        await this.store.save(record.view.id);
+      }
+      this.ledger.renameWritingScope(rootId, from, entry.path);
+      await this.ledger.settled();
+      this.emit();
+      return entry;
+    });
+  }
   snapshot(): AgentEvent {
     return {
       seq: this.seq,

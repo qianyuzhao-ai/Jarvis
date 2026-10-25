@@ -27,16 +27,29 @@ export function useWritingHost(
   // Documents of the open folder are delegation targets while this space is mounted.
   const openKey = JSON.stringify(
     writing.documents
-      .filter((d) => d.rootId === writing.root?.id)
+      .filter((d) => !d.fileType || ['markdown', 'text'].includes(d.fileType))
       .map((d) => ({ rootId: d.rootId, path: d.path, name: d.path.split('/').at(-1) ?? d.path })),
   );
   useEffect(() => {
     setOpenDocuments(JSON.parse(openKey));
     return () => setOpenDocuments([]);
   }, [openKey]);
+  useEffect(
+    () =>
+      window.desktop?.writing.onRenamed(({ rootId, from, to }) => {
+        transactions.current.rename(rootId, from, to);
+        for (const [key, value] of [...cache.current]) {
+          const prefix = rootId + ':' + from;
+          if (key === prefix || key.startsWith(prefix + '/')) {
+            cache.current.delete(key);
+            cache.current.set(rootId + ':' + to + key.slice(prefix.length), value);
+          }
+        }
+      }),
+    [cache],
+  );
   const find = useCallback((scope: WritingScope) => {
     const w = latest.current;
-    if (w.root?.id !== scope.rootId) throw new Error('文档不在当前打开的文件夹中');
     const d = w.getDocuments().find((d) => sameWritingScope(d, scope));
     if (!d) throw new Error('文档已关闭');
     if (['conflict', 'error'].includes(d.status))
@@ -201,7 +214,6 @@ export function useWritingHost(
       entry = transactions.current.latest(scope);
     return (
       !!doc &&
-      doc.rootId === latest.current.root?.id &&
       entry?.id === id &&
       entry.after === doc.content &&
       !['conflict', 'error'].includes(doc.status)

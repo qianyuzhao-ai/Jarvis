@@ -35,6 +35,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 - [memory/ui-v1-implementation.md](memory/ui-v1-implementation.md)：UI V1 基础组件分阶段实施、设计来源与验收证据。
 - [memory/ui-v1-shell-plan.md](memory/ui-v1-shell-plan.md)：UI V1 第三阶段执行计划书（窗口外壳、跨空间标签页、空间 Agent 右边栏、画布节点），交给实现方按阶段执行。
 - [memory/writing-space-plan.md](memory/writing-space-plan.md)：写作空间重新设计执行计划书（全格式目录、Tiptap 块编辑与无损往返、/ 面板与富模块、Agent 块级联动、星图），交给 Codex 按 W1–W6 实现，Claude 负责验收。
+- [memory/writing-space-implementation.md](memory/writing-space-implementation.md)：写作空间 W1–W6 的实施进度、验证证据、失败与差异记录。
 
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。

@@ -17,7 +17,7 @@ export function MarkdownEditor({
   viewRef,
   cache,
 }: {
-  document: { id: string; content: string };
+  document: { id: string; content: string; fileType?: string };
   onChange: (id: string, content: string) => void;
   onOutline?: (headings: Heading[]) => void;
   onPosition: (position: number) => void;
@@ -29,6 +29,8 @@ export function MarkdownEditor({
   const host = useRef<HTMLDivElement>(null);
   const callbacks = useRef({ onChange, onOutline, onPosition, onSave });
   callbacks.current = { onChange, onOutline, onPosition, onSave };
+  const currentId = useRef(document.id);
+  currentId.current = document.id;
   const applying = useRef(false);
   const compartment = useRef(new Compartment());
   const latest = useRef({ content: document.content, source });
@@ -39,7 +41,8 @@ export function MarkdownEditor({
     const saved = states.get(document.id);
     const listener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
-        if (!applying.current) callbacks.current.onChange(document.id, update.state.doc.toString());
+        if (!applying.current)
+          callbacks.current.onChange(currentId.current, update.state.doc.toString());
         callbacks.current.onOutline?.(headings(update.state));
       }
       if (update.selectionSet || update.viewportChanged)
@@ -50,7 +53,7 @@ export function MarkdownEditor({
       EditorState.create({
         doc: latest.current.content,
         extensions: [
-          markdown(),
+          ...(document.fileType === 'text' ? [] : [markdown()]),
           writingHistory,
           drawSelection(),
           bracketMatching(),
@@ -83,7 +86,7 @@ export function MarkdownEditor({
       viewRef.current = null;
       view.destroy();
     };
-  }, [document.id, cache, viewRef]);
+  }, [document.id, document.fileType, cache, viewRef]);
   useEffect(() => {
     const view = viewRef.current;
     if (view && view.state.doc.toString() !== document.content) {

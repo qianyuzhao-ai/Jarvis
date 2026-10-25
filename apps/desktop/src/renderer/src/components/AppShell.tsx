@@ -15,8 +15,14 @@ import {
   Settings,
   MessageCircle,
   FileText,
+  FileCode,
+  FileImage,
+  FileMusic,
+  FileVideoCamera,
+  FileArchive,
   Plus,
 } from '@jarvis/ui/icons';
+import { writingFileType } from '../../../shared/writing';
 import type { WindowState, TabView } from '../features/shell/tabs';
 import { SidebarLayout } from './SidebarLayout';
 export function AppShell({
@@ -103,7 +109,18 @@ export function AppShell({
         </div>
         <WindowTabs ref={tabs} aria-label="窗口标签" className="shell-tabs">
           {state.tabs.map((tab) => {
-            const Icon = icons[tab.kind];
+            const Icon =
+              tab.kind === 'writing' && tab.ref
+                ? {
+                    markdown: FileText,
+                    text: FileCode,
+                    image: FileImage,
+                    audio: FileMusic,
+                    video: FileVideoCamera,
+                    pdf: FileText,
+                    binary: FileArchive,
+                  }[writingFileType(tab.ref)]
+                : icons[tab.kind];
             return (
               <WindowTab
                 key={tab.id}

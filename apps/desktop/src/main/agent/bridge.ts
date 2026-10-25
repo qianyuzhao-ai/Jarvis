@@ -34,6 +34,7 @@ import { writingFiles } from '../writing/bridge';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
+export const writingAgentService = () => service;
 export const isAgentBusy = () => service?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });

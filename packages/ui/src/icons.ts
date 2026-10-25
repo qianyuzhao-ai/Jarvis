@@ -98,3 +98,13 @@ export const Workflow = /* @__PURE__ */ icon(Lucide.Workflow);
 export const X = /* @__PURE__ */ icon(Lucide.X);
 
 export const Pause = /* @__PURE__ */ icon(Lucide.Pause);
+
+export const FileCode = /* @__PURE__ */ icon(Lucide.FileCode);
+
+export const FileImage = /* @__PURE__ */ icon(Lucide.FileImage);
+
+export const FileMusic = /* @__PURE__ */ icon(Lucide.FileMusic);
+
+export const FileVideoCamera = /* @__PURE__ */ icon(Lucide.FileVideoCamera);
+
+export const FileArchive = /* @__PURE__ */ icon(Lucide.FileArchive);

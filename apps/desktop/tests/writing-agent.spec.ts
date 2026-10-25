@@ -168,9 +168,29 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     await editor.press('ControlOrMeta+Shift+z');
     await expect(editor).toContainText('补充结尾。');
     await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['applied']);
+    const renameScope = await page.evaluate(async () => {
+      const roots = await window.desktop!.writing.getRoots();
+      if (!roots.ok || !roots.value[0]) throw new Error('missing root');
+      const rootId = roots.value[0].id;
+      const result = await window.desktop!.writing.rename({
+        rootId,
+        path: '甲.md',
+        name: '改名.md',
+      });
+      return { rootId, result };
+    });
+    expect(renameScope.result.ok).toBe(true);
+    await expect(page.getByRole('tab', { name: /^改名.md/ })).toBeVisible();
+    await expect(panel.getByRole('button', { name: '撤销本次修改' })).toBeEnabled();
     await panel.getByRole('button', { name: '撤销本次修改' }).click();
     await expect(editor).toContainText('原始段落。');
     await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['undone']);
+    const restoredName = await page.evaluate(
+      (rootId) => window.desktop!.writing.rename({ rootId, path: '改名.md', name: '甲.md' }),
+      renameScope.rootId,
+    );
+    expect(restoredName.ok).toBe(true);
+    await expect(page.getByRole('tab', { name: '甲.md', exact: true })).toBeVisible();
     await editor.press('ControlOrMeta+a');
     await panel.getByLabel('消息', { exact: true }).fill('后台修改');
     await panel.getByRole('button', { name: '发送消息' }).click();
