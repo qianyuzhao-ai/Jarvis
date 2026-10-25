@@ -148,6 +148,11 @@ export interface AgentSnapshot {
   sessions: ChatSessionMeta[];
   /** Conversations with a round in progress; several may reply at once. */
   runs: Record<string, RunState>;
+  /**
+   * The main-Agent segment that most recently received a user message; handoffs from space
+   * sub-agents go here. Null until some home conversation has a message.
+   */
+  currentSegmentId?: string | null;
 }
 export interface AgentEvent {
   seq: number;

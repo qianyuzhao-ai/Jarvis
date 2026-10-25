@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A1b-1：主 Agent 分段（2026-10-25）
+
+- origin/main 无新提交。首页对话即主 Agent 分段：A1a-1 的迁移已把旧首页对话标为 `agent.kind = 'main'`、新建首页对话同样为 main，本批不再改记录结构。
+- 当前分段：`service.currentSegment()` = 有用户消息的 main 会话中 `updatedAt` 最新的一个（`updatedAt` 只在一轮开始时更新，即用户发送或排队消息开始时），快照新增 `currentSegmentId`（无则 null）；空的新分段在有消息前不会成为当前分段，画布/写作会话不参与；删除当前分段后回落到下一个。供 A1b-3 的 handoff 投递使用，界面暂不显示。
+- 首页列表按本地日期分组：新增 `features/shell/conversation-groups.ts` 的 `groupByDay`（今天 / 昨天 / 最近 7 天 / 更早，组内按 updatedAt 倒序，空组不显示），ShellSidebar 用组标题替代原“最近对话”，每组为带 aria-label 的 section，沿用原 `<small>` 标题样式，组间距 12px；条目、相对时间与操作不变。
+- 新分段开场注入“未完成的子 Agent 卡片概要”推迟到 A1b-2：卡片在 A1b-2 才存在，本批不注入空数据块。
+- 测试：新增 `agent-segments.spec`（固定时钟下的日期分组与组内顺序；当前分段规则：v1 迁移来的首页对话、空分段不抢占、按用户消息切换、画布会话不参与、删除后回落）2 例；`agent-migration.spec` 增加实窗断言：升级来的旧对话位于“更早”组。
+- 验证：check、build 通过；完整实窗 143 例中 141 通过，仅 ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）。
+
 ## Agent 架构改造 A1a-3：并发上限设置项（2026-10-25）
 
 - 用户授权清理上一批用于对照的独立 worktree，已用 `git worktree remove --force` 移除。origin/main 无新提交。

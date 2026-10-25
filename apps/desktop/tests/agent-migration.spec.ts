@@ -58,6 +58,10 @@ test('an existing version 1 profile opens after the upgrade with its conversatio
     expect(index.version).toBe(2);
     expect(index.sessions[0].meta.agent).toEqual({ kind: 'main', origin: 'user' });
     await access(join(root, 'sessions', `${id}.view.json`));
+    // The upgraded conversation sits in the date group of its last activity.
+    const history = page.getByTestId('chat-history');
+    await expect(history.getByRole('region', { name: '更早' })).toContainText('升级前的对话');
+    await expect(history.getByRole('region', { name: '今天' })).toHaveCount(0);
   } finally {
     await app.close();
   }

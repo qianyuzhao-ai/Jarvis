@@ -105,8 +105,24 @@ export class AgentService {
         models: this.config.view(),
         sessions: structuredClone(this.store.records.map((r) => this.store.meta(r.view))),
         runs: this.runStates(),
+        currentSegmentId: this.currentSegment(),
       },
     };
+  }
+  /**
+   * The home conversation whose latest round started last. A round starts when a user message is
+   * sent (or a queued one begins), and `updatedAt` changes only then.
+   */
+  currentSegment() {
+    let current: { id: string; at: number } | null = null;
+    for (const { view } of this.store.records)
+      if (
+        view.agent.kind === 'main' &&
+        view.messages.some((m) => m.role === 'user') &&
+        (!current || view.updatedAt > current.at)
+      )
+        current = { id: view.id, at: view.updatedAt };
+    return current?.id ?? null;
   }
   private runStates() {
     const waiting = this.scheduler.waiting();

@@ -33,6 +33,7 @@ import {
 } from '@jarvis/ui/icons';
 import type { Project } from '../creation/types';
 import type { ChatSessionMeta } from '../../../../shared/agent';
+import { groupByDay } from './conversation-groups';
 import type { TabView } from './tabs';
 type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
 export function ShellSidebar({
@@ -294,31 +295,33 @@ export function ShellSidebar({
             新对话
           </SidebarItem>
           <div data-testid="chat-history" className="shell-chat-history" aria-label="聊天记录">
-            <small>最近对话</small>
-            {[...sessions]
-              .sort((a, b) => b.updatedAt - a.updatedAt)
-              .map((s) => (
-                <SidebarItem
-                  key={s.id}
-                  data-testid="side-link"
-                  aria-label={`打开对话：${s.title}`}
-                  icon={<MessageCircle />}
-                  meta={relativeTime(s.updatedAt)}
-                  trailing={actions('chat', s.id, s.title)}
-                  selected={activeChat === s.id}
-                  aria-current={activeChat === s.id ? 'page' : undefined}
-                  onClick={(e) => onChat(s.id, s.title, e.metaKey || e.ctrlKey)}
-                  onAuxClick={(e) => {
-                    if (e.button === 1) {
-                      e.preventDefault();
-                      onChat(s.id, s.title, true);
-                    }
-                  }}
-                >
-                  {s.title}
-                  {s.runId && <span aria-label="回复中"> •</span>}
-                </SidebarItem>
-              ))}
+            {groupByDay(sessions).map((group) => (
+              <section key={group.label} aria-label={group.label} className="shell-chat-group">
+                <small>{group.label}</small>
+                {group.items.map((s) => (
+                  <SidebarItem
+                    key={s.id}
+                    data-testid="side-link"
+                    aria-label={`打开对话：${s.title}`}
+                    icon={<MessageCircle />}
+                    meta={relativeTime(s.updatedAt)}
+                    trailing={actions('chat', s.id, s.title)}
+                    selected={activeChat === s.id}
+                    aria-current={activeChat === s.id ? 'page' : undefined}
+                    onClick={(e) => onChat(s.id, s.title, e.metaKey || e.ctrlKey)}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        onChat(s.id, s.title, true);
+                      }
+                    }}
+                  >
+                    {s.title}
+                    {s.runId && <span aria-label="回复中"> •</span>}
+                  </SidebarItem>
+                ))}
+              </section>
+            ))}
             {!sessions.length && <p>还没有对话</p>}
           </div>
         </>
