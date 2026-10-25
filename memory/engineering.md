@@ -1,6 +1,35 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-24
+最后更新：2026-10-25
+
+## 0.3.0 发布准备（2026-10-25）
+
+- 用户明确授权以本地最新状态集成 develop（用户称 dev）并发布 0.3.0，排除远端 `ccr*` 分支。fetch 核对 develop=`fd6db60`、main=`57365e8`，当前本地 `feature/project-more-menu` 独有提交为 `fe41c1e` / `66bde20`；远端 `ccr-1c636605-o0pprj` 只读列出，不合入、不修改。远端无 v0.3.0 标签或开放 PR，最近发布为 v0.2.5。
+- 根包/桌面包版本和 README 源码版本统一 0.3.0，新增 CHANGELOG 并更新“关于 Jarvis”检查更新路径；沿用 feature → develop → main PR 与 main 合并提交新标签，不创建 release 分支、不移动旧标签。
+- 发布检查确认删除项目后键盘焦点丢失（新增实窗断言可复现），补充成功删除后聚焦剩余行或侧栏首个动作。既有加载前浅色首屏与锚定浮层缩放原点为非阻断后续项；不在发版时重做主题或动效。桌面应用无移动端/营销页面验收范围。
+- check、build、版本一致性与 10 项 Node 发布工具回归、Apple 网络重试脚本通过。完整 Electron 回归 124/124（4.6m）通过，浅深截图基准包含在本轮通过结果内；云端三平台签名、公证、原生启动和 Release 校验待执行，不得将准备状态称为发布完成。
+
+
+## 项目更多菜单恢复（2026-10-25）
+
+- 分支 `feature/project-more-menu` 从 develop 创建；已有未跟踪 `skills/` 保留不动。用户于同日授权提交；未推送、提 PR 或发布。
+- `ShellSidebar` 接入 `onDeleteProject`、新标签页打开和删除确认，IconButton 标签统一“更多”；App 通过现有 commit 保存移除单个项目（rollbackOnFailure=true），不新增原生能力或远端删除请求。行菜单专用 CSS 按内容占宽，上限 320px 并受 Radix 可用宽度约束。
+- `pruneTabs` 在关闭失效标签后同时过滤失效历史并重算 cursor，防止删除项目后前进/后退进入空白画布。新增 project-menu 实窗与删除历史单测，调整旧 window-shell 的更多按钮定位。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；相关 Electron/标签/侧栏 9/9（15.6s）通过，浅深菜单截图检查通过。存储失败回滚沿用现有 commit 机制，此轮未注入磁盘/IndexedDB 故障。
+
+
+## 关于 Jarvis 与更新入口迁移（2026-10-25）
+
+- 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
+- 更新测试入口迁到关于页，补充通用页无更新区、关于选中态及刷新恢复断言。`pnpm check`、`pnpm build` 与 updates / updates-http / updates-service / update-preparation 共 13/13（17.9s）通过，浅深/窄窗截图检查通过。实际发布和真实安装未执行。
+- 用户于同日授权两个分支推送、提 PR 并合入 develop。模型修复已由 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`），随后同步到本分支；仅两份记忆顶部记录冲突，保留两侧完整记录，应用代码自动合并。关于页由 [PR #75](https://github.com/qianyuzhao-ai/Jarvis/pull/75) 交付，合并前集成检查、构建与模型/更新相关 26/26（30.1s）通过。
+
+## 模型配置开发模式卡住修复（2026-10-25）
+
+- 用户截图：添加 DeepSeek 第 2 步点击“下一步”后持续转圈。根因是 `AddProviderDialog` 的 mounted ref 在 StrictMode 开发模式的 effect 清理后永久变为 false，随后校验报错、busy 清除、模型列表更新和步骤跳转均被跳过；此步新建服务商尚未发送网络请求。
+- 修复：effect 每次 setup 恢复 mounted=true，真实卸载时仍置 false。分支 `feature/model-dialog-lifecycle-fix`，用户于同日授权推送与 PR 集成，已由 PR #74 合入 develop（`59f7dd5`）；未发布，不改变凭据和 IPC 边界。
+- 新增 `model-dialog-dev.spec.ts`：实际 Vite 开发 renderer + Electron（隔离 profile、测试 Key），旧代码复现缺少 Key 后无报错且卡住；修复后校验恢复、DeepSeek 目录加载、选择添加、编辑连接与刷新恢复通过（1/1，3.6s）。现有 model-library / model-store / model-runtime 12/12 通过；check、build 通过。未调用真实 DeepSeek，真实服务联调仍待验证。新增测试要求开发端口 5173 空闲，与主进程可信来源限制一致。
+
 
 ## 模型配置分支合入 develop 前的合并（2026-10-24）
 

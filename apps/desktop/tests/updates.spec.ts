@@ -69,6 +69,15 @@ test('development mode is explicit, security flags stay enabled, and an untruste
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await expect(page.getByRole('region', { name: '应用更新', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '关于 Jarvis', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '关于 Jarvis', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '关于 Jarvis', exact: true })).toBeVisible();
     const panel = page.getByRole('region', { name: '应用更新', exact: true });
     await expect(panel).toContainText('开发模式不检查更新');
     await expect(panel.getByRole('button', { name: '检查更新' })).toBeDisabled();
@@ -121,6 +130,7 @@ test('automatic and manual checks, download retry/progress, route changes and in
     await simulate(app, 'flow', audit);
     await page.reload();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
     const panel = page.getByRole('region', { name: '应用更新', exact: true });
     await expect(panel.getByRole('alert')).toContainText('测试网络连接失败');
     await panel.getByRole('button', { name: '检查更新' }).click();
@@ -145,8 +155,10 @@ test('automatic and manual checks, download retry/progress, route changes and in
     await expect(notice.getByRole('button', { name: '重启并安装' })).toBeFocused();
     expect(app.windows()).toHaveLength(1);
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
     await page.getByRole('button', { name: '通用', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
+    await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await panel.scrollIntoViewIfNeeded();
     await page.screenshot({ path: test.info().outputPath('update-downloaded-dark-compact.png') });

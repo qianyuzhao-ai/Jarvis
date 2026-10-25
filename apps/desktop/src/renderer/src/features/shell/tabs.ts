@@ -148,5 +148,12 @@ export function restoreTabs(raw: string | null): WindowState {
 export function pruneTabs(state: WindowState, exists: (view: TabView) => boolean): WindowState {
   let next = state;
   for (const tab of state.tabs) if (!exists(tab)) next = closeTab(next, tab.id);
+  const tabs = next.tabs.map((tab) => {
+    const history = tab.history.filter(exists);
+    return history.length === tab.history.length
+      ? tab
+      : { ...tab, history, cursor: tab.history.slice(0, tab.cursor).filter(exists).length };
+  });
+  if (tabs.some((tab, index) => tab !== next.tabs[index])) next = { ...next, tabs };
   return next;
 }
