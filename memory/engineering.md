@@ -19,6 +19,16 @@
 - 测试调用点随签名更新（canvas-agent-runtime、writing-agent-commands、agent-skills-runtime、agent-responses、model-runtime），断言不变；直接调用 `execute` 的地方补齐 SDK 五参数签名。
 - 验证：check、build 通过；运行时 28 例通过；完整实窗 124 例中 122 通过，ui-preview 2 例仍为仓库无 linux 截图基线（生成的 linux png 已逐个删除）。实窗沿用阶段 2 的 keyring 处理：本容器 apt 安装 gnome-keyring，dbus-run-session 内解锁并临时改 playwright-core loader 的 password-store，验证后已还原。`pnpm install --ignore-scripts` 不会下载 Electron，需在 electron 包目录手动执行 `node install.js`。
 
+## 0.3.0 已发布（2026-10-25）
+
+- 用户要求以本地最新代码集成 develop（dev）并发布 0.3.0；未合入远端 `ccr*` 分支。本地功能经 [PR #76](https://github.com/qianyuzhao-ai/Jarvis/pull/76) 合入 develop（`da1510d`），再由 [PR #77](https://github.com/qianyuzhao-ai/Jarvis/pull/77) 合入 main（`c393e46`）。发布前 feature / develop / main 完整树一致；新标签 `v0.3.0` 保持指向 `c393e460a48ca0cd6cd995f79da972e399728922`，未移动旧标签。
+- 本地 check、build、版本一致性、完整 Electron/模拟服务 **124/124（4.6m）**、Node 发布工具 10/10、路径检查工具 3/3 和 Apple 网络重试测试通过。未签名 arm64 目录包实际启动与 360 项依赖验证通过。
+- 首轮 `40162171899` 因 Windows 路径误报取消；检查工具经 PR #78 / #79 修复，运行 `40162527580` 后发现启动验收入口遗漏而主动取消，验收工具经 PR #80 / #81 修复。均只修改检查/验收工具与工作流，应用代码与原标签一致；从 main `8f7610f` 工作流构建原标签的最终运行 [40162843328](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40162843328) 四个作业全部 success。
+- Windows `121077826170`、macOS arm64 `121077826232`、Intel x64 `121077826276` 均通过 360 项生产依赖、原生打包 ASAR 启动、窗口标签、写作 Agent/更新桥接及 0.3.0 版本验证。两种 macOS 的目录包、ZIP/DMG 内应用均签名、公证票据和 Gatekeeper accepted / Notarized Developer ID 通过；Windows 安装器保持未签名。
+- 统一发布 `121079497207` 合并并复验双架构更新清单后完成。[v0.3.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.3.0) 于北京时间 **2026-10-25 12:54:42** 发布，非草稿，按当前流程为预发布；12 个资产均 uploaded。线上 latest-mac.yml / latest.yml 已下载，SHA-256 与 GitHub asset digest 一致；版本、引用目标、文件大小匹配，macOS 两种架构 ZIP 均在清单中，SHA-512 已由云端真实产物验证。
+- 中文版本说明保留自动生成记录，验证证据在 `/private/tmp/jarvis-030-release-verification`。真实服务商、真实内网、macOS 13 实机交互和真实版本间升级仍需目标环境验收；不以本轮模拟服务/云端测试替代。
+
+
 ## 0.3.0 打包启动验收入口同步（2026-10-25）
 
 - Windows 路径修复已由 PR #78 / #79 合入 develop/main（main `cae01f6`），从新工作流重试原 v0.3.0 的运行 `40162527580` 已通过 Windows 检查器回归；随后核对发现 tag 内 `verify-packaged-startup.mjs` 仍在通用页查找已迁到关于页的“应用更新”区域，继续运行必然失败，主动取消该次运行并同步验收入口。
