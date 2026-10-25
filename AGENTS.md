@@ -44,6 +44,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 
 - [memory/figma-sync-2026-10-21/agent-skills-state.json](memory/figma-sync-2026-10-21/agent-skills-state.json)：Skills 导入、斜杠选择、自动加载的组件/页面与验证记录。
 - [memory/figma-sync-2026-10-21/model-settings-v1-state.json](memory/figma-sync-2026-10-21/model-settings-v1-state.json)：模型配置改造（服务商 → 模型、添加服务商流程、分组模型选择器）的 V1 画面与本地组件节点、验证记录。
+- [memory/figma-sync-2026-10-21/writing-space-components-state.json](memory/figma-sync-2026-10-21/writing-space-components-state.json)：写作空间重新设计的 V1 组件初稿（分区 29–33、新增图标、评审样张）节点 ID、属性与验证记录。
 
 ### 开始任务前
 
