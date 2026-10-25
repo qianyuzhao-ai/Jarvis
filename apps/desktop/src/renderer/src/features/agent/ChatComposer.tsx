@@ -193,6 +193,7 @@ export function ChatComposer({
             <Plus size={20} />
           </button>
           <Button
+            className="composer-skills"
             variant="ghost"
             size="sm"
             aria-label="选择技能"

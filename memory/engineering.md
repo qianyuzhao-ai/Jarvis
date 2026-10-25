@@ -2,6 +2,11 @@
 
 最后更新：2026-10-25
 
+## 右侧栏窄输入框技能按钮隐藏（2026-10-25）
+
+- 分支 `feature/sidebar-composer-skills` 从本地 develop 创建。用户要求先尝试空间不足时隐藏技能按钮；ChatComposer 按钮增加 `composer-skills` 类，agent.css 在 compact Composer 上建立 inline-size 容器，宽度不超过 400px 时隐藏按钮。隐藏样式位于 utilities 层，避免被 Button 的 inline-flex 工具类覆盖。未改变模型、思考、上下文与发送逻辑。
+- `pnpm check`、`pnpm build` 通过；临时真实 Electron 脚本使用隔离 profile 和本地测试模型配置，无服务商请求。侧栏 340 / 360 / 440 / 560px 的隐藏与恢复、长模型名和思考选择器并存无重叠、`/` 技能入口通过，最窄浅深截图已检查。验证脚本及截图位于 `/private/tmp/jarvis-sidebar-skills-check.mjs`、`/private/tmp/jarvis-sidebar-skills-340.png`、`/private/tmp/jarvis-sidebar-skills-340-dark.png`。未运行完整冒烟，写作侧栏复用规则但未单独实窗复验；用户随后授权本地提交，未推送。
+
 ## 0.3.0 已发布（2026-10-25）
 
 - 用户要求以本地最新代码集成 develop（dev）并发布 0.3.0；未合入远端 `ccr*` 分支。本地功能经 [PR #76](https://github.com/qianyuzhao-ai/Jarvis/pull/76) 合入 develop（`da1510d`），再由 [PR #77](https://github.com/qianyuzhao-ai/Jarvis/pull/77) 合入 main（`c393e46`）。发布前 feature / develop / main 完整树一致；新标签 `v0.3.0` 保持指向 `c393e460a48ca0cd6cd995f79da972e399728922`，未移动旧标签。
