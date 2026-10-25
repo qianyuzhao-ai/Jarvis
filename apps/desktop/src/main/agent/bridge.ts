@@ -19,6 +19,7 @@ import { AgentStore } from './store';
 import { canvasReplySchema } from '../../shared/canvas-agent';
 import { approvalResponseSchema } from '../../shared/agent-approval';
 import { undoRequestSchema } from '../../shared/agent-ledger';
+import { concurrencySchema } from '../../shared/agent-settings';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -44,6 +45,7 @@ export async function registerAgent() {
     await store.initialize();
     await service.ledger.initialize(store.records.map((r) => r.view.id));
     await service.skills.initialize();
+    await service.loadSettings();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
   }
@@ -113,6 +115,8 @@ export async function registerAgent() {
       return service.setThinkingLevel(v.sessionId, v.level);
     },
     'agent:snapshot': () => service.snapshot(),
+    'agent:settings': () => service.settings.get(),
+    'agent:set-concurrency': (r) => service.setConcurrency(concurrencySchema.parse(r)),
     'agent:session': (r) => service.session(agentId.parse(r)),
     'agent:create': () => service.create(),
     'agent:create-canvas': (r) => service.create(agentId.parse(r)),

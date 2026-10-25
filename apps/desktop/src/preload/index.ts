@@ -40,6 +40,8 @@ const desktop: DesktopInfo = {
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
+    getSettings: () => ipcRenderer.invoke('agent:settings'),
+    setConcurrency: (value) => ipcRenderer.invoke('agent:set-concurrency', value),
     getSession: (id) => ipcRenderer.invoke('agent:session', id),
     onSessionEvent: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);

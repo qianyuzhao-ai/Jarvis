@@ -32,6 +32,7 @@ import type { UndoRequest } from '../../shared/agent-ledger';
 import type { Approver } from './kernel/policy';
 import type { ToolContext } from './kernel/capability';
 import { Scheduler } from './kernel/scheduler';
+import { AgentSettingsStore } from './settings';
 import { skillCommand } from '../../shared/agent-skills';
 import type { StoredSkill } from './skill-store';
 
@@ -68,6 +69,7 @@ export class AgentService {
   readonly approvals = new ApprovalQueue();
   readonly ledger: Ledger;
   readonly scheduler = new Scheduler();
+  readonly settings: AgentSettingsStore;
   private seq = 0;
   /** The round each replying conversation is running, by conversation. */
   private runs = new Map<string, Run>();
@@ -88,6 +90,7 @@ export class AgentService {
   ) {
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
     this.ledger = new Ledger(join(root, 'ledger'));
+    this.settings = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
     this.ledger.onError = () => {
       this.persistenceError = '操作记录保存失败，请重启应用后检查本地存储';
       this.emit();
@@ -110,6 +113,19 @@ export class AgentService {
     const states: Record<string, RunState> = {};
     for (const id of this.runs.keys()) states[id] = waiting.has(id) ? 'waiting' : 'running';
     return states;
+  }
+  async loadSettings() {
+    await this.settings.initialize();
+    this.scheduler.setLimit(this.settings.get().concurrency);
+  }
+  /**
+   * Changes how many model requests may stream at once. Requests already streaming finish; new
+   * ones follow the new limit.
+   */
+  async setConcurrency(concurrency: number) {
+    const settings = await this.settings.update({ concurrency });
+    this.scheduler.setLimit(settings.concurrency);
+    return settings;
   }
   /** One conversation with its messages; later session events carry a larger `seq`. */
   session(id: string) {

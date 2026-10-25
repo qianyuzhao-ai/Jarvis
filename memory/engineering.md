@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A1a-3：并发上限设置项（2026-10-25）
+
+- 用户授权清理上一批用于对照的独立 worktree，已用 `git worktree remove --force` 移除。origin/main 无新提交。
+- 新增 `shared/agent-settings.ts`（`{ version: 1, concurrency: 1–6 }`，默认 3）与主进程 `agent/settings.ts`（`AgentSettingsStore`，存 `agent/settings.json`，文件缺失、损坏或超出范围时回落默认值）；scheduler 默认值改为引用该默认。启动时 `service.loadSettings()` 应用到 scheduler；`setConcurrency` 保存后立即 `setLimit`——调小不打断已在流式中的请求，调大立刻放行等待中的轮次。
+- IPC：`agent:settings`、`agent:set-concurrency`（zod 校验 1–6 整数）；preload 新增 `getSettings` / `setConcurrency`。
+- 界面：设置 - 常规在“主题”与“默认下载位置”之间新增一行“同时运行的 Agent 数”，说明“超出上限的对话会显示“等待中”，轮到后自动继续。”，右侧 `NativeSelect`（1–6，宽 96px），保存后状态文字“已保存，新的回复按此上限排队”，失败回滚并显示错误；布局与下载设置行一致。
+- 测试：`agent-concurrency.spec` 新增 1 例（默认 3、0 与 7 被拒、上限 1 时第二个对话等待、调到 2 后放行、重启读取 2、损坏/越界文件回落 3）；新增实窗 `agent-concurrency-settings.spec`（设置改为 1 后重启仍为 1，第二个对话显示“等待中：同时回复的对话已达上限”且服务端只收到 1 个请求，第一个回复结束后自动开始）。
+- 验证：check、build 通过；完整实窗 141 例中 139 通过，仅 ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）；本轮 updates.spec.ts:179 也通过。
+
 ## Agent 架构改造 A1a-2：并发调度、排队与压缩（2026-10-25）
 
 - origin/main 无新提交。去掉全局单运行锁：service 以 `runs: Map<sessionId, Run>` 管理进行中的轮次，多个对话可同时回复；`idle()` 只用于影响全部对话的操作（模型配置、技能导入/启停、连接测试），单个对话的改名外操作（删除、切模型、思考档位）用 `sessionIdle(id)` 只挡该对话；新建对话不再受其他对话影响；撤销只在同一项目/文档有对话在回复时拒绝。

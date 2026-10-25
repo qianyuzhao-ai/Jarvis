@@ -1,5 +1,4 @@
-/** How many model requests may be in flight at once, across every conversation. */
-export const DEFAULT_CONCURRENCY = 3;
+import { DEFAULT_AGENT_SETTINGS } from '../../../shared/agent-settings';
 
 /**
  * Limits concurrent model requests. A slot is held only while one request streams; tool calls,
@@ -10,7 +9,7 @@ export class Scheduler {
   onChange: () => void = () => {};
   private active = 0;
   private waiters: { key: string; grant: () => void }[] = [];
-  constructor(private limit = DEFAULT_CONCURRENCY) {}
+  constructor(private limit = DEFAULT_AGENT_SETTINGS.concurrency) {}
   setLimit(limit: number) {
     this.limit = limit;
     this.drain();

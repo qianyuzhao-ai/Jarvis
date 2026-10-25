@@ -9,6 +9,8 @@ import { ModelStore } from '../src/main/agent/model-store';
 import { openAgent } from '../src/main/agent/runtime';
 import { AgentService } from '../src/main/agent/service';
 import { AgentStore } from '../src/main/agent/store';
+import { AgentSettingsStore } from '../src/main/agent/settings';
+import { writeFile } from 'node:fs/promises';
 import { relayModel } from './helpers/models';
 
 const chunk = (delta: unknown, finish: string | null = null, usage?: unknown) =>
@@ -247,5 +249,42 @@ test('compaction summarizes long history without using up the round request limi
   } finally {
     server.closeAllConnections();
     await new Promise<void>((r) => server.close(() => r()));
+  }
+});
+
+test('the concurrency setting persists, rejects out-of-range values and applies to waiting rounds', async () => {
+  const relay = await heldRelay();
+  const { service } = await serviceWith(relay.baseUrl);
+  const root = test.info().outputPath('agent');
+  try {
+    await service.loadSettings();
+    expect(service.settings.get().concurrency).toBe(3);
+    await expect(service.setConcurrency(0)).rejects.toThrow();
+    await expect(service.setConcurrency(7)).rejects.toThrow();
+    await service.setConcurrency(1);
+    const a = await service.create();
+    const b = await service.create();
+    await service.send(a, randomUUID(), '甲', 1);
+    await service.send(b, randomUUID(), '乙', 1);
+    await expect.poll(() => service.snapshot().snapshot.runs[b]).toBe('waiting');
+    // Raising the limit lets the waiting round start without stopping the first one.
+    await service.setConcurrency(2);
+    await expect.poll(() => relay.held.length).toBe(2);
+    expect(service.snapshot().snapshot.runs).toEqual({ [a]: 'running', [b]: 'running' });
+    for (const release of relay.held.splice(0)) release('好');
+    await expect.poll(() => Object.keys(service.snapshot().snapshot.runs).length).toBe(0);
+
+    const restarted = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
+    await restarted.initialize();
+    expect(restarted.get().concurrency).toBe(2);
+    await writeFile(join(root, 'settings.json'), '{"version":1,"concurrency":99}');
+    const invalid = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
+    await invalid.initialize();
+    expect(invalid.get().concurrency).toBe(3);
+  } finally {
+    for (const release of relay.held.splice(0)) release('');
+    await service.shutdown();
+    relay.server.closeAllConnections();
+    await new Promise<void>((r) => relay.server.close(() => r()));
   }
 });

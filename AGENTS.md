@@ -37,7 +37,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间与 IndexedD
 
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。
-- [memory/agent-architecture.md](memory/agent-architecture.md)：主 Agent + 空间子 Agent 方案的代码差距分析、已确认决策、详细改造方案所在的文档标签页与实施进度（A0、A1a-1、A1a-2 已完成）。
+- [memory/agent-architecture.md](memory/agent-architecture.md)：主 Agent + 空间子 Agent 方案的代码差距分析、已确认决策、详细改造方案所在的文档标签页与实施进度（A0 与 A1a 已完成）。
 - [memory/design.md](memory/design.md)：设计要求、Figma 页面和组件位置、设计变更、验证结果、环境限制及未决事项。
 - [memory/figma-sync-2026-10-21/state.json](memory/figma-sync-2026-10-21/state.json)：本轮 Figma 同步的已返回节点 ID、验证结果与中断续传状态；页面脚本位于同目录。
 - [memory/figma-sync-2026-10-21/canvas-agent-v1-state.json](memory/figma-sync-2026-10-21/canvas-agent-v1-state.json)：画布 Agent、会话管理和视觉资产的组件/页面节点、原型链接与验证结果。

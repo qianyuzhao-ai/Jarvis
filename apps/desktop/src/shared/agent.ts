@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import type { UndoRequest } from './agent-ledger';
+import type { AgentSettings } from './agent-settings';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   baseUrlSchema,
@@ -164,6 +165,9 @@ export interface AgentBridge {
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
+  getSettings(): Promise<AgentResult<AgentSettings>>;
+  /** 1–6 model requests streaming at once across all conversations. */
+  setConcurrency(value: number): Promise<AgentResult<AgentSettings>>;
   /** One conversation with its messages, as of `seq`. */
   getSession(sessionId: string): Promise<AgentResult<{ seq: number; session: ChatSession }>>;
   onSessionEvent(listener: (event: SessionEvent) => void): () => void;
