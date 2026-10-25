@@ -45,6 +45,9 @@ const desktop: DesktopInfo = {
     setConcurrency: (value) => ipcRenderer.invoke('agent:set-concurrency', value),
     setReplyMode: (value) => ipcRenderer.invoke('agent:set-reply-mode', value),
     steer: (input) => ipcRenderer.invoke('agent:steer', input),
+    listFolders: () => ipcRenderer.invoke('agent:folders'),
+    addFolder: () => ipcRenderer.invoke('agent:add-folder'),
+    removeFolder: (id) => ipcRenderer.invoke('agent:remove-folder', id),
     getSession: (id) => ipcRenderer.invoke('agent:session', id),
     onSessionEvent: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);

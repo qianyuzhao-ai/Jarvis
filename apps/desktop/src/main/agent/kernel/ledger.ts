@@ -54,6 +54,7 @@ export class Ledger {
         updatedAt: now,
         ...(entry.inverse ? { inverse: entry.inverse } : {}),
         ...(entry.afterRevision ? { afterRevision: entry.afterRevision } : {}),
+        ...(entry.fileOps ? { fileOps: entry.fileOps } : {}),
       });
     else entries.push({ ...entry, status: 'applied', createdAt: now, updatedAt: now });
     const runs = [...new Set(entries.map((e) => e.runId))].slice(-LEDGER_ROUNDS);
@@ -61,6 +62,14 @@ export class Ledger {
       entry.sessionId,
       entries.filter((e) => runs.includes(e.runId)),
     );
+    this.save(entry.sessionId);
+  }
+  /** Keeps the steps of a partly undone change, so undoing again continues from there. */
+  setFileOps(id: string, fileOps: LedgerEntry['fileOps']) {
+    const entry = this.find(id);
+    if (!entry) return;
+    entry.fileOps = fileOps;
+    entry.updatedAt = Date.now();
     this.save(entry.sessionId);
   }
   markUndone(id: string) {

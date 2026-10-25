@@ -21,6 +21,7 @@ import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
+import { FileAccessSettings } from './features/settings/FileAccessSettings';
 import { loadWorkspace } from './features/creation/workspace-load';
 import type { ProjectRecord } from '../../shared/project';
 import type { NavigationTarget } from '../../shared/agent';
@@ -42,7 +43,7 @@ import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'files' | 'about';
 function Workbench({ initial }: { initial: { data: WorkspaceData; records: ProjectRecord[] } }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
@@ -497,6 +498,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     models: '模型',
                     services: '内网地址',
                     plugins: '插件',
+                    files: '文件与权限',
                     about: '关于 Jarvis',
                   }[settingsSection]
                 }
@@ -507,6 +509,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                 hidden={
                   settingsSection === 'models' ||
                   settingsSection === 'plugins' ||
+                  settingsSection === 'files' ||
                   settingsSection === 'about'
                 }
               >
@@ -519,6 +522,8 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />
+          ) : route === 'settings' && settingsSection === 'files' ? (
+            <FileAccessSettings />
           ) : route === 'settings' && settingsSection === 'about' ? (
             <AboutSettings updates={updates} />
           ) : route === 'settings' && settingsSection === 'models' ? (

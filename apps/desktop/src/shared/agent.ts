@@ -10,6 +10,7 @@ import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import type { UndoRequest } from './agent-ledger';
 import { resultCardSchema } from './agent-cards';
 import type { AgentSettings, ReplyMode } from './agent-settings';
+import type { AuthorizedFolder } from './agent-files';
 import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
@@ -100,11 +101,13 @@ export const chatActivitySchema = z.object({
   changes: z.array(canvasChangeSchema).max(200).optional(),
   projectId: z.string().uuid().optional(),
   writingScope: writingScopeSchema.optional(),
+  /** Set once the change this activity records was undone. */
+  undone: z.boolean().optional(),
   files: z
     .array(
       z.object({
         path: z.string().max(2000),
-        action: z.enum(['created', 'edited', 'deleted']),
+        action: z.enum(['created', 'edited', 'deleted', 'moved']),
         added: z.number().int().nonnegative(),
         removed: z.number().int().nonnegative(),
         diff: z.string().max(200000),
@@ -212,6 +215,11 @@ export interface AgentBridge {
   /** 1–6 model requests streaming at once across all conversations. */
   setConcurrency(value: number): Promise<AgentResult<AgentSettings>>;
   setReplyMode(value: ReplyMode): Promise<AgentResult<AgentSettings>>;
+  /** Folders the main Agent may read and change files in. */
+  listFolders(): Promise<AgentResult<AuthorizedFolder[]>>;
+  /** Lets the user pick a folder to authorize; null when they cancel. */
+  addFolder(): Promise<AgentResult<AuthorizedFolder[] | null>>;
+  removeFolder(id: string): Promise<AgentResult<AuthorizedFolder[]>>;
   /** Hands a queued message to the running reply now instead of after it. */
   steer(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   /** One conversation with its messages, as of `seq`. */

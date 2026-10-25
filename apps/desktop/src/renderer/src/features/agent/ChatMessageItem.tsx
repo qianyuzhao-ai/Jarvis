@@ -126,7 +126,13 @@ export function ChatMessageItem({
         </div>
       )}
       {m.role === 'assistant' && (
-        <ChatActivity activities={m.activities} canvas={canvas} writing={writing} />
+        <ChatActivity
+          activities={m.activities}
+          canvas={canvas}
+          writing={writing}
+          replying={m.status === 'running'}
+          onError={onError}
+        />
       )}
       <div className="chat-bubble">
         <div data-testid="chat-text" className="chat-text">

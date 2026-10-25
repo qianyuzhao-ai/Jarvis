@@ -28,7 +28,14 @@ export interface ToolContext {
   record: (
     change: Pick<
       LedgerEntry,
-      'id' | 'pack' | 'summary' | 'projectId' | 'writingScope' | 'inverse' | 'afterRevision'
+      | 'id'
+      | 'pack'
+      | 'summary'
+      | 'projectId'
+      | 'writingScope'
+      | 'inverse'
+      | 'afterRevision'
+      | 'fileOps'
     >,
   ) => void;
 }

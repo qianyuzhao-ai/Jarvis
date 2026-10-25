@@ -32,6 +32,8 @@ import type { WritingFiles } from '../writing/files';
 import { generationPack } from './packs/generation';
 import { writingLibraryPack } from './packs/writing-library';
 import { navigationPack, type Navigator } from './packs/navigation';
+import { filesPack } from './packs/files';
+import type { LocalFiles } from './local-files';
 import { graphRevision } from '../projects/canvas-engine';
 import { validateVisionInput } from './vision-input';
 import type { VisionAsset } from '../../shared/canvas-vision';
@@ -108,12 +110,15 @@ export type AgentDeps = {
   generation?: GenerationRunner;
   /** The user's writing folders, for the main Agent's document tools. */
   files?: WritingFiles;
+  /** Folders the user authorized for the main Agent's local file tools. */
+  folders?: LocalFiles;
 };
 
 export class AgentService {
   readonly projects?: ProjectStore;
   readonly generation?: GenerationRunner;
   readonly files?: WritingFiles;
+  readonly folders?: LocalFiles;
   /** Shows a project or document in a window (the given one if it is still open). */
   onNavigate: (owner: number, target: NavigationTarget) => void = () => {};
   readonly skills: SkillStore;
@@ -151,6 +156,7 @@ export class AgentService {
     this.projects = deps.projects;
     this.generation = deps.generation;
     this.files = deps.files;
+    this.folders = deps.folders;
     if (this.generation) this.generation.onFinished = (task) => this.taskFinished(task);
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
     this.ledger = new Ledger(join(root, 'ledger'));
@@ -407,6 +413,7 @@ export class AgentService {
   undo(owner: number, request: UndoRequest) {
     return this.exclusive(async () => {
       if (this.persistenceError) throw new Error(this.persistenceError);
+      if ('files' in request) return this.undoFiles(request.transactionId);
       const target = (view: { projectId?: string; writingScope?: WritingScope }) =>
         'projectId' in request
           ? view.projectId === request.projectId
@@ -443,6 +450,33 @@ export class AgentService {
       if (entry) this.ledger.markUndone(entry.id);
       this.emit();
     });
+  }
+  /**
+   * Undoes a round's local file changes from their snapshots, latest first. A step whose file
+   * changed since stops the rest; undoing again later continues with what is left.
+   */
+  private async undoFiles(transactionId: string) {
+    const entry = this.ledger.find(transactionId);
+    if (!entry || entry.pack !== 'files' || !entry.fileOps)
+      throw new Error('没有这次文件修改的记录');
+    if (entry.status === 'undone') throw new Error('这次修改已撤销');
+    if (this.runs.has(entry.sessionId)) throw new Error('请先停止或等待这个对话的回复完成');
+    if (!this.folders) throw new Error('本地文件服务不可用，请重启应用');
+    const { remaining, error } = await this.folders.undo(entry.fileOps);
+    if (error) {
+      this.ledger.setFileOps(entry.id, remaining);
+      throw new Error(remaining.length < entry.fileOps.length ? `部分修改已撤销；${error}` : error);
+    }
+    this.ledger.markUndone(entry.id);
+    const record = this.store.records.find((r) => r.view.id === entry.sessionId);
+    for (const message of record?.view.messages ?? [])
+      for (const activity of message.activities ?? [])
+        if (activity.transactionId === entry.id) {
+          activity.undone = true;
+          this.changed(entry.sessionId, message.id);
+        }
+    if (record) await this.store.saveView(entry.sessionId).catch(() => {});
+    this.emit();
   }
   setModel(id: string, model: string) {
     return this.exclusive(async () => {
@@ -1197,6 +1231,7 @@ export class AgentService {
                 space,
                 agentControlPack(context, this.control),
                 ...(this.files ? [writingLibraryPack(context, this.files)] : []),
+                ...(this.folders ? [filesPack(context, this.folders)] : []),
                 navigationPack(context, this.navigator(run)),
                 skill,
               ]

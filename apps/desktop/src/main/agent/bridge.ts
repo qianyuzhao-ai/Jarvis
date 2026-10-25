@@ -21,6 +21,8 @@ import { approvalResponseSchema } from '../../shared/agent-approval';
 import { undoRequestSchema } from '../../shared/agent-ledger';
 import { concurrencySchema, replyModeSchema } from '../../shared/agent-settings';
 import { openTargetsSchema } from '../../shared/agent-targets';
+import { folderId } from '../../shared/agent-files';
+import { LocalFiles } from './local-files';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
 import { writingFiles } from '../writing/bridge';
@@ -45,7 +47,9 @@ export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
   const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
+  const folders = new LocalFiles(join(root, 'folders.json'), join(root, 'file-snapshots'));
   service = new AgentService(config, store, root, {
+    folders,
     projects: projectStore(),
     generation: generationRunner(),
     files: writingFiles(),
@@ -57,6 +61,7 @@ export async function registerAgent() {
     await service.ledger.initialize(store.records.map((r) => r.view.id));
     await service.skills.initialize();
     await service.loadSettings();
+    await folders.initialize();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
   }
@@ -137,6 +142,19 @@ export async function registerAgent() {
     'agent:settings': () => service.settings.get(),
     'agent:set-concurrency': (r) => service.setConcurrency(concurrencySchema.parse(r)),
     'agent:set-reply-mode': (r) => service.setReplyMode(replyModeSchema.parse(r)),
+    'agent:folders': () => folders.list(),
+    'agent:add-folder': async (_r, owner) => {
+      const contents = trusted.get(owner)?.contents;
+      const window = contents && BrowserWindow.fromWebContents(contents);
+      if (!window) throw new Error('当前窗口不可用');
+      const result = await dialog.showOpenDialog(window, {
+        title: '授权 Jarvis 访问的文件夹',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (result.canceled || !result.filePaths[0]) return null;
+      return folders.add(result.filePaths[0]);
+    },
+    'agent:remove-folder': (r) => folders.remove(folderId.parse(r)),
     'agent:steer': (r, owner) => {
       const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
       return service.steer(v.sessionId, v.messageId, owner);

@@ -45,7 +45,7 @@ const cardStatus: Record<ResultCard['status'], string> = {
   needs_user: '需你处理',
 };
 import type { TabView } from './tabs';
-type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
+type Section = 'general' | 'services' | 'models' | 'plugins' | 'files' | 'about';
 export function ShellSidebar({
   kind,
   section,
@@ -199,6 +199,7 @@ export function ShellSidebar({
                 { id: 'models', name: '模型', Icon: Cpu },
                 { id: 'services', name: '内网地址', Icon: Plug },
                 { id: 'plugins', name: '插件', Icon: Puzzle },
+                { id: 'files', name: '文件与权限', Icon: Folder },
               ] as const
             ).map(({ id, name, Icon }) => (
               <SidebarItem
@@ -212,9 +213,6 @@ export function ShellSidebar({
                 {name}
               </SidebarItem>
             ))}
-            <SidebarItem disabled icon={<Folder />}>
-              文件与权限
-            </SidebarItem>
             <SidebarItem disabled icon={<Database />}>
               数据与隐私
             </SidebarItem>

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { writingScopeSchema } from './writing-agent';
 import { projectOpSchema } from './project';
+import { fileOpSchema } from './agent-files';
 
 /**
  * One round's reversible change to one target. `id` is the transaction ID the data owner (canvas
@@ -11,7 +12,7 @@ export const ledgerEntrySchema = z
     id: z.string().uuid(),
     sessionId: z.string().uuid(),
     runId: z.string().uuid(),
-    pack: z.enum(['canvas', 'writing']),
+    pack: z.enum(['canvas', 'writing', 'files']),
     projectId: z.string().uuid().optional(),
     writingScope: writingScopeSchema.optional(),
     summary: z.string().max(500),
@@ -21,6 +22,8 @@ export const ledgerEntrySchema = z
      */
     inverse: z.array(projectOpSchema).max(5000).optional(),
     afterRevision: z.string().max(100).optional(),
+    /** For local file changes: the round's operations, undone in reverse order. */
+    fileOps: z.array(fileOpSchema).max(200).optional(),
     status: z.enum(['applied', 'undone']),
     createdAt: z.number(),
     updatedAt: z.number(),
@@ -30,6 +33,7 @@ export const ledgerEntrySchema = z
 export const undoRequestSchema = z.union([
   z.object({ transactionId: z.string().uuid(), projectId: z.string().uuid() }).strict(),
   z.object({ transactionId: z.string().uuid(), writingScope: writingScopeSchema }).strict(),
+  z.object({ transactionId: z.string().uuid(), files: z.literal(true) }).strict(),
 ]);
 export type LedgerEntry = z.infer<typeof ledgerEntrySchema>;
 export type UndoRequest = z.infer<typeof undoRequestSchema>;
