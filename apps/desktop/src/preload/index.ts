@@ -2,6 +2,7 @@ import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
 import type { AgentEvent } from '../shared/agent';
+import type { ApprovalRequest } from '../shared/agent-approval';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
 
@@ -49,6 +50,14 @@ const desktop: DesktopInfo = {
         listener(command);
       ipcRenderer.on('agent:writing-command', handle);
       return () => ipcRenderer.removeListener('agent:writing-command', handle);
+    },
+    listApprovals: () => ipcRenderer.invoke('agent:approvals'),
+    respondApproval: (input) => ipcRenderer.invoke('agent:respond-approval', input),
+    onApprovals: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, requests: ApprovalRequest[]) =>
+        listener(requests);
+      ipcRenderer.on('agent:approvals', handle);
+      return () => ipcRenderer.removeListener('agent:approvals', handle);
     },
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
     completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),

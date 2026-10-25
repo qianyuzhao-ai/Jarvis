@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A0-2：策略引擎与确认通道（2026-10-25）
+
+- 开工前再次合入 origin/main（`8f7610f`，PR #81；engineering.md 顶部记录冲突，保留双方）。
+- `kernel/policy.ts`：`createPolicy(packs, approve)` 以 extensionFactory（`jarvis-policy`，hidden）注册 `tool_call` 处理，`noExtensions` 仍关闭外部扩展。不在本会话能力包里的工具直接 block；`read` / `reversible` 放行；`confirm` 调用 approver，拒绝/超时以 block reason 返回给模型（“用户拒绝了此操作……”“未在时限内确认……”），没有 approver 时也 block。原“创建会话后比对工具名”校验保留为第二道防线。
+- `kernel/approval.ts`：`ApprovalQueue` 按窗口（owner）保存待确认请求，5 分钟超时为 expired，respond 校验 owner，AbortSignal、`cancelSession`（停止对话）、`cancelOwner`（窗口关闭/导航）都按拒绝处理；每次变化回调 owner。PackTool 新增可选 `describe(input)` 生成确认说明。
+- service：每轮 approver 在等待确认期间暂停 120 秒请求超时，返回后重新计时；拒绝/超时写一条活动记录（“已拒绝 · 工具名”“确认超时，未执行 · 工具名”）。`openAgent` 新增第 7 个参数 `approve`。
+- IPC：`agent:approvals`（取本窗口列表）、`agent:respond-approval`（zod 校验 `{ id, approved }`），主进程变化时向该窗口推送 `agent:approvals`；preload 增加 `listApprovals` / `respondApproval` / `onApprovals`，仍只接受可信窗口主框架。渲染层 `features/agent/AgentApprovals.tsx` 挂在 App 的 ConfirmProvider 内，列表以主进程为准，逐条用 AlertDialog 组件显示，默认焦点“拒绝”，Esc 为拒绝。目前没有任何生产工具声明 `confirm`，弹窗要到 A4/A5 才会实际出现。
+- 新测试：`agent-policy.spec`（队列三条路径与 owner/停止/关闭、策略判定、Pi 实际会话里 confirm 工具只在允许后执行且拒绝/超时原因进入模型请求）3 例；`agent-approval.spec`（实窗：主进程推送列表驱动弹窗、默认拒绝焦点、允许后显示下一条、Esc 关闭、列表清空即关闭）1 例。
+
 ## Agent 架构改造 A0-1：能力包骨架（2026-10-25）
 
 - 用户要求作业分支 `ccr-1c636605-o0pprj` 先合入最新 origin/main（v0.3.0，`c393e46`，无冲突，合并提交 `4aeb30c`），再开始 A0-1。方案见 [agent-architecture.md](agent-architecture.md) 与方案文档“改造方案与分批阶段”标签页。

@@ -2,7 +2,7 @@
 
 最后更新：2026-10-25
 
-来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0-1 已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0-1、A0-2 已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
 
 详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。
 
@@ -101,3 +101,4 @@ main/agent/
 - 2026-10-24：读取用户方案文档与现有 Agent 代码（service / runtime / store / brokers / tools / 画布存储 / 生成 / 写作），核对 Pi SDK 1.3.0 类型定义，形成本分析；未修改代码。
 - 2026-10-25：用户确认四项决策；在方案文档新增标签页“改造方案与分批阶段”，写入目标架构（内核模块、线程与会话 v2、主分段、子 Agent 与卡片、能力包、策略、账本、调度与设置项、渲染层）与 A0-1 至 A6 分批表；已回读核对正文与 4 个表格内容一致。
 - 2026-10-25：A0-1 完成。实际接口与文档方案的差异：能力包按“每轮工厂函数”实现（`canvasPack(ctx, snapshot, broker)` 等直接返回 `{ id, prompt, tools }`），而不是文档中的 `prompt(ctx)` / `tools(ctx)` 方法；首页提示词放在 `packs/chat.ts`；`skillsPack` 额外返回 `userPrompt`。
+- 2026-10-25：A0-2 完成。确认弹窗复用 AlertDialog，没有新增 Figma 画面；用户未回答“是否先做 Figma 设计”，按“复用既有已设计组件”处理并记入 design.md。等待确认期间暂停 120 秒请求超时（文档未写，属实现细节）。

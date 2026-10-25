@@ -7,7 +7,11 @@ import type { ChatMessage } from '../../../shared/agent';
  */
 export type ToolRisk = 'read' | 'reversible' | 'confirm';
 
-export type PackTool = ToolDefinition & { risk: ToolRisk };
+export type PackTool = ToolDefinition & {
+  risk: ToolRisk;
+  /** Plain-language summary of a call, shown when the user is asked to confirm it. */
+  describe?: (input: Record<string, unknown>) => string;
+};
 
 /** What a pack's tools need from the round they run in. */
 export interface ToolContext {

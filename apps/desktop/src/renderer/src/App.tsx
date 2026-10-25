@@ -16,6 +16,7 @@ import {
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
+import { AgentApprovals } from './features/agent/AgentApprovals';
 import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
@@ -641,6 +642,7 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <ConfirmProvider>
         <Workbench initial={initial} />
+        <AgentApprovals />
         <Toaster />
       </ConfirmProvider>
     </MotionConfig>

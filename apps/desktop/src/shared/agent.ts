@@ -6,6 +6,7 @@ import {
 } from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
+import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   baseUrlSchema,
@@ -132,6 +133,10 @@ export interface AgentBridge {
   claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
   onWritingCommand(listener: (command: WritingCommand) => void): () => void;
+  /** Tool calls in this window's rounds that wait for the user's decision. */
+  listApprovals(): Promise<AgentResult<ApprovalRequest[]>>;
+  respondApproval(input: ApprovalResponse): Promise<AgentResult<void>>;
+  onApprovals(listener: (requests: ApprovalRequest[]) => void): () => void;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;

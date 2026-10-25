@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ThinkingLevel } from '../../shared/models';
 import type { CapabilityPack } from './kernel/capability';
+import { createPolicy, type Approver } from './kernel/policy';
 import type { ResolvedModel } from './model-store';
 import { chatPack } from './packs/chat';
 
@@ -14,7 +15,8 @@ const ANTHROPIC_AUTO_MAX_TOKENS = 8192;
 
 /**
  * Opens a Pi session whose system prompt and tools come only from `packs`; built-in tools,
- * extensions, skills discovery and context files stay off.
+ * external extensions, skills discovery and context files stay off. Every tool call passes the
+ * policy first, which asks `approve` about `confirm` tools.
  */
 export async function openAgent(
   root: string,
@@ -23,6 +25,7 @@ export async function openAgent(
   transient = false,
   packs: CapabilityPack[] = [chatPack()],
   thinkingLevel: ThinkingLevel = 'off',
+  approve?: Approver,
 ) {
   const tools = packs.flatMap((pack) => pack.tools);
   const sdk = await import('@earendil-works/pi-coding-agent');
@@ -86,6 +89,9 @@ export async function openAgent(
     agentDir: root,
     settingsManager: settings,
     noExtensions: true,
+    extensionFactories: [
+      { name: 'jarvis-policy', factory: createPolicy(packs, approve).factory, hidden: true },
+    ],
     disabledBuiltinExtensions: ['mcp', 'codemode'],
     noSkills: true,
     noPromptTemplates: true,

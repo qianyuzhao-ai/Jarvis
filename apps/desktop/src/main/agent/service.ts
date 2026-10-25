@@ -26,6 +26,8 @@ import { SkillStore } from './skill-store';
 import { JsonFile } from './json-file';
 import { skillsPack } from './packs/skills';
 import { chatPack } from './packs/chat';
+import { ApprovalQueue } from './kernel/approval';
+import type { Approver } from './kernel/policy';
 import { skillCommand } from '../../shared/agent-skills';
 import type { StoredSkill } from './skill-store';
 
@@ -33,6 +35,7 @@ export class AgentService {
   readonly skills: SkillStore;
   readonly canvas = new CanvasBroker();
   readonly writing = new WritingBroker();
+  readonly approvals = new ApprovalQueue();
   private seq = 0;
   private active: {
     id: string;
@@ -371,6 +374,36 @@ export class AgentService {
         : writing
           ? writingPack(context, writing, this.writing)
           : chatPack();
+      const arm = () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          output.error = '请求超时，已保留部分回复';
+          run.cancelled = true;
+          void run.sdk?.abort();
+        }, 120000);
+      };
+      // Waiting for the user does not count toward the round's time limit.
+      const approve: Approver = async ({ tool, input, signal }) => {
+        clearTimeout(timeout);
+        const outcome = await this.approvals.request(
+          run.owner,
+          {
+            sessionId: run.sessionId,
+            toolName: tool.name,
+            title: tool.label.slice(0, 500),
+            detail: (tool.describe?.(input) ?? JSON.stringify(input)).slice(0, 2000),
+          },
+          signal,
+        );
+        if (outcome !== 'approved') {
+          const label = `${outcome === 'denied' ? '已拒绝' : '确认超时，未执行'} · ${tool.label}`;
+          output.activities ??= [];
+          output.activities.push({ id: randomUUID(), label: label.slice(0, 500), files: [] });
+          this.changed();
+        }
+        if (!run.cancelled) arm();
+        return outcome;
+      };
       const runtime = await openAgent(
         this.root,
         run.sessionId,
@@ -378,17 +411,14 @@ export class AgentService {
         false,
         [space, skill],
         thinking,
+        approve,
       );
       run.sdk = runtime.session;
       if (run.cancelled) {
         output.status = 'cancelled';
         return;
       }
-      timeout = setTimeout(() => {
-        output.error = '请求超时，已保留部分回复';
-        run.cancelled = true;
-        void runtime.session.abort();
-      }, 120000);
+      arm();
       checkpoint = setInterval(() => {
         void this.store.save().catch(() => {
           this.persistenceError = '会话保存失败，请重启应用后检查本地存储';
@@ -467,10 +497,12 @@ export class AgentService {
     if (!run || run.id !== id) return;
     if (owner !== undefined && run.owner !== owner) throw new Error('不能停止其他窗口的请求');
     run.cancelled = true;
+    this.approvals.cancelSession(run.sessionId);
     await run.sdk?.abort();
     await this.completion;
   }
   async cancelOwner(owner: number) {
+    this.approvals.cancelOwner(owner);
     if (this.active?.owner === owner) await this.cancel(this.active.id, owner);
     if (this.testRun?.owner === owner) {
       this.testRun.cancelled = true;

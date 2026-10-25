@@ -17,6 +17,7 @@ import { ModelStore } from './model-store';
 import { AgentService } from './service';
 import { AgentStore } from './store';
 import { canvasReplySchema } from '../../shared/canvas-agent';
+import { approvalResponseSchema } from '../../shared/agent-approval';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -53,6 +54,11 @@ export async function registerAgent() {
     if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
       throw new Error('画布窗口已关闭');
     target.contents.send('agent:canvas-command', command);
+  };
+  service.approvals.onChange = (owner) => {
+    const target = trusted.get(owner);
+    if (target && !target.contents.isDestroyed() && target.contents.getURL() === target.url)
+      target.contents.send('agent:approvals', service.approvals.list(owner));
   };
   service.writing.dispatch = (owner, command) => {
     const target = trusted.get(owner);
@@ -106,6 +112,11 @@ export async function registerAgent() {
     'agent:claim-writing': (r, owner) => service.writing.claim(owner, agentId.parse(r)),
     'agent:complete-writing': (r, owner) =>
       service.writing.complete(owner, writingReplySchema.parse(r)),
+    'agent:approvals': (_r, owner) => service.approvals.list(owner),
+    'agent:respond-approval': (r, owner) => {
+      const v = approvalResponseSchema.parse(r);
+      service.approvals.respond(owner, v.id, v.approved);
+    },
     'agent:claim-canvas': (r, owner) => service.canvas.claim(owner, agentId.parse(r)),
     'agent:complete-canvas': (r, owner) =>
       service.canvas.complete(owner, canvasReplySchema.parse(r)),
