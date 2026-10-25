@@ -2,6 +2,16 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A2a：主进程 ProjectStore（2026-10-25）
+
+- origin/main 无新提交。本批只建存储模块与测试，尚未接入应用启动、IPC 或画布界面（A2b 负责迁移与客户端化，A2c 让 Agent 直连）。
+- `shared/project.ts`：主进程项目格式 `storedProjectSchema`（与渲染进程 Project 字段一致，id 必须为 UUID；参考文件不内联 Blob，节点只存 `{ id, name, type, mimeType, size, uploadedUrl?, uploadedFor? }`，id 限 `[A-Za-z0-9_-]`；节点/连线 ID 不重复、连线两端必须存在；保留 agentEdits 以便 A2b 迁移）与操作 `projectOpSchema`：add_node、update_node（data 合并 + unset 删除，键名限小写开头的标识符，zod 会丢弃 `__proto__`）、move_node、remove_node（连带删除相连连线）、connect、disconnect、set_project（name/viewport/minimap/dots/snap）、set_agent_edits；每次 1–500 个。
+- `main/projects/apply-ops.ts`：在副本上依次执行并生成逆操作（按需倒序执行即可完全恢复，供 A2c 账本回滚）。
+- `main/projects/project-store.ts`：`projects/<id>/project.json` = `{ format: 1, version, project }`，参考文件在 `projects/<id>/blobs/<refId>`；写入先写同目录临时文件再 rename；启动时逐个读取并 zod 校验，读不了或 ID 与目录不符的项目列入 skipped、原文件不动，临时文件残留忽略。`applyOps(projectId, baseVersion, ops, { touch })`：版本不符抛 `ProjectConflictError(当前版本)`；结果整体校验并要求所有参考（含 agentEdits 中的）都有文件，任何失败都不落盘；成功后 version+1、默认更新 updatedAt、触发 `onChange`、返回 `{ version, project, inverse }`。同一项目的写入按调用顺序串行（短时锁），不同项目并行。另有 create（可带参考文件）、get、list（按 updatedAt 倒序）、putBlob（不覆盖已有文件）、readBlob、remove（逐个删除文件后删空目录）。未做参考文件回收：撤销可能需要已删除节点的参考文件，A2c 结合账本再定。
+- A2b 迁移注意：项目名超 100 字、提示词超 32000 字、非 UUID 项目 ID 不符合主进程格式，迁移时需处理；参考 Blob 需转为 blob 文件。
+- 测试：新增 `project-store.spec` 6 例（读写与重启恢复、参考文件读取、删除；损坏/ID 不符文件跳过且不改动、临时文件忽略；旧版本冲突、各类非法结果与缺失参考不落盘且不通知；逆操作完全恢复；20 个同基版本并发写只成功 1 个、链式版本依次成功、不同项目并行、重启后版本正确；现有画布 createProject/createMedia 形状通过主进程格式校验）。
+- 验证：check、build 通过；完整实窗 153 例中 151 通过，仅 ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）。
+
 ## Agent 架构改造 A1b-3：handoff 与委派（2026-10-25）
 
 - origin/main 无新提交。新增 `packs/handoff.ts`（子 Agent 的 `handoff_to_main`：request 用户原话、context、expected；每轮最多 2 次；回复活动记“已交给 Jarvis 处理”，工具结果返回 handoffId 与目标分段）与 `packs/agent-control.ts`（主 Agent 的 list_agents / read_result_card / read_agent_transcript（每段 8000 字，next 续读）/ delegate_task / message_agent / stop_agent，均为 risk read）。主分段能力包 = chat + agent-control + skills；画布/写作 = 空间包 + report + handoff + skills。
