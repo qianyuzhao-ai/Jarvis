@@ -26,7 +26,12 @@ test('window shell opens, deduplicates, travels, closes and restores cross-space
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('第一画布');
-    await page.getByRole('button', { name: '更多 第一画布' }).click();
+    await page
+      .getByTestId('project-row')
+      .filter({ hasText: '第一画布' })
+      .locator('..')
+      .getByRole('button', { name: '更多', exact: true })
+      .click();
     await page.getByRole('menuitem', { name: '重命名', exact: true }).click();
     await page.getByLabel('新名称', { exact: true }).fill('侧栏重命名');
     await page.getByRole('button', { name: '保存名称', exact: true }).click();

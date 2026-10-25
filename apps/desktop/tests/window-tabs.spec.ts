@@ -50,6 +50,21 @@ test('writing identity includes its root and navigation cuts only the active for
   expect(s.tabs[0]?.rootId).toBe('root-a');
 });
 
+test('deleting a project removes its open tab and back/forward history in other tabs', () => {
+  let state = initialTabs();
+  state = openTabView(state, { kind: 'canvas', ref: 'deleted', title: 'Delete me' });
+  state = openTabView(state, { kind: 'canvas', ref: 'kept', title: 'Keep me' });
+  state = openTabView(state, { kind: 'canvas', ref: 'deleted', title: 'Delete me' }, true);
+  state = pruneTabs(state, (view) => view.kind !== 'canvas' || view.ref !== 'deleted');
+  expect(state.tabs).toHaveLength(1);
+  const tab = state.tabs[0]!;
+  expect(tab.ref).toBe('kept');
+  expect(tab.history.map((view) => view.ref)).toEqual([null, 'kept']);
+  expect(tab.cursor).toBe(1);
+  expect(travelTab(state, -1).tabs[0]?.ref).toBeNull();
+  expect(travelTab(travelTab(state, -1), 1).tabs[0]?.ref).toBe('kept');
+});
+
 test('restored tabs accept valid long document paths and reject duplicate identities', () => {
   let state = initialTabs();
   state = openTabView(state, {
