@@ -382,13 +382,22 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         '[data-testid="chat-message"][data-message-role="assistant"][data-status="failed"]',
       ),
     ).toContainText('你好🙂');
-    // Home chat streams and only carries the main Agent's sub-agent tools; no file or shell tools.
+    // Home chat streams and carries only the main Agent's tools for sub-agents, writing
+    // documents and navigation; no general file or shell tools.
     const control = [
+      'create_document',
+      'create_project',
       'delegate_task',
       'list_agents',
+      'list_documents',
+      'list_writing_folders',
       'message_agent',
+      'open_document',
+      'open_project',
       'read_agent_transcript',
+      'read_document',
       'read_result_card',
+      'search_documents',
       'stop_agent',
     ];
     expect(

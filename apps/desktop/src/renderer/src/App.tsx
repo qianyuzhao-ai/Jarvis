@@ -23,6 +23,7 @@ import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
 import { loadWorkspace } from './features/creation/workspace-load';
 import type { ProjectRecord } from '../../shared/project';
+import type { NavigationTarget } from '../../shared/agent';
 import { createProject, type Project, type WorkspaceData } from './features/creation/types';
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
@@ -155,6 +156,41 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       tabs: s.tabs.map((t) => (t.id === s.activeId ? { ...t, rightPanelOpen: true } : t)),
     }));
   }
+  /**
+   * Opens what the main Agent asked for, a project (possibly just created) or a document, in a new
+   * tab so the conversation's tab stays where it is.
+   */
+  const navigate = useRef<(target: NavigationTarget) => Promise<void>>(async () => {});
+  navigate.current = async (target) => {
+    if (target.kind === 'canvas') {
+      // A project the Agent just created reaches this window with the store's next push.
+      let project = getCurrent().projects.find((p) => p.id === target.projectId);
+      for (let i = 0; i < 30 && !project; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        project = getCurrent().projects.find((p) => p.id === target.projectId);
+      }
+      if (!project) return agent.setError('要打开的项目还没有同步到窗口，请稍后从项目列表打开');
+      await open(projectView(project), true);
+      return;
+    }
+    const root = writing.roots.find((r) => r.id === target.rootId);
+    if (!root) return agent.setError('没有这个写作文件夹');
+    if (writing.root?.id !== target.rootId) await writing.switchRoot(root);
+    const name = target.path.split('/').at(-1) ?? target.path;
+    await writing.openDocument({ kind: 'file', path: target.path, name });
+    await open({ kind: 'writing', ref: target.path, rootId: target.rootId, title: name }, true);
+  };
+  useEffect(
+    () =>
+      window.desktop?.agent.onNavigate((target) => {
+        void navigate
+          .current(target)
+          .catch((error: unknown) =>
+            agent.setError(error instanceof Error ? error.message : '打开失败'),
+          );
+      }),
+    [agent.setError],
+  );
   async function space(kind: TabView['kind']) {
     const recent = [...shell.current.current.tabs]
       .filter((t) => t.kind === kind)

@@ -53,6 +53,8 @@ export const storedMediaSchema = z
         remoteStatus: z.string().max(200).optional(),
         quotaPending: z.boolean().optional(),
         authRequired: z.boolean().optional(),
+        /** Started by the canvas Agent; the main process tracks it and writes its result. */
+        agent: z.boolean().optional(),
       })
       .strict()
       .optional(),

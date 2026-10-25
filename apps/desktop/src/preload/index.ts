@@ -1,7 +1,7 @@
 import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
-import type { AgentEvent, SessionEvent } from '../shared/agent';
+import type { AgentEvent, NavigationTarget, SessionEvent } from '../shared/agent';
 import type { ApprovalRequest } from '../shared/agent-approval';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
@@ -92,6 +92,12 @@ const desktop: DesktopInfo = {
         ipcRenderer.removeListener('agent:event', handle);
       };
     },
+    onNavigate: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: NavigationTarget) =>
+        listener(value);
+      ipcRenderer.on('agent:navigate', handle);
+      return () => ipcRenderer.removeListener('agent:navigate', handle);
+    },
   },
   models: {
     getSettings: () => ipcRenderer.invoke('models:settings'),
@@ -146,6 +152,7 @@ const desktop: DesktopInfo = {
     upload: (request) => ipcRenderer.invoke('generation:upload', request),
     start: (request) => ipcRenderer.invoke('generation:start', request),
     get: (requestId) => ipcRenderer.invoke('generation:get', requestId),
+    setAgentSettings: (settings) => ipcRenderer.invoke('generation:agent-settings', settings),
   },
   versions: {
     electron: process.versions.electron,

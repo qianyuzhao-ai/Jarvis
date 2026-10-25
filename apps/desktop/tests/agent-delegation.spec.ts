@@ -81,7 +81,7 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
   const projects = new ProjectStore(test.info().outputPath('projects'));
   await projects.initialize();
   await projects.create(storedForm({ ...project, name: '分镜项目' }).project);
-  const service = new AgentService(models, store, root, projects);
+  const service = new AgentService(models, store, root, { projects });
   const idle = () =>
     expect
       .poll(() => Object.keys(service.snapshot().snapshot.runs).length, { timeout: 15000 })

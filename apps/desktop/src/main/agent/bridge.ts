@@ -22,6 +22,8 @@ import { undoRequestSchema } from '../../shared/agent-ledger';
 import { concurrencySchema } from '../../shared/agent-settings';
 import { openTargetsSchema } from '../../shared/agent-targets';
 import { projectStore } from '../projects/bridge';
+import { generationRunner } from '../generation/bridge';
+import { writingFiles } from '../writing/bridge';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -43,7 +45,11 @@ export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
   const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
-  service = new AgentService(config, store, root, projectStore());
+  service = new AgentService(config, store, root, {
+    projects: projectStore(),
+    generation: generationRunner(),
+    files: writingFiles(),
+  });
   let initializationError = '';
   try {
     await config.initialize();
@@ -68,6 +74,14 @@ export async function registerAgent() {
     if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
       throw new Error('画布窗口已关闭');
     target.contents.send('agent:canvas-command', command);
+  };
+  // The window the round came from if it is still open, else any open window.
+  service.onNavigate = (owner, target) => {
+    const open = [...trusted.values()].filter(
+      ({ contents, url }) => !contents.isDestroyed() && contents.getURL() === url,
+    );
+    const chosen = open.find((w) => w === trusted.get(owner)) ?? open[0];
+    chosen?.contents.send('agent:navigate', target);
   };
   service.approvals.onChange = (owner) => {
     const target = trusted.get(owner);

@@ -38,7 +38,7 @@ export function agentControlPack(
       description,
       risk: 'read',
       executionMode: 'sequential',
-      parameters: z.toJSONSchema(schema) as ToolDefinition['parameters'],
+      parameters: z.toJSONSchema(schema, { io: 'input' }) as ToolDefinition['parameters'],
       async execute(_id, raw, signal) {
         if (signal?.aborted) throw new Error('操作已停止');
         let input: unknown;

@@ -37,7 +37,7 @@ export function writingPack(
       label: description,
       description,
       executionMode: 'sequential',
-      parameters: z.toJSONSchema(schema) as ToolDefinition['parameters'],
+      parameters: z.toJSONSchema(schema, { io: 'input' }) as ToolDefinition['parameters'],
       async execute(_id, raw, signal) {
         if (++calls > 20) throw new Error('本轮写作工具调用已达上限');
         if (signal?.aborted) throw new Error('操作已停止');

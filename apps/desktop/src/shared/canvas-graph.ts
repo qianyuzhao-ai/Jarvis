@@ -12,11 +12,16 @@ export type GraphNode = { id: string; position: { x: number; y: number } } & (
       data: MediaCore & {
         references: readonly { type: 'image' | 'video' | 'audio' }[];
         generation?: { status: string };
+        result?: { url: string };
       };
     }
   | {
       type: 'asset';
-      data: { kind: 'image' | 'video' | 'audio'; name: string; upload: { status: string } };
+      data: {
+        kind: 'image' | 'video' | 'audio';
+        name: string;
+        upload: { status: string; url?: string };
+      };
     }
 );
 export type Graph = {

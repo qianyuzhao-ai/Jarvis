@@ -110,9 +110,9 @@ void app
       ]),
     );
 
+    await registerProjects();
     await registerGeneration(join(app.getPath('userData'), 'generation-jobs.json'));
     await registerWriting();
-    await registerProjects();
     await registerAgent();
     registerUpdates(createWindow);
     registerAppearance();

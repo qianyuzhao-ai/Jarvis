@@ -66,11 +66,23 @@ export const agentSendSchema = z.object({
  */
 export const relaySourceSchema = z
   .object({
-    kind: z.enum(['handoff', 'notice', 'delegate', 'message']),
+    kind: z.enum(['handoff', 'notice', 'delegate', 'message', 'task']),
     sessionId: agentId,
     title: z.string().max(100),
   })
   .strict();
+/** A project or document the main Agent asks the window to show. */
+export const navigationTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('canvas'), projectId: z.string().uuid() }).strict(),
+  z
+    .object({
+      kind: z.literal('writing'),
+      rootId: z.string().min(1).max(64),
+      path: z.string().min(1).max(4096),
+    })
+    .strict(),
+]);
+export type NavigationTarget = z.infer<typeof navigationTargetSchema>;
 /** `queued`: a user message sent while its conversation was replying, not yet started. */
 export const agentStatus = z.enum([
   'running',
@@ -221,6 +233,8 @@ export interface AgentBridge {
   cancel(runId: string): Promise<AgentResult<void>>;
   copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   onEvent(listener: (event: AgentEvent) => void): () => void;
+  /** The main Agent asks this window to open a project or document. */
+  onNavigate(listener: (target: NavigationTarget) => void): () => void;
 }
 export function agentValue<T>(result: AgentResult<T>): T {
   if (!result.ok) throw new Error(result.error);

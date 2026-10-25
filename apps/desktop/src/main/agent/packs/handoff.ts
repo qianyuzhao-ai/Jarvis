@@ -27,7 +27,7 @@ export function handoffPack(
       '把超出本空间能力的请求交给 Jarvis 主 Agent：request 填用户原话，context 填完成它需要的事实（项目、文档、已做的事），expected 填用户期望的结果。交出后告诉用户已交给 Jarvis 处理，不要声称已完成。',
     risk: 'read',
     executionMode: 'sequential',
-    parameters: z.toJSONSchema(input) as ToolDefinition['parameters'],
+    parameters: z.toJSONSchema(input, { io: 'input' }) as ToolDefinition['parameters'],
     async execute(_id, raw, signal) {
       if (signal?.aborted || ++calls > 2) throw new Error('转交已停止或达到上限');
       const result = await handoff(input.parse(raw));

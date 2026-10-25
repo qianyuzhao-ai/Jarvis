@@ -22,6 +22,7 @@ const relayLabel: Record<NonNullable<ChatMessage['relay']>['kind'], string> = {
   notice: '空间任务状态',
   delegate: 'Jarvis 委派',
   message: 'Jarvis 的消息',
+  task: '生成任务',
 };
 
 export function ChatMessageItem({

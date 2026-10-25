@@ -2,6 +2,17 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A3：生成续跑、跨文档写作与导航（2026-10-25）
+
+- origin/main 无新提交。纯逻辑再下沉 shared：`shared/generation-refs.ts`（numberReferences、submittedPrompt、linkedReferences、validateReferences，渲染进程原模块改为转出）；canvas-graph 的结构类型补 result/url。
+- 生成：`main/generation/agent-runner.ts`（GenerationRunner）在主进程完成 Agent 发起的生成——校验节点（提示词、忙碌、结果未知时拒绝并请用户确认）、上游连线结果、从 ProjectStore 读参考文件上传（沿用 uploadedFor 摘要复用）、经 GenerationJobs 提交，每次状态变化写回节点（`generation.agent = true`，source `generation`，冲突重试 3 次）；任务结束后按会话 `onFinished` 一次，任务表存 `userData/agent-generation.json`，重启后已结束的任务补投递。GenerationJobs 新增 `onChange`。窗口把“内网地址”设置经新 IPC `generation:agent-settings` 推给主进程（不完整时视为未就绪）；渲染进程 useGeneration 不再轮询/改写 `agent` 标记的节点。主进程注册顺序改为 projects → generation → writing → agent。
+- 续跑：画布子 Agent 新增 generation 能力包（start_generation 每次 ≤4 个节点、risk reversible 不记账本；get_generation_status 只读），提示词要求发起后结束本轮。任务结束时 service 以 `relay.kind = 'task'`（界面“生成任务”）向该会话投递“生成任务完成通知”数据块并开始新一轮（无窗口亦可）；本轮结束仍有未完成任务时自动卡片为 waiting，waiting 不向主分段发状态通知。
+- 写作文档库：主 Agent 新增 writing-library 能力包（list_writing_folders、list_documents、search_documents 按文件名、read_document 每段 16000 字、create_document 新建并写入、同名不覆盖），只返回文件夹 ID 与名称，文件系统错误转成不含路径的说明；writing bridge 导出 `writingFiles()`。
+- 导航：主 Agent 新增 navigation 能力包（create_project 在 ProjectStore 新建空白项目、open_project、open_document），主进程经 `agent:navigate` 发给发起窗口（已关闭则任一窗口）；App 在新标签页打开（不替换对话标签），新建项目等待推送到达最多 3 秒，文档必要时先切换写作文件夹。
+- 修复：各能力包工具参数 JSON Schema 改用 `z.toJSONSchema(schema, { io: 'input' })`，否则带默认值的字段（offset、artifacts 等）被标为必填，SDK 拒绝省略它们的调用。
+- 测试：新增 `agent-generation.spec` 3 例（runner：设置未就绪、上游无结果、上传参考与 `<<<image_1>>>`、结果写回、视频带图片 URL、只上传一次、任务表清空、结果未知拒绝；“一句话”全流程：建项目→打开→委派→建图像/视频节点并连线→生成图像→完成通知唤醒→生成视频→完成→report_result→主分段通知，中间卡片 waiting 且未通知；写作汇总：列文件夹（不含绝对路径）、按名搜索、跨目录读取、分段续读、同名不覆盖且不泄露路径、新建汇总文档）与实窗 `agent-generation-ui.spec`（首页一句话→新标签打开项目→画布出现两节点、连线、图像结果、两节点均 ready→对话标签仍在并收到完成通知）；agent.spec 首页工具清单更新。
+- 验证：check、build 通过；完整实窗 165 例中 162 通过：ui-preview 2 例无 linux 基线（生成的 png 已逐个删除），agent.spec 因工具清单变化失败、更新后单独复跑通过；截图检查通过（视频节点“无法加载”为模拟服务未提供视频文件）。
+
 ## Agent 架构改造 A2c：画布 Agent 直连 ProjectStore（2026-10-25）
 
 - origin/main 无新提交。纯画布逻辑移到 shared：`shared/canvas-media.ts`（normalizeMedia 等泛型化、defaultMedia、mediaName；渲染进程 models.ts / types.ts 改为转出）、`shared/canvas-graph.ts`（acceptsSource、connectionIssue、snapshotOf，渲染进程项目与主进程项目结构都适用）。主进程新增 `main/projects/canvas-engine.ts`：graphRevision（节点+连线的 sha256，视口等设置不计）、canvasSnapshotOf、applyCanvasOperations、canvasChanges、applyAgentEdit（同一轮共用一个 agentEdits 条目，沿用原渲染进程逻辑）。删除渲染进程 canvas-commands.ts、canvas-changes.ts、prepareCanvasEdit、use-canvas-targets.ts 与 canvas `apply` / `snapshot` 命令及回执中的 snapshot/transactionId/changes 字段。

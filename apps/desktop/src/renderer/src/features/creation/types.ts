@@ -50,6 +50,7 @@ export const mediaSchema = z.object({
       remoteStatus: z.string().optional(),
       quotaPending: z.boolean().optional(),
       authRequired: z.boolean().optional(),
+      agent: z.boolean().optional(),
     })
     .optional(),
   result: z.object({ requestId: z.string(), url: z.string() }).optional(),

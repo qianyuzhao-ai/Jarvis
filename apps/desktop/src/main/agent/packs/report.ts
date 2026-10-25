@@ -23,7 +23,7 @@ export function reportPack(report: (card: ReportInput) => void): CapabilityPack 
       '写入本对话的结果卡片：状态（done 完成 / failed 失败 / needs_user 需要用户决定）、一两句事实结论、产出（节点 ID 或文档路径）与待用户确认的问题。主 Agent 通过卡片了解进展。',
     risk: 'read',
     executionMode: 'sequential',
-    parameters: z.toJSONSchema(input) as ToolDefinition['parameters'],
+    parameters: z.toJSONSchema(input, { io: 'input' }) as ToolDefinition['parameters'],
     async execute(_id, raw, signal) {
       if (signal?.aborted || ++calls > 3) throw new Error('结果汇报已停止或达到上限');
       const card = input.parse(raw);
