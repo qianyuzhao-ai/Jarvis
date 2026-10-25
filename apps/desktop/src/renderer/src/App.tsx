@@ -21,7 +21,8 @@ import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
-import { loadWorkspace } from './features/creation/storage';
+import { loadWorkspace } from './features/creation/workspace-load';
+import type { ProjectRecord } from '../../shared/project';
 import { createProject, type Project, type WorkspaceData } from './features/creation/types';
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
@@ -42,10 +43,10 @@ const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
 type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
-function Workbench({ initial }: { initial: WorkspaceData }) {
+function Workbench({ initial }: { initial: { data: WorkspaceData; records: ProjectRecord[] } }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
-  const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
+  const { data, update, commit, hold, getCurrent, status, saveError } = useWorkspace(initial);
   const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
   const agent = useAgent();
@@ -540,6 +541,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   )
                 }
                 onConfigureAgent={() => void openSettings('models')}
+                onHold={(held) => hold(project.id, held)}
                 agentBusy={agent.busyProjectIds.includes(project.id)}
                 theme={theme}
                 status={status}
@@ -629,7 +631,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   );
 }
 export function App() {
-  const [initial, setInitial] = useState<WorkspaceData | null>(null);
+  const [initial, setInitial] = useState<Awaited<ReturnType<typeof loadWorkspace>> | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;

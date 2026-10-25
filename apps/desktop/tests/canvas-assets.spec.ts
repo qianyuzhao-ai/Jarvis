@@ -1,3 +1,4 @@
+import { readProjects } from './helpers/workspace';
 import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
@@ -175,21 +176,9 @@ async function drop(page: Page, files: { name: string; mime: string; bytes: numb
   await expect(page.getByTestId('canvas-drop-hint')).toHaveCount(0);
   return { ...point, origin: { x: rect.x, y: rect.y } };
 }
-function readWorkspace(page: Page) {
-  return page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open('jarvis-workspace', 1);
-      request.onsuccess = () => resolve(request.result);
-    });
-    try {
-      return await new Promise<unknown>((resolve) => {
-        const request = db.transaction('workspace').objectStore('workspace').get('current');
-        request.onsuccess = () => resolve(request.result);
-      });
-    } finally {
-      db.close();
-    }
-  });
+/** The canvas project under test, as the main process saved it. */
+async function readWorkspace(page: Page) {
+  return { projects: (await readProjects(page)).filter((p) => p.name === '资源画布测试') };
 }
 
 test('file validation handles desktop MIME gaps, limits and legacy workspaces', () => {
@@ -282,7 +271,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
         .toBeGreaterThan(0);
     }
     await expect(page.getByRole('region', { name: /编辑面板/ })).toHaveCount(0);
-    const state = workspaceSchema.parse(await readWorkspace(page));
+    const state = await readWorkspace(page);
     const first = state.projects[0]!.nodes[0]!;
     expect(first.position).toEqual({
       x: Math.round((point.x - point.origin.x) / 24) * 24,
@@ -339,7 +328,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     ]);
     await expect(page.getByTestId('canvas-import-notice')).toContainText('只支持');
     await expect.poll(() => mock.calls.length).toBe(1);
-    const initial = workspaceSchema.parse(await readWorkspace(page));
+    const initial = await readWorkspace(page);
     expect(initial.projects[0]!.nodes[0]!.position).toEqual({
       x: Math.round((point.x - point.origin.x - viewport.x) / viewport.zoom / 24) * 24,
       y: Math.round((point.y - point.origin.y - viewport.y) / viewport.zoom / 24) * 24,
@@ -350,7 +339,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     mock.release();
     await expect
       .poll(async () => {
-        const state = workspaceSchema.parse(await readWorkspace(page));
+        const state = await readWorkspace(page);
         const node = state.projects[0]!.nodes[0];
         return node?.type === 'asset' ? node.data.upload.status : '';
       })

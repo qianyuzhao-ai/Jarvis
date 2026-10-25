@@ -5,7 +5,7 @@ import {
   blobId,
   projectOpsSchema,
   storedProjectSchema,
-  type ProjectOp,
+  type ProjectChange,
   type StoredProject,
 } from '../../shared/project';
 import { applyProjectOps } from './apply-ops';
@@ -18,6 +18,8 @@ const fileSchema = z
   })
   .strict();
 const MAX_BLOB = 100 * 1024 * 1024;
+/** Exactly what the file will hold: undefined fields dropped. */
+const plain = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
 const MAX_FILE = 32 * 1024 * 1024;
 
 /** A write based on an older version; `version` is the current one to re-read and retry from. */
@@ -27,12 +29,6 @@ export class ProjectConflictError extends Error {
   }
 }
 type Entry = { version: number; project: StoredProject; blobs: Set<string> };
-export type ProjectChange = {
-  projectId: string;
-  version: number;
-  ops: ProjectOp[];
-  project: StoredProject;
-};
 
 /**
  * Canvas projects in the main process, one directory each: `project.json` holds the version and
@@ -88,8 +84,8 @@ export class ProjectStore {
     return { version: entry.version, project: structuredClone(entry.project) };
   }
   /** Adds a project at version 1 together with the reference files its nodes point to. */
-  async create(input: StoredProject, blobs = new Map<string, Uint8Array>()) {
-    const project = storedProjectSchema.parse(input);
+  async create(input: StoredProject, blobs = new Map<string, Uint8Array>(), source?: string) {
+    const project = storedProjectSchema.parse(plain(input));
     return this.locked(project.id, async () => {
       if (this.entries.has(project.id)) throw new Error('项目已存在');
       for (const [id, bytes] of blobs) this.checkBlob(id, bytes);
@@ -99,6 +95,12 @@ export class ProjectStore {
         await this.writeAtomic(join(this.blobDir(project.id), id), bytes);
       await this.writeProject(project.id, 1, project);
       this.entries.set(project.id, { version: 1, project, blobs: names });
+      this.onChange({
+        projectId: project.id,
+        version: 1,
+        project: structuredClone(project),
+        source,
+      });
       return { version: 1 };
     });
   }
@@ -110,7 +112,7 @@ export class ProjectStore {
     id: string,
     baseVersion: number,
     input: unknown,
-    { touch = true }: { touch?: boolean } = {},
+    { touch = true, source }: { touch?: boolean; source?: string } = {},
   ) {
     const ops = projectOpsSchema.parse(input);
     return this.locked(id, async () => {
@@ -118,14 +120,13 @@ export class ProjectStore {
       if (entry.version !== baseVersion) throw new ProjectConflictError(entry.version);
       const applied = applyProjectOps(entry.project, ops);
       if (touch) applied.project.updatedAt = Date.now();
-      const project = storedProjectSchema.parse(applied.project);
+      const project = storedProjectSchema.parse(plain(applied.project));
       this.checkReferences(project, entry.blobs);
       const version = entry.version + 1;
       await this.writeProject(id, version, project);
       entry.version = version;
       entry.project = project;
-      const change = { projectId: id, version, ops, project: structuredClone(project) };
-      this.onChange(change);
+      this.onChange({ projectId: id, version, project: structuredClone(project), source });
       return { version, project: structuredClone(project), inverse: applied.inverse };
     });
   }
@@ -145,7 +146,7 @@ export class ProjectStore {
     return readFile(join(this.blobDir(id), ref));
   }
   /** Deletes a project's files one by one, then its directories. */
-  async remove(id: string) {
+  async remove(id: string, source?: string) {
     return this.locked(id, async () => {
       const entry = this.entry(id);
       this.entries.delete(id);
@@ -153,6 +154,7 @@ export class ProjectStore {
       await rmdir(this.blobDir(id)).catch(() => {});
       await unlink(this.file(id));
       await rmdir(join(this.dir, id)).catch(() => {});
+      this.onChange({ projectId: id, version: entry.version + 1, project: null, source });
     });
   }
   private entry(id: string) {

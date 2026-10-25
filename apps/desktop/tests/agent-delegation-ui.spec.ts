@@ -1,28 +1,20 @@
+import { readProjects } from './helpers/workspace';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
-import type { WorkspaceData } from '../src/renderer/src/features/creation/types';
 import { addRelayModel } from './helpers/model-setup';
 
 type Message = { role: string; content: unknown };
 
+/** The projects as the main process saved them, the project under test first. */
 async function workspace(page: Page) {
-  return page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open('jarvis-workspace', 1);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-    try {
-      return await new Promise<WorkspaceData>((resolve) => {
-        const r = db.transaction('workspace').objectStore('workspace').get('current');
-        r.onsuccess = () => resolve(r.result);
-      });
-    } finally {
-      db.close();
-    }
-  });
+  const projects = await readProjects(page);
+  return {
+    projects: [...projects].sort(
+      (a, b) => Number(b.name === '分镜项目') - Number(a.name === '分镜项目'),
+    ),
+  };
 }
 
 test('the home Agent delegates to a project open in a tab, which edits it and reports back', async () => {

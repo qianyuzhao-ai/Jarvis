@@ -71,6 +71,8 @@ type Props = {
   onChange: (update: (project: Project) => Project) => void;
   onCommit: (update: (project: Project) => Project) => Promise<void>;
   onConfigureAgent: () => void;
+  /** Called with true when a drag starts and false when it ends; the drop is saved once. */
+  onHold?: (held: boolean) => void;
   agentBusy: boolean;
   theme: 'light' | 'dark';
   status: string;
@@ -87,6 +89,7 @@ function CanvasContent({
   onChange,
   onCommit,
   onConfigureAgent,
+  onHold,
   theme,
   status,
   onGenerate,
@@ -541,6 +544,10 @@ function CanvasContent({
               }}
               defaultViewport={project.viewport}
               onMoveEnd={(_, v) => patch({ viewport: v })}
+              onNodeDragStart={() => onHold?.(true)}
+              onNodeDragStop={() => onHold?.(false)}
+              onSelectionDragStart={() => onHold?.(true)}
+              onSelectionDragStop={() => onHold?.(false)}
               onNodeClick={(event, n) => {
                 if (connectingIds) {
                   connectTo(n.id);

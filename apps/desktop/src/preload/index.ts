@@ -5,6 +5,7 @@ import type { AgentEvent, SessionEvent } from '../shared/agent';
 import type { ApprovalRequest } from '../shared/agent-approval';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
+import type { ProjectChange } from '../shared/project';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
@@ -104,6 +105,22 @@ const desktop: DesktopInfo = {
     removeProvider: (id) => ipcRenderer.invoke('models:remove-provider', id),
     setDefaultModel: (id) => ipcRenderer.invoke('models:default', id),
     probeVision: (id) => ipcRenderer.invoke('models:probe-vision', id),
+  },
+  projects: {
+    migrated: () => ipcRenderer.invoke('projects:migrated'),
+    migrate: (input) => ipcRenderer.invoke('projects:migrate', input),
+    list: () => ipcRenderer.invoke('projects:list'),
+    get: (id) => ipcRenderer.invoke('projects:get', id),
+    readBlob: (input) => ipcRenderer.invoke('projects:read-blob', input),
+    putBlob: (input) => ipcRenderer.invoke('projects:put-blob', input),
+    create: (input) => ipcRenderer.invoke('projects:create', input),
+    apply: (input) => ipcRenderer.invoke('projects:apply', input),
+    remove: (input) => ipcRenderer.invoke('projects:remove', input),
+    onChange: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, change: ProjectChange) => listener(change);
+      ipcRenderer.on('projects:changed', handle);
+      return () => ipcRenderer.removeListener('projects:changed', handle);
+    },
   },
   writing: {
     getRoots: () => ipcRenderer.invoke('writing:roots'),

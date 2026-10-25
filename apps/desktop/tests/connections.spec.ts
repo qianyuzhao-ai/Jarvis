@@ -1,5 +1,12 @@
+import { seedWorkspace } from './helpers/workspace';
 import { TaskService } from './helpers/task-service';
-import { _electron as electron, expect as baseExpect, test, type Page } from '@playwright/test';
+import {
+  _electron as electron,
+  expect as baseExpect,
+  test,
+  type ElectronApplication,
+  type Page,
+} from '@playwright/test';
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -143,7 +150,7 @@ test('marquee selection keeps the editor closed and connects selected images to 
   const app = await launch();
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  const mock = await fixture(page);
+  const mock = await fixture(app, page);
   try {
     const first = await node(page, mock.ids.imageAsset).boundingBox();
     const last = await node(page, mock.ids.imageB).boundingBox();
@@ -170,7 +177,7 @@ test('marquee selects half-covered nodes and ignores connected edges in both dir
   const app = await launch();
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  const mock = await fixture(page);
+  const mock = await fixture(app, page);
   try {
     await connect(page, mock.ids.imageAsset, mock.ids.imageA);
     await clickBlankPane(page);
@@ -221,7 +228,7 @@ test('mixed media selection connects to video and downloads image, audio and vid
   const app = await launch();
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  const mock = await fixture(page);
+  const mock = await fixture(app, page);
   try {
     for (const [id, name] of [
       [mock.ids.imageAsset, '新图片'],
@@ -351,7 +358,7 @@ async function launch() {
     ),
   });
 }
-async function fixture(page: Page, imageName = 'source.png') {
+async function fixture(app: ElectronApplication, page: Page, imageName = 'source.png') {
   const calls: Record<string, unknown>[] = [];
   const video = Buffer.from(
     await page.evaluate(async () => {
@@ -510,19 +517,7 @@ async function fixture(page: Page, imageName = 'source.png') {
       audioUploadUrl: '',
     },
   };
-  await page.evaluate(async (workspace) => {
-    const db = await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open('jarvis-workspace', 1);
-      request.onsuccess = () => resolve(request.result);
-    });
-    await new Promise<void>((resolve) => {
-      const tx = db.transaction('workspace', 'readwrite');
-      tx.objectStore('workspace').put(workspace, 'current');
-      tx.oncomplete = () => resolve();
-    });
-    db.close();
-  }, workspace);
-  await page.reload();
+  await seedWorkspace(app, page, workspace);
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   await page.getByTestId('project-row').filter({ hasText: '连线验证' }).click();
   return {
@@ -570,7 +565,7 @@ test('left-to-right ports persist edges, highlight only selected paths and keep 
   const app = await launch();
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  const mock = await fixture(page);
+  const mock = await fixture(app, page);
   try {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -700,7 +695,7 @@ test('connected asset and generated URLs enter the request without reuploading s
   const app = await launch();
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  const mock = await fixture(page);
+  const mock = await fixture(app, page);
   try {
     const { ids, base } = mock;
     await connect(page, ids.imageAsset, ids.imageA);
@@ -745,7 +740,7 @@ test('connected references preview upstream media and keep long mention rows on 
   const page = await app.firstWindow();
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   const longName = 'Apple风格飞船驾驶舱 v2（全息影像·面部虚化·超长文件名称参考图）.png';
-  const mock = await fixture(page, longName);
+  const mock = await fixture(app, page, longName);
   try {
     const { ids } = mock;
     await node(page, ids.video).click({ position: { x: 30, y: 30 } });

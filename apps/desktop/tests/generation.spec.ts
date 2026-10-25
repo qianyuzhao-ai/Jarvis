@@ -1,3 +1,4 @@
+import { seedWorkspace } from './helpers/workspace';
 import { recordVideo } from './helpers/record-video';
 import { createServer } from 'node:http';
 import { resolve } from 'node:path';
@@ -566,33 +567,16 @@ test('Agent-created image and video nodes upload, generate through Electron and 
     let page = await app.firstWindow();
     mock.setVideo(Buffer.from(await page.evaluate(recordVideo)));
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).waitFor();
-    await page.evaluate(
-      async (workspace) => {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open('jarvis-workspace', 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        await new Promise<void>((resolve, reject) => {
-          const tx = db.transaction('workspace', 'readwrite');
-          tx.objectStore('workspace').put(workspace, 'current');
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-        db.close();
+    await seedWorkspace(app, page, {
+      ...emptyWorkspace,
+      projects: [project],
+      settings: {
+        reqFrom: 'agent-test',
+        generateUrl: mock.base + '/generate',
+        imageUploadUrl: mock.base + '/upload',
+        audioUploadUrl: mock.base + '/upload-audio',
       },
-      {
-        ...emptyWorkspace,
-        projects: [project],
-        settings: {
-          reqFrom: 'agent-test',
-          generateUrl: mock.base + '/generate',
-          imageUploadUrl: mock.base + '/upload',
-          audioUploadUrl: mock.base + '/upload-audio',
-        },
-      },
-    );
-    await page.reload();
+    });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page
       .getByTestId('project-row')

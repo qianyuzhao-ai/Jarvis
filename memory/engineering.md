@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A2b：项目迁移与画布客户端化（2026-10-25）
+
+- origin/main 无新提交。画布项目从渲染进程 IndexedDB 整体记录改存主进程 ProjectStore（`userData/projects/`）；主题、侧栏宽度、内网地址等偏好仍在 IndexedDB，改存新键 `preferences`（首次没有时从旧 `current` 读取）。旧 `current` 记录只读、原样保留作备份。
+- 主进程：`main/projects/bridge.ts` 注册 `projects:*` IPC（migrated / migrate / list / get / read-blob / put-blob / create / apply / remove，沿用可信窗口与主框架校验，冲突返回 `code: 'CONFLICT'`），每次保存后向所有窗口推送 `projects:changed`（带写入方 `source`）；`projectStore()` 供 A2c 使用。窗口写入 `touch: false`，updatedAt 由窗口经 `set_project.patch.updatedAt` 提供；store 写入前统一 JSON 规整（去掉 undefined），内存与磁盘一致。`main/projects/migration.ts`：一次性迁移（多窗口同时请求只跑一次），先删掉中断尝试留下的同 ID 项目再写入，再用新的 ProjectStore 从磁盘读回逐个比对项目与参考文件字节，全部一致才写 `projects/migration.json`；失败时应用显示“项目迁移失败，原数据已保留”。
+- 渲染进程：`workspace-load.ts` 启动时未迁移则读旧记录、`migrationForm`（非 UUID 项目 ID 与非法参考 ID 换新、重复节点/连线保留第一条、去掉悬空连线、名称截到 200 字）后交主进程迁移，再从主进程读项目（参考文件逐个读回为 Blob，上传中的资源标为中断）；`project-records.ts` 负责 Project ⇄ 主进程格式转换（Blob 移到 blobs，按 schema 字段挑选）；`project-sync.ts`（ProjectSync）按项目串行保存：每次以最新状态与上次已存形态 `diffProjects`（`shared/project-diff.ts`）出操作，新参考文件先 putBlob，再 applyOps；连续修改自然合并；拖拽期间 `hold` 不保存，松手只存一次（Canvas 的 onNodeDrag/onSelectionDrag Start/Stop → App `hold`）；版本冲突时读取最新项目替换本地并报“项目已在其他窗口修改，已载入最新内容”；收到其他窗口（source 不同）的推送时替换本地项目。`useWorkspace` 接口不变（新增 hold），偏好变化才写 IndexedDB；更新安装前 `flushAll`。
+- 已知限制：拖拽中途退出应用会丢失这次拖拽（松手前不保存）；多窗口同时编辑同一项目以后写者冲突重载为准；未用参考文件不回收（A2c 定）。多窗口推送只有单元测试覆盖（Linux 上无法从测试再开第二个可信窗口）。
+- 测试：新增 `project-sync.spec` 5 例（300 轮随机编辑的 diff 回放一致且合法；Project ⇄ 存储格式含参考 Blob 与 agentEdits 往返一致；迁移规整；ProjectSync 对真实 ProjectStore：创建、快速修改合并、拖拽保持只存一次、新参考先存文件、他处修改推送替换、自身保存不回显、冲突重载；迁移一次性、读回校验、重做中断尝试、缺参考文件时不写标记）与实窗 `project-migration.spec`（旧 IndexedDB 工作区含参考 Blob → 启动迁移为 project.json + blobs、原记录保留、拖拽过程中版本不变、松手后版本只 +1、重启后位置与偏好保留且不再迁移）。新增 `tests/helpers/workspace.ts`（seedWorkspace：写旧记录、清偏好与主进程项目、删迁移标记后重载，即按升级首启迁移；readProjects：从主进程读项目），7 个原先直接写 IndexedDB 的实窗测试改用 seedWorkspace，3 个读取 IndexedDB 校验的测试改用 readProjects（按项目名取，主进程列表按 updatedAt 排序），smoke 改为编辑 `preferences`。
+- 验证：check、build 通过；完整实窗 159 例中 157 通过，仅 ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）。
+
 ## Agent 架构改造 A2a：主进程 ProjectStore（2026-10-25）
 
 - origin/main 无新提交。本批只建存储模块与测试，尚未接入应用启动、IPC 或画布界面（A2b 负责迁移与客户端化，A2c 让 Agent 直连）。

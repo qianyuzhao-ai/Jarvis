@@ -1,3 +1,4 @@
+import { seedWorkspace } from './helpers/workspace';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -135,24 +136,7 @@ test('selected images and sampled video frames reach the vision model; failed as
       });
       if (!updated.ok) throw new Error(updated.error);
     }, visionModel.id);
-    await page.evaluate(
-      async ({ data }) => {
-        const db = await new Promise<IDBDatabase>((resolve, reject) => {
-          const r = indexedDB.open('jarvis-workspace', 1);
-          r.onsuccess = () => resolve(r.result);
-          r.onerror = () => reject(r.error);
-        });
-        await new Promise<void>((resolve, reject) => {
-          const tx = db.transaction('workspace', 'readwrite');
-          tx.objectStore('workspace').put(data, 'current');
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-        db.close();
-      },
-      { data: { ...emptyWorkspace, projects: [project] }, origin },
-    );
-    await page.reload();
+    await seedWorkspace(app, page, { ...emptyWorkspace, projects: [project] });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '视觉资产项目' }).click();
     for (const id of ['asset-a', 'asset-b', 'asset-c'])
