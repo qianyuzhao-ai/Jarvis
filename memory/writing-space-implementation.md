@@ -91,6 +91,8 @@
 
 ## W3：已实现，完整门禁仍有基线限制
 
+实现提交：`d6a1bcb`（`feat ✨️: 实现写作W3命令面板与富模块`）。
+
 2026-10-26 用户明确要求“继续 W3”。继续保留日历环境限制和 Claude 待验收状态，不改写既有结果。
 
 依赖：Mermaid 12.1.0（2026-10-02；12.2.0 发布时间不足两周）、pinyin-pro 3.29.5（2026-10-10）、lowlight 3.3.0、CodeBlockLowlight 3.31.4。额外显式声明 highlight.js 11.12.0，原因是直接导入常用语言模块，避免依赖传递可见性。Mermaid 动态加载，不进入写作首屏依赖。
@@ -111,7 +113,10 @@
 - Mermaid 实际渲染已成功（首张 SVG 约 130ms），最初失败是本地 file 资源未进入 PerformanceResourceTiming 的观测方式；改用真实 request 事件。测试异常清理只销毁隔离窗口，应用未保存保护不变。
 - 新图片 NodeView 下暴露初始化首帧粘贴被忽略，改为等待编辑器/缓冲区接口就绪；原块编辑/图片回归连续 3/3（20.8s）通过。
 - 截图检查发现 NativeSelect 外层占满宽度，挤压标题/图表 Tabs；修正 wrapper 的 flex 宽度。`+` 后立即输入曾污染前一段落，增加同步 DOM 焦点写回；新增断言验证查询词不落入正文，连续 3/3（6.5s）通过。
-- 富模块浅深截图与 slash 筛选截图最初在 `apps/desktop/test-results/1b42e847-1b2f-4000-a8ea-6c5aca78e6b3/`；布局与加号修复后的 Callout/Toggle 截图在 `apps/desktop/test-results/0c77106c-d94b-4451-82b6-a3a0503eafc8/writing-rich-blocks-slash--6c780-itable-callouts-and-toggles-repeat2/`。最终完整回归与目录包结果待补。
+- 富模块浅深截图与 slash 筛选截图最初在 `apps/desktop/test-results/1b42e847-1b2f-4000-a8ea-6c5aca78e6b3/`；布局与加号修复后的 Callout/Toggle 截图在 `apps/desktop/test-results/0c77106c-d94b-4451-82b6-a3a0503eafc8/writing-rich-blocks-slash--6c780-itable-callouts-and-toggles-repeat2/`。完整 `pnpm test:smoke` 为 **197/199（5.9m）**，W3/写作及其余业务通过；保留日历未授权失败与 `appearance.spec.ts:121` 的真实窗口焦点恢复失败（期望 true，实际 false）。没有跳过或放宽断言。日志 `/private/tmp/jarvis-writing-w3-smoke.log`。
+- 焦点用例单独三次均复现；在 `/private/tmp/jarvis-w3-focus-baseline` 用 `26d2f2f` 的 W2 源码副本、复用当前已装依赖构建后，同一断言仍失败，日志 `/private/tmp/jarvis-w3-focus-baseline.log`。当前未改 appearance 实现；未进一步归因，不称整套通过。
+- 最后补充 Toggle 内双链序列化 handler 复用与第 24 个 fixture，避免编辑摘要后把内部双链转义；转换与往返 **9/9（2.8s）** 通过。随后最终 check/build 通过。
+- `pnpm package:dir` 生成未签名 macOS arm64 目录包 `release/70c95829-75a3-40cd-b95c-990a57adbf53`；`node apps/desktop/scripts/verify-packaged-writing.mjs release/70c95829-75a3-40cd-b95c-990a57adbf53 --rich` 验证 **593 项生产依赖**、ASAR 原生启动、Mermaid 动态加载、导图预览与实际编辑保存通过，无 pageerror。截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-fnBIwv/writing-blocks.png`。版本仍 0.4.0，未发布。
 
 ### W3 设计与边界
 
