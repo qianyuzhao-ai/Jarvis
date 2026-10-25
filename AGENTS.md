@@ -34,6 +34,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 
 - [memory/ui-v1-implementation.md](memory/ui-v1-implementation.md)：UI V1 基础组件分阶段实施、设计来源与验收证据。
 - [memory/ui-v1-shell-plan.md](memory/ui-v1-shell-plan.md)：UI V1 第三阶段执行计划书（窗口外壳、跨空间标签页、空间 Agent 右边栏、画布节点），交给实现方按阶段执行。
+- [memory/writing-space-plan.md](memory/writing-space-plan.md)：写作空间重新设计执行计划书（全格式目录、Tiptap 块编辑与无损往返、/ 面板与富模块、Agent 块级联动、星图），交给 Codex 按 W1–W6 实现，Claude 负责验收。
 
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。
@@ -44,6 +45,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 
 - [memory/figma-sync-2026-10-21/agent-skills-state.json](memory/figma-sync-2026-10-21/agent-skills-state.json)：Skills 导入、斜杠选择、自动加载的组件/页面与验证记录。
 - [memory/figma-sync-2026-10-21/model-settings-v1-state.json](memory/figma-sync-2026-10-21/model-settings-v1-state.json)：模型配置改造（服务商 → 模型、添加服务商流程、分组模型选择器）的 V1 画面与本地组件节点、验证记录。
+- [memory/figma-sync-2026-10-21/writing-space-components-state.json](memory/figma-sync-2026-10-21/writing-space-components-state.json)：写作空间重新设计的 V1 组件初稿（分区 29–33、新增图标、评审样张）节点 ID、属性与验证记录。
 
 ### 开始任务前
 

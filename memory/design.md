@@ -17,6 +17,28 @@
 - 用户明确选择上下文显示改为现有线性 Progress + Tooltip/Popover，保留 hover 用量、点击详情、Esc/外部关闭与焦点恢复。此前误报缺少圆环组件，已向用户更正：源码确有 ProgressRing；按用户新选择实现线性方案。
 - 移除 51 个 legacy-static-color 兼容定义与所有 renderer legacy 颜色/字体/圆角引用，改用现有 V1 语义变量；保留 legacy 层中的有效布局、CodeMirror 和媒体业务规则，不以文件名判断废弃。依赖与打包清单不变，未使用的字体依赖仍按既有记录保留。
 - 已检查真实 Electron 浅深写作新建弹窗、上下文详情与历史列表截图；现有组件浅深截图基准通过。截图见 `apps/desktop/test-results/4e34bdb5-bb08-4ecd-bfa6-8f57691220fb/`（写作）与 `4f2234ff-73b6-4df2-a942-94e4237be222/`（上下文）；不含真实服务验证。最终 check/build/diff 检查通过，排除未授权 macOS 日历的既有环境用例后，完整实窗/模拟服务回归 176/176（5.3m）通过；首次 176/177 的失败证据与环境限制见 engineering.md 对应记录。
+### 写作空间重新设计：页面拼接（2026-10-25，待确认）
+
+- 用户确认实现方案的四项决策：写作 Agent 可以只读当前文件夹其他文档（标题、标签、摘要）做共鸣点；拖线只在来源文档末尾「关联」段追加双链；大标题与正文 H1 独立；阶段顺序按方案。Google 文档已同步改为“已确认事项”。
+- `V1-视觉换新` 新增分区「写作空间 · 重新设计」（`482:37225`），由原 `Writing · Editor` 外壳复制，左栏与编辑区全部换成写作组件实例，浅深各一：
+  - `Writing · Blocks`（`482:37226` / `482:38315`）：文档头部、选区 BubbleMenu、行首句柄、Callout、思维导图块、右侧大纲条；右边栏写作助手保持。
+  - `Writing · Slash & Backlinks`（`483:54226` / `483:54935`）：Agent 修改高亮、折叠块、/ 面板过滤「导图」、文末反向链接与潜在共鸣点。
+  - `Writing · Dots Graph`（`484:40061` / `484:41707`）：左栏「星图」小窗 + 编辑区全景星图（工具栏、共鸣点卡片、时间轴）；右边栏关闭，主面板加宽到 1226。
+  - `Writing · File Preview`（`484:40856` / `484:42362`）：PDF 标签页预览，右边栏关闭。
+- 为放进 500px 正文列，Mind Map Block 组件的树改为更紧凑的布局（分支 x 178、叶子 x 332，连线重画）。八个画面均截图检查，无裁切、遮挡内容或错误主题。
+
+### 写作空间重新设计：组件初稿（2026-10-25，待确认）
+
+- 来源：用户构思稿《写作空间（Writing Space）重新设计方案》（Connecting the Dots、Notion 式块编辑、/ 面板与思维导图、全格式目录树）与据此重写的实现方案 [Google 文档](https://docs.google.com/document/d/1g_eXz9PgoO5-4QvWC77TR4ZxMlXU30oPZv7xV1R0m5g/edit)。方案中的四个决策事项已于同日确认（见上一条）。
+- 用户要求“先把要用到的组件做出来”。`V1-Components` 新增五个分区，节点 ID 与属性见 [writing-space-components-state.json](figma-sync-2026-10-21/writing-space-components-state.json)：
+  - `29 Writing · File Tree`（`461:37991`）：File Tree Row（5 状态，类型图标、层级缩进、外部格式徽标、行内改名、拖放目标）、File Tree Menu（文件 / 文件夹）、Writing Left Header（「文件 | 星图」分段）、File Preview（图片 / PDF / 音视频 / 二进制信息面板）。
+  - `30 Writing · Document`（`466:38295`）：Document Header（Emoji + 32 Bold 大标题即文件名；hover / editing / 重名回滚）、Document Toolbar（块视图 / 源码）、Outline Rail（短横线 / 展开卡片）、Inline Reference（双链 / 标签 / 失效链接）、Backlink Item、Backlinks。
+  - `31 Writing · Block Editor`（`470:38586`）：Block Handle（+ 与 ⋮⋮）、Drop Indicator、Block Menu（文本 / 富模块）、Turn Into Menu、Bubble Menu（含编辑链接）、Slash Command Item、Slash Menu（默认 / 过滤 / 无结果）。
+  - `32 Writing · Rich Blocks`（`471:39101`）：Callout（GitHub 五种 + 自定义 Emoji）、Toggle、Code、Mermaid（预览 / 源码 / 错误）、Mind Map Node、Mind Map Block、Image（含上传中 / 超限）、Table、Block Highlight（Agent 修改 / 整块选中）。
+  - `33 Writing · Dots Graph`（`473:39285`）：Dot（当前 / 已连接 / 孤岛 / 候选 × 3 尺寸）、Graph Edge、Resonance Card、Graph Mini Panel（默认 / 寻找中 / 无连接）、Graph Toolbar、Timeline Slider。
+- 图标库新增 35 个 Lucide 1.60 图标（共 95 个），概览 Index 追加 29–33 行并更新图标数。每个分区附 Light / Dark 评审样张（`475:39445`、`476:40223`、`477:40705`、`477:52159`、`478:41889`），截图逐个检查浅深两套通过。页面画面见上一条。
+- 设计取舍（初稿默认，待用户确认）：/ 面板与 Slash Command Item 的高亮沿用 CandidateList 的强调色；Callout 默认用 GitHub 标准语法；代码字体 Roboto Mono（避免 JetBrains Mono 连字）；共鸣点徽标用 Badge info subtle。
+- 发现的既有问题（未修改）：`22 Badge` 的 `tone=accent, appearance=subtle` 填充绑定 accent/default，渲染为实心蓝底蓝字。
 
 ### 右侧栏输入框窄宽度技能入口（2026-10-25）
 
