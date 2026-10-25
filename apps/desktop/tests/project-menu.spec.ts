@@ -59,6 +59,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     await page.getByRole('menuitem', { name: '删除', exact: true }).click();
     await confirm.getByRole('button', { name: '删除项目', exact: true }).click();
     await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toBeFocused();
     await expect(tabs.getByRole('tab', { name: '1', exact: true })).toHaveCount(0);
     await tabs.getByRole('tab', { name: '2', exact: true }).click();
     await expect(page.locator('.react-flow__node')).toHaveCount(1);

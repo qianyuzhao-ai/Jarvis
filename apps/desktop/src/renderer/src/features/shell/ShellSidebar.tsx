@@ -69,6 +69,7 @@ export function ShellSidebar({
   busy: boolean;
 }) {
   const confirm = useConfirm();
+  const sidebarRef = useRef<HTMLElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null),
     searchToggle = useRef<HTMLButtonElement>(null);
@@ -138,6 +139,19 @@ export function ShellSidebar({
                 ) {
                   const deleted = await (kind === 'canvas' ? onDeleteProject : onDeleteChat)(id);
                   if (!deleted) setError('删除失败，请稍后重试');
+                  else
+                    requestAnimationFrame(() => {
+                      const sidebar = sidebarRef.current;
+                      const next = sidebar?.querySelector<HTMLButtonElement>(
+                        kind === 'canvas'
+                          ? '[data-testid="project-row"]'
+                          : '[data-testid="side-link"]',
+                      );
+                      (
+                        next ??
+                        sidebar?.querySelector<HTMLButtonElement>('[data-ui="sidebar-item"]')
+                      )?.focus();
+                    });
                 }
               } catch (error) {
                 setError(error instanceof Error ? error.message : '操作失败');
@@ -158,7 +172,7 @@ export function ShellSidebar({
     .filter((p) => p.name.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
     .sort((a, b) => (sort === 'recent' ? b.updatedAt - a.updatedAt : a.name.localeCompare(b.name)));
   return (
-    <aside id="sidebar" className="shell-sidebar" aria-label="主导航">
+    <aside ref={sidebarRef} id="sidebar" className="shell-sidebar" aria-label="主导航">
       {kind === 'settings' ? (
         <>
           <h1>设置</h1>
