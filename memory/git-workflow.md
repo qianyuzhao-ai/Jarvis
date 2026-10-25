@@ -1,6 +1,16 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-25
+最后更新：2026-10-26
+
+## 0.4.0 已发布（2026-10-26）
+
+- [v0.4.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.4.0) 已于北京时间 **2026-10-26 00:18:05** 发布，非草稿、按当前流程为预发布，12 个资产全部 uploaded。新标签注释对象 `050a88cfbee89b576bb065e8290ad55069a118b9`，保持指向 main 发布合并提交 `a804786b56a425161cd24921f2c153194aee8a04`，未移动任何旧标签。
+- 功能 [PR #87](https://github.com/qianyuzhao-ai/Jarvis/pull/87) 合入 develop `4523e60`，发布 [PR #88](https://github.com/qianyuzhao-ai/Jarvis/pull/88) 合入 main；feature/develop/main 发布源码完整树一致。包含 V1 遗留迁移 `fae6fcf`、首页对齐修复 `e35dfaa`、版本准备 `3eaa938` 和编辑栏验收等待 `00d3cbf`，以及此前 develop 上已合入但未发布的 Agent A0–A6 能力。
+- 唯一运行 [40208305955](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40208305955) attempt 2 的三个平台及统一发布全部 success。首轮 Intel DMG 临时卷 Resource busy 的失败与重试记录保留在下文；没有修改应用源码、移动标签或跳过签名/公证/依赖/启动校验。
+- macOS arm64、Intel x64 的目录包和 DMG/ZIP 内应用通过签名、公证票据、Gatekeeper、架构与最低系统目标检查；Windows x64 安装器保持未签名。三平台均通过实际打包应用启动、ASAR 页面、写作 Agent/更新桥接与更新清单校验。
+- 两份线上 latest-mac.yml / latest.yml 已下载，SHA-256 与 GitHub asset digest 一致；版本、所有引用目标和大小匹配，macOS 两种架构 ZIP 均存在，SHA-512 与真实产物的匹配已在云端验证。中文版本说明保留自动生成记录，回读一致。证据目录 `/private/tmp/jarvis-040-release-verification/`。
+- 本地 check/build/版本一致性、13 项发布工具和 Apple 网络重试测试、本地 arm64 目录包 360 项依赖/实际启动通过。业务回归及 hover 环境波动、macOS 未授权日历用例的准确结果见下文发布准备记录，不将最后整套 175/176 记成全绿。真实服务商、内网、外部 MCP、macOS 日历授权和真实升级仍待目标环境验收。
+- 另一项写作组件设计记录及两份 JSON 未纳入发布，继续保留。发布后仅同步 README/CHANGELOG 和验收文档，不修改标签对应应用源码。
 
 ## 0.4.0 发布准备（2026-10-25）
 
@@ -11,6 +21,8 @@
 - 保留发布前失败证据：首轮 174/176（5.9m），参考连线缺一条与下载 hover 点击超时；参考用例单跑通过，独占窗口串行后两项均在完整回归中通过。第二轮 175/176（5.2m）发现 node-visuals 在 ResizeObserver/RAF 更新前立即读取编辑栏位置，补充等待实际翻转间距 ≥15px，原几何边界断言保留，应用源码不改。
 - 最后整套 175/176（5.4m），编辑栏翻转、生成/下载、参考连线及其余业务通过；唯一为 UI 预览 hover 色未触发，保留原测试并单独连续复验 3/3（6.0s）通过。hover/焦点环境波动未作为功能修复，不称该次整套全绿。macOS 日历未授权用例继续单列。日志：`/private/tmp/jarvis-040-smoke-serial.log` 与 `/private/tmp/jarvis-040-smoke-final.log`。
 - 功能 PR：[PR #87](https://github.com/qianyuzhao-ai/Jarvis/pull/87)，待合入 develop 后向 main 提发布 PR。GitHub 连接器创建 PR 返回 integration 403，使用本机已登录 gh 完成授权操作；不绕过分支规则。
+- 已合并功能 [PR #87](https://github.com/qianyuzhao-ai/Jarvis/pull/87) 到 develop（`4523e60`），再由发布 [PR #88](https://github.com/qianyuzhao-ai/Jarvis/pull/88) 合入 main（`a804786b56a425161cd24921f2c153194aee8a04`）；feature、develop、main 完整树一致（`04325eeb62e2b6b3ceb15c3ba8884a977a505b5e`）。新注释标签 `v0.4.0` 指向该 main 合并提交，唯一标签运行 [40208305955](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40208305955) 已开始，云端结果待回读，尚不称发布完成。没有移动旧标签或覆盖旧 Release。
+- 2026-10-26：首轮运行 Intel x64 作业 `121213906891` 在 DMG 构建时失败：`hdiutil: couldn't eject disk2 - Resource busy`，并非凭据或应用公证失败；日志明确记录 notarization successful。ARM64 `121213906635` 与 Windows `121213906796` 全部成功，统一发布 skipped，Release 尚未创建。已用 `gh run rerun --failed` 重跑同一运行的失败作业（attempt 2），复用成功平台产物；标签和源码保持不变。失败日志保存在 `/private/tmp/jarvis-040-release-verification/failed.log`。
 
 
 ## V1 遗留 UI 迁移功能分支（2026-10-25）
