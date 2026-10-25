@@ -2,6 +2,14 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A0-1：能力包骨架（2026-10-25）
+
+- 用户要求作业分支 `ccr-1c636605-o0pprj` 先合入最新 origin/main（v0.3.0，`c393e46`，无冲突，合并提交 `4aeb30c`），再开始 A0-1。方案见 [agent-architecture.md](agent-architecture.md) 与方案文档“改造方案与分批阶段”标签页。
+- 新增 `main/agent/kernel/capability.ts`（CapabilityPack、PackTool = ToolDefinition + risk、ToolContext）；`canvas-tools.ts` / `writing-tools.ts` / `skill-runtime.ts` 用 git mv 改为 `packs/canvas.ts` / `packs/writing.ts` / `packs/skills.ts`，新增 `packs/chat.ts`（首页提示词）。各包自带系统提示词片段，三段原提示词与上下文句子逐字保留（脚本对比旧 runtime/service 通过）。
+- `openAgent(root, id, model, transient, packs = [chatPack()], thinkingLevel)`：系统提示词 = 各包 prompt 顺序拼接，工具 = 各包 tools 顺序拼接；写作包 `textOnly` 替代原 `canvas.kind === 'writing'` 的图片输入判断；单轮请求上限改为“有工具 8 次、否则 1 次”（原来无工具的画布会话也给 8 次，实际不会出现）。`skillsPack` 返回 `userPrompt` 替代原 `skill.prompt`。risk 只在 Jarvis 侧，供 A0-2 策略引擎使用；provider 按字段取 name/description/parameters，不进入请求体。
+- 测试调用点随签名更新（canvas-agent-runtime、writing-agent-commands、agent-skills-runtime、agent-responses、model-runtime），断言不变；直接调用 `execute` 的地方补齐 SDK 五参数签名。
+- 验证：check、build 通过；运行时 28 例通过；完整实窗 124 例中 122 通过，ui-preview 2 例仍为仓库无 linux 截图基线（生成的 linux png 已逐个删除）。实窗沿用阶段 2 的 keyring 处理：本容器 apt 安装 gnome-keyring，dbus-run-session 内解锁并临时改 playwright-core loader 的 password-store，验证后已还原。`pnpm install --ignore-scripts` 不会下载 Electron，需在 electron 包目录手动执行 `node install.js`。
+
 ## 0.3.0 发布准备（2026-10-25）
 
 - 用户明确授权以本地最新状态集成 develop（用户称 dev）并发布 0.3.0，排除远端 `ccr*` 分支。fetch 核对 develop=`fd6db60`、main=`57365e8`，当前本地 `feature/project-more-menu` 独有提交为 `fe41c1e` / `66bde20`；远端 `ccr-1c636605-o0pprj` 只读列出，不合入、不修改。远端无 v0.3.0 标签或开放 PR，最近发布为 v0.2.5。

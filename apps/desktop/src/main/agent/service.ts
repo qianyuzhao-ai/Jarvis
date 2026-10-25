@@ -1,6 +1,6 @@
 import { sameWritingScope, type WritingScope } from '../../shared/writing-agent';
 import { WritingBroker } from './writing-broker';
-import { writingTools } from './writing-tools';
+import { writingPack } from './packs/writing';
 import { createHash, randomUUID } from 'node:crypto';
 import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -18,13 +18,14 @@ import { openAgent, replyFailure } from './runtime';
 import { digitsPng, probeCode } from './probe-image';
 import { AgentStore } from './store';
 import { CanvasBroker } from './canvas-broker';
-import { canvasTools } from './canvas-tools';
+import { canvasPack } from './packs/canvas';
 import { validateVisionInput } from './vision-input';
 import type { VisionAsset } from '../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../shared/canvas-agent';
 import { SkillStore } from './skill-store';
 import { JsonFile } from './json-file';
-import { skillRuntime } from './skill-runtime';
+import { skillsPack } from './packs/skills';
+import { chatPack } from './packs/chat';
 import { skillCommand } from '../../shared/agent-skills';
 import type { StoredSkill } from './skill-store';
 
@@ -363,30 +364,19 @@ export class AgentService {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let checkpoint: ReturnType<typeof setInterval> | undefined;
     try {
-      const skill = skillRuntime(skills, text, output, () => this.changed());
-      const tools = canvas
-        ? canvasTools(canvas, this.canvas, run.owner, run.id, output, () => this.changed())
+      const context = { owner: run.owner, runId: run.id, output, changed: () => this.changed() };
+      const skill = skillsPack(context, skills, text);
+      const space = canvas
+        ? canvasPack(context, canvas, this.canvas)
         : writing
-          ? writingTools(writing, this.writing, run.owner, run.id, output, () => this.changed())
-          : [];
+          ? writingPack(context, writing, this.writing)
+          : chatPack();
       const runtime = await openAgent(
         this.root,
         run.sessionId,
         model,
         false,
-        canvas
-          ? {
-              tools,
-              context: `当前项目 ${canvas.projectId}，本次引用节点 ${canvas.selectedIds.join(', ') || '未选择'}。`,
-            }
-          : writing
-            ? {
-                tools,
-                kind: 'writing',
-                context: `当前文档：${writing.path}。只能读写这一个文档的编辑器缓冲区，不能保存磁盘。`,
-              }
-            : undefined,
-        skill,
+        [space, skill],
         thinking,
       );
       run.sdk = runtime.session;
@@ -429,8 +419,8 @@ export class AgentService {
       }));
       await runtime.session.prompt(
         images.length
-          ? skill.prompt + '\n\n附图来源清单（数据）：' + JSON.stringify(roster)
-          : skill.prompt,
+          ? skill.userPrompt + '\n\n附图来源清单（数据）：' + JSON.stringify(roster)
+          : skill.userPrompt,
         {
           expandPromptTemplates: false,
           images: images.map(({ data, mimeType }) => ({ type: 'image' as const, data, mimeType })),

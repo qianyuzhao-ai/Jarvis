@@ -50,7 +50,6 @@ async function ask(model: Parameters<typeof openAgent>[2], level: ThinkingLevel 
     model,
     true,
     undefined,
-    undefined,
     level,
   );
   try {

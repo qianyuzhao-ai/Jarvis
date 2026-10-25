@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { openAgent } from '../src/main/agent/runtime';
 import { CanvasBroker } from '../src/main/agent/canvas-broker';
-import { canvasTools } from '../src/main/agent/canvas-tools';
+import { canvasPack } from '../src/main/agent/packs/canvas';
 import { canvasSnapshot } from '../src/renderer/src/features/creation/canvas-context';
 import { prepareCanvasEdit } from '../src/renderer/src/features/creation/canvas-transactions';
 import { createMedia, createProject } from '../src/renderer/src/features/creation/types';
@@ -80,23 +80,22 @@ test('Pi canvas tools read, persist an edit and consume its receipt before repor
     })();
   };
   const output: ChatMessage = { id: randomUUID(), role: 'assistant', text: '', status: 'running' };
-  const tools = canvasTools(
+  const pack = canvasPack(
+    { owner: 1, runId, output, changed: () => {} },
     await canvasSnapshot(p, ['image-a']),
     broker,
-    1,
-    runId,
-    output,
-    () => {},
   );
   const runtime = await openAgent(
     test.info().outputPath('runtime'),
     randomUUID(),
     relayModel({ baseUrl: `http://127.0.0.1:${address.port}/v1`, model: 'mock' }),
     false,
-    { tools, context: 'Current canvas only.' },
+    [pack],
   );
   try {
-    expect(runtime.session.getActiveToolNames().sort()).toEqual(tools.map((t) => t.name).sort());
+    expect(runtime.session.getActiveToolNames().sort()).toEqual(
+      pack.tools.map((t) => t.name).sort(),
+    );
     await runtime.session.prompt('修改节点提示词');
     expect(requests).toHaveLength(4);
     expect(p.nodes[0]?.type === 'media' && p.nodes[0].data.prompt).toBe('新的提示词');

@@ -90,7 +90,9 @@ test('Responses SSE validates terminal events and rejects redirects without leak
         randomUUID(),
         config,
         true,
-        model === 'vision' ? { tools: [], context: 'Vision input test.' } : undefined,
+        model === 'vision'
+          ? [{ id: 'vision', prompt: 'Vision input test.', tools: [] }]
+          : undefined,
       );
       try {
         let text = '';
