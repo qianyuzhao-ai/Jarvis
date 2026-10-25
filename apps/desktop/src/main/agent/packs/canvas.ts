@@ -11,7 +11,7 @@ const prompt =
 
 /** Tools for the project open in the requesting window; edits go through the renderer's receipt. */
 export function canvasPack(
-  { owner, runId, output, changed }: ToolContext,
+  { owner, runId, output, changed, record }: ToolContext,
   initial: CanvasSnapshot,
   broker: CanvasBroker,
 ): CapabilityPack {
@@ -154,6 +154,12 @@ export function canvasPack(
         }
         snapshot = reply.snapshot;
         created.forEach((id) => readNodes.add(id));
+        record({
+          id: reply.transactionId,
+          pack: 'canvas',
+          projectId: initial.projectId,
+          summary: '已修改画布',
+        });
         log('已应用画布修改', reply.nodeIds, reply.transactionId, reply.changes);
         return {
           success: true,

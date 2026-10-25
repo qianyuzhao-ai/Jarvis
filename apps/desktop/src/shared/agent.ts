@@ -7,6 +7,7 @@ import {
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
+import type { UndoRequest } from './agent-ledger';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   baseUrlSchema,
@@ -133,6 +134,8 @@ export interface AgentBridge {
   claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
   onWritingCommand(listener: (command: WritingCommand) => void): () => void;
+  /** Undoes one recorded Agent change; the window that owns its data applies it. */
+  undo(input: UndoRequest): Promise<AgentResult<void>>;
   /** Tool calls in this window's rounds that wait for the user's decision. */
   listApprovals(): Promise<AgentResult<ApprovalRequest[]>>;
   respondApproval(input: ApprovalResponse): Promise<AgentResult<void>>;

@@ -18,6 +18,7 @@ import { AgentService } from './service';
 import { AgentStore } from './store';
 import { canvasReplySchema } from '../../shared/canvas-agent';
 import { approvalResponseSchema } from '../../shared/agent-approval';
+import { undoRequestSchema } from '../../shared/agent-ledger';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -41,6 +42,7 @@ export async function registerAgent() {
   try {
     await config.initialize();
     await store.initialize();
+    await service.ledger.initialize(store.records.map((r) => r.view.id));
     await service.skills.initialize();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
@@ -112,6 +114,7 @@ export async function registerAgent() {
     'agent:claim-writing': (r, owner) => service.writing.claim(owner, agentId.parse(r)),
     'agent:complete-writing': (r, owner) =>
       service.writing.complete(owner, writingReplySchema.parse(r)),
+    'agent:undo': (r, owner) => service.undo(owner, undoRequestSchema.parse(r)),
     'agent:approvals': (_r, owner) => service.approvals.list(owner),
     'agent:respond-approval': (r, owner) => {
       const v = approvalResponseSchema.parse(r);

@@ -14,7 +14,7 @@ const prompt =
 
 /** Tools for the editor buffer of the current tab's document; nothing is saved to disk. */
 export function writingPack(
-  { owner, runId, output, changed }: ToolContext,
+  { owner, runId, output, changed, record }: ToolContext,
   scope: WritingScope,
   broker: WritingBroker,
 ): CapabilityPack {
@@ -75,6 +75,12 @@ export function writingPack(
     const snapshot = receipt(reply);
     if (!reply.transactionId) throw new Error('缺少编辑事务回执');
     readVersions.add(snapshot.version);
+    record({
+      id: reply.transactionId,
+      pack: 'writing',
+      writingScope: scope,
+      summary: reply.summary ?? '已修改编辑器缓冲区（未保存）',
+    });
     output.activities ??= [];
     const activity = output.activities.find((a) => a.transactionId === reply.transactionId);
     if (activity) activity.label = reply.summary ?? '已修改编辑器缓冲区（未保存）';

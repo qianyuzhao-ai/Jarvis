@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
 import type { WorkspaceData } from '../src/renderer/src/features/creation/types';
 import { addRelayModel } from './helpers/model-setup';
+import { ledgerStatuses } from './helpers/ledger';
 
 async function workspace(page: Page) {
   return page.evaluate(async () => {
@@ -202,8 +203,10 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.keyboard.press('ArrowLeft');
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(370);
     await page.screenshot({ path: test.info().outputPath('canvas-agent-light.png') });
+    await expect.poll(() => ledgerStatuses(profile)).toEqual(['applied']);
     await sidebar.getByRole('button', { name: '撤销本次修改' }).last().click();
     await expect.poll(async () => (await workspace(page)).projects[0]?.nodes.length).toBe(1);
+    await expect.poll(() => ledgerStatuses(profile)).toEqual(['undone']);
     expect((await workspace(page)).projects[0]?.edges).toHaveLength(0);
     await sidebar.getByRole('button', { name: '新建画布对话' }).click();
     await sidebar.getByLabel('消息', { exact: true }).fill('持续等待');
@@ -248,6 +251,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     app = await launch();
     page = await app.firstWindow();
     sidebar = page.getByRole('complementary', { name: '画布助手' });
+    expect(await ledgerStatuses(profile)).toEqual(['undone']);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await expect(

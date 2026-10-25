@@ -3,7 +3,7 @@ import { agentValue } from '../../../../shared/agent';
 import { canvasCommandSchema, type CanvasCommand } from '../../../../shared/canvas-agent';
 import { canvasSnapshot } from './canvas-context';
 import { canvasChanges } from './canvas-changes';
-import { prepareCanvasEdit } from './canvas-transactions';
+import { prepareCanvasEdit, prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
 
 export function useCanvasHost(
@@ -37,6 +37,19 @@ export function useCanvasHost(
               projectId: project.id,
               ok: true,
               nodeIds: command.command.nodeIds,
+            }),
+          );
+        } else if (command.command.type === 'undo') {
+          const next = await prepareCanvasUndo(current, command.command.transactionId);
+          await latest.current.commit((p) => {
+            if (p !== current) throw new Error('画布已发生修改，请重试');
+            return next;
+          });
+          agentValue(
+            await connected.completeCanvasCommand({
+              requestId: command.requestId,
+              projectId: project.id,
+              ok: true,
             }),
           );
         } else {

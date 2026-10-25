@@ -1,5 +1,6 @@
 import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
 import type { ChatMessage } from '../../../shared/agent';
+import type { LedgerEntry } from '../../../shared/agent-ledger';
 
 /**
  * How a tool affects state: `read` never changes anything, `reversible` changes state that the
@@ -17,11 +18,16 @@ export type PackTool = ToolDefinition & {
 export interface ToolContext {
   /** WebContents ID of the window that started the round. */
   owner: number;
+  sessionId: string;
   runId: string;
   /** The assistant message that collects activity records for this round. */
   output: ChatMessage;
   /** Schedules a snapshot push after an activity record changes. */
   changed: () => void;
+  /** Adds a reversible change to the operation ledger, once its data owner has applied it. */
+  record: (
+    change: Pick<LedgerEntry, 'id' | 'pack' | 'summary' | 'projectId' | 'writingScope'>,
+  ) => void;
 }
 
 /**

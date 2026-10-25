@@ -118,7 +118,14 @@ export function useWritingHost(
             command.command.limit,
             command.command.selection,
           );
-        else {
+        else if (command.command.type === 'undo') {
+          const entry = transactions.current.undo(doc, command.command.transactionId);
+          changeBuffer(doc.id, entry.before, [
+            isolateHistory.of('full'),
+            Transaction.userEvent.of('undo.agent'),
+          ]);
+          transactions.current.remove(entry);
+        } else {
           const edit = await transactions.current.prepare(doc, command);
           if (
             !mounted ||
@@ -189,14 +196,5 @@ export function useWritingHost(
       !['conflict', 'error'].includes(doc.status)
     );
   };
-  const undo = async (scope: WritingScope, id: string) => {
-    const doc = find(scope),
-      entry = transactions.current.undo(doc, id);
-    changeBuffer(doc.id, entry.before, [
-      isolateHistory.of('full'),
-      Transaction.userEvent.of('undo.agent'),
-    ]);
-    transactions.current.remove(entry);
-  };
-  return { snapshot, canUndo, undo };
+  return { snapshot, canUndo };
 }

@@ -2,6 +2,14 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A0-3：操作账本（2026-10-25）
+
+- 开工前合入 origin/main（`6761f10`，PR #83；engineering.md 顶部冲突，保留双方）。
+- `kernel/ledger.ts`：主进程操作账本，按会话存 `agent/ledger/<sessionId>.json`（JsonFile 原子写，`{ version: 1, entries }`），条目 = transactionId、sessionId、runId、pack（canvas/writing）、目标（projectId 或 writingScope）、摘要、status（applied/undone）、时间。同一 transaction 只记一条（后续编辑更新摘要），每会话保留最近 50 轮；启动时只加载现存会话的文件，删会话时删除对应文件（先等待排队写入）。写入失败经 onError 设为 persistenceError（与会话存储失败同样阻止后续请求）。JsonFile 新增 `settled()`。
+- ToolContext 新增 `sessionId` 与 `record(change)`；画布包在保存回执成功后记“已修改画布”，写作包记 reply.summary。活动卡片仍由各包按原样生成（画布每次编辑一张卡、写作按 transaction 合并），没有改成由账本生成，避免界面变化；账本只存每轮一条的摘要。
+- 撤销改经主进程调度：渲染层“撤销本次修改”和画布“撤销最近修改”调用 `agent:undo`（`{ transactionId, projectId }` 或 `{ transactionId, writingScope }`，zod 校验）→ service.undo（有运行中请求或 persistenceError 时拒绝；条目已撤销则报“这次修改已撤销”）→ 通过 CanvasBroker / WritingBroker 向该窗口发 `undo` 命令（两个命令 schema 新增 `{ type: 'undo', transactionId }`）→ 渲染层宿主执行原有 `prepareCanvasUndo` / `WritingTransactions.undo` 校验与回滚 → 成功后账本标记 undone。账本里没有的旧修改（A0-3 之前产生）仍发给窗口，由窗口按原规则判断。`useAgent` 新增 `undoChange`；`use-writing-host` 去掉本地 `undo` 出口，`CanvasAgentSidebar` 去掉 `commit` 属性。
+- 测试：新增 `agent-ledger.spec`（合并、50 轮裁剪、重启加载、忽略已删会话的坏文件、删除、写入失败回调；service.undo 经 broker 发命令、失败不改状态、重复撤销被拒、旧修改仍下发、重启后状态保留）2 例；`canvas-agent-runtime` 断言记录的 transactionId 与画布事务一致；`canvas-agent` / `writing-agent` 实窗在撤销前后检查 profile 中账本文件 applied → undone，画布用例重启后仍为 undone。“撤销最近修改”按钮暂无实窗用例，其无账本条目的路径由 service 测试覆盖。
+
 ## Agent 架构改造 A0-2：策略引擎与确认通道（2026-10-25）
 
 - 开工前再次合入 origin/main（`8f7610f`，PR #81；engineering.md 顶部记录冲突，保留双方）。

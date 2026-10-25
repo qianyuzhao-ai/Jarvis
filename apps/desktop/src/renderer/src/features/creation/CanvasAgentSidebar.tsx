@@ -13,7 +13,6 @@ import { useAgent } from '../agent/use-agent';
 import { ChatComposer } from '../agent/ChatComposer';
 import { ChatMessageItem } from '../agent/ChatMessageItem';
 import { canvasSnapshot } from './canvas-context';
-import { prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
 
 export function CanvasAgentSidebar({
@@ -21,7 +20,6 @@ export function CanvasAgentSidebar({
   selectedIds,
   open,
   focus,
-  commit,
   configure,
   width,
   onWidth,
@@ -34,7 +32,6 @@ export function CanvasAgentSidebar({
   selectedIds: string[];
   open: boolean;
   focus: (ids: string[]) => void;
-  commit: (change: (p: Project) => Project) => Promise<void>;
   configure: () => void;
 }) {
   const agent = useAgent(project.id);
@@ -122,13 +119,7 @@ export function CanvasAgentSidebar({
     setUndoing(true);
     agent.setError('');
     try {
-      const next = await prepareCanvasUndo(project, id);
-      await commit((current) => {
-        if (current !== project) throw new Error('画布已发生修改，请重试');
-        return next;
-      });
-    } catch (error) {
-      agent.setError(error instanceof Error ? error.message : '撤销失败');
+      await agent.undoChange(id);
     } finally {
       pending.current = false;
       setUndoing(false);

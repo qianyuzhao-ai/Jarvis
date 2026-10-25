@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { ledgerStatuses } from './helpers/ledger';
 
 test('writing Agent edits only its document buffer, groups undo, survives tab switches and rejects stale versions', async () => {
   test.setTimeout(90000);
@@ -166,8 +167,10 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     await expect(editor).not.toContainText('补充结尾。');
     await editor.press('ControlOrMeta+Shift+z');
     await expect(editor).toContainText('补充结尾。');
+    await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['applied']);
     await panel.getByRole('button', { name: '撤销本次修改' }).click();
     await expect(editor).toContainText('原始段落。');
+    await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['undone']);
     await editor.press('ControlOrMeta+a');
     await panel.getByLabel('消息', { exact: true }).fill('后台修改');
     await panel.getByRole('button', { name: '发送消息' }).click();

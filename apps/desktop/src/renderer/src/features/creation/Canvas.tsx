@@ -762,7 +762,6 @@ function CanvasContent({
                   onWidth={shell.onWidth}
                   onClose={shell.onClose}
                   focus={focusNodes}
-                  commit={onCommit}
                   configure={onConfigureAgent}
                 />
               </div>,

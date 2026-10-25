@@ -27,7 +27,10 @@ import { JsonFile } from './json-file';
 import { skillsPack } from './packs/skills';
 import { chatPack } from './packs/chat';
 import { ApprovalQueue } from './kernel/approval';
+import { Ledger } from './kernel/ledger';
+import type { UndoRequest } from '../../shared/agent-ledger';
 import type { Approver } from './kernel/policy';
+import type { ToolContext } from './kernel/capability';
 import { skillCommand } from '../../shared/agent-skills';
 import type { StoredSkill } from './skill-store';
 
@@ -36,6 +39,7 @@ export class AgentService {
   readonly canvas = new CanvasBroker();
   readonly writing = new WritingBroker();
   readonly approvals = new ApprovalQueue();
+  readonly ledger: Ledger;
   private seq = 0;
   private active: {
     id: string;
@@ -57,6 +61,11 @@ export class AgentService {
     private root: string,
   ) {
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
+    this.ledger = new Ledger(join(root, 'ledger'));
+    this.ledger.onError = () => {
+      this.persistenceError = '操作记录保存失败，请重启应用后检查本地存储';
+      this.changed();
+    };
   }
   snapshot(): AgentEvent {
     return {
@@ -199,6 +208,34 @@ export class AgentService {
       }
       this.emit();
       if (moved) await unlink(pending);
+      // A leftover file is harmless: only files of existing conversations are loaded.
+      await this.ledger.remove(id).catch(() => {});
+    });
+  }
+  /**
+   * Undoes one recorded change through the window that owns its data. Changes made before the
+   * ledger existed have no entry; the window still checks they are its latest change.
+   */
+  undo(owner: number, request: UndoRequest) {
+    return this.exclusive(async () => {
+      if (this.persistenceError) throw new Error(this.persistenceError);
+      if (this.active) throw new Error('请先停止或等待当前请求完成');
+      const entry = this.ledger.find(request.transactionId);
+      if (entry?.status === 'undone') throw new Error('这次修改已撤销');
+      const runId = entry?.runId ?? randomUUID();
+      const command = { type: 'undo' as const, transactionId: request.transactionId };
+      const reply =
+        'projectId' in request
+          ? await this.canvas.request(owner, {
+              runId,
+              projectId: request.projectId,
+              expectedRevision: '',
+              command,
+            })
+          : await this.writing.request(owner, { runId, scope: request.writingScope, command });
+      if (!reply.ok) throw new Error(reply.error || '撤销失败');
+      if (entry) this.ledger.markUndone(entry.id);
+      this.emit();
     });
   }
   setModel(id: string, model: string) {
@@ -367,7 +404,15 @@ export class AgentService {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let checkpoint: ReturnType<typeof setInterval> | undefined;
     try {
-      const context = { owner: run.owner, runId: run.id, output, changed: () => this.changed() };
+      const context: ToolContext = {
+        owner: run.owner,
+        sessionId: run.sessionId,
+        runId: run.id,
+        output,
+        changed: () => this.changed(),
+        record: (change) =>
+          this.ledger.record({ ...change, sessionId: run.sessionId, runId: run.id }),
+      };
       const skill = skillsPack(context, skills, text);
       const space = canvas
         ? canvasPack(context, canvas, this.canvas)

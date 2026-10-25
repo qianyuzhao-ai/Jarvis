@@ -116,7 +116,14 @@ test('writing broker binds owner, run, scope and expiry, and tools expose no fil
   expect(broker.claim(1, command.requestId)).toBe(false);
   const output: ChatMessage = { id: randomUUID(), role: 'assistant', text: '', status: 'running' };
   const { tools } = writingPack(
-    { owner: 1, runId: randomUUID(), output, changed: () => {} },
+    {
+      owner: 1,
+      sessionId: randomUUID(),
+      runId: randomUUID(),
+      output,
+      changed: () => {},
+      record: () => {},
+    },
     scope,
     broker,
   );

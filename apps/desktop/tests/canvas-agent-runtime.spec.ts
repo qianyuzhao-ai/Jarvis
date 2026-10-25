@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { openAgent } from '../src/main/agent/runtime';
 import { CanvasBroker } from '../src/main/agent/canvas-broker';
 import { canvasPack } from '../src/main/agent/packs/canvas';
+import type { ToolContext } from '../src/main/agent/kernel/capability';
 import { canvasSnapshot } from '../src/renderer/src/features/creation/canvas-context';
 import { prepareCanvasEdit } from '../src/renderer/src/features/creation/canvas-transactions';
 import { createMedia, createProject } from '../src/renderer/src/features/creation/types';
@@ -80,8 +81,16 @@ test('Pi canvas tools read, persist an edit and consume its receipt before repor
     })();
   };
   const output: ChatMessage = { id: randomUUID(), role: 'assistant', text: '', status: 'running' };
+  const recorded: Parameters<ToolContext['record']>[0][] = [];
   const pack = canvasPack(
-    { owner: 1, runId, output, changed: () => {} },
+    {
+      owner: 1,
+      sessionId: randomUUID(),
+      runId,
+      output,
+      changed: () => {},
+      record: (change) => recorded.push(change),
+    },
     await canvasSnapshot(p, ['image-a']),
     broker,
   );
@@ -101,6 +110,9 @@ test('Pi canvas tools read, persist an edit and consume its receipt before repor
     expect(p.nodes[0]?.type === 'media' && p.nodes[0].data.prompt).toBe('新的提示词');
     expect(p.agentEdits).toHaveLength(1);
     expect(output.activities?.at(-1)?.transactionId).toBe(p.agentEdits[0]?.id);
+    expect(recorded).toEqual([
+      { id: p.agentEdits[0]?.id, pack: 'canvas', projectId: p.id, summary: '已修改画布' },
+    ]);
     expect(runtime.session.getLastAssistantText()).toContain('保存回执');
   } finally {
     runtime.session.dispose();

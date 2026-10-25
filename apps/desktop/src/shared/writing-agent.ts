@@ -45,6 +45,7 @@ export const writingCommandSchema = z
         })
         .strict(),
       z.object({ type: z.literal('edit'), edit: writingEditSchema }).strict(),
+      z.object({ type: z.literal('undo'), transactionId: z.string().uuid() }).strict(),
     ]),
   })
   .strict();

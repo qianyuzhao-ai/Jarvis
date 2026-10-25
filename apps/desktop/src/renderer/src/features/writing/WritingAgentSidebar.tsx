@@ -51,11 +51,7 @@ export function WritingAgentSidebar({
   }
   async function undo(id: string) {
     if (agent.snapshot.busySessionId) return;
-    try {
-      await host.undo(scope, id);
-    } catch (e) {
-      agent.setError(e instanceof Error ? e.message : '撤销失败');
-    }
+    await agent.undoChange(id);
   }
   return (
     <AssistantPanel

@@ -51,6 +51,7 @@ const desktop: DesktopInfo = {
       ipcRenderer.on('agent:writing-command', handle);
       return () => ipcRenderer.removeListener('agent:writing-command', handle);
     },
+    undo: (input) => ipcRenderer.invoke('agent:undo', input),
     listApprovals: () => ipcRenderer.invoke('agent:approvals'),
     respondApproval: (input) => ipcRenderer.invoke('agent:respond-approval', input),
     onApprovals: (listener) => {

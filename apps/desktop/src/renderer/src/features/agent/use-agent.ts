@@ -170,6 +170,20 @@ export function useAgent(
       setError(e instanceof Error ? e.message : '切换思考程度失败');
     }
   }
+  /** Undoes one recorded change in this hook's project or document; errors go to `error`. */
+  async function undoChange(transactionId: string) {
+    if (!window.desktop?.agent) return false;
+    try {
+      if (projectId) agentValue(await window.desktop.agent.undo({ transactionId, projectId }));
+      else if (writingScope)
+        agentValue(await window.desktop.agent.undo({ transactionId, writingScope }));
+      else return false;
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '撤销失败');
+      return false;
+    }
+  }
   async function rename(title: string) {
     if (!session || !window.desktop?.agent) return;
     try {
@@ -225,6 +239,7 @@ export function useAgent(
     send,
     cancel,
     model,
+    undoChange,
     rename,
     renameConversation,
     deleteConversation,
