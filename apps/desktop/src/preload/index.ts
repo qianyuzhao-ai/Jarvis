@@ -1,3 +1,4 @@
+import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
 import type { AgentEvent } from '../shared/agent';
@@ -6,6 +7,16 @@ import type { UpdateState } from '../shared/updates';
 
 const desktop: DesktopInfo = {
   platform: process.platform,
+  appearance: {
+    getAccentColor: () => ipcRenderer.invoke('appearance:accent'),
+    onAccentColor: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, color: string | null) => listener(color);
+      ipcRenderer.on('appearance:accent-changed', handle);
+      return () => {
+        ipcRenderer.removeListener('appearance:accent-changed', handle);
+      };
+    },
+  },
   updates: {
     getState: () => ipcRenderer.invoke('updates:state'),
     check: () => ipcRenderer.invoke('updates:check'),
@@ -27,15 +38,18 @@ const desktop: DesktopInfo = {
     listSkills: () => ipcRenderer.invoke('agent:skills'),
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
-    getConfiguration: () => ipcRenderer.invoke('agent:configuration'),
-    saveConfiguration: (input) => ipcRenderer.invoke('agent:save', input),
-    removeModel: (id) => ipcRenderer.invoke('agent:remove-model', id),
-    setDefaultModel: (id) => ipcRenderer.invoke('agent:default-model', id),
-    testConnection: (input) => ipcRenderer.invoke('agent:test', input),
-    listModels: (input) => ipcRenderer.invoke('agent:models', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
     createSession: () => ipcRenderer.invoke('agent:create'),
     createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
+    createWritingSession: (scope) => ipcRenderer.invoke('agent:create-writing', scope),
+    claimWritingCommand: (id) => ipcRenderer.invoke('agent:claim-writing', id),
+    completeWritingCommand: (reply) => ipcRenderer.invoke('agent:complete-writing', reply),
+    onWritingCommand: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, command: WritingCommand) =>
+        listener(command);
+      ipcRenderer.on('agent:writing-command', handle);
+      return () => ipcRenderer.removeListener('agent:writing-command', handle);
+    },
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
     completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),
     onCanvasCommand: (listener) => {
@@ -47,6 +61,7 @@ const desktop: DesktopInfo = {
     renameSession: (input) => ipcRenderer.invoke('agent:rename', input),
     deleteSession: (id) => ipcRenderer.invoke('agent:delete', id),
     setModel: (input) => ipcRenderer.invoke('agent:model', input),
+    setThinkingLevel: (input) => ipcRenderer.invoke('agent:thinking', input),
     send: (input) => ipcRenderer.invoke('agent:send', input),
     cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
     copyReply: (input) => ipcRenderer.invoke('agent:copy-reply', input),
@@ -57,6 +72,19 @@ const desktop: DesktopInfo = {
         ipcRenderer.removeListener('agent:event', handle);
       };
     },
+  },
+  models: {
+    getSettings: () => ipcRenderer.invoke('models:settings'),
+    getCatalog: () => ipcRenderer.invoke('models:catalog'),
+    saveProvider: (input) => ipcRenderer.invoke('models:save-provider', input),
+    testProvider: (input) => ipcRenderer.invoke('models:test-provider', input),
+    listCandidates: (input) => ipcRenderer.invoke('models:candidates', input),
+    setProviderModels: (input) => ipcRenderer.invoke('models:set-provider-models', input),
+    updateModel: (input) => ipcRenderer.invoke('models:update', input),
+    removeModel: (id) => ipcRenderer.invoke('models:remove', id),
+    removeProvider: (id) => ipcRenderer.invoke('models:remove-provider', id),
+    setDefaultModel: (id) => ipcRenderer.invoke('models:default', id),
+    probeVision: (id) => ipcRenderer.invoke('models:probe-vision', id),
   },
   writing: {
     getRoots: () => ipcRenderer.invoke('writing:roots'),

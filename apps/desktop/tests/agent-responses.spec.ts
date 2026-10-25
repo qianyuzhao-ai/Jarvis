@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { openAgent } from '../src/main/agent/runtime';
-import { relaySchema } from '../src/shared/agent';
+import { relayModel } from './helpers/models';
 
 test('Responses SSE validates terminal events and rejects redirects without leaking credentials', async () => {
   const hits: string[] = [];
@@ -79,17 +79,16 @@ test('Responses SSE validates terminal events and rejects redirects without leak
   if (!a || typeof a === 'string') throw Error('server');
   try {
     for (const model of ['complete', 'incomplete', 'redirect', 'vision']) {
-      const config = relaySchema.parse({
-        name: 'Mock',
+      const config = relayModel({
         baseUrl: `http://127.0.0.1:${a.port}/v1`,
         api: 'openai-responses',
         model,
+        vision: model === 'vision' ? 'supported' : 'unknown',
       });
       const { session } = await openAgent(
         test.info().outputPath('runtime'),
         randomUUID(),
         config,
-        '',
         true,
         model === 'vision' ? { tools: [], context: 'Vision input test.' } : undefined,
       );

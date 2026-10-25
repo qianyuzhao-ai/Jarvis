@@ -1,0 +1,23 @@
+.ui-preview section {
+  margin-block: calc(var(--spacing) * 6);
+}
+.ui-preview h2 {
+  font-size: var(--text-title-2);
+  line-height: var(--text-title-2--line-height);
+  margin-bottom: calc(var(--spacing) * 3);
+}
+.ui-preview .preview-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 3);
+  margin-block: calc(var(--spacing) * 3);
+}
+.ui-preview .preview-row > :is(input, [data-ui='select-wrapper']) {
+  max-width: var(--tooltip-max-width);
+}
+.ui-preview .preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--tooltip-max-width), 1fr));
+  gap: calc(var(--spacing) * 4);
+}

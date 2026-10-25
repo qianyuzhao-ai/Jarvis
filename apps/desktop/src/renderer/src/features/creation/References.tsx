@@ -1,5 +1,6 @@
+import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { useEffect, useRef, useState } from 'react';
-import { ImageIcon, Music, Plus, Video, X } from 'lucide-react';
+import { ImageIcon, Music, Plus, Video, X } from '@jarvis/ui/icons';
 import { REFERENCE_LIMITS } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
 import type { MediaData, Reference } from './types';
@@ -119,7 +120,10 @@ export function References({
     if (input.current) input.current.value = '';
   }
   return (
-    <div className={`references ${expanded ? 'references-expanded' : 'references-compact'}`}>
+    <div
+      data-testid="references"
+      className={`references ${expanded ? 'references-expanded' : 'references-compact'}`}
+    >
       <input
         disabled={disabled}
         ref={input}
@@ -133,6 +137,7 @@ export function References({
       {!expanded && items.length > 0 && (
         <button
           type="button"
+          data-testid="reference-stack"
           className="reference-stack"
           aria-label={`查看 ${items.length} 个参考素材`}
           title="放大查看参考素材"
@@ -148,10 +153,17 @@ export function References({
               }}
             >
               <ReferenceMedia key={item.url ?? item.token} item={{ ...item, type: item.kind }} />
-              <span className="reference-index">{item.label}</span>
+              <span data-testid="reference-index" className="reference-index">
+                {item.label}
+              </span>
             </span>
           ))}
-          <span className="reference-count">共 {items.length}</span>
+          <BadgeCount
+            className="reference-count"
+            tone="neutral"
+            count={items.length}
+            aria-label={`共 ${items.length} 个参考素材`}
+          />
         </button>
       )}
       {!expanded && items.length === 0 && (
@@ -161,6 +173,11 @@ export function References({
           aria-label="暂无参考素材"
         >
           <ImageIcon size={24} strokeWidth={1.75} />
+          <span>
+            连接上游节点
+            <br />
+            或放大后添加
+          </span>
         </div>
       )}
       {expanded && (
@@ -178,6 +195,7 @@ export function References({
       {expanded &&
         numbered.map(({ item, number, label }) => (
           <div
+            data-testid="reference-item"
             className="reference-item"
             title={`${label} · ${item.name}`}
             key={item.id}
@@ -185,7 +203,9 @@ export function References({
             data-reference-number={number}
           >
             <ReferenceMedia item={item} />
-            <span className="reference-index">{label}</span>
+            <span data-testid="reference-index" className="reference-index">
+              {label}
+            </span>
             <button
               type="button"
               disabled={disabled}
@@ -202,9 +222,16 @@ export function References({
         ))}
       {expanded &&
         items.slice(data.references.length).map((item) => (
-          <div className="reference-item" key={item.token} title={`${item.label} · ${item.name}`}>
+          <div
+            data-testid="reference-item"
+            className="reference-item"
+            key={item.token}
+            title={`${item.label} · ${item.name}`}
+          >
             <ReferenceMedia key={item.url ?? item.token} item={{ ...item, type: item.kind }} />
-            <span className="reference-index">{item.label}</span>
+            <span data-testid="reference-index" className="reference-index">
+              {item.label}
+            </span>
             <small>{item.name}</small>
           </div>
         ))}

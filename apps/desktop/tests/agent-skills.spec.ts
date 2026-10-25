@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { addRelayModel } from './helpers/model-setup';
 
 test('skills import, slash selection, automatic activation, disablement and restart work in real windows', async () => {
   test.setTimeout(60000);
@@ -69,21 +70,11 @@ test('skills import, slash selection, automatic activation, disablement and rest
     let page = await app.firstWindow();
     await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1440, 900));
-    await page.evaluate(async (baseUrl) => {
-      const r = await window.desktop?.agent.saveConfiguration({
-        config: {
-          name: 'mock',
-          baseUrl,
-          api: 'openai-completions',
-          model: 'mock',
-          contextWindow: 32768,
-          maxTokens: 4096,
-        },
-        apiKey: '',
-        clearKey: false,
-      });
-      if (!r?.ok) throw new Error('Configuration failed');
-    }, `http://127.0.0.1:${address.port}/v1`);
+    await addRelayModel(page, {
+      baseUrl: `http://127.0.0.1:${address.port}/v1`,
+      model: 'mock',
+      contextWindow: 32768,
+    });
     await page.reload();
     await expect(page.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -98,25 +89,28 @@ test('skills import, slash selection, automatic activation, disablement and rest
       'aria-selected',
       'true',
     );
-    await expect(page.locator('.plugins-mcp')).toBeHidden();
+    await expect(page.getByTestId('plugins-mcp')).toBeHidden();
     await expect(
-      page.locator('.plugins-toolbar').getByRole('button', { name: '添加 skill', exact: true }),
+      page.getByTestId('plugins-toolbar').getByRole('button', { name: '添加 skill', exact: true }),
     ).toBeEnabled();
-    const rightGap = await page.locator('.plugins-toolbar').evaluate((row) => {
-      const action = row.querySelector('.plugins-actions button');
+    const rightGap = await page.getByTestId('plugins-toolbar').evaluate((row) => {
+      const action = row.querySelector('[data-testid="plugins-actions"] button');
       if (!action) throw new Error('Missing add action');
       return Math.abs(row.getBoundingClientRect().right - action.getBoundingClientRect().right);
     });
     expect(rightGap).toBeLessThan(1);
     await page.getByRole('tab', { name: 'MCP', exact: true }).click();
     await expect(
-      page.locator('.plugins-toolbar').getByRole('button', { name: '添加mcp', exact: true }),
+      page.getByTestId('plugins-toolbar').getByRole('button', { name: '添加mcp', exact: true }),
     ).toBeDisabled();
     await expect(page.getByRole('tabpanel', { name: 'MCP', exact: true })).toContainText(
       '暂未接入',
     );
     await expect(page.getByRole('button', { name: '添加 skill', exact: true })).toBeHidden();
-    await page.screenshot({ path: test.info().outputPath('plugins-mcp.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('plugins-mcp.png'),
+    });
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'Skill', exact: true })).toBeFocused();
     await expect(page.getByRole('tabpanel', { name: 'Skill', exact: true })).toBeVisible();
@@ -124,8 +118,8 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await expect(page.getByRole('tab', { name: 'MCP', exact: true })).toBeFocused();
     await page.keyboard.press('End');
     await expect(page.getByRole('tab', { name: 'Skill', exact: true })).toBeFocused();
-    await expect(page.locator('.plugins-settings')).toContainText('还没有技能');
-    await expect(page.locator('.plugins-settings')).toHaveCSS('max-width', '700px');
+    await expect(page.getByTestId('plugins-settings')).toContainText('还没有技能');
+    await expect(page.getByTestId('plugins-settings')).toHaveCSS('max-width', '700px');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     for (const folder of [directory, manualDirectory]) {
       await app.evaluate(({ dialog }, folder) => {
@@ -138,41 +132,56 @@ test('skills import, slash selection, automatic activation, disablement and rest
         }),
       ).toBeChecked();
     }
-    await page.screenshot({ path: test.info().outputPath('skills-manager.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-manager.png'),
+    });
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).uncheck();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).not.toBeChecked();
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).check();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     let input = page.getByLabel('消息', { exact: true });
     await input.fill('/');
-    await expect(page.locator('.skill-picker').getByRole('option')).toHaveCount(2);
+    await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(2);
     await expect(page.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await input.press('ArrowDown');
     await input.press('Enter');
     await expect(input).toHaveValue('/skill:manual-plan ');
     expect(requests).toHaveLength(0);
     await input.fill('/manual');
-    await page.screenshot({ path: test.info().outputPath('skills-slash-search.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-slash-search.png'),
+    });
     await input.press('Tab');
     await input.press('End');
     await page.keyboard.insertText('三个镜头');
     await input.press('Enter');
-    await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '已按技能',
-    );
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('已按技能');
     expect(JSON.stringify(requests[0])).toContain('SKILL_BODY');
     expect(JSON.stringify(requests[0])).toContain('三个镜头');
-    await expect(page.locator('.chat-activities')).toContainText('主动选择');
+    await expect(page.getByTestId('chat-activities')).toContainText('主动选择');
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     input = page.getByLabel('消息', { exact: true });
     await input.fill('自动规划三个镜头');
     await input.press('Enter');
-    await expect(page.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '已按技能',
-    );
-    await expect(page.locator('.chat-activities')).toContainText('自动匹配');
-    await page.screenshot({ path: test.info().outputPath('skills-auto-loaded.png') });
+    await expect(
+      page.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('已按技能');
+    await expect(page.getByTestId('chat-activities')).toContainText('自动匹配');
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-auto-loaded.png'),
+    });
     await input.fill('保留这份草稿');
     const beforeManager = requests.length;
     await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -182,14 +191,18 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await expect(page.getByRole('checkbox', { name: '启用 manual-plan' })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).toBeChecked();
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.screenshot({ path: test.info().outputPath('skills-settings-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-settings-dark.png'),
+    });
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await input.fill('/manual');
-    await expect(page.locator('.skill-picker').getByRole('option')).toHaveCount(0);
+    await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(0);
     await input.press('Escape');
-    await expect(page.locator('.skill-picker')).toHaveCount(0);
+    await expect(page.getByTestId('skill-picker')).toHaveCount(0);
     await app.close();
     app = await launch();
     page = await app.firstWindow();
@@ -197,31 +210,39 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('button', { name: '插件', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: '启用 manual-plan' })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).toBeChecked();
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     const sidebar = page.getByRole('complementary', { name: '画布助手' });
     const canvasInput = sidebar.getByLabel('消息', { exact: true });
     await canvasInput.fill('/shot');
-    await expect(sidebar.locator('.skill-picker').getByRole('option')).toHaveCount(1);
+    await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
-    await page.screenshot({ path: test.info().outputPath('skills-canvas-dark.png') });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-canvas-dark.png'),
+    });
     await canvasInput.press('Enter');
     await canvasInput.press('End');
     await page.keyboard.insertText('为当前画布规划镜头');
     await canvasInput.press('Enter');
-    await expect(sidebar.locator('.chat-message.assistant[data-status="succeeded"]')).toContainText(
-      '已按技能',
-    );
+    await expect(
+      sidebar.locator(
+        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
+      ),
+    ).toContainText('已按技能');
     expect(JSON.stringify(requests.at(-1)?.tools)).toContain('get_canvas_summary');
     expect(JSON.stringify(requests.at(-1)?.tools)).toContain('load_skill');
     await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
     await canvasInput.fill('/');
-    await expect(sidebar.locator('.skill-picker').getByRole('option')).toHaveCount(1);
+    await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
     await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
-    await page.screenshot({ path: test.info().outputPath('skills-canvas-picker-dark.png') });
+    await page.screenshot({
+      animations: 'disabled',
+      path: test.info().outputPath('skills-canvas-picker-dark.png'),
+    });
   } finally {
     await app.close();
     await new Promise<void>((r) => server.close(() => r()));

@@ -59,7 +59,7 @@ test('Image, Nano and video use shared single-row macOS controls', async () => {
     await page.getByLabel('分辨率', { exact: true }).selectOption('4K');
     await page.screenshot({ path: test.info().outputPath('nano-controls-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2.5-flare');
     await page.getByLabel('思考程度', { exact: true }).selectOption('xhigh');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2');
@@ -67,16 +67,17 @@ test('Image, Nano and video use shared single-row macOS controls', async () => {
     await page.getByRole('button', { name: '放大编辑', exact: true }).click();
     await page.screenshot({ path: test.info().outputPath('image-controls-expanded-dark.png') });
     const tops = await group
-      .locator('.parameter-control')
+      .getByTestId('parameter-control')
       .evaluateAll((nodes) => nodes.map((n) => n.getBoundingClientRect().top));
     expect(new Set(tops).size).toBe(1);
-    const modelControl = group.locator('.parameter-control-model');
+    const modelControl = group.locator('[data-model="true"]');
     const shortWidth = await modelControl.evaluate((node) => node.getBoundingClientRect().width);
-    expect(shortWidth).toBe(160);
+    expect(shortWidth).toBeGreaterThan(60);
+    await expect(modelControl.locator('select')).toHaveCSS('field-sizing', 'content');
     await page.getByLabel('选择模型', { exact: true }).selectOption('gpt-image-2.5-sunburst');
     const longWidth = await modelControl.evaluate((node) => node.getBoundingClientRect().width);
     expect(longWidth).toBeGreaterThan(shortWidth);
-    const gap = await group.locator('.parameter-control').evaluateAll((nodes) => {
+    const gap = await group.getByTestId('parameter-control').evaluateAll((nodes) => {
       const [model, next] = nodes;
       if (!model || !next) throw new Error('Missing model or next parameter');
       return next.getBoundingClientRect().left - model.getBoundingClientRect().right;

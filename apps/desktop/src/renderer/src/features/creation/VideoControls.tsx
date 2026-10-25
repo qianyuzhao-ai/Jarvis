@@ -1,4 +1,3 @@
-import { Clock3, Diamond, RectangleHorizontal, Video } from 'lucide-react';
 import { ParameterControl } from './ParameterControl';
 import { videoModels, videoRatios } from './models';
 import type { MediaData } from './types';
@@ -17,7 +16,6 @@ export function VideoControls({
     <div className="node-parameters" role="group" aria-label="视频参数">
       <ParameterControl
         model
-        icon={<Video size={16} />}
         label="选择模型"
         value={data.model}
         display={data.model ? data.model.replace('seedance-', 'Seedance ') : '选择模型'}
@@ -35,7 +33,6 @@ export function VideoControls({
         label="视频时长"
         value={String(data.duration)}
         display={data.duration === -1 ? '自动' : `${data.duration}s`}
-        icon={<Clock3 size={16} />}
         disabled={disabled}
         onChange={(duration) => onChange({ duration: Number(duration) })}
       >
@@ -52,7 +49,6 @@ export function VideoControls({
         label="宽高比"
         value={data.size}
         display={data.size === 'adaptive' ? '自适应' : data.size}
-        icon={<RectangleHorizontal size={16} />}
         disabled={disabled}
         onChange={(size) => onChange({ size })}
       >
@@ -66,7 +62,6 @@ export function VideoControls({
         label="分辨率"
         value={data.resolution}
         display={data.resolution}
-        icon={<Diamond size={16} />}
         disabled={disabled}
         onChange={(resolution) => onChange({ resolution })}
       >

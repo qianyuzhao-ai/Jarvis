@@ -97,13 +97,14 @@ test('real updater downloads through HTTP, reports progress, rejects a bad hash 
     );
     await page.reload();
     await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
     const panel = page.getByRole('region', { name: '应用更新', exact: true });
     await panel.getByRole('button', { name: '检查更新' }).click();
     await expect(panel.getByRole('button', { name: '下载更新' })).toBeVisible();
     expect(downloads).toBe(0);
     await panel.getByRole('button', { name: '下载更新' }).click();
     await expect
-      .poll(async () => Number(await panel.getByRole('progressbar').getAttribute('value')))
+      .poll(async () => Number(await panel.getByRole('progressbar').getAttribute('aria-valuenow')))
       .toBeGreaterThan(0);
     await expect(panel.getByRole('alert')).toContainText('完整性或签名校验失败');
     tamper = false;

@@ -1,6 +1,6 @@
 {
   "name": "jarvis-workspace",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.24.0",
@@ -23,7 +23,7 @@
     "lint": "biome lint . --error-on-warnings",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "check": "biome check . --error-on-warnings && pnpm typecheck",
+    "check": "node scripts/check-tokens.mjs && biome check . --error-on-warnings && pnpm typecheck",
     "test:smoke": "pnpm build && pnpm --filter @jarvis/desktop test:smoke",
     "package:dir": "pnpm build && pnpm --filter @jarvis/desktop package:dir"
   },

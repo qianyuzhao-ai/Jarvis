@@ -147,8 +147,8 @@ async function configure(page: Page, base: string) {
   await page.getByLabel('upload 地址', { exact: true }).fill(base + '/upload');
   await page.getByLabel('upload-media 地址', { exact: true }).fill(base + '/upload-media');
   await page.getByRole('button', { name: '保存更改' }).click();
-  await expect(page.locator('.form-actions')).toContainText('已保存到本机');
-  await page.getByRole('button', { name: '返回工作台' }).click();
+  await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
+  await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
   await page.getByRole('button', { name: '新建项目', exact: true }).click();
   await page.getByLabel('项目名称', { exact: true }).fill('资源画布测试');
 }
@@ -159,12 +159,12 @@ async function drop(page: Page, files: { name: string; mime: string; bytes: numb
       data.items.add(new File([new Uint8Array(file.bytes)], file.name, { type: file.mime }));
     return data;
   }, files);
-  const canvas = page.locator('.canvas-body');
+  const canvas = page.getByTestId('canvas-body');
   const rect = await canvas.boundingBox();
   if (!rect) throw new Error('Missing canvas');
   const point = { x: rect.x + 120, y: rect.y + 100 };
   await canvas.dispatchEvent('dragenter', { dataTransfer: transfer });
-  await expect(page.locator('.canvas-drop-hint')).toBeVisible();
+  await expect(page.getByTestId('canvas-drop-hint')).toBeVisible();
   await canvas.dispatchEvent('dragover', { dataTransfer: transfer });
   await canvas.dispatchEvent('drop', {
     dataTransfer: transfer,
@@ -172,8 +172,8 @@ async function drop(page: Page, files: { name: string; mime: string; bytes: numb
     clientY: point.y,
   });
   await transfer.dispose();
-  await expect(page.locator('.canvas-drop-hint')).toHaveCount(0);
-  return point;
+  await expect(page.getByTestId('canvas-drop-hint')).toHaveCount(0);
+  return { ...point, origin: { x: rect.x, y: rect.y } };
 }
 function readWorkspace(page: Page) {
   return page.evaluate(async () => {
@@ -260,7 +260,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
       { name: 'clip.webm', mime: 'video/webm', bytes: video },
       { name: 'voice.wav', mime: 'audio/wav', bytes: Array.from(wav) },
     ]);
-    await expect(page.locator('.asset-node[data-ready="true"]')).toHaveCount(3);
+    await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(3);
     expect(mock.calls).toEqual([
       { path: '/upload', name: 'image.png', reqFrom: 'canvas-import-test' },
       { path: '/upload', name: 'clip.webm', reqFrom: 'canvas-import-test' },
@@ -285,8 +285,8 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     const state = workspaceSchema.parse(await readWorkspace(page));
     const first = state.projects[0]!.nodes[0]!;
     expect(first.position).toEqual({
-      x: Math.round(point.x / 24) * 24,
-      y: Math.round((point.y - 60) / 24) * 24,
+      x: Math.round((point.x - point.origin.x) / 24) * 24,
+      y: Math.round((point.y - point.origin.y) / 24) * 24,
     });
     for (const node of state.projects[0]!.nodes) {
       expect(node.type).toBe('asset');
@@ -295,20 +295,21 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     await page.getByRole('button', { name: '适应视图' }).click();
     await page.screenshot({ path: test.info().outputPath('assets-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('assets-dark.png') });
     await app.close();
     app = await launch();
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
-    await expect(page.locator('.asset-node[data-ready="true"]')).toHaveCount(3);
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
+    await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(3);
     await expect
       .poll(() =>
         page.getByAltText('image.png').evaluate((n) => (n as HTMLImageElement).naturalWidth),
       )
       .toBe(1);
     expect(mock.calls).toHaveLength(3);
+    await page.getByAltText('image.png').hover();
     await page.getByRole('button', { name: '删除资源 image.png', exact: true }).click();
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     expect(errors).toEqual([]);
@@ -326,7 +327,7 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await configure(page, mock.base);
     await page.getByRole('button', { name: '缩小', exact: true }).click();
-    await expect(page.locator('.zoom-value')).not.toHaveText('100%');
+    await expect(page.getByTestId('zoom-value')).not.toHaveText('100%');
     const viewport = await page.locator('.react-flow__viewport').evaluate((node) => {
       const matrix = new DOMMatrix(getComputedStyle(node).transform);
       return { x: matrix.e, y: matrix.f, zoom: matrix.a };
@@ -336,14 +337,14 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       { name: 'background.png', mime: 'image/png', bytes: Array.from(png) },
       { name: 'invalid.txt', mime: 'text/plain', bytes: [1] },
     ]);
-    await expect(page.locator('.canvas-import-notice')).toContainText('只支持');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('只支持');
     await expect.poll(() => mock.calls.length).toBe(1);
     const initial = workspaceSchema.parse(await readWorkspace(page));
     expect(initial.projects[0]!.nodes[0]!.position).toEqual({
-      x: Math.round((point.x - viewport.x) / viewport.zoom / 24) * 24,
-      y: Math.round((point.y - 60 - viewport.y) / viewport.zoom / 24) * 24,
+      x: Math.round((point.x - point.origin.x - viewport.x) / viewport.zoom / 24) * 24,
+      y: Math.round((point.y - point.origin.y - viewport.y) / viewport.zoom / 24) * 24,
     });
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('另一个项目');
     mock.release();
@@ -355,8 +356,8 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       })
       .toBe('ready');
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
     await expect
       .poll(() =>
         page.getByAltText('background.png').evaluate((n) => (n as HTMLImageElement).naturalWidth),
@@ -365,8 +366,8 @@ test('uploads survive project navigation and drop coordinates account for zoom',
     mock.files.delete('background.png');
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
-    await expect(page.locator('.result-error')).toContainText('媒体暂时无法加载');
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
+    await expect(page.getByTestId('result-error')).toContainText('媒体暂时无法加载');
     mock.files.set('background.png', { bytes: png, mime: 'image/png' });
     await page.getByRole('button', { name: '重新加载媒体' }).click();
     await expect
@@ -389,21 +390,26 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await drop(page, [{ name: 'image.png', mime: 'image/png', bytes: Array.from(png) }]);
-    await expect(page.locator('.canvas-import-notice')).toContainText('req_from');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('req_from');
     expect(mock.calls).toHaveLength(0);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await configure(page, mock.base);
     await drop(page, [{ name: 'notes.txt', mime: 'text/plain', bytes: [1] }]);
-    await expect(page.locator('.canvas-import-notice')).toContainText('只支持');
+    await expect(page.getByTestId('canvas-import-notice')).toContainText('只支持');
     mock.setFail(true);
     await drop(page, [{ name: 'failed.png', mime: 'image/png', bytes: Array.from(png) }]);
-    await expect(page.locator('.asset-node')).toContainText('files[0].url');
+    await expect(page.locator('[data-node-kind="asset"]')).toContainText('files[0].url');
     mock.setFail(false);
     mock.setHold(true);
     await drop(page, [{ name: 'removed.png', mime: 'image/png', bytes: Array.from(png) }]);
-    await expect(page.locator('.asset-node').last()).toContainText('正在上传');
+    await expect(page.locator('[data-node-kind="asset"]').last()).toContainText('正在上传');
+    for (const theme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.screenshot({ path: test.info().outputPath(`uploading-node-${theme}.png`) });
+    }
     await expect.poll(() => mock.calls.length).toBe(2);
-    await page.getByRole('button', { name: '删除资源 removed.png', exact: true }).click();
+    await page.locator('.react-flow__node-asset').last().click();
+    await page.keyboard.press('Delete');
     mock.release();
     await page
       .getByLabel('导入画布素材')
@@ -412,10 +418,13 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     await page.reload();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /资源画布测试/ }).click();
-    await expect(page.locator('.asset-node')).toContainText(['files[0].url', '上传已中断']);
+    await page.getByTestId('project-row').filter({ hasText: '资源画布测试' }).click();
+    await expect(page.locator('[data-node-kind="asset"]')).toContainText([
+      'files[0].url',
+      '上传已中断',
+    ]);
     mock.release();
-    await expect(page.locator('.asset-node[data-ready="true"]')).toHaveCount(0);
+    await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(0);
     await expect(page.locator('.react-flow__node-asset')).toHaveCount(2);
     expect(mock.calls).toHaveLength(3);
   } finally {

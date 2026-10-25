@@ -1,5 +1,11 @@
-import { useRef, useState } from 'react';
-import { Check, ChevronRight, Copy } from 'lucide-react';
+import { Alert } from '@jarvis/ui/components/Alert';
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from '@jarvis/ui/components/Collapsible';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy } from '@jarvis/ui/icons';
 import type { MediaData } from './types';
 
 const labels = {
@@ -13,10 +19,17 @@ const labels = {
 export function GenerationDetails({
   data,
   connectedCount,
+  openRequest = 0,
 }: {
   data: MediaData;
   connectedCount: number;
+  openRequest?: number;
 }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openRequest) setOpen(true);
+  }, [openRequest]);
+  const referenceCount = data.references.length + connectedCount;
   const [copied, setCopied] = useState('');
   const [error, setError] = useState('');
   const pending = useRef(false);
@@ -42,47 +55,50 @@ export function GenerationDetails({
     }
   }
   return (
-    <details className="generation-details">
-      <summary aria-label="生成信息">
-        <span>
-          {connectedCount > 0
-            ? `已连入 ${connectedCount} 个参考节点，生成时使用上游已完成的 URL。`
-            : '生成信息'}
-        </span>
-        <ChevronRight size={14} aria-hidden="true" />
-      </summary>
-      <div className="editor-notice generation-details-content" role="status">
-        <p>
-          {task?.status === 'running' && task.authRequired
-            ? '等待重新登录，任务已保留'
-            : task?.status === 'running' && task.remoteStatus === 'pending'
-              ? '任务已提交，正在排队…'
-              : task
-                ? labels[task.status]
-                : '暂无生成记录'}
-        </p>
-        {task?.remoteTaskId && <p>平台任务 ID：{task.remoteTaskId}</p>}
-        {task?.error && <p className="error-text">{task.error}</p>}
-        {task?.warning && <p className="error-text">{task.warning}</p>}
-        {task?.status === 'unknown' && (
-          <p>不会自动重发。再次点击生成会创建新任务，可能产生重复费用。</p>
-        )}
-        {result && (
-          <div className="generation-result">
-            <span>返回 URL</span>
-            <code tabIndex={0}>{result.url}</code>
-            <button type="button" onClick={() => void copy()} aria-label="复制返回 URL">
-              {copied === result.requestId ? <Check size={14} /> : <Copy size={14} />}
-              {copied === result.requestId ? '已复制' : '复制 URL'}
-            </button>
-          </div>
-        )}
-        {error && (
-          <p className="error-text" role="alert">
-            {error}
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      appearance="card"
+      data-testid="generation-details"
+      className="mx-5 mb-3 min-w-0"
+    >
+      <CollapsibleTrigger aria-label="生成信息">
+        <span>{referenceCount ? `生成信息 · ${referenceCount} 个参考` : '生成信息'}</span>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div
+          data-testid="editor-notice"
+          className="max-h-45 overflow-y-auto text-callout text-fg-secondary"
+          role="status"
+        >
+          <p>
+            {task?.status === 'running' && task.authRequired
+              ? '等待重新登录，任务已保留'
+              : task?.status === 'running' && task.remoteStatus === 'pending'
+                ? '任务已提交，正在排队…'
+                : task
+                  ? labels[task.status]
+                  : '暂无生成记录'}
           </p>
-        )}
-      </div>
-    </details>
+          {task?.remoteTaskId && <p>平台任务 ID：{task.remoteTaskId}</p>}
+          {task?.error && <Alert tone="error">{task.error}</Alert>}
+          {task?.warning && <Alert tone="warning">{task.warning}</Alert>}
+          {task?.status === 'unknown' && (
+            <p>不会自动重发。再次点击生成会创建新任务，可能产生重复费用。</p>
+          )}
+          {result && (
+            <div className="generation-result">
+              <span>返回 URL</span>
+              <code tabIndex={0}>{result.url}</code>
+              <button type="button" onClick={() => void copy()} aria-label="复制返回 URL">
+                {copied === result.requestId ? <Check size={14} /> : <Copy size={14} />}
+                {copied === result.requestId ? '已复制' : '复制 URL'}
+              </button>
+            </div>
+          )}
+          {error && <Alert tone="error">{error}</Alert>}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

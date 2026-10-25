@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from '@jarvis/ui/icons';
 import type { CanvasAttachment } from './use-canvas-attachments';
 export function CanvasAttachments({
   entries,
@@ -13,9 +13,18 @@ export function CanvasAttachments({
 }) {
   if (!entries.length) return null;
   return (
-    <div className="canvas-attachments" aria-label="待发送画布资产">
+    <div
+      data-testid="canvas-attachments"
+      className="canvas-attachments"
+      aria-label="待发送画布资产"
+    >
       {entries.map((entry) => (
-        <div className="canvas-attachment" key={entry.nodeId} data-status={entry.status}>
+        <div
+          data-testid="canvas-attachment"
+          className="canvas-attachment"
+          key={entry.nodeId}
+          data-status={entry.status}
+        >
           <button
             type="button"
             className="canvas-attachment-preview"

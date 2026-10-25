@@ -274,7 +274,7 @@ export function PromptEditor({
   }, [menu, listId]);
   return (
     <div className="prompt-field">
-      <div ref={host} className="prompt-code-editor" />
+      <div ref={host} data-testid="prompt-code-editor" className="prompt-code-editor" />
       {menu && position && (
         <PromptMentionMenu
           id={listId}
@@ -282,6 +282,10 @@ export function PromptEditor({
           active={menu.active}
           position={position}
           onChoose={choose}
+          onActive={(active) => {
+            if (menuRef.current && !viewRef.current?.composing)
+              show({ ...menuRef.current, active });
+          }}
         />
       )}
     </div>

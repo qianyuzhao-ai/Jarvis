@@ -1,6 +1,8 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Checkbox } from '@jarvis/ui/components/Checkbox';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BookOpen, FolderPlus } from 'lucide-react';
+import { BookOpen, FolderPlus } from '@jarvis/ui/icons';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { agentValue } from '../../../../shared/agent';
 
@@ -51,61 +53,71 @@ export function SkillsSettings({
     }
   }
   return (
-    <section className="skills-manager" aria-labelledby="skills-title">
+    <section className="text-body-relaxed" aria-labelledby="skills-title">
       <header>
-        <h2 id="skills-title">
+        <h2 id="skills-title" className="flex items-center gap-2 text-title-3">
           <BookOpen size={18} />
           技能
         </h2>
       </header>
-      <p>输入 / 主动选择技能，或由 Agent 根据技能的适用规则自动加载。</p>
+      <p className="my-2 text-callout text-fg-secondary">
+        输入 / 主动选择技能，或由 Agent 根据技能的适用规则自动加载。
+      </p>
       {active &&
         actionTarget &&
         createPortal(
-          <button
+          <Button
+            variant="secondary"
             type="button"
-            className="plugins-add"
             title="选择包含 SKILL.md 的文件夹"
             disabled={pending || busy}
             onClick={() => void change('import')}
           >
             <FolderPlus size={16} />
             添加 skill
-          </button>,
+          </Button>,
           actionTarget,
         )}
       {busy && <p role="status">当前对话正在回复，完成或停止后可调整技能。</p>}
       {error && (
-        <p className="agent-error" role="alert">
+        <p className="text-subheadline text-danger" role="alert">
           {error}
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      <div className="skills-list">
+      <div className="my-4">
         {skills.length ? (
           skills.map((skill) => (
-            <article key={skill.id}>
-              <div>
-                <strong>{skill.name}</strong>
-                <small>{skill.manualOnly ? '仅手动调用' : '可自动调用'}</small>
-                <p>{skill.description}</p>
+            <article
+              key={skill.id}
+              className="flex items-start justify-between gap-4 border-t border-separator py-4"
+            >
+              <div className="min-w-0 break-words">
+                <strong className="text-headline">{skill.name}</strong>
+                <small className="mt-1 block text-subheadline text-fg-secondary">
+                  {skill.manualOnly ? '仅手动调用' : '可自动调用'}
+                </small>
+                <p className="mt-2 text-body-relaxed text-fg-secondary">{skill.description}</p>
               </div>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={enabled[skill.id] ?? skill.enabled}
-                  disabled={pending || busy}
-                  onChange={() => void change(skill)}
-                />
-                启用<span className="sr-only"> {skill.name}</span>
-              </label>
+              <Checkbox
+                label={
+                  <>
+                    启用<span className="sr-only"> {skill.name}</span>
+                  </>
+                }
+                checked={enabled[skill.id] ?? skill.enabled}
+                disabled={pending || busy}
+                onCheckedChange={() => void change(skill)}
+              />
             </article>
           ))
         ) : (
-          <p className="skills-empty">还没有技能。导入后即可在 / 菜单中选择。</p>
+          <p className="py-6 text-center text-callout text-fg-secondary">
+            还没有技能。导入后即可在 / 菜单中选择。
+          </p>
         )}
       </div>
-      <footer>
+      <footer className="border-t border-separator pt-4 text-callout text-fg-secondary">
         技能由 Jarvis 独立保存。支持说明与包内文本参考；不执行脚本。每包最多 100 个文件、2MB，单文件
         256KB。
       </footer>

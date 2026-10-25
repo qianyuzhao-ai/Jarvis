@@ -1,14 +1,13 @@
+import type { WritingScope } from '../../shared/writing-agent';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import {
-  chatSessionSchema,
-  relaySchema,
-  type ChatSession,
-  type RelayConfig,
-} from '../../shared/agent';
+import { chatSessionSchema, relaySchema, type ChatSession } from '../../shared/agent';
+import type { ThinkingLevel } from '../../shared/models';
+import type { ResolvedModel } from './model-store';
 import { JsonFile, readJson } from './json-file';
 
-const recordSchema = z.object({ view: chatSessionSchema, config: relaySchema });
+/** `config` is only present on sessions created before models were stored by ID. */
+const recordSchema = z.object({ view: chatSessionSchema, config: relaySchema.optional() });
 const requestSchema = z.object({
   id: z.string().uuid(),
   sessionId: z.string().uuid(),
@@ -68,21 +67,28 @@ export class AgentStore {
       throw error;
     }
   }
-  async create(config: RelayConfig, projectId?: string, modelId?: string) {
+  async create(
+    model: ResolvedModel,
+    projectId?: string,
+    thinkingLevel: ThinkingLevel = 'off',
+    writingScope?: WritingScope,
+  ) {
     const view: ChatSession = {
       id: randomUUID(),
       title: '新对话',
-      model: config.model,
-      ...(modelId ? { modelId } : {}),
+      model: model.modelId,
+      modelId: model.id,
+      thinkingLevel,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       messages: [],
       runId: null,
       contextTokens: null,
-      contextWindow: config.contextWindow,
+      contextWindow: model.contextWindow,
       ...(projectId ? { projectId } : {}),
+      ...(writingScope ? { writingScope } : {}),
     };
-    this.records.push({ view, config: structuredClone(config) });
+    this.records.push({ view });
     try {
       await this.save();
     } catch (error) {

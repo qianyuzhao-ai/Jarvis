@@ -1,0 +1,376 @@
+@layer components {
+  .window-shell .chat-dock {
+    padding: 12px 24px 24px;
+  }
+  .window-shell .chat-welcome {
+    text-align: center;
+    margin: auto;
+    padding: 24px;
+  }
+  .window-shell .chat-welcome h1 {
+    font-size: var(--text-title-1);
+    line-height: var(--text-title-1--line-height);
+    font-weight: 400;
+  }
+  .window-shell .chat-welcome p {
+    font-size: var(--text-callout);
+    color: var(--color-fg-tertiary);
+  }
+  .window-shell .chat-welcome > svg {
+    margin: 0 auto 16px;
+    color: var(--color-fg-secondary);
+  }
+  .window-shell .chat-suggestions {
+    margin-top: 24px;
+    text-align: left;
+  }
+  .window-shell .agent-composer {
+    gap: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .window-shell .composer-input-surface {
+    padding: 0;
+    min-height: 44px;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+  .window-shell .agent-composer textarea {
+    font-size: var(--text-body);
+    line-height: 20px;
+    color: var(--color-fg);
+  }
+  .window-shell .agent-composer textarea::placeholder {
+    color: var(--color-fg-tertiary);
+    opacity: 1;
+  }
+  .window-shell .composer-controls {
+    padding: 0;
+    min-height: 28px;
+    margin-top: 8px;
+  }
+  .window-shell .composer-submit {
+    position: static;
+    width: 28px;
+  }
+  .window-shell .composer-action {
+    border-radius: var(--radius-control);
+    color: var(--color-fg-secondary);
+  }
+  .window-shell .composer-action > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .window-shell .ui-composer-context .canvas-context-scope {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-callout);
+  }
+  .window-shell .canvas-agent-header {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    gap: 4px;
+  }
+  .window-shell .canvas-agent-heading {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .window-shell .canvas-agent-heading > span {
+    font-size: var(--text-headline);
+    font-weight: 600;
+  }
+  .window-shell .canvas-agent-heading strong {
+    font-size: var(--text-callout);
+    font-weight: 400;
+    color: var(--color-fg-secondary);
+  }
+  .window-shell .canvas-agent-new-chat {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    justify-content: center;
+  }
+  .window-shell .canvas-agent-new-chat span {
+    display: none;
+  }
+  .window-shell .canvas-agent-header .icon-button {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-control);
+  }
+  .window-shell .canvas-agent .ui-assistant-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .window-shell .canvas-agent-scroll {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  .window-shell .canvas-agent-dock {
+    padding: 0;
+  }
+  .window-shell .canvas-agent-welcome {
+    padding: 20px 0;
+    margin: auto;
+  }
+  .window-shell .canvas-agent-welcome p {
+    font-size: var(--text-callout);
+    line-height: var(--text-callout--line-height);
+    color: var(--color-fg-secondary);
+  }
+  .window-shell .canvas-agent-welcome .side-link {
+    height: 28px;
+    min-height: 28px;
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface-raised);
+    font-size: var(--text-callout);
+  }
+  .window-shell .canvas-agent .composer-controls {
+    flex-wrap: nowrap;
+  }
+  .window-shell .canvas-agent .composer-model {
+    min-width: 0;
+  }
+  .window-shell .canvas-agent .model-trigger {
+    max-width: 110px;
+  }
+  .window-shell .canvas-toolbar {
+    height: 48px;
+    min-height: 48px;
+    padding: 0 12px;
+    background: var(--color-window);
+    border-bottom: 1px solid var(--color-separator);
+    gap: 8px;
+  }
+  .window-shell .canvas-title {
+    min-width: 60px;
+    max-width: 220px;
+  }
+  .window-shell .canvas-title input {
+    height: 28px;
+    font-size: var(--text-headline);
+    font-weight: 600;
+  }
+  .window-shell .canvas-create {
+    gap: 4px;
+  }
+  .window-shell .canvas-create .icon-button {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-small);
+    background: var(--color-surface-raised);
+    border: var(--border-hairline) solid var(--color-border);
+    box-shadow: var(--shadow-control);
+  }
+  .window-shell .canvas-create > [data-ui='button'] {
+    min-height: 24px;
+  }
+  .window-shell .canvas-create svg {
+    width: 14px;
+    height: 14px;
+  }
+  .window-shell .canvas-export-button {
+    height: 24px;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: var(--radius-small);
+    font-size: var(--text-callout);
+    background: var(--color-surface-raised);
+    border: var(--border-hairline) solid var(--color-border);
+    box-shadow: var(--shadow-control);
+  }
+  .window-shell .floating-controls {
+    gap: 2px;
+    border: var(--border-hairline) solid var(--color-border);
+    box-shadow: var(--shadow-popover);
+    border-radius: var(--radius-full);
+    background: var(--color-surface-raised);
+    padding: 4px;
+  }
+  .window-shell .floating-controls .icon-button {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-control);
+  }
+  .window-shell .floating-controls .icon-button[aria-pressed='true'] {
+    background: var(--color-selection);
+    color: var(--color-accent);
+  }
+  .window-shell .zoom-value {
+    font-size: var(--text-callout);
+    min-width: 44px;
+  }
+  .window-shell .writing-shell {
+    display: flex;
+    flex-direction: column;
+  }
+  .window-shell .writing-main {
+    flex: 1;
+    min-height: 0;
+  }
+  .window-shell .writing-document-tools {
+    height: 48px;
+    min-height: 48px;
+    font-size: var(--text-callout);
+    border-bottom: 1px solid var(--color-separator);
+  }
+  .window-shell .writing-root-path {
+    padding: 12px;
+    font-size: var(--text-callout);
+    color: var(--color-fg-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .window-shell .writing-tree .ui-sidebar-row {
+    margin-block: 2px;
+  }
+  .window-shell .writing-file {
+    font-size: var(--text-body);
+    height: 32px;
+    background: transparent;
+  }
+  .window-shell .writing-tree .ui-sidebar-item {
+    gap: 8px;
+  }
+  .window-shell .writing-editor .cm-editor {
+    background: var(--color-content);
+    color: var(--color-fg);
+  }
+  .window-shell .writing-editor .cm-scroller {
+    font-size: var(--text-body);
+    line-height: 20px;
+  }
+  .window-shell .writing-editor .cm-content {
+    max-width: 560px;
+  }
+  .window-shell .writing-editor .cm-cursor {
+    border-left-color: var(--color-accent);
+  }
+  .window-shell .writing-editor .cm-selectionBackground {
+    background: var(--color-selection);
+  }
+  .window-shell .writing-status {
+    height: 28px;
+    font-size: var(--text-footnote);
+    color: var(--color-fg-tertiary);
+  }
+  .window-shell .writing-assistant {
+    position: relative;
+    height: 100%;
+  }
+  .window-shell .writing-assistant .ui-assistant-body {
+    display: flex;
+    flex-direction: column;
+  }
+}
+@layer components {
+  .window-shell .canvas-save-label {
+    font-size: var(--text-footnote);
+    color: var(--color-fg-tertiary);
+    white-space: nowrap;
+  }
+}
+@layer components {
+  .window-shell .writing-editor .md-h1 {
+    font-size: var(--text-title-1);
+    line-height: var(--text-title-1--line-height);
+    font-weight: 600;
+  }
+  .window-shell .writing-editor .md-h2 {
+    font-size: var(--text-title-2);
+    line-height: var(--text-title-2--line-height);
+  }
+  .window-shell .writing-editor .md-h3 {
+    font-size: var(--text-title-3);
+    line-height: var(--text-title-3--line-height);
+  }
+  .window-shell .writing-editor :is(.md-h4, .md-h5, .md-h6) {
+    font-size: var(--text-headline);
+    line-height: var(--text-headline--line-height);
+  }
+  .window-shell .writing-editor .md-quote {
+    border-color: var(--color-border);
+    color: var(--color-fg-secondary);
+    background: var(--color-fill);
+  }
+  .window-shell .writing-editor :is(.md-inline-code, .md-code-line) {
+    background: var(--color-fill);
+    font-size: var(--text-body);
+    border-radius: var(--radius-small);
+  }
+}
+
+@layer components {
+  .window-shell .writing-root-path {
+    margin-top: auto;
+  }
+  .window-shell .canvas-title input {
+    field-sizing: content;
+    width: auto;
+    min-width: 60px;
+    max-width: 180px;
+  }
+  .window-shell .canvas-body,
+  .window-shell .react-flow {
+    background: var(--color-content);
+  }
+}
+@layer components {
+  .writing-assistant-host {
+    position: relative;
+    height: 100%;
+  }
+  .writing-agent-panel {
+    width: 100%;
+    height: 100%;
+  }
+  .writing-agent-panel .ui-assistant-body {
+    min-height: 0;
+    overflow: auto;
+  }
+  .writing-agent-messages {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    gap: 20px;
+  }
+  .writing-agent-messages .chat-message {
+    font-size: var(--text-body);
+  }
+  [data-testid='writing-agent-context'] {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .writing-agent-panel .model-trigger {
+    max-width: 110px;
+  }
+}
+@layer components {
+  .writing-agent-panel .ui-assistant-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .writing-agent-messages {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+}

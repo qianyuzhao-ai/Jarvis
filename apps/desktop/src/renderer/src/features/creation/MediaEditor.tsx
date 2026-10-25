@@ -1,5 +1,9 @@
+import { IconButton as UiIconButton } from '@jarvis/ui/components/Button';
+import { Toggle } from '@jarvis/ui/components/Toggle';
+import { Spinner } from '@jarvis/ui/components/Spinner';
+import { Alert } from '@jarvis/ui/components/Alert';
 import { useRef, useState } from 'react';
-import { ArrowUp, Maximize, Minimize, Trash2, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowUp, Maximize, Minimize, Volume2, VolumeX, X } from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
 import { normalizeMedia } from './models';
 import { ImageControls } from './ImageControls';
@@ -15,17 +19,17 @@ export function MediaEditor({
   mentions,
   onChange,
   onClose,
-  onDelete,
   onGenerate,
   connectedCount = 0,
+  detailsRequest = 0,
 }: {
   data: MediaData;
   mentions: PromptMention[];
   onChange: (data: MediaData) => void;
   onClose: () => void;
-  onDelete: () => void;
   onGenerate: () => void;
   connectedCount?: number;
+  detailsRequest?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const promptRef = useRef<HTMLElement>(null);
@@ -75,6 +79,14 @@ export function MediaEditor({
           }
         }}
       >
+        {expanded && (
+          <div className="expanded-reference-heading">
+            <strong>参考素材</strong>
+            <span>
+              {mentions.length} / {video ? '图片 9 · 视频 3 · 音频 3' : '9 · 仅图片'}
+            </span>
+          </div>
+        )}
         <div className="editor-top">
           <References
             items={mentions}
@@ -124,34 +136,53 @@ export function MediaEditor({
             <ImageControls data={data} disabled={busy} onChange={update} />
           )}
           {video && (
-            <IconButton
-              label="生成音频"
-              aria-pressed={data.generateAudio}
+            <Toggle
+              aria-label="生成音频"
+              pressed={data.generateAudio}
               disabled={busy}
-              onClick={() => update({ generateAudio: !data.generateAudio })}
+              onPressedChange={(generateAudio) => update({ generateAudio })}
             >
               {data.generateAudio ? <Volume2 size={18} /> : <VolumeX size={18} />}
-            </IconButton>
+            </Toggle>
           )}
           <span className="editor-spacer" />
-          <IconButton label="删除节点" disabled={busy} onClick={onDelete}>
-            <Trash2 size={16} />
-          </IconButton>
-          <IconButton
-            label={`生成${label}`}
+          {busy ? (
+            <span className="editor-generation-hint">
+              <Spinner size="sm" />
+              正在生成…
+            </span>
+          ) : (
+            (!data.model || !data.prompt.trim()) && (
+              <span className="editor-generation-hint">
+                {video ? '填写提示词后可生成' : '选择模型并填写提示词后可生成'}
+              </span>
+            )
+          )}
+          <UiIconButton
+            size="icon-lg"
+            aria-label={`生成${label}`}
             className="generate-button"
             disabled={busy || !data.model || !data.prompt.trim()}
             onClick={onGenerate}
           >
             <ArrowUp size={20} />
-          </IconButton>
+          </UiIconButton>
         </div>
         {referenceError && (
-          <p className="editor-notice error-text" role="alert">
+          <Alert
+            tone="error"
+            data-testid="editor-notice"
+            className="editor-notice"
+            onDismiss={() => setReferenceError('')}
+          >
             {referenceError}
-          </p>
+          </Alert>
         )}
-        <GenerationDetails data={data} connectedCount={connectedCount} />
+        <GenerationDetails
+          data={data}
+          connectedCount={connectedCount}
+          openRequest={detailsRequest}
+        />
       </section>
     </>
   );

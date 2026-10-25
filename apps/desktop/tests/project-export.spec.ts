@@ -278,15 +278,16 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
       dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' });
     });
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
-    await expect(page.locator('.canvas-export-feedback')).toContainText('已取消导出');
+    await expect(page.getByTestId('canvas-export-feedback')).toContainText('已取消导出');
+    await expect(page.getByTestId('canvas-export-feedback')).toHaveAttribute('data-tone', 'info');
     const emptyPath = test.info().outputPath('empty-project.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, emptyPath);
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
-    await expect(page.locator('.canvas-export-feedback')).toContainText('Excel 已导出');
+    await expect(page.getByTestId('canvas-export-feedback')).toContainText('Excel 已导出');
     expect((await readBook(emptyPath)).getWorksheet('请求明细')!.rowCount).toBe(1);
-    await page.getByRole('button', { name: '返回项目列表' }).click();
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('button', { name: '内网地址', exact: true }).click();
     await page.getByLabel('req_from', { exact: true }).fill('export-test');
@@ -294,46 +295,47 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await page.getByLabel('upload 地址', { exact: true }).fill(mock.base + '/upload');
     await page.getByLabel('upload-media 地址', { exact: true }).fill(mock.base + '/upload-media');
     await page.getByRole('button', { name: '保存更改' }).click();
-    await expect(page.locator('.form-actions')).toContainText('已保存到本机');
-    await page.getByRole('button', { name: '返回工作台' }).click();
+    await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
+    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '新建项目', exact: true }).click();
     await page.getByLabel('项目名称', { exact: true }).fill('删除节点后导出');
     await page
       .getByLabel('导入画布素材')
       .setInputFiles({ name: 'asset.png', mimeType: 'image/png', buffer: png });
-    await expect(page.locator('.asset-node[data-ready="true"]')).toHaveCount(1);
+    await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(1);
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
     await page.getByLabel('图像提示词').fill('first image');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
-    await expect(page.locator('.editor-notice')).toContainText('生成完成');
+    await expect(page.getByTestId('editor-notice')).toContainText('生成完成');
     await page.getByLabel('选择模型', { exact: true }).selectOption('nano-banana-2');
     await page.getByLabel('图像提示词').fill('second image');
     await page.getByRole('button', { name: '生成图像', exact: true }).click();
     await expect.poll(() => mock.calls.filter((c) => c.path === '/generate').length).toBe(2);
-    await expect(page.locator('.editor-notice')).toContainText('生成完成');
+    await expect(page.getByTestId('editor-notice')).toContainText('生成完成');
     await page.getByRole('button', { name: '删除节点', exact: true }).click();
+    await page.getByAltText('asset.png').hover();
     await page.getByRole('button', { name: '删除资源 asset.png', exact: true }).click();
     await expect(page.locator('.react-flow__node')).toHaveCount(0);
-    await expect(page.locator('.canvas-status')).toContainText('已保存到本机');
+    await expect(page.getByTestId('canvas-status')).toContainText('已保存到本机');
     await app.close();
     app = await launch();
     page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: /删除节点后导出/ }).click();
+    await page.getByTestId('project-row').filter({ hasText: '删除节点后导出' }).click();
     await expect(page.locator('.react-flow__node')).toHaveCount(0);
     const badPath = test.info().outputPath('missing-dir', 'report.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, badPath);
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
-    await expect(page.locator('.canvas-export-feedback')).toContainText('导出失败');
+    await expect(page.getByTestId('canvas-export-feedback')).toContainText('导出失败');
     const file = test.info().outputPath('deleted-nodes.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, file);
     await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
-    await expect(page.locator('.canvas-export-feedback')).toContainText('Excel 已导出');
+    await expect(page.getByTestId('canvas-export-feedback')).toContainText('Excel 已导出');
     const book = await readBook(file);
     const details = book.getWorksheet('请求明细')!;
     expect(details.rowCount).toBe(4);
@@ -348,7 +350,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(900, 640));
     await page.screenshot({ path: test.info().outputPath('export-toolbar-light.png') });
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('.theme-root')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({ path: test.info().outputPath('export-toolbar-dark.png') });
     const stored = JSON.parse(
       await readFile(resolve(profile, 'generation-jobs.json'), 'utf8'),

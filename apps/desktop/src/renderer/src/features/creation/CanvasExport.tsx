@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { toast } from '@jarvis/ui/components/Toast';
+import { useEffect, useRef, useState } from 'react';
+import { Download } from '@jarvis/ui/icons';
 
 export function CanvasExport({
   projectId,
@@ -12,23 +13,39 @@ export function CanvasExport({
 }) {
   const pending = useRef(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<{ error: boolean; message: string } | null>(null);
+  const notification = useRef<string | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (notification.current) toast.dismiss(notification.current);
+    },
+    [],
+  );
   async function exportExcel() {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
-    setFeedback(null);
+    if (notification.current) toast.dismiss(notification.current);
+    const id = toast({
+      title: '正在导出…',
+      tone: 'loading',
+      testId: 'canvas-export-feedback',
+      closeLabel: '关闭',
+    });
+    notification.current = id;
     try {
       const result = await window.desktop!.generation.exportProject({
         projectId,
         projectName: projectName.trim() || '未命名项目',
       });
       if (!result.ok) throw new Error(result.error);
-      setFeedback({ error: false, message: result.value.canceled ? '已取消导出' : 'Excel 已导出' });
+      toast.update(id, {
+        tone: result.value.canceled ? 'info' : 'success',
+        title: result.value.canceled ? '已取消导出' : 'Excel 已导出',
+      });
     } catch (error) {
-      setFeedback({
-        error: true,
-        message: `导出失败：${error instanceof Error ? error.message : '请重试'}`,
+      toast.update(id, {
+        tone: 'error',
+        title: `导出失败：${error instanceof Error ? error.message : '请重试'}`,
       });
     } finally {
       pending.current = false;
@@ -36,7 +53,7 @@ export function CanvasExport({
     }
   }
   return (
-    <div className="canvas-status">
+    <div data-testid="canvas-status" className="canvas-status">
       <span className="sr-only" role="status">
         {status}
       </span>
@@ -50,15 +67,6 @@ export function CanvasExport({
         <Download size={16} />
         <span>{busy ? '正在导出…' : '导出 Excel'}</span>
       </button>
-
-      {feedback && (
-        <div className="canvas-export-feedback" role={feedback.error ? 'alert' : 'status'}>
-          <span>{feedback.message}</span>
-          <button type="button" onClick={() => setFeedback(null)}>
-            关闭
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,6 +1,18 @@
+import {
+  writingScopeSchema,
+  type WritingScope,
+  type WritingCommand,
+  type WritingReply,
+} from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
+import {
+  baseUrlSchema,
+  thinkingLevelSchema,
+  type ModelSettingsView,
+  type ThinkingLevel,
+} from './models';
 import {
   canvasChangeSchema,
   canvasSnapshotSchema,
@@ -8,6 +20,7 @@ import {
   type CanvasReply,
 } from './canvas-agent';
 
+/** v2 settings schema, kept to read older files and session records during migration. */
 export const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
 export const DEEPSEEK_MODELS = ['deepseek-flash', 'deepseek-v4-pro'] as const;
 
@@ -15,22 +28,7 @@ export const relaySchema = z
   .object({
     provider: z.enum(['relay', 'deepseek']).optional(),
     name: z.string().trim().min(1).max(100),
-    baseUrl: z
-      .string()
-      .trim()
-      .url()
-      .max(2000)
-      .refine((value) => {
-        const url = new URL(value);
-        return (
-          ['https:', 'http:'].includes(url.protocol) &&
-          !url.username &&
-          !url.password &&
-          !url.search &&
-          !url.hash
-        );
-      }, '地址不能包含账号、密码、查询参数或锚点')
-      .transform((value) => value.replace(/\/+$/, '')),
+    baseUrl: baseUrlSchema,
     api: z.enum(['openai-completions', 'openai-responses']),
     model: z.string().trim().min(1).max(200),
     contextWindow: z.number().int().min(8192).max(2_000_000).nullable().default(null),
@@ -48,41 +46,13 @@ export const relaySchema = z
       c.provider !== 'deepseek' || !c.model || DEEPSEEK_MODELS.some((model) => model === c.model),
     '请选择当前版本支持的 DeepSeek 官方模型',
   );
-export const relayInputSchema = z
-  .object({
-    config: relaySchema,
-    modelId: z.string().uuid().optional(),
-    create: z.boolean().optional(),
-    apiKey: z
-      .string()
-      .trim()
-      .max(4000)
-      .refine((key) => !/[\r\n]/.test(key))
-      .default(''),
-    clearKey: z.boolean().default(false),
-  })
-  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key')
-  .refine((r) => !(r.create && r.modelId), '新增模型不能包含已有模型 ID');
 export const agentId = z.string().uuid();
-export const relayModelsInputSchema = z
-  .object({
-    config: relaySchema.safeExtend({ model: z.string().trim().max(200) }),
-    modelId: z.string().uuid().optional(),
-    create: z.boolean().optional(),
-    apiKey: z
-      .string()
-      .trim()
-      .max(4000)
-      .refine((key) => !/[\r\n]/.test(key))
-      .default(''),
-    clearKey: z.boolean().default(false),
-  })
-  .refine((r) => !(r.apiKey && r.clearKey), '不能同时填写和清除 Key');
 export const agentSendSchema = z.object({
   sessionId: agentId,
   requestId: agentId,
   text: z.string().trim().min(1).max(32000),
   canvas: canvasSnapshotSchema.optional(),
+  writing: writingScopeSchema.optional(),
   images: z.array(visionAssetSchema).max(12).optional(),
 });
 export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
@@ -93,6 +63,7 @@ export const chatActivitySchema = z.object({
   transactionId: z.string().uuid().optional(),
   changes: z.array(canvasChangeSchema).max(200).optional(),
   projectId: z.string().uuid().optional(),
+  writingScope: writingScopeSchema.optional(),
   files: z
     .array(
       z.object({
@@ -132,24 +103,16 @@ export const chatSessionSchema = z.object({
   contextTokens: z.number().nullable(),
   contextWindow: z.number().nullable(),
   projectId: z.string().uuid().optional(),
+  thinkingLevel: thinkingLevelSchema.optional(),
+  writingScope: writingScopeSchema.optional(),
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
-export type RelayInput = z.infer<typeof relayInputSchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type ChatSession = z.infer<typeof chatSessionSchema>;
-export interface RelayView {
-  config: RelayConfig | null;
-  hasKey: boolean;
-  models?: ConfiguredModel[];
-  defaultModelId?: string | null;
-}
-export interface ConfiguredModel {
-  id: string;
-  config: RelayConfig;
-  hasKey: boolean;
-}
 export interface AgentSnapshot {
   skills?: SkillInfo[];
+  /** Model settings shared by every Agent entry (home, canvas, writing); Keys are never included. */
+  models?: ModelSettingsView;
   sessions: ChatSession[];
   busySessionId: string | null;
 }
@@ -162,21 +125,20 @@ export interface AgentBridge {
   listSkills(): Promise<AgentResult<SkillInfo[]>>;
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
-  getConfiguration(): Promise<AgentResult<RelayView>>;
-  saveConfiguration(input: RelayInput): Promise<AgentResult<RelayView>>;
-  removeModel(id: string): Promise<AgentResult<RelayView>>;
-  setDefaultModel(id: string): Promise<AgentResult<RelayView>>;
-  testConnection(input: RelayInput): Promise<AgentResult<string>>;
-  listModels(input: RelayInput): Promise<AgentResult<string[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
   createSession(): Promise<AgentResult<string>>;
   createCanvasSession(projectId: string): Promise<AgentResult<string>>;
+  createWritingSession(scope: WritingScope): Promise<AgentResult<string>>;
+  claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
+  completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
+  onWritingCommand(listener: (command: WritingCommand) => void): () => void;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;
   renameSession(input: { sessionId: string; title: string }): Promise<AgentResult<void>>;
   deleteSession(sessionId: string): Promise<AgentResult<void>>;
   setModel(input: { sessionId: string; model: string }): Promise<AgentResult<void>>;
+  setThinkingLevel(input: { sessionId: string; level: ThinkingLevel }): Promise<AgentResult<void>>;
   send(input: z.infer<typeof agentSendSchema>): Promise<AgentResult<string>>;
   cancel(runId: string): Promise<AgentResult<void>>;
   copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;

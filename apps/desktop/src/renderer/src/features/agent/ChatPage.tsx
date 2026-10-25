@@ -1,5 +1,7 @@
+import { Button } from '@jarvis/ui/components/Button';
+import { Alert } from '@jarvis/ui/components/Alert';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, CircleAlert, FileText, Pencil, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, FileText, Pencil, Brain } from '@jarvis/ui/icons';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 import { IconButton } from '../../components/IconButton';
@@ -22,8 +24,10 @@ export function ChatPage({
   const input = useRef<HTMLTextAreaElement>(null);
   const following = useRef(true);
   const busy = !!session?.runId;
-  const configured = !!configuration.config;
-  const model = session?.model ?? (draftModel || configuration.config?.model || '');
+  const configured = agent.configured;
+  const model = session
+    ? (session.modelId ?? '')
+    : draftModel || configuration.defaultModelId || '';
   const last = session?.messages.at(-1);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -55,15 +59,21 @@ export function ChatPage({
   }
   const suggestions = ['梳理一份资料', '推敲一个想法', '把讨论变成计划'];
   return (
-    <section className="chat-page" aria-label="首页 Chat">
+    <section data-testid="chat-page" className="chat-page" aria-label="首页 Chat">
       {agent.error && (
-        <div className="agent-error chat-error" role="alert">
-          <CircleAlert size={16} />
-          <span>{agent.error}</span>
-          <IconButton label="关闭错误提示" onClick={() => agent.setError('')}>
-            <X size={16} />
-          </IconButton>
-        </div>
+        <Alert
+          tone="error"
+          className="chat-error w-auto"
+          onDismiss={() => agent.setError('')}
+          closeLabel="关闭错误提示"
+          action={
+            <Button variant="secondary" size="sm" onClick={onConfigure}>
+              打开设置
+            </Button>
+          }
+        >
+          {agent.error}
+        </Alert>
       )}
       {session && (
         <div className="chat-title">
@@ -110,6 +120,7 @@ export function ChatPage({
         </form>
       )}
       <div
+        data-testid="chat-scroll"
         className={`chat-scroll ${session?.messages.length ? '' : 'chat-empty-scroll'}`}
         ref={viewport}
         onScroll={() => {
@@ -122,7 +133,8 @@ export function ChatPage({
       >
         {!session?.messages.length ? (
           <div className="chat-welcome">
-            <h1>{configured ? '今天想做些什么？' : '先添加一个模型'}</h1>
+            <Brain size={40} aria-hidden="true" />
+            <h1>{configured ? '今天想让 Jarvis 帮你做什么？' : '先添加一个模型'}</h1>
             <p>
               {configured
                 ? '聊一个想法，读一份资料，或继续手头的工作。'
@@ -130,7 +142,7 @@ export function ChatPage({
             </p>
             {!configured && (
               <button className="agent-primary" onClick={onConfigure}>
-                配置模型服务
+                前往模型设置
               </button>
             )}
             {!session?.messages.length && configured && (
@@ -167,7 +179,7 @@ export function ChatPage({
           </div>
         )}
       </div>
-      <div className="chat-dock">
+      <div data-testid="chat-dock" className="chat-dock">
         {!atBottom && !!session?.messages.length && (
           <button
             className="chat-latest"

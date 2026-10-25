@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { skillRuntime } from '../src/main/agent/skill-runtime';
 import { openAgent } from '../src/main/agent/runtime';
-import { relaySchema, type ChatMessage } from '../src/shared/agent';
+import type { ChatMessage } from '../src/shared/agent';
+import { relayModel } from './helpers/models';
 import type { StoredSkill } from '../src/main/agent/skill-store';
 
 const skill: StoredSkill = {
@@ -93,13 +94,7 @@ test('Pi can choose a skill, load its references and answer while filesystem too
   const runtime = await openAgent(
     test.info().outputPath('agent'),
     randomUUID(),
-    relaySchema.parse({
-      name: 'mock',
-      model: 'mock',
-      api: 'openai-completions',
-      baseUrl: `http://127.0.0.1:${address.port}/v1`,
-    }),
-    '',
+    relayModel({ model: 'mock', baseUrl: `http://127.0.0.1:${address.port}/v1` }),
     false,
     undefined,
     skills,

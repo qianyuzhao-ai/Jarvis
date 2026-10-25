@@ -1,12 +1,128 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-23
+最后更新：2026-10-25
+
+## 0.3.0 发布准备（2026-10-25）
+
+- 用户明确授权以本地最新状态集成 develop（用户称 dev）并发布 0.3.0，排除远端 `ccr*` 分支。fetch 核对 develop=`fd6db60`、main=`57365e8`，当前本地 `feature/project-more-menu` 独有提交为 `fe41c1e` / `66bde20`；远端 `ccr-1c636605-o0pprj` 只读列出，不合入、不修改。远端无 v0.3.0 标签或开放 PR，最近发布为 v0.2.5。
+- 根包/桌面包版本和 README 源码版本统一 0.3.0，新增 CHANGELOG 并更新“关于 Jarvis”检查更新路径；沿用 feature → develop → main PR 与 main 合并提交新标签，不创建 release 分支、不移动旧标签。
+- 发布检查确认删除项目后键盘焦点丢失（新增实窗断言可复现），补充成功删除后聚焦剩余行或侧栏首个动作。既有加载前浅色首屏与锚定浮层缩放原点为非阻断后续项；不在发版时重做主题或动效。桌面应用无移动端/营销页面验收范围。
+- check、build、版本一致性与 10 项 Node 发布工具回归、Apple 网络重试脚本通过。完整 Electron 回归 124/124（4.6m）通过，浅深截图基准包含在本轮通过结果内；云端三平台签名、公证、原生启动和 Release 校验待执行，不得将准备状态称为发布完成。
+
+
+## 项目更多菜单恢复（2026-10-25）
+
+- 分支 `feature/project-more-menu` 从 develop 创建；已有未跟踪 `skills/` 保留不动。用户于同日授权提交；未推送、提 PR 或发布。
+- `ShellSidebar` 接入 `onDeleteProject`、新标签页打开和删除确认，IconButton 标签统一“更多”；App 通过现有 commit 保存移除单个项目（rollbackOnFailure=true），不新增原生能力或远端删除请求。行菜单专用 CSS 按内容占宽，上限 320px 并受 Radix 可用宽度约束。
+- `pruneTabs` 在关闭失效标签后同时过滤失效历史并重算 cursor，防止删除项目后前进/后退进入空白画布。新增 project-menu 实窗与删除历史单测，调整旧 window-shell 的更多按钮定位。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；相关 Electron/标签/侧栏 9/9（15.6s）通过，浅深菜单截图检查通过。存储失败回滚沿用现有 commit 机制，此轮未注入磁盘/IndexedDB 故障。
+
+
+## 关于 Jarvis 与更新入口迁移（2026-10-25）
+
+- 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
+- 更新测试入口迁到关于页，补充通用页无更新区、关于选中态及刷新恢复断言。`pnpm check`、`pnpm build` 与 updates / updates-http / updates-service / update-preparation 共 13/13（17.9s）通过，浅深/窄窗截图检查通过。实际发布和真实安装未执行。
+- 用户于同日授权两个分支推送、提 PR 并合入 develop。模型修复已由 [PR #74](https://github.com/qianyuzhao-ai/Jarvis/pull/74) 合入 develop（`59f7dd5`），随后同步到本分支；仅两份记忆顶部记录冲突，保留两侧完整记录，应用代码自动合并。关于页由 [PR #75](https://github.com/qianyuzhao-ai/Jarvis/pull/75) 交付，合并前集成检查、构建与模型/更新相关 26/26（30.1s）通过。
+
+## 模型配置开发模式卡住修复（2026-10-25）
+
+- 用户截图：添加 DeepSeek 第 2 步点击“下一步”后持续转圈。根因是 `AddProviderDialog` 的 mounted ref 在 StrictMode 开发模式的 effect 清理后永久变为 false，随后校验报错、busy 清除、模型列表更新和步骤跳转均被跳过；此步新建服务商尚未发送网络请求。
+- 修复：effect 每次 setup 恢复 mounted=true，真实卸载时仍置 false。分支 `feature/model-dialog-lifecycle-fix`，用户于同日授权推送与 PR 集成，已由 PR #74 合入 develop（`59f7dd5`）；未发布，不改变凭据和 IPC 边界。
+- 新增 `model-dialog-dev.spec.ts`：实际 Vite 开发 renderer + Electron（隔离 profile、测试 Key），旧代码复现缺少 Key 后无报错且卡住；修复后校验恢复、DeepSeek 目录加载、选择添加、编辑连接与刷新恢复通过（1/1，3.6s）。现有 model-library / model-store / model-runtime 12/12 通过；check、build 通过。未调用真实 DeepSeek，真实服务联调仍待验证。新增测试要求开发端口 5173 空闲，与主进程可信来源限制一致。
+
+
+## 模型配置分支合入 develop 前的合并（2026-10-24）
+
+- 用户要求提 PR 合入 develop。develop 已含 UI V1 第三阶段（AppShell、跨空间标签、Composer/AssistantPanel、写作 Agent），先把 origin/develop 合并进 `ccr-56156863-qdlw6l` 再提 PR。
+- 冲突处理：保留 develop 的外壳与写作会话（writingScope、createWritingSession、ChatTab），模型相关改用 v3：`store.create(model, projectId, thinkingLevel, writingScope)`；自定义模型 input 只在“支持图片且非写作会话”时含 image；ChatTab 去掉旧 configuration 同步；画布与写作右边栏按 modelId / defaultModelId 选模型，未配置按钮统一“前往模型设置”；设置导航“模型服务”改“模型”；新文件图标改从 `@jarvis/ui/icons` 导入（check-tokens 规则）；develop 新增的 `writing-agent.spec` 改用 `addRelayModel`。
+- 新 Composer 中原生 select 溢出导致右边栏“思考”与模型选择重叠：模型与思考选择改用 `NativeSelect appearance="compact" size="sm"`（与 Figma Composer 一致），宽版上限 240 / 120px，compact 112 / 92px；首页与画布右边栏截图检查通过。
+- 验证：check、build 通过；完整实窗 119 例通过，ui-preview 2 例仍无仓库 linux 基线（第二轮因上一轮生成的 linux png 存在而显示通过，已删除，不作为通过依据）。
+
+## 模型配置当前状态（2026-10-24，改造五个阶段已完成）
+
+- 结构：`agent/connection.json` v3 = providers（builtin：sdkProvider；custom：name/baseUrl/api）+ models（自定义模型带能力与来源）+ defaultModelId；Key 由 safeStorage 加密，渲染层只见 hasKey。v2/v1 首次启动自动迁移并备份 `connection.v2.bak.json`。
+- 主进程：`catalog.ts`（pi-ai 内置目录、分组与排除名单、模型 ID 匹配）、`model-store.ts`、`key-cipher.ts`、`probe-image.ts`、`runtime.ts`（内置走 SDK provider，自定义注册 jarvis-custom；输出上限“自动”去掉参数）；IPC `models:*` 与 `agent:thinking`，旧 `agent:configuration` 等已删除。
+- 界面：设置“模型”页（服务商卡片、添加服务商三步、模型能力对话框）；Composer 的模型选择器按服务商分组并在带图时禁用仅文字 / 未确认模型，旁边是思考程度选择（首页与画布右边栏，写作 Agent 接入时复用）。
+- 与方案文档的差异（未做，待需要时再定）：服务商卡片只显示“需要重新填写 Key”，未做“已连接 / 未测试”状态；带图时未确认模型直接禁用，不支持在选择器内点击检测（需到模型能力对话框检测）；无模型时选择器显示“先添加模型”，跳转由页面上的“前往模型设置”按钮承担。
+- 未验证：真实服务商与真实中转站联调（含思考参数格式、输出上限省略）、macOS/Windows 实机钥匙串。Linux 容器下的实窗测试需要 keyring 与 loader 本地处理（见阶段 2）。
+
+## 模型配置改造阶段 5：收尾（2026-10-24）
+
+- 更新 AGENTS.md 当前范围、本文件当前状态、design.md 与 UI 计划书中的“模型服务”入口名；旧“我的模型 / RelaySettings / DeepSeek 4096”记录标注已被取代，保留为历史。
+- 回归（模拟服务）：check、build 通过；完整实窗 106 例中 104 通过，2 例 ui-preview 失败原因为仓库只有 darwin 截图基线、Linux 下“snapshot doesn't exist”，属环境限制，非本次改动；生成的 linux png 已逐个删除。真实服务商联调另行记录。
+
+## 模型配置改造阶段 4：输入框思考程度与图片限制（2026-10-24）
+
+- `ModelPicker.tsx` 新增 `ThinkingPicker`（“思考：高”样式原生选择，aria-label 思考程度），首页 Composer 与画布右边栏共用；只列模型支持的档位，模型思考档位少于 2 个（不调节或只有关闭）时隐藏。显示值：会话用自身 thinkingLevel；新对话草稿用用户所选或该模型上次档位（`shared/models.ts` 的 `thinkingFor`）。`useAgent` 增加 `draftThinking` / `thinking()`：已有会话直接调 `setThinkingLevel`；草稿在首次发送建会话、切模型后按最近档位提交。
+- 模型选择器图片限制：对话已有图片或画布有待发送图片时，图片能力非“支持”的模型禁用并标注“· 仅文字”或“· 未确认 · 先检测”（与服务端 assertVision 一致）。
+- 样式：`.thinking-trigger` 最大 120px，画布右边栏模型 120px、思考 84px；400px 右边栏截图检查放得下。
+- 测试：model-library 覆盖 DeepSeek 档位数量、会话内切到“高”后请求带思考、自定义模型隐藏选择、新对话沿用上次档位并在草稿改为关闭后发出 disabled；canvas-agent-vision 覆盖带图时仅文字 / 未确认模型禁用、右边栏草稿选“中”后请求 reasoning_effort=medium。model-library 重启后需重新安装 DeepSeek fetch 重定向（否则请求发往真实 api.deepseek.com 得 401）。验证：check、build 通过；完整实窗 104 通过，ui-preview 2 例仍因无 linux 基线失败。
+
+## 模型配置改造阶段 3：设置页重写（2026-10-24）
+
+- 设置页“我的模型”改为“模型”：`features/settings/ModelSettings.tsx`（默认模型下拉按服务商分组、服务商卡片列表、空状态）；新增 `features/settings/models/`：`ProviderCard`（服务商菜单 编辑连接 / 管理模型 / 删除；模型行徽标 默认 / 已下线 / 图片能力 / 可思考 / 上下文，菜单 设为默认 / 模型能力…（仅自定义）/ 移除）、`AddProviderDialog`（new 三步：选择 → 连接 → 勾选模型；edit 只改连接；models 只管理模型；自定义接口支持测试连接、/models 列表、仅支持图片筛选、手动添加 ID）、`ModelCapabilitiesDialog`（图片 自动/支持/不支持 + 检测、思考预设、上下文与输出上限留空为自动）、`model-format.ts`。
+- 删除 `RelaySettings.tsx` 与 v3 旧适配层（`agent:configuration/save/remove-model/default-model/test/models` IPC、preload 旧方法、shared 中 RelayInput/RelayView/ConfiguredModel）；`relaySchema` 与 DeepSeek 常量仅保留给迁移。agent 快照带 `models`，`useAgent` 直接读 `snapshot.models`；`ModelPicker` 按服务商 optgroup 分组。思考选择器、选择器图片限制已在阶段 4 完成。
+- 修复：连接步“下一步”在 busy 未清除时切到模型步，导致候选列表加载被 run 守卫跳过——改为 run 结束后再切步。默认模型下拉外层 NativeSelect 包装为 w-full，需放进 `w-70` 容器，否则标签被挤成竖排。
+- 测试：新增 `tests/helpers/model-setup.ts`（经 models 桥添加中转模型）；agent / model-library 实窗测试改走新对话框，其余 Agent 用例改用 helper。验证：check、build 通过；完整实窗 104 通过，ui-preview 2 例因仓库无 linux 基线失败（环境限制，生成的 linux png 已逐个删除）。仍依赖阶段 2 记录的 keyring / loader 本地处理。
+
+## 模型配置改造阶段 2：数据与运行时（2026-10-24）
+
+- 用户确认设计稿后开始阶段 2（方案见 Google 文档“模型配置方案”，设计节点见 design.md 与 figma-sync-2026-10-21/model-settings-v1-state.json）。分支 ccr-56156863-qdlw6l（基于 develop）。
+- 新增 `shared/models.ts`（思考档位、服务商/模型输入与视图、ModelsBridge）、`main/agent/catalog.ts`（懒加载 pi-ai 内置目录；第一期排除 Bedrock/Vertex/Azure/Cloudflare/Codex/Copilot/Radius/TypeSafe；按模型 ID 精确匹配并优先原厂数据）、`model-store.ts`（v3：providers + models + defaultModelId；v2/v1 自动迁移按“来源+地址+协议+Key 明文”合并，保留模型 id，备份 `connection.v2.bak.json`，密钥存储不可用时中止并保留原文件；能力优先级 手动 > 检测 > 中转站 > 目录）、`key-cipher.ts`（safeStorage 封装，store 可在纯 Node 测试）、`probe-image.ts`（随机 4 位数字 PNG）。删除 `configuration.ts`。
+- runtime：内置服务商直接用目录模型（不再把 DeepSeek 输出上限改成 4096）；自定义模型按能力注册 input/reasoning/thinkingLevelMap；输出上限“自动”通过 onPayload 去掉上限参数（Anthropic 协议回退 8192）；思考档位由会话传入；运行时 Key 优先于环境变量；HTTP 状态改在 fetch 包装中记录（SDK 对错误响应不调用 onResponse）。
+- service：去掉 DeepSeek Pro 特判，图片校验统一读模型能力（不支持 / 未确认分别提示）；会话记录 thinkingLevel，切模型降到最近档位，新会话沿用该模型上次档位；新增 saveProvider / setProviderModels / updateModel / removeProvider / testProvider / fetchProviderModels / probeVision / setThinkingLevel 与 `models:*`、`agent:thinking` IPC。旧 `agent:configuration/save/test/models` 等适配层已在阶段 3 删除。
+- 环境记录：Linux 容器下 Playwright 的 Electron loader 固定追加 `--password-store=basic`，safeStorage 恒为 basic_text，凡保存 Key 的实窗测试在 Linux 必然失败（基线即如此，非代码问题）。本地验证方式：安装 gnome-keyring，在 dbus-run-session 内解锁 keyring、设置 XDG_CURRENT_DESKTOP=GNOME，并临时把 node_modules 中 playwright-core electron/loader.js 的该参数改为 gnome-libsecret（不入库，验证后还原）。
+
+## UI V1 第三阶段完成（2026-10-24）
+
+窗口外壳、跨空间标签、页面迁移、当前文档写作 Agent、节点与编辑栏更新已完成。最终 check/build、完整 Electron 模拟服务回归 110/110（4.3m）通过；本地 macOS arm64 目录包在外部 cwd、隔离 userData 下通过 360 项生产依赖及 ASAR 实窗启动，窗口标签、写作 Agent 与更新桥接均验证。版本仍为 0.2.5，无新依赖；保留 Agent 节点生成修复 a1ec3a3。分支 feature/ui-v1-shell，提交/推送与 36 张截图索引见 [实施与验收](ui-v1-implementation.md) 第三阶段。真实内网与其他目标系统仍待联调。
+
+
+## Agent 节点生成 ID 兼容修复（2026-10-24）
+
+- 根因：画布 Agent 创建允许 1–100 字符的节点 ID（如 `agent-image`），但生成提交、参考素材上传、任务回读及请求账本只接受 UUID；手动节点使用 UUID 因此未受影响。UUID 限制早于任务接口迁移，属于两个本地协议之间的衔接缺陷。
+- 新增共享 `canvas-node-id.ts`，画布操作与生成/上传/任务/账本统一使用相同的有界字符串规则。节点 ID 只用于本地关联，不参与文件路径或远端任务 URL；requestId、projectId 继续要求 UUID。保留现有节点 ID、连线和撤销记录，无需迁移或重建节点。
+- 保持 Agent 的创建/编辑权限边界：用户点击生成后正常发送请求，本次未新增 Agent 自动执行生成工具。
+- 验证：`pnpm check`、`pnpm build`、`git diff --check` 通过；生成与画布 Agent 相关 10 项回归同轮通过（47.0s）。新增用例使用真实 Agent 创建/连线函数产生非 UUID 节点并存入 IndexedDB，在 Electron 窗口上传参考图、点击生成图像/视频、检查图像 URL 沿连线进入视频请求，重启后恢复结果并回读任务账本，确认没有重复提交；同时验证 ID 长度限制及 projectId/requestId 的 UUID 校验仍生效。最初沙箱监听 EPERM，放行后正常运行；新增测试首次因未填充模拟视频而预览失败，复用原视频夹具后通过。本次使用本地模拟服务，不代表真实内网联调完成。
+- 修复已提交为 `a1ec3a3`（`feature/agent-node-generation`）。用户随后要求从最新 develop 新开分支并合入：当前分支 `feature/agent-generation-fix`，合并提交 `1c76472`，无冲突；检查及构建通过，未推送或发布。
+
+## UI V1 第二批浮层与反馈（2026-10-24）
+
+E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二批十个家族（含 CandidateList）、异步 ConfirmProvider 和最多三条的 Toast；页面接入不新增原生接口、不改数据格式。最终检查、构建、完整实窗 95/95（3.4m），浮层复验 8/8（25.5s）通过。phase-h 36 张浅深截图与所有阶段 SHA、取舍、失败修复记录见 [UI V1 实施与验收](ui-v1-implementation.md) 第二批章节。MediaEditor 外壳、ContextUsage 混合提示按评估保留；macOS 13/26 和 Windows 仍待实机验收。
+
+## UI V1 阶段 D 设置试装（2026-10-23）
+
+通用、模型、内网、下载、插件/技能控件迁到 @jarvis/ui；保留保存/取消/校验/Key/登录边界。清理过时设置 CSS，混合文件旧颜色原值保留为兼容变量。设置浅深与窄窗截图、组件集成补充及最终门禁见 [UI V1 验收报告](ui-v1-implementation.md)。ModelPicker 无设置调用点，聊天选择器保持原实现。
+
+
+## UI V1 阶段 C 基础控件（2026-10-23）
+
+实现 12 个组件家族、开发专用预览页和浅深 screenshot 基准；Figma 各评审节点、API、视觉差异与验证证据见 [UI V1 实施记录](ui-v1-implementation.md)。本轮按用户实施文档实现初稿，未改 Figma。
+
+
+## UI V1 阶段 B 原生外观（2026-10-23）
+
+接入只读系统强调色 bridge、macOS sidebar vibrancy 与 html 窗口焦点状态；Windows / 降低透明度使用不透明侧栏。当前主机 macOS 27.0.1，13/26 与 Windows 材质及真实系统设置切换仍待实机验收。API 来源与回归结果见 [UI V1 实施记录](ui-v1-implementation.md)。
+
+
+## UI V1 阶段 A 基建（2026-10-23）
+
+建立 @jarvis/ui 工作区、变量约束检查和稳定测试定位；目录打包、360 项生产依赖闭包及真实包启动通过。阶段实窗回归结果与截图证据集中于 [UI V1 实施记录](ui-v1-implementation.md)。
+
 
 ## 0.2.5 发布（2026-10-23）
 
+- 最终成功：修复 73a049a 经 PR #64 合入 develop、PR #65 合入 main（57365e88e2029c0b693a835d72450b4c2f4933a0）。从该工作流执行原 v0.2.5 标签的运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39936714410 四个作业全部 success；标签仍指向 3e58d1bb18b170c93dc4483be923373316a9a231，未移动或覆盖旧资产。
+- https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.2.5 已于北京时间 2026-10-23 18:21:02 发布，非草稿、预发布；12 个资产均 uploaded（4 个 macOS DMG/ZIP、Windows EXE、5 个 blockmap、2 个更新清单）。
+- arm64 作业 120357929200、Intel x64 作业 120357929538 和 Windows 作业 120357929515 均通过 360 项依赖、各自原生打包应用启动、ASAR 页面、设置/更新桥接及版本 0.2.5 验证。两种 macOS 的目录包、ZIP/DMG 内应用全部通过签名、公证票据、Gatekeeper accepted / Notarized Developer ID，以及最低系统 13.0 断言。
+- 统一发布作业 120363396414 合并并复验双架构清单成功。线上 latest-mac.yml / latest.yml 已下载，SHA-256 与 GitHub asset digest 一致；版本、引用文件名、大小与线上资产一致，两种 macOS ZIP 均存在。中文发布说明保留自动生成记录并回读一致。
+- 修复后 pnpm check 与 10 项 Node 发布工具测试通过。完整业务回归沿用发布源码 84/84；工作流修复未改应用源码。macOS 13 实机安装/登录/媒体/自动更新和真实内网仍待用户验收；Intel 原生启动已由本次 CI 结果替代此前 Rosetta 限制。
+- 验证日志、Release API 与线上清单保存在 /private/tmp/jarvis-025-release-verification；UI 设计笔记 memory/design.md 未纳入本次提交。
+
+
 - 首次运行 39934957130 的 Windows 已成功；复查发现 electron-builder 在 --mac 未指定目标时仍展开配置里的双架构，使每个 macOS 任务重复构建。主动取消原运行，改为 --mac dmg zip --<arch>；新增 release-targets.test.mjs 用实际 builder 解析函数复现旧行为并证明新命令只构建目标架构。仅修复工作流，原 v0.2.5 标签和应用源码不变；随后从修复后的 main 手动触发原标签。
 
-- 实现提交 755baf0 经 PR #62 合入 develop（1761e32），PR #63 合入 main（3e58d1bb18b170c93dc4483be923373316a9a231），两次合并树与已验证源码一致。新标签 v0.2.5 已推送，唯一发布运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39934957130 已启动，最终结果待回读。
+- 实现提交 755baf0 经 PR #62 合入 develop（1761e32），PR #63 合入 main（3e58d1bb18b170c93dc4483be923373316a9a231），两次合并树与已验证源码一致。新标签 v0.2.5 已推送，唯一发布运行 https://github.com/qianyuzhao-ai/Jarvis/actions/runs/39934957130 已启动，后续修复重试成功，见本节最终结果。
 
 - 发布前 pnpm check、构建、版本一致性及 diff 检查通过，完整 Electron/模拟服务回归 84/84（3.0m）、Node 发布工具回归 9/9 通过。
 
@@ -150,7 +266,7 @@
 - `Jarvis-0.2.0-macos-arm64.zip`：235378407 字节，sha256:b5df633841c6d01ee70e787a058563326bc99fb72e54b22f555d1a413d8dded3。
 - `Jarvis-0.2.0-windows-x64-unsigned-setup.exe`：207043282 字节，sha256:44030c5f90a3633001865a17665cc4f3a2d8c412cc0a4b3d34089125e5c8ed96。
 
-## 我的模型与 DeepSeek 官方接入（2026-10-22）
+## 我的模型与 DeepSeek 官方接入（2026-10-22，已被 2026-10-24 模型配置改造取代，仅作历史）
 
 - 用户明确模型服务采用可持久化的“我的模型”列表，支持 DeepSeek 官方与多个自定义中转模型共存、Chat/画布按会话切换。实现留在当前 `feature/ui-style`；用户随后授权本地提交代码、测试及项目记忆，不推送或合并。
 - 已实际检查安装的 `@earendil-works/pi-ai` / `pi-coding-agent` 1.3.0：通过 `getBuiltinModels`（`@earendil-works/pi-ai/providers/all`）和 `ModelRuntime.getModel('deepseek', id)` 核对内置 DeepSeek。根包没有旧 `getModels` 命名导出，不沿用旧 API。官方文档 https://api-docs.deepseek.com/ 与 https://api-docs.deepseek.com/api/list-models/ 本轮读取确认 `deepseek-flash` / `deepseek-v4-pro` 和官方地址；思考/工具兼容规则见 https://api-docs.deepseek.com/guides/thinking_mode/ 。
