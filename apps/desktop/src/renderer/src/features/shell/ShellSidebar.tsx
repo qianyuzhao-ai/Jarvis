@@ -32,7 +32,7 @@ import {
   Plus,
 } from '@jarvis/ui/icons';
 import type { Project } from '../creation/types';
-import type { ChatSession } from '../../../../shared/agent';
+import type { ChatSessionMeta } from '../../../../shared/agent';
 import type { TabView } from './tabs';
 type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
 export function ShellSidebar({
@@ -58,7 +58,7 @@ export function ShellSidebar({
   activeProject: string | null;
   onCreate: () => void;
   onOpenProject: (p: Project, newTab: boolean) => void;
-  sessions: ChatSession[];
+  sessions: ChatSessionMeta[];
   activeChat: string | null;
   onChat: (id: string | null, title: string, newTab: boolean) => void;
   onSettings: (s: Section) => void;

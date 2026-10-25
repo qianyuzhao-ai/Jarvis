@@ -305,9 +305,9 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     const indexFile = join(userData, 'agent', 'index.json');
     const legacyIndex = JSON.parse(await readFile(indexFile, 'utf8'));
     const legacyRecord = legacyIndex.sessions.find(
-      (record: { view: { id: string } }) => record.view.id === sessionId,
+      (record: { meta: { id: string } }) => record.meta.id === sessionId,
     );
-    delete legacyRecord.view.modelId;
+    delete legacyRecord.meta.modelId;
     await writeFile(indexFile, JSON.stringify(legacyIndex));
     app = await launch();
     page = await app.firstWindow();

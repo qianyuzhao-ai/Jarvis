@@ -187,7 +187,9 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await expect.poll(dockGap).toBeLessThan(2);
     const first = await page.evaluate(async () => {
       const r = await window.desktop?.agent.getSnapshot();
-      return r?.ok ? r.value.snapshot.sessions[0] : null;
+      const id = r?.ok ? r.value.snapshot.sessions[0]?.id : undefined;
+      const full = id ? await window.desktop?.agent.getSession(id) : undefined;
+      return full?.ok ? full.value.session : null;
     });
     expect(first?.title).toBe('本周工作安排');
     const rejectedCopy = await page.evaluate(async (session) => {
@@ -230,9 +232,10 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByLabel('对话名称', { exact: true }).fill('已保存的对话');
     await page.getByRole('button', { name: '保存名称' }).click();
     await app.close();
-    const indexPath = join(userData, 'agent', 'index.json');
-    const fixture = JSON.parse(await readFile(indexPath, 'utf8'));
-    fixture.sessions[0].view.messages[1].activities = [
+    const index = JSON.parse(await readFile(join(userData, 'agent', 'index.json'), 'utf8'));
+    const viewPath = join(userData, 'agent', 'sessions', `${index.sessions[0].meta.id}.view.json`);
+    const fixture = JSON.parse(await readFile(viewPath, 'utf8'));
+    fixture.messages[1].activities = [
       {
         id: 'fixture-file-edit',
         label: '修改 1 个文件',
@@ -249,7 +252,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         ],
       },
     ];
-    await writeFile(indexPath, JSON.stringify(fixture));
+    await writeFile(viewPath, JSON.stringify(fixture));
     app = await launch();
     page = await app.firstWindow();
     await expect(

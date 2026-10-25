@@ -207,8 +207,12 @@ test('selected images and sampled video frames reach the vision model; failed as
     await expect(sidebar.locator('[data-testid="chat-vision-assets"] img')).toHaveCount(5);
     await expect(sidebar.getByTestId('canvas-attachments')).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath('canvas-vision-sent.png') });
-    const snapshot = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
-    const user = snapshot?.ok ? snapshot.value.snapshot.sessions[0]?.messages[0] : undefined;
+    const user = await page.evaluate(async () => {
+      const r = await window.desktop?.agent.getSnapshot();
+      const id = r?.ok ? r.value.snapshot.sessions[0]?.id : undefined;
+      const full = id ? await window.desktop?.agent.getSession(id) : undefined;
+      return full?.ok ? full.value.session.messages[0] : undefined;
+    });
     expect(user?.visionAssets?.filter((a) => a.kind === 'video-frame').map((a) => a.time)).toEqual([
       0.2, 1, 1.8,
     ]);

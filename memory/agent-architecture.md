@@ -2,7 +2,7 @@
 
 最后更新：2026-10-25
 
-来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0（A0-1、A0-2、A0-3）已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0（A0-1、A0-2、A0-3）与 A1a-1 已完成（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
 
 详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。
 
@@ -103,3 +103,4 @@ main/agent/
 - 2026-10-25：A0-1 完成。实际接口与文档方案的差异：能力包按“每轮工厂函数”实现（`canvasPack(ctx, snapshot, broker)` 等直接返回 `{ id, prompt, tools }`），而不是文档中的 `prompt(ctx)` / `tools(ctx)` 方法；首页提示词放在 `packs/chat.ts`；`skillsPack` 额外返回 `userPrompt`。
 - 2026-10-25：A0-2 完成。确认弹窗复用 AlertDialog，没有新增 Figma 画面；用户未回答“是否先做 Figma 设计”，按“复用既有已设计组件”处理并记入 design.md。等待确认期间暂停 120 秒请求超时（文档未写，属实现细节）。
 - 2026-10-25：A0-3 完成。与文档差异：活动卡片仍由能力包生成，账本只记每轮摘要与状态（文档写“ChatActivity 读取账本生成的活动”）；账本不持久化 conflict 状态，撤销失败只报错不改状态；账本暂未进入渲染快照（目前没有界面需要，A1b 结果卡片需要时再加）。
+- 2026-10-25：A1a-1 完成。与文档差异：v2 元数据暂不含 `status` / `card`（分别在 A1a-2 / A1b-2 加入）；没有主进程侧的按窗口订阅，消息事件广播、渲染层只应用当前会话；新增派生字段 `lastReplyAt` 供对话列表显示时间。

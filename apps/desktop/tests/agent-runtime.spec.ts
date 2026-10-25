@@ -85,7 +85,7 @@ test('agent records recover unfinished runs without reissuing requests', async (
     text: '部分内容',
     status: 'running',
   });
-  await store.save();
+  await store.save(id);
   const recovered = new AgentStore(file);
   await recovered.initialize();
   expect(recovered.record(id).view.runId).toBeNull();

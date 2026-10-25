@@ -1,6 +1,13 @@
 import { sameWritingScope, type WritingScope } from '../../../../shared/writing-agent';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { agentValue, type AgentSnapshot, type AgentEvent } from '../../../../shared/agent';
+import {
+  agentValue,
+  type AgentSnapshot,
+  type AgentEvent,
+  type ChatMessage,
+  type ChatSession,
+  type SessionEvent,
+} from '../../../../shared/agent';
 import {
   nearestThinkingLevel,
   type ModelSettingsView,
@@ -10,6 +17,19 @@ import type { VisionAsset } from '../../../../shared/canvas-vision';
 import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
 
 const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
+type MessageView = { id: string; seq: number; messages: ChatMessage[] };
+
+/** Applies a session event: changed messages replace theirs, new ones are appended. */
+function applyEvent(view: MessageView, event: SessionEvent): MessageView {
+  if (event.seq <= view.seq) return view;
+  const messages = [...view.messages];
+  for (const message of event.messages) {
+    const index = messages.findIndex((m) => m.id === message.id);
+    if (index >= 0) messages[index] = message;
+    else messages.push(message);
+  }
+  return { ...view, seq: event.seq, messages };
+}
 
 export function useAgent(
   projectId?: string,
@@ -83,11 +103,57 @@ export function useAgent(
   const sessions = snapshot.sessions.filter(
     (s) => s.projectId === projectId && sameWritingScope(s.writingScope, writingScope),
   );
-  const session =
+  const meta =
     sessions.find((s) => s.id === selected) ??
     (writingScope && !draftKey
       ? ([...sessions].sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null)
       : null);
+  const sessionId = meta?.id ?? null;
+  // Only the open conversation's messages are loaded and kept up to date.
+  const [view, setView] = useState<MessageView | null>(null);
+  const wanted = useRef<string | null>(null);
+  const loaded = useRef<string | null>(null);
+  const pending = useRef<SessionEvent[]>([]);
+  useEffect(() => {
+    const bridge = window.desktop?.agent;
+    if (!bridge) return;
+    return bridge.onSessionEvent((event) => {
+      if (event.sessionId !== wanted.current) return;
+      if (loaded.current !== event.sessionId) pending.current.push(event);
+      else setView((v) => (v?.id === event.sessionId ? applyEvent(v, event) : v));
+    });
+  }, []);
+  useEffect(() => {
+    wanted.current = sessionId;
+    loaded.current = null;
+    pending.current = [];
+    const bridge = window.desktop?.agent;
+    if (!sessionId || !bridge) {
+      setView(null);
+      return;
+    }
+    let active = true;
+    void bridge
+      .getSession(sessionId)
+      .then((result) => {
+        if (!active) return;
+        const { seq, session } = agentValue(result);
+        const start: MessageView = { id: sessionId, seq, messages: session.messages };
+        const next = pending.current.reduce(applyEvent, start);
+        pending.current = [];
+        loaded.current = sessionId;
+        setView(next);
+      })
+      .catch((e: unknown) => {
+        if (active) setError(e instanceof Error ? e.message : '读取对话失败');
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
+  const session: ChatSession | null = meta
+    ? { ...meta, messages: view?.id === meta.id ? view.messages : [] }
+    : null;
   async function send(
     text: string,
     model?: string,

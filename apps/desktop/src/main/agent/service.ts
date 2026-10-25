@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
-import type { AgentEvent, ChatMessage } from '../../shared/agent';
+import type { AgentEvent, ChatMessage, SessionEvent } from '../../shared/agent';
 import {
   nearestThinkingLevel,
   type ProbeResult,
@@ -55,6 +55,9 @@ export class AgentService {
   private completion: Promise<void> | null = null;
   private persistenceError = '';
   onChange: (event: AgentEvent) => void = () => {};
+  onSessionChange: (event: SessionEvent) => void = () => {};
+  /** Messages changed since the last session push, by conversation. */
+  private dirty = new Map<string, Set<string>>();
   constructor(
     readonly config: ModelStore,
     readonly store: AgentStore,
@@ -64,7 +67,7 @@ export class AgentService {
     this.ledger = new Ledger(join(root, 'ledger'));
     this.ledger.onError = () => {
       this.persistenceError = '操作记录保存失败，请重启应用后检查本地存储';
-      this.changed();
+      this.emit();
     };
   }
   snapshot(): AgentEvent {
@@ -73,14 +76,35 @@ export class AgentService {
       snapshot: {
         skills: this.skills.list(),
         models: this.config.view(),
-        sessions: structuredClone(this.store.records.map((r) => r.view)),
+        sessions: structuredClone(this.store.records.map((r) => this.store.meta(r.view))),
         busySessionId: this.active?.sessionId ?? null,
       },
     };
   }
+  /** One conversation with its messages; later session events carry a larger `seq`. */
+  session(id: string) {
+    const { view } = this.store.record(id);
+    return { seq: this.seq, session: structuredClone({ ...view, ...this.store.meta(view) }) };
+  }
+  /** Pushes pending message changes first, so metadata never runs ahead of its messages. */
   private emit() {
+    this.flush();
     this.seq++;
     this.onChange(this.snapshot());
+  }
+  private flush() {
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    const dirty = this.dirty;
+    this.dirty = new Map();
+    for (const [sessionId, ids] of dirty) {
+      const record = this.store.records.find((r) => r.view.id === sessionId);
+      if (!record) continue;
+      const messages = record.view.messages.filter((m) => ids.has(m.id));
+      if (!messages.length) continue;
+      this.seq++;
+      this.onSessionChange({ seq: this.seq, sessionId, messages: structuredClone(messages) });
+    }
   }
   importSkill(directory: string) {
     return this.exclusive(async () => {
@@ -98,12 +122,12 @@ export class AgentService {
       return result;
     });
   }
-  private changed() {
-    if (!this.timer)
-      this.timer = setTimeout(() => {
-        this.timer = undefined;
-        this.emit();
-      }, 40);
+  /** Schedules a push of the given messages; pushes are grouped per 40 ms. */
+  private changed(sessionId: string, ...messageIds: string[]) {
+    const ids = this.dirty.get(sessionId) ?? new Set<string>();
+    for (const id of messageIds) ids.add(id);
+    this.dirty.set(sessionId, ids);
+    this.timer ??= setTimeout(() => this.flush(), 40);
   }
   private idle() {
     if (this.persistenceError) throw new Error(this.persistenceError);
@@ -179,7 +203,7 @@ export class AgentService {
       const before = record.view.title;
       record.view.title = title;
       try {
-        await this.store.save();
+        await this.store.saveIndex();
       } catch (error) {
         record.view.title = before;
         throw error;
@@ -258,7 +282,7 @@ export class AgentService {
         r.view.thinkingLevel ?? 'off',
       );
       try {
-        await this.store.save();
+        await this.store.saveIndex();
       } catch (error) {
         Object.assign(r, before);
         throw error;
@@ -277,7 +301,7 @@ export class AgentService {
       const before = r.view.thinkingLevel;
       r.view.thinkingLevel = level;
       try {
-        await this.store.save();
+        await this.store.saveIndex();
       } catch (error) {
         r.view.thinkingLevel = before;
         throw error;
@@ -367,13 +391,14 @@ export class AgentService {
       this.store.requests.push({ id: requestId, runId: run.id, sessionId: id, text, inputHash });
       this.active = run;
       try {
-        await this.store.save();
+        await this.store.save(id);
       } catch (error) {
         record.view = before;
         this.store.requests.pop();
         this.active = null;
         throw error;
       }
+      this.changed(id, user.id, assistant.id);
       this.emit();
       this.completion = this.perform(
         run,
@@ -403,13 +428,14 @@ export class AgentService {
     let stop: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let checkpoint: ReturnType<typeof setInterval> | undefined;
+    const changed = () => this.changed(run.sessionId, output.id);
     try {
       const context: ToolContext = {
         owner: run.owner,
         sessionId: run.sessionId,
         runId: run.id,
         output,
-        changed: () => this.changed(),
+        changed,
         record: (change) =>
           this.ledger.record({ ...change, sessionId: run.sessionId, runId: run.id }),
       };
@@ -444,7 +470,7 @@ export class AgentService {
           const label = `${outcome === 'denied' ? '已拒绝' : '确认超时，未执行'} · ${tool.label}`;
           output.activities ??= [];
           output.activities.push({ id: randomUUID(), label: label.slice(0, 500), files: [] });
-          this.changed();
+          changed();
         }
         if (!run.cancelled) arm();
         return outcome;
@@ -465,12 +491,13 @@ export class AgentService {
       }
       arm();
       checkpoint = setInterval(() => {
-        void this.store.save().catch(() => {
+        // Only this conversation's messages change while it streams.
+        void this.store.saveView(run.sessionId).catch(() => {
           this.persistenceError = '会话保存失败，请重启应用后检查本地存储';
           output.error = this.persistenceError;
           run.cancelled = true;
           void runtime.session.abort();
-          this.changed();
+          changed();
         });
       }, 1000);
       stop = runtime.session.subscribe((event) => {
@@ -482,7 +509,7 @@ export class AgentService {
             run.cancelled = true;
             void runtime.session.abort();
           }
-          this.changed();
+          changed();
         }
       });
       const roster = images.map(({ nodeId, name, kind, time }, index) => ({
@@ -526,8 +553,9 @@ export class AgentService {
       stop?.();
       run.sdk?.dispose();
       this.store.record(run.sessionId).view.runId = null;
+      changed();
       try {
-        await this.store.save();
+        await this.store.save(run.sessionId);
       } catch {
         this.persistenceError = '会话保存失败，请重启应用后检查本地存储';
         output.error = this.persistenceError;

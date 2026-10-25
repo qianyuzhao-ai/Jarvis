@@ -51,6 +51,11 @@ export async function registerAgent() {
     for (const { contents, url } of trusted.values())
       if (!contents.isDestroyed() && contents.getURL() === url) contents.send('agent:event', event);
   };
+  service.onSessionChange = (event) => {
+    for (const { contents, url } of trusted.values())
+      if (!contents.isDestroyed() && contents.getURL() === url)
+        contents.send('agent:session-event', event);
+  };
   service.canvas.dispatch = (owner, command) => {
     const target = trusted.get(owner);
     if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
@@ -108,6 +113,7 @@ export async function registerAgent() {
       return service.setThinkingLevel(v.sessionId, v.level);
     },
     'agent:snapshot': () => service.snapshot(),
+    'agent:session': (r) => service.session(agentId.parse(r)),
     'agent:create': () => service.create(),
     'agent:create-canvas': (r) => service.create(agentId.parse(r)),
     'agent:create-writing': (r) => service.create(undefined, writingScopeSchema.parse(r)),

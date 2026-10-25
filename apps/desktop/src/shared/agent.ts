@@ -93,6 +93,7 @@ export const chatMessageSchema = z.object({
     .max(100)
     .optional(),
 });
+/** v1 record: metadata and messages in one object, as stored in `index.json` version 1. */
 export const chatSessionSchema = z.object({
   id: agentId,
   title: z.string().max(100),
@@ -108,19 +109,43 @@ export const chatSessionSchema = z.object({
   thinkingLevel: thinkingLevelSchema.optional(),
   writingScope: writingScopeSchema.optional(),
 });
+/**
+ * Who a conversation belongs to: home conversations are segments of the main Agent, canvas and
+ * writing conversations are space sub-agents. `delegated` ones were started by the main Agent.
+ */
+export const agentRoleSchema = z
+  .object({
+    kind: z.enum(['main', 'canvas', 'writing']),
+    origin: z.enum(['user', 'delegated']),
+    parentId: agentId.optional(),
+  })
+  .strict();
+/** v2 conversation metadata, without messages; `lastReplyAt` is when the last message finished. */
+export const sessionMetaSchema = chatSessionSchema
+  .omit({ messages: true })
+  .extend({ agent: agentRoleSchema, lastReplyAt: z.number().optional() });
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
-export type ChatSession = z.infer<typeof chatSessionSchema>;
+export type AgentRole = z.infer<typeof agentRoleSchema>;
+export type ChatSessionMeta = z.infer<typeof sessionMetaSchema>;
+export type ChatSession = ChatSessionMeta & { messages: ChatMessage[] };
 export interface AgentSnapshot {
   skills?: SkillInfo[];
   /** Model settings shared by every Agent entry (home, canvas, writing); Keys are never included. */
   models?: ModelSettingsView;
-  sessions: ChatSession[];
+  /** Metadata only; a conversation's messages come from `getSession` and session events. */
+  sessions: ChatSessionMeta[];
   busySessionId: string | null;
 }
 export interface AgentEvent {
   seq: number;
   snapshot: AgentSnapshot;
+}
+/** Messages of one conversation that were added or changed; shares `seq` with `AgentEvent`. */
+export interface SessionEvent {
+  seq: number;
+  sessionId: string;
+  messages: ChatMessage[];
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface AgentBridge {
@@ -128,6 +153,9 @@ export interface AgentBridge {
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
+  /** One conversation with its messages, as of `seq`. */
+  getSession(sessionId: string): Promise<AgentResult<{ seq: number; session: ChatSession }>>;
+  onSessionEvent(listener: (event: SessionEvent) => void): () => void;
   createSession(): Promise<AgentResult<string>>;
   createCanvasSession(projectId: string): Promise<AgentResult<string>>;
   createWritingSession(scope: WritingScope): Promise<AgentResult<string>>;

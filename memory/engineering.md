@@ -2,6 +2,17 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A1a-1：会话记录 v2、存储拆分与增量推送（2026-10-25）
+
+- origin/main 无新提交（仍为 `6761f10`），直接在作业分支开工。
+- 记录 v2：`shared/agent.ts` 新增 `agentRoleSchema`（kind main/canvas/writing、origin user/delegated、parentId?）与 `sessionMetaSchema`（v1 会话去掉 messages，加 agent 与派生的 `lastReplyAt` = 最后一条消息 completedAt）；`ChatSession` = 元数据 + messages，`ChatSessionMeta` 用于列表。v1 `chatSessionSchema` 保留只用于迁移。
+- 存储（`store.ts`）：`index.json` v2 = `{ version: 2, sessions: [{ meta, config? }], requests }`；消息在 `sessions/<id>.view.json`（`{ version: 1, messages }`，与 Pi 的 `<id>.jsonl` 同目录）。`saveIndex()` / `saveView(id)` / `save(id)` 分开；运行中每秒 checkpoint 只写本会话 view，开始与结束各写一次 index；改名、切模型、思考档位只写 index；删会话后删除 view 文件。
+- 迁移：读到 v1 时先原样写 `index.v1.bak.json`，按 projectId → canvas、writingScope → writing、其余 → main（origin user）写各 view 与 v2 index，再逐条读回与 v1 解析结果深比较（含 requests、旧 config）；任何失败把 v1 原文写回 `index.json` 并报“Agent 记录升级校验失败，原记录已保留”，下次启动重试。迁移后照常处理中断的运行。
+- 推送：`agent:event` 只含元数据快照；新增 `agent:session-event` `{ seq, sessionId, messages }` 只带变化的消息（按消息 ID 记脏，40ms 合并），与 index 事件共用 seq，`emit()` 先推完积压的消息再推元数据。新增 `agent:session` 取单个会话全文 `{ seq, session }`。没有做主进程侧的按窗口订阅：事件只含变化的消息，广播给可信窗口，渲染层只应用正在查看的会话（与文档“只订阅正在查看的会话”的差异）。
+- 渲染层：`useAgent` 只为当前会话 `getSession`，加载期间到达的事件先缓存，加载后按 seq 应用（同 ID 替换、新 ID 追加）；对外仍返回带 messages 的 `session`，各面板代码基本不变。ShellSidebar / CanvasConversations 改用 `ChatSessionMeta`，对话时间用 `lastReplyAt`。
+- 测试：新增 `agent-store.spec`（v1 样本迁移、备份与原文一致、index 无 messages、view 内容一致、重载后与 v1 相同；迁移失败保留 v1；真实流式回复中 index 只写 2 次而 checkpoint 只写本会话 view、元数据事件不含消息、消息事件只属于该会话、seq 唯一且元数据在消息之后、删除会话删 view）3 例，`agent-migration.spec`（实窗：v1 profile 升级后对话可打开、备份与 v2 文件存在）1 例；agent / canvas-agent-vision 改用 `getSession` 取消息；agent / model-library 直接改磁盘记录造测试数据的地方改成 v2 布局（消息在 view 文件、元数据在 `meta`）。
+- 验证：check、build 通过；完整实窗 134 例首轮 130 通过，失败 4 例中 2 例为上述测试仍按 v1 改磁盘文件（修正后单独重跑 agent / model-library / canvas-agent / writing-agent 4/4 通过），另 2 例为 ui-preview 无 linux 基线（生成的 png 已逐个删除）。
+
 ## Agent 架构改造 A0-3：操作账本（2026-10-25）
 
 - 开工前合入 origin/main（`6761f10`，PR #83；engineering.md 顶部冲突，保留双方）。

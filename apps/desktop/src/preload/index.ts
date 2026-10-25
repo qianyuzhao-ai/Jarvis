@@ -1,7 +1,7 @@
 import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
-import type { AgentEvent } from '../shared/agent';
+import type { AgentEvent, SessionEvent } from '../shared/agent';
 import type { ApprovalRequest } from '../shared/agent-approval';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
@@ -40,6 +40,12 @@ const desktop: DesktopInfo = {
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
+    getSession: (id) => ipcRenderer.invoke('agent:session', id),
+    onSessionEvent: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);
+      ipcRenderer.on('agent:session-event', handle);
+      return () => ipcRenderer.removeListener('agent:session-event', handle);
+    },
     createSession: () => ipcRenderer.invoke('agent:create'),
     createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
     createWritingSession: (scope) => ipcRenderer.invoke('agent:create-writing', scope),
