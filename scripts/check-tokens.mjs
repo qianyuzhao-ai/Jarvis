@@ -23,7 +23,7 @@ for (const path of [
   ...files(resolve(root, 'apps/desktop/src/renderer/src')),
   ...files(resolve(root, 'packages/ui/src')),
 ]) {
-  const name = relative(root, path);
+  const name = relative(root, path).replaceAll('\\', '/');
   const source = readFileSync(path, 'utf8');
   if (
     /from\s+['"]lucide-react['"]/.test(source) &&
