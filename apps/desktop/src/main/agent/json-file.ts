@@ -22,4 +22,8 @@ export class JsonFile {
     this.writes = pending.catch(() => {});
     return pending;
   }
+  /** Resolves once queued writes have finished, successful or not. */
+  settled() {
+    return this.writes;
+  }
 }

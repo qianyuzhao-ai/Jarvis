@@ -57,7 +57,13 @@ export function AppShell({
       ?.querySelector('[role="tab"][aria-selected="true"]')
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [state.activeId, state.tabs.length]);
-  const icons = { chat: MessageCircle, canvas: LayoutGrid, writing: FileText, settings: Settings };
+  const icons = {
+    chat: MessageCircle,
+    canvas: LayoutGrid,
+    writing: FileText,
+    settings: Settings,
+    calendar: Calendar,
+  };
   return (
     <div
       className="window-shell"
@@ -143,6 +149,7 @@ export function AppShell({
             { kind: 'chat', title: '首页', Icon: House },
             { kind: 'canvas', title: 'AIGC 创作空间', Icon: LayoutGrid },
             { kind: 'writing', title: '写作空间', Icon: PenLine },
+            { kind: 'calendar', title: '日历', Icon: Calendar },
           ] as const
         ).map(({ kind, title, Icon }) => (
           <Tooltip key={kind} content={title}>
@@ -155,13 +162,6 @@ export function AppShell({
             </Toggle>
           </Tooltip>
         ))}
-        <Tooltip content="即将推出">
-          <span>
-            <Toggle disabled aria-label="日历（即将推出）">
-              <Calendar />
-            </Toggle>
-          </span>
-        </Tooltip>
         <div className="flex-1" />
         <Tooltip content="设置">
           <Toggle

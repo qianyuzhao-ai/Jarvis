@@ -25,6 +25,8 @@ const storedJob = jobSchema.extend({
 });
 type StoredJob = z.infer<typeof storedJob>;
 export class GenerationJobs {
+  /** Called after a job is created or its status is saved. */
+  onChange: (job: GenerationJob) => void = () => {};
   private jobs = new Map<string, StoredJob>();
   private writes = Promise.resolve();
   private starts = Promise.resolve();
@@ -153,6 +155,7 @@ export class GenerationJobs {
         throw new Error('无法保存任务记录，生成请求未发送');
       }
       void this.perform(job, endpoint, requestJson);
+      this.onChange(jobSchema.parse(job));
       return jobSchema.parse(job);
     });
     this.starts = pending.then(
@@ -229,5 +232,6 @@ export class GenerationJobs {
     } catch {
       job.warning = '任务状态尚未写入磁盘，请保留当前窗口并记录结果。';
     }
+    this.onChange(jobSchema.parse(job));
   }
 }

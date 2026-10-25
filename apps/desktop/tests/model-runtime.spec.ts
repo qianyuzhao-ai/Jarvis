@@ -44,15 +44,10 @@ async function relay(reply: (body: Record<string, unknown>) => string | number =
   return { requests, server, baseUrl: `http://127.0.0.1:${address.port}/v1` };
 }
 async function ask(model: Parameters<typeof openAgent>[2], level: ThinkingLevel = 'off') {
-  const { session } = await openAgent(
-    test.info().outputPath(randomUUID()),
-    randomUUID(),
-    model,
-    true,
-    undefined,
-    undefined,
-    level,
-  );
+  const { session } = await openAgent(test.info().outputPath(randomUUID()), randomUUID(), model, {
+    transient: true,
+    thinkingLevel: level,
+  });
   try {
     await session.prompt('Hello', { expandPromptTemplates: false });
   } finally {

@@ -2,6 +2,10 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 PR（2026-10-25）
+
+- 用户要求将云端会话分支 `ccr-1c636605-o0pprj`（A0–A6 及插话设置，基于 main `6761f10`，已包含 develop `81beb13`，领先 26 个提交）提 PR 合入 develop：[PR #84](https://github.com/qianyuzhao-ai/Jarvis/pull/84)。只创建了 PR，没有合并、打标签或发布；版本号未改动。
+
 ## 0.3.0 已发布（2026-10-25）
 
 - 用户要求以本地最新代码集成 develop（dev）并发布 0.3.0；未合入远端 `ccr*` 分支。本地功能经 [PR #76](https://github.com/qianyuzhao-ai/Jarvis/pull/76) 合入 develop（`da1510d`），再由 [PR #77](https://github.com/qianyuzhao-ai/Jarvis/pull/77) 合入 main（`c393e46`）。发布前 feature / develop / main 完整树一致；新标签 `v0.3.0` 保持指向 `c393e460a48ca0cd6cd995f79da972e399728922`，未移动旧标签。

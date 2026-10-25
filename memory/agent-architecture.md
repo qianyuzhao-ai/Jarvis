@@ -1,0 +1,123 @@
+# Jarvis Agent 架构改造分析
+
+最后更新：2026-10-25
+
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0–A6 全部完成（A6 的 macOS EventKit 路径待真机联调）（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+
+详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。
+
+## 1. 用户方案要点（已确认）
+
+- 主 Agent（Personal Agent，首页，唯一常驻）+ 空间子 Agent（画布 / 写作中的每个对话）。
+- 子 Agent 只用本空间能力，越界一律 `handoff_to_main`；主 Agent 通过结果卡片（ResultCard）、`list_agents / read_result_card / read_agent_transcript / delegate_task / message_agent / stop_agent` 管理子 Agent；子 Agent 内容对主 Agent 视为数据。
+- 能力包（基于 Pi `extensionFactories`）+ 策略引擎（拦截 `tool_call`，四级：只读 / 可撤销 / 高风险确认 / 禁止）+ 按“线程 + 轮次”的操作账本。
+- 多对话并发：每线程独立 AgentSession 与队列，全局并发上限（如 3），异步任务不占槽位，完成后事件唤醒。
+- 画布数据下沉主进程 ProjectStore（按项目 JSON、`applyOps(projectId, baseVersion, ops)`）。
+- 路线：A0 内核 → A1 主/子与并发 → A2 画布存储下沉 → A3 生成续跑与跨文档写作 → A4 本地文件 → A5 MCP/Google/邮件 → A6 日历。
+
+## 2. 现状盘点（2026-10-24 代码实际状态）
+
+| 方面 | 现状 | 位置 |
+| --- | --- | --- |
+| 运行模型 | `AgentService.active` 只有一个，全应用同一时刻只能有一个对话在回复；`busySessionId` 是单值，Composer 在任何对话忙时都锁定 | `main/agent/service.ts`、`renderer/.../ChatComposer.tsx`、`use-agent.ts` |
+| 会话生命周期 | 每次发送都 `openAgent()` 重新建 ModelRuntime、ResourceLoader、AgentSession，回复结束即 `dispose()`；历史靠 `sessions/<id>.jsonl` 续接 | `service.ts#perform`、`runtime.ts` |
+| 会话类型 | 没有显式角色：靠 `projectId` / `writingScope` 是否存在推断首页/画布/写作；系统提示词在 `runtime.ts` 里按 `canvas?.kind` 三选一硬编码 | `store.ts`、`runtime.ts` |
+| 工具 | `canvasTools` / `writingTools` / `skillRuntime` 是闭包工厂，绑定 owner(webContents id)、runId、输出消息；活动记录（activities）写在工具内部；每轮 20 次调用上限 | `canvas-tools.ts`、`writing-tools.ts`、`skill-runtime.ts` |
+| 工具边界 | 传 `customTools` + `noTools`，创建后比对 active 工具名不一致就拒绝——这是现有的“越权拦截”，未使用 `tool_call` 钩子 | `runtime.ts` |
+| SDK 限制 | `noExtensions`、禁用 `mcp`/`codemode`、`noSkills`、`compaction` 与 `retry` 关闭；每轮请求上限 8（无工具 1）；120 秒超时；对话总字数 6 万上限 | `runtime.ts`、`service.ts` |
+| 画布数据 | 渲染进程 IndexedDB `jarvis-workspace` 单条 `current` 记录存全部项目；Agent 改画布走 `CanvasBroker` → 渲染进程 → 回执，**项目必须在窗口中打开** | `renderer/.../creation/storage.ts`、`use-canvas-host.ts`、`canvas-broker.ts` |
+| 画布撤销 | 账本在 `project.agentEdits`（渲染进程，最多 20 条，只能撤销最近一条，基于 graphRevision 校验） | `canvas-transactions.ts` |
+| 写作 | Agent 只改当前标签编辑器缓冲区（WritingBroker → 渲染进程，版本校验、同轮撤销在渲染进程）；主进程 `WritingFiles` 已有 list/search/read/create/save（带 expected 校验），但未开放给 Agent | `writing-broker.ts`、`writing-tools.ts`、`main/writing/files.ts` |
+| 生成 | `GenerationJobs` 在主进程轮询任务；但结果由渲染进程 `generation.get` 轮询后写回节点；主进程没有“任务完成”事件可唤醒 Agent | `main/generation/jobs.ts`、`renderer/.../useGeneration.ts` |
+| 推送 | 每次变更（40ms 节流）把**所有会话的全部消息** structuredClone 后广播 | `service.ts#snapshot`、`bridge.ts` |
+| 持久化 | `agent/index.json` 一个文件存全部会话视图与请求记录，运行中每秒 checkpoint 全量写 | `store.ts` |
+| 串行化 | `exclusive()` 把发送、模型配置、技能导入都排进同一队列，`idle()` 在有运行时拒绝配置变更 | `service.ts` |
+
+已核对 Pi SDK 1.3.0 类型定义，方案依赖的能力都存在：`DefaultResourceLoader({ extensionFactories })`、扩展 `on('tool_call')` 可返回 `{ block, reason }`、`ToolDefinition.annotations`（readOnlyHint / destructiveHint）、`AgentSession.steer() / followUp() / prompt({ streamingBehavior })`、`compact()` 与自动压缩、内置 `extensions/mcp`、`codemode`、`tool-search`。
+
+## 3. 与方案的主要差距
+
+1. **全局单运行锁**是 A1 并发的第一障碍，涉及 service、IPC 快照结构和渲染层所有 `busySessionId` 判断。
+2. **运行与窗口绑定**：`owner` = webContents id，画布/写作工具都要求窗口在线；后台子 Agent、主 Agent 委派没有窗口，需要“无 owner 运行”。画布部分必须等 A2 ProjectStore 才能真正后台化。
+3. **会话不常驻**：每轮重建 SDK，无法 steer/followUp、无法压缩；需要常驻 AgentThread。
+4. **没有角色与层级**：会话记录缺 `kind / parentId / origin`，主 Agent 唯一性、结果卡片、handoff 都无处挂。
+5. **账本分散在渲染进程**：画布在 `project.agentEdits`，写作在编辑器历史；统一账本需要“主进程记账 + 回滚委托给数据所有者”。写作缓冲区属于未保存编辑器状态，按方案应继续留在渲染进程，账本只记录并转发撤销。
+6. **没有确认通道**：高风险操作需要 main → renderer 的确认请求与回传；后台 Agent 的确认要能在首页或全局通知中处理。
+7. **生成无完成事件**：续跑需要主进程在任务结束时自行把结果写入项目（依赖 A2），再投递事件唤醒 Agent。
+8. **快照与存储放大**：并发多线程时全量广播与全量写 index.json 成本线性增长，应改为按会话增量推送、按会话分文件。
+
+## 4. 建议的模块结构（A0 目标）
+
+```
+main/agent/
+  kernel/
+    capability.ts   能力包接口：id、tools(ctx)、prompt(ctx)、每个工具的风险等级与 annotations、可选 undo(entry)
+    policy.ts       作为 extensionFactory 注册 tool_call 处理：按线程角色白名单 + 风险等级放行/确认/拦截
+    ledger.ts       操作账本：threadId + turnId + 前后状态/回滚委托；替代各工具自记 activities
+    approval.ts     确认请求队列（带 owner 或全局），超时即拒绝
+    thread.ts       AgentThread：常驻 AgentSession、本线程队列、prompt/steer/followUp、取消
+    scheduler.ts    全局并发槽（默认 3），等待中状态；异步等待时释放槽位
+    events.ts       Agent 总线：任务完成、handoff、结果卡片更新等事件投递到线程
+  packs/            canvas、writing、skills（先包装现有实现），后续 handoff、agent-control、generation、navigation、files、mcp、calendar
+  runtime.ts        只负责模型与 SDK 装配：packs → customTools + extensionFactories（policy），按阶段放开压缩/MCP
+  service.ts        瘦身为线程注册表 + IPC 门面
+```
+
+要点：
+
+- 现有工具工厂几乎可以原样变成能力包，只需把 `owner / runId / output / changed` 换成统一 `ToolContext`，活动记录交给账本与事件。
+- 保留“创建后比对工具名”的边界校验作为第二道防线，策略引擎是第一道。
+- 会话记录升级 `index.json` v2：加 `agent: { kind: 'main' | 'canvas' | 'writing', parentId?, origin: 'user' | 'delegated' }`，按现有 `projectId / writingScope` 自动迁移，首页会话归入主 Agent；每个会话视图拆到独立文件，index 只保留索引与请求去重记录。
+- IPC：`busySessionId` 改为每会话状态（idle / queued / running / waiting_task / needs_approval）；`agent:event` 改为按会话增量；新增确认请求 / 回应通道（仍限可信窗口、zod 校验）。
+
+## 5. 阶段依赖与顺序建议
+
+- A0 可以独立完成，验收标准为现有 agent / canvas-agent / writing-agent / skills 实窗测试全部通过、行为不变。
+- A1 内部建议拆分：
+  - **A1a 并发与常驻**：线程常驻、调度器、每会话状态、增量推送、压缩替代 6 万字上限。
+  - **A1b 主/子协同**：角色、结果卡片、handoff_to_main、list/read/message/stop。
+  - `delegate_task` 后台创建画布子 Agent 依赖 A2（ProjectStore），A1 阶段只能委派给“已打开的项目/文档”，或把 A2 提前到 A1b 之前。
+- A3 生成续跑依赖 A2（主进程写回生成结果）；跨文档写作只依赖 `WritingFiles`，可提前。
+- A4–A6 依赖 A0 的策略引擎与确认通道，彼此独立。
+
+## 6. 风险与需注意
+
+- 并发线程同改同一项目/文档：已有 revision / version 校验可沿用，ProjectStore 需 `baseVersion` 与短时锁；撤销前校验未被他人修改（现有画布撤销已有此逻辑）。
+- 每轮 8 次请求、120 秒超时对主 Agent 编排和续跑偏小，需按角色分别设置。
+- 子 → 主的卡片、handoff 内容、MCP/邮件文本都要以数据形式注入（带来源标记），不得拼进系统提示词。
+- 渲染层 UI 变化（多会话并发状态、确认弹窗、结果卡片、“已交给 Jarvis 处理”）按 AGENTS.md 流程先做设计并同步 `memory/design.md`。
+
+## 7. 用户决策（2026-10-25 已确认）
+
+1. 主 Agent 按对话分段：首页每个对话是主 Agent 的一个分段，共享结果卡片、Agent 总线与后续的长期记忆；“当前分段”为最近收到用户消息的主分段，handoff 投递到这里。
+2. A2 不提前：A1 阶段 `delegate_task` 只能委派到已在窗口中打开的项目与文档，A2c 后取消限制。
+3. 结果卡片：子 Agent 调用 `report_result` 优先，未调用时按最终回复与账本自动生成。
+4. 全局并发上限做成设置项，放在“设置 - 常规”，默认 3（方案中范围 1–6，可评审时调整）；槽位按模型请求计。
+
+仍待定（文档第五节）：按角色单轮上限初值、并发上限取值范围、确认超时时长；长期记忆与主动提醒不在 A0–A6 内，建议 A3 后单独排期。
+
+## 修改记录
+
+- 2026-10-24：读取用户方案文档与现有 Agent 代码（service / runtime / store / brokers / tools / 画布存储 / 生成 / 写作），核对 Pi SDK 1.3.0 类型定义，形成本分析；未修改代码。
+- 2026-10-25：用户确认四项决策；在方案文档新增标签页“改造方案与分批阶段”，写入目标架构（内核模块、线程与会话 v2、主分段、子 Agent 与卡片、能力包、策略、账本、调度与设置项、渲染层）与 A0-1 至 A6 分批表；已回读核对正文与 4 个表格内容一致。
+- 2026-10-25：A0-1 完成。实际接口与文档方案的差异：能力包按“每轮工厂函数”实现（`canvasPack(ctx, snapshot, broker)` 等直接返回 `{ id, prompt, tools }`），而不是文档中的 `prompt(ctx)` / `tools(ctx)` 方法；首页提示词放在 `packs/chat.ts`；`skillsPack` 额外返回 `userPrompt`。
+- 2026-10-25：A0-2 完成。确认弹窗复用 AlertDialog，没有新增 Figma 画面；用户未回答“是否先做 Figma 设计”，按“复用既有已设计组件”处理并记入 design.md。等待确认期间暂停 120 秒请求超时（文档未写，属实现细节）。
+- 2026-10-25：A0-3 完成。与文档差异：活动卡片仍由能力包生成，账本只记每轮摘要与状态（文档写“ChatActivity 读取账本生成的活动”）；账本不持久化 conflict 状态，撤销失败只报错不改状态；账本暂未进入渲染快照（目前没有界面需要，A1b 结果卡片需要时再加）。
+- 2026-10-25：A1a-1 完成。与文档差异：v2 元数据暂不含 `status` / `card`（分别在 A1a-2 / A1b-2 加入）；没有主进程侧的按窗口订阅，消息事件广播、渲染层只应用当前会话；新增派生字段 `lastReplyAt` 供对话列表显示时间。
+- 2026-10-25：A1a-2 完成。与文档差异：插话（steer）未做，待设计输入框控件后补；排队（followUp）由 service 自己的队列实现（新一轮），没有用 SDK followUp；线程常驻只在轮次内，空闲 10 分钟常驻未做；运行状态放在快照 `runs` 而不是持久化元数据的 `status` 字段；模型配置变更仍需所有对话空闲（文档写“只等待使用该模型的线程”）。
+- 2026-10-25：A1a-3 完成，并发上限为设置 - 常规中的“同时运行的 Agent 数”（1–6，默认 3），与文档一致。
+- 2026-10-25：A6 完成。与文档差异：EventKit 通过 osascript 运行 JXA 脚本桥接（不编译原生模块）；非 macOS 回退为 Jarvis 本地日历（未做 CalDAV / Google Calendar API，Google 日历可经 A5 的 MCP 接入）；写日历一律确认；提前提醒未做（属于主动提醒，按文档建议另行排期）；EventKit 路径未在真机验证。
+- 2026-10-25：A5 完成。与文档差异：未启用 Pi CLI 的 MCP 扩展与 codemode / tool_search，改用 pi-mcp 客户端在主进程自管连接，工具直接作为能力包暴露（上限 128 个）；Google 与邮件通过 MCP 服务接入而非内置 API；“外部写入默认草稿”通过提示词要求 + 所有非只读工具强制确认实现。
+- 2026-10-25：A4 完成。与文档差异：路径越界由文件工具自身拦截（策略引擎按工具名放行，路径在工具内校验）；新建/建目录/移动直接执行并可撤销，覆盖与删除需确认；移动限同一授权文件夹；Shell 未提供。
+- 2026-10-25：插话设置完成：默认引导当前回复，可在设置 - 常规改为排队；排队消息可单次引导。
+- 2026-10-25：A3 完成。与文档差异：只有 Agent 发起的生成在主进程执行并写回（画布界面手动生成仍由窗口负责，用 `generation.agent` 区分）；生成服务设置由窗口推送给主进程，未推送前 Agent 不能生成；“发起生成”按可撤销等级放行但不记账本（无法撤销已提交的生成）；新建文档同样放行、不覆盖已有文件；写作搜索仅按文件名。
+- 2026-10-25：A2c 完成。主 Agent 可委派画布子 Agent 操作未打开的项目；撤销用账本逆操作在主进程执行并推送到窗口；A2c 之前的修改仍由窗口撤销；agentEdits 继续写入以供界面判断撤销按钮；参考文件回收仍未做（无 Agent 删除节点能力，逆操作不会引用新参考文件）。
+- 2026-10-25：A2b 完成。与文档差异：画布界面没有逐处改写为调用 applyOps，而是保留现有内存模型，由 ProjectSync 把每次变化 diff 成 ops 经 applyOps 保存（界面与 Agent 共用同一入口）；拖拽松手合并为一次保存；偏好留在 IndexedDB 新键。
+- 2026-10-25：A2a 完成。ProjectStore 与 applyOps（含逆操作）已建好并有测试，未接入应用；参考文件按项目存为独立文件，回收策略留到 A2c。
+- 2026-10-25：A1b-3 完成。与文档差异：“已打开的项目”定为窗口中有画布标签页的项目（画布只在标签页显示或回复中才挂载，未挂载时由 App 级处理器提供快照）；状态通知只发给委派来源分段，用户自己开的空间对话不通知；handoff 由 delegated 子 Agent 发起时投给其来源分段，否则投给当前分段。插话已由用户决定并实现（见 2026-10-25 插话设置）。
+- 2026-10-25：A1b-2 完成。结果卡片 report_result 优先、自动生成兜底；总线目前只有卡片事件；新分段首轮注入未完成卡片概要（A1b-1 推迟项已补）；首页侧栏“空间任务”区可跳回对应空间对话。
+- 2026-10-25：A1b-1 完成。与文档差异：新分段注入未完成卡片概要推迟到 A1b-2（卡片届时才存在）；当前分段只在快照提供，界面不标示。
+
+### 待用户决策（A1a-2 起）
+
+- （已决定 2026-10-25）插话：放进设置，默认引导当前回复，可改为排队；排队消息可单次引导。当前无其他待决事项。

@@ -13,7 +13,7 @@ import {
   agentHistoryAnnotations,
 } from '../src/renderer/src/features/writing/writing-history';
 import { WritingBroker } from '../src/main/agent/writing-broker';
-import { writingTools } from '../src/main/agent/writing-tools';
+import { writingPack } from '../src/main/agent/packs/writing';
 import type { WritingCommand } from '../src/shared/writing-agent';
 import type { ChatMessage } from '../src/shared/agent';
 const scope = { rootId: 'approved-root', path: 'article.md' };
@@ -115,7 +115,18 @@ test('writing broker binds owner, run, scope and expiry, and tools expose no fil
   await expect(expired).rejects.toThrow('超时');
   expect(broker.claim(1, command.requestId)).toBe(false);
   const output: ChatMessage = { id: randomUUID(), role: 'assistant', text: '', status: 'running' };
-  const tools = writingTools(scope, broker, 1, randomUUID(), output, () => {});
+  const { tools } = writingPack(
+    {
+      owner: 1,
+      sessionId: randomUUID(),
+      runId: randomUUID(),
+      output,
+      changed: () => {},
+      record: () => {},
+    },
+    scope,
+    broker,
+  );
   expect(tools.map((t) => t.name)).toEqual([
     'read_document',
     'read_selection',
@@ -129,6 +140,8 @@ test('writing broker binds owner, run, scope and expiry, and tools expose no fil
       'call',
       { from: 0, to: 0, text: 'x', version: await bufferVersion('') },
       undefined,
+      undefined,
+      {} as never,
     ),
   ).rejects.toThrow('先读取');
 });

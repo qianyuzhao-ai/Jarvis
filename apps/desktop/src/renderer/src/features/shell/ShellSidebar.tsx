@@ -20,6 +20,7 @@ import { Input } from '@jarvis/ui/components/Input';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import {
   LayoutGrid,
+  PenLine,
   SquarePen,
   MessageCircle,
   Settings,
@@ -32,9 +33,19 @@ import {
   Plus,
 } from '@jarvis/ui/icons';
 import type { Project } from '../creation/types';
-import type { ChatSession } from '../../../../shared/agent';
+import type { ChatSessionMeta } from '../../../../shared/agent';
+import { groupByDay } from './conversation-groups';
+import type { ResultCard } from '../../../../shared/agent-cards';
+
+const cardStatus: Record<ResultCard['status'], string> = {
+  running: '进行中',
+  waiting: '等待中',
+  done: '已完成',
+  failed: '失败',
+  needs_user: '需你处理',
+};
 import type { TabView } from './tabs';
-type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
+type Section = 'general' | 'services' | 'models' | 'plugins' | 'files' | 'about';
 export function ShellSidebar({
   kind,
   section,
@@ -51,6 +62,8 @@ export function ShellSidebar({
   onRenameChat,
   onDeleteChat,
   busy,
+  cards = [],
+  onOpenCard,
 }: {
   kind: TabView['kind'];
   section: Section;
@@ -58,7 +71,7 @@ export function ShellSidebar({
   activeProject: string | null;
   onCreate: () => void;
   onOpenProject: (p: Project, newTab: boolean) => void;
-  sessions: ChatSession[];
+  sessions: ChatSessionMeta[];
   activeChat: string | null;
   onChat: (id: string | null, title: string, newTab: boolean) => void;
   onSettings: (s: Section) => void;
@@ -67,6 +80,9 @@ export function ShellSidebar({
   onRenameChat: (id: string, title: string) => Promise<boolean>;
   onDeleteChat: (id: string) => Promise<boolean>;
   busy: boolean;
+  /** Canvas and writing conversations with a result card, newest first. */
+  cards?: ChatSessionMeta[];
+  onOpenCard?: (session: ChatSessionMeta) => void;
 }) {
   const confirm = useConfirm();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -183,6 +199,7 @@ export function ShellSidebar({
                 { id: 'models', name: '模型', Icon: Cpu },
                 { id: 'services', name: '内网地址', Icon: Plug },
                 { id: 'plugins', name: '插件', Icon: Puzzle },
+                { id: 'files', name: '文件与权限', Icon: Folder },
               ] as const
             ).map(({ id, name, Icon }) => (
               <SidebarItem
@@ -196,9 +213,6 @@ export function ShellSidebar({
                 {name}
               </SidebarItem>
             ))}
-            <SidebarItem disabled icon={<Folder />}>
-              文件与权限
-            </SidebarItem>
             <SidebarItem disabled icon={<Database />}>
               数据与隐私
             </SidebarItem>
@@ -293,32 +307,52 @@ export function ShellSidebar({
           >
             新对话
           </SidebarItem>
-          <div data-testid="chat-history" className="shell-chat-history" aria-label="聊天记录">
-            <small>最近对话</small>
-            {[...sessions]
-              .sort((a, b) => b.updatedAt - a.updatedAt)
-              .map((s) => (
+          {cards.length > 0 && (
+            <section data-testid="space-cards" className="shell-chat-history" aria-label="空间任务">
+              <small>空间任务</small>
+              {cards.slice(0, 5).map((s) => (
                 <SidebarItem
                   key={s.id}
-                  data-testid="side-link"
-                  aria-label={`打开对话：${s.title}`}
-                  icon={<MessageCircle />}
-                  meta={relativeTime(s.updatedAt)}
-                  trailing={actions('chat', s.id, s.title)}
-                  selected={activeChat === s.id}
-                  aria-current={activeChat === s.id ? 'page' : undefined}
-                  onClick={(e) => onChat(s.id, s.title, e.metaKey || e.ctrlKey)}
-                  onAuxClick={(e) => {
-                    if (e.button === 1) {
-                      e.preventDefault();
-                      onChat(s.id, s.title, true);
-                    }
-                  }}
+                  data-testid="space-card"
+                  aria-label={`打开空间任务：${s.title}`}
+                  icon={s.agent.kind === 'canvas' ? <LayoutGrid /> : <PenLine />}
+                  meta={s.card ? cardStatus[s.card.status] : undefined}
+                  title={s.card?.summary || undefined}
+                  onClick={() => onOpenCard?.(s)}
                 >
                   {s.title}
-                  {s.runId && <span aria-label="回复中"> •</span>}
                 </SidebarItem>
               ))}
+            </section>
+          )}
+          <div data-testid="chat-history" className="shell-chat-history" aria-label="聊天记录">
+            {groupByDay(sessions).map((group) => (
+              <section key={group.label} aria-label={group.label} className="shell-chat-group">
+                <small>{group.label}</small>
+                {group.items.map((s) => (
+                  <SidebarItem
+                    key={s.id}
+                    data-testid="side-link"
+                    aria-label={`打开对话：${s.title}`}
+                    icon={<MessageCircle />}
+                    meta={relativeTime(s.updatedAt)}
+                    trailing={actions('chat', s.id, s.title)}
+                    selected={activeChat === s.id}
+                    aria-current={activeChat === s.id ? 'page' : undefined}
+                    onClick={(e) => onChat(s.id, s.title, e.metaKey || e.ctrlKey)}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        onChat(s.id, s.title, true);
+                      }
+                    }}
+                  >
+                    {s.title}
+                    {s.runId && <span aria-label="回复中"> •</span>}
+                  </SidebarItem>
+                ))}
+              </section>
+            ))}
             {!sessions.length && <p>还没有对话</p>}
           </div>
         </>

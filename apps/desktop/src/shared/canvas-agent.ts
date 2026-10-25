@@ -78,13 +78,8 @@ export const canvasCommandSchema = z
     expectedRevision: z.string().max(100),
     expiresAt: z.number(),
     command: z.discriminatedUnion('type', [
-      z
-        .object({
-          type: z.literal('apply'),
-          operations: z.array(canvasOperationSchema).min(1).max(100),
-        })
-        .strict(),
       z.object({ type: z.literal('focus'), nodeIds: z.array(nodeId).min(1).max(100) }).strict(),
+      z.object({ type: z.literal('undo'), transactionId: z.string().uuid() }).strict(),
     ]),
   })
   .strict();
@@ -94,9 +89,6 @@ export const canvasReplySchema = z
     projectId: z.string().uuid(),
     ok: z.boolean(),
     error: z.string().max(1000).optional(),
-    snapshot: canvasSnapshotSchema.optional(),
-    transactionId: z.string().uuid().optional(),
-    changes: z.array(canvasChangeSchema).max(200).optional(),
     nodeIds: z.array(nodeId).max(200).optional(),
   })
   .strict();

@@ -1,3 +1,4 @@
+import { mentionPattern, submittedPrompt } from '../../../../shared/generation-refs';
 import { mediaName, type Project, type MediaNode, type Reference } from './types';
 
 const names = { image: '图片', video: '视频', audio: '音频' };
@@ -55,7 +56,6 @@ export function promptMentions(project: Project, node: MediaNode): PromptMention
   return mentions;
 }
 
-const mentionPattern = /@(?:image|video|audio)_\d+\b/g;
 export function rebaseLocalMentions(prompt: string, before: Reference[], after: Reference[]) {
   return prompt.replace(mentionPattern, (token) => {
     const match = /^@(image|video|audio)_(\d+)$/.exec(token);
@@ -72,17 +72,4 @@ export function rebaseLocalMentions(prompt: string, before: Reference[], after: 
     return `@${kind}_${index + next.length - previous.length}`;
   });
 }
-export function submittedPrompt(
-  prompt: string,
-  counts: Record<'image' | 'video' | 'audio', number>,
-) {
-  return prompt.replace(mentionPattern, (token) => {
-    const match = /^@(image|video|audio)_(\d+)$/.exec(token);
-    if (!match) return token;
-    const kind = match[1] as keyof typeof counts;
-    const index = Number(match[2]);
-    if (index < 1 || index > counts[kind])
-      throw new Error(`${token} 对应的参考素材不存在，请检查引用顺序`);
-    return `<<<${kind}_${index}>>>`;
-  });
-}
+export { submittedPrompt };

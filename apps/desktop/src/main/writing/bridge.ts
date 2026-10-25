@@ -10,6 +10,9 @@ import {
 import { WritingConflict, WritingFiles } from './files';
 
 const trusted = new Map<number, string>();
+let registered: WritingFiles | undefined;
+/** The writing folders, for the main Agent's document tools once registered. */
+export const writingFiles = () => registered;
 let activeWrites = 0;
 export const isWritingBusy = () => activeWrites > 0;
 export function trustWritingWindow(contents: WebContents, url: string) {
@@ -24,6 +27,7 @@ export async function registerWriting() {
   } catch {
     initializationError = '写作目录记录无法读取，原记录已保留';
   }
+  if (!initializationError) registered = files;
   const handlers: Record<string, (request: unknown) => unknown> = {
     'writing:roots': () => files.getRoots(),
     'writing:list': (request) => {

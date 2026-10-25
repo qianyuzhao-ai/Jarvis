@@ -2,10 +2,9 @@ import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { useRef, useState } from 'react';
 import { MessageSquare, Pencil, Trash2 } from '@jarvis/ui/icons';
 import { IconButton } from '../../components/IconButton';
-import type { ChatSession } from '../../../../shared/agent';
+import type { ChatSessionMeta } from '../../../../shared/agent';
 
-const conversationTime = (session: ChatSession) =>
-  session.messages.at(-1)?.completedAt ?? session.updatedAt;
+const conversationTime = (session: ChatSessionMeta) => session.lastReplyAt ?? session.updatedAt;
 const dateTime = new Intl.DateTimeFormat('zh-CN', {
   year: 'numeric',
   month: '2-digit',
@@ -24,7 +23,7 @@ export function CanvasConversations({
   scope = 'canvas',
 }: {
   scope?: 'canvas' | 'writing';
-  sessions: ChatSession[];
+  sessions: ChatSessionMeta[];
   currentId?: string;
   busy: boolean;
   select: (id: string) => void;
@@ -48,7 +47,7 @@ export function CanvasConversations({
       setPending(false);
     }
   }
-  async function deleteChat(s: ChatSession) {
+  async function deleteChat(s: ChatSessionMeta) {
     if (submitting.current) return;
     submitting.current = true;
     setPending(true);

@@ -187,7 +187,9 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await expect.poll(dockGap).toBeLessThan(2);
     const first = await page.evaluate(async () => {
       const r = await window.desktop?.agent.getSnapshot();
-      return r?.ok ? r.value.snapshot.sessions[0] : null;
+      const id = r?.ok ? r.value.snapshot.sessions[0]?.id : undefined;
+      const full = id ? await window.desktop?.agent.getSession(id) : undefined;
+      return full?.ok ? full.value.session : null;
     });
     expect(first?.title).toBe('本周工作安排');
     const rejectedCopy = await page.evaluate(async (session) => {
@@ -230,9 +232,10 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByLabel('对话名称', { exact: true }).fill('已保存的对话');
     await page.getByRole('button', { name: '保存名称' }).click();
     await app.close();
-    const indexPath = join(userData, 'agent', 'index.json');
-    const fixture = JSON.parse(await readFile(indexPath, 'utf8'));
-    fixture.sessions[0].view.messages[1].activities = [
+    const index = JSON.parse(await readFile(join(userData, 'agent', 'index.json'), 'utf8'));
+    const viewPath = join(userData, 'agent', 'sessions', `${index.sessions[0].meta.id}.view.json`);
+    const fixture = JSON.parse(await readFile(viewPath, 'utf8'));
+    fixture.messages[1].activities = [
       {
         id: 'fixture-file-edit',
         label: '修改 1 个文件',
@@ -249,7 +252,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         ],
       },
     ];
-    await writeFile(indexPath, JSON.stringify(fixture));
+    await writeFile(viewPath, JSON.stringify(fixture));
     app = await launch();
     page = await app.firstWindow();
     await expect(
@@ -379,8 +382,48 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         '[data-testid="chat-message"][data-message-role="assistant"][data-status="failed"]',
       ),
     ).toContainText('你好🙂');
+    // Home chat streams and carries only the main Agent's tools for sub-agents, writing
+    // documents, navigation, files in authorized folders and the calendar; no shell tools.
+    const control = [
+      'create_document',
+      'create_event',
+      'create_file',
+      'create_folder',
+      'create_project',
+      'delegate_task',
+      'delete_event',
+      'delete_file',
+      'list_agents',
+      'list_calendars',
+      'list_documents',
+      'list_events',
+      'list_files',
+      'list_folders',
+      'list_writing_folders',
+      'message_agent',
+      'move_file',
+      'open_document',
+      'open_project',
+      'overwrite_file',
+      'read_agent_transcript',
+      'read_document',
+      'read_file',
+      'read_result_card',
+      'search_documents',
+      'search_files',
+      'stop_agent',
+      'update_event',
+    ];
     expect(
-      requests.every((r) => r.stream === true && (!r.tools || (r.tools as unknown[]).length === 0)),
+      requests.every(
+        (r) =>
+          r.stream === true &&
+          JSON.stringify(
+            ((r.tools ?? []) as { function: { name: string } }[])
+              .map((t) => t.function.name)
+              .sort(),
+          ) === JSON.stringify(control),
+      ),
     ).toBe(true);
     expect(errors).toEqual([]);
     expect(await readFile(join(userData, 'agent', 'index.json'), 'utf8')).not.toContain(

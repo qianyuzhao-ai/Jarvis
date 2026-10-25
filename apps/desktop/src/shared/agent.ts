@@ -6,6 +6,14 @@ import {
 } from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
+import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
+import type { UndoRequest } from './agent-ledger';
+import { resultCardSchema } from './agent-cards';
+import type { AgentSettings, ReplyMode } from './agent-settings';
+import type { AuthorizedFolder } from './agent-files';
+import type { McpServerInput, McpServerView } from './agent-mcp';
+import type { CalendarEvent, CalendarStatus } from './agent-calendar';
+import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   baseUrlSchema,
@@ -55,7 +63,38 @@ export const agentSendSchema = z.object({
   writing: writingScopeSchema.optional(),
   images: z.array(visionAssetSchema).max(12).optional(),
 });
-export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
+/**
+ * A message written by another Agent rather than typed here: a sub-agent's handoff or status
+ * notice in a main-Agent segment, or the main Agent's task or message in a sub-agent.
+ */
+export const relaySourceSchema = z
+  .object({
+    kind: z.enum(['handoff', 'notice', 'delegate', 'message', 'task']),
+    sessionId: agentId,
+    title: z.string().max(100),
+  })
+  .strict();
+/** A project or document the main Agent asks the window to show. */
+export const navigationTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('canvas'), projectId: z.string().uuid() }).strict(),
+  z
+    .object({
+      kind: z.literal('writing'),
+      rootId: z.string().min(1).max(64),
+      path: z.string().min(1).max(4096),
+    })
+    .strict(),
+]);
+export type NavigationTarget = z.infer<typeof navigationTargetSchema>;
+/** `queued`: a user message sent while its conversation was replying, not yet started. */
+export const agentStatus = z.enum([
+  'running',
+  'succeeded',
+  'failed',
+  'cancelled',
+  'interrupted',
+  'queued',
+]);
 export const chatActivitySchema = z.object({
   id: z.string().min(1).max(200),
   label: z.string().max(500),
@@ -64,11 +103,13 @@ export const chatActivitySchema = z.object({
   changes: z.array(canvasChangeSchema).max(200).optional(),
   projectId: z.string().uuid().optional(),
   writingScope: writingScopeSchema.optional(),
+  /** Set once the change this activity records was undone. */
+  undone: z.boolean().optional(),
   files: z
     .array(
       z.object({
         path: z.string().max(2000),
-        action: z.enum(['created', 'edited', 'deleted']),
+        action: z.enum(['created', 'edited', 'deleted', 'moved']),
         added: z.number().int().nonnegative(),
         removed: z.number().int().nonnegative(),
         diff: z.string().max(200000),
@@ -90,7 +131,11 @@ export const chatMessageSchema = z.object({
     .array(z.object({ id: z.string(), name: z.string() }))
     .max(100)
     .optional(),
+  relay: relaySourceSchema.optional(),
+  /** A message handed to a running reply: `queued` until delivered at the reply's next step. */
+  steer: z.boolean().optional(),
 });
+/** v1 record: metadata and messages in one object, as stored in `index.json` version 1. */
 export const chatSessionSchema = z.object({
   id: agentId,
   title: z.string().max(100),
@@ -106,19 +151,63 @@ export const chatSessionSchema = z.object({
   thinkingLevel: thinkingLevelSchema.optional(),
   writingScope: writingScopeSchema.optional(),
 });
+/**
+ * Who a conversation belongs to: home conversations are segments of the main Agent, canvas and
+ * writing conversations are space sub-agents. `delegated` ones were started by the main Agent.
+ */
+export const agentRoleSchema = z
+  .object({
+    kind: z.enum(['main', 'canvas', 'writing']),
+    origin: z.enum(['user', 'delegated']),
+    parentId: agentId.optional(),
+  })
+  .strict();
+/**
+ * v2 conversation metadata, without messages; `lastReplyAt` is when the last message finished and
+ * `card` is a space sub-agent's latest result card.
+ */
+export const sessionMetaSchema = chatSessionSchema.omit({ messages: true }).extend({
+  agent: agentRoleSchema,
+  lastReplyAt: z.number().optional(),
+  card: resultCardSchema.optional(),
+});
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
-export type ChatSession = z.infer<typeof chatSessionSchema>;
+export type StoredRelay = z.infer<typeof relaySourceSchema>;
+export type AgentRole = z.infer<typeof agentRoleSchema>;
+export type ChatSessionMeta = z.infer<typeof sessionMetaSchema>;
+export type ChatSession = ChatSessionMeta & { messages: ChatMessage[] };
+/** `waiting`: the round waits for a free slot under the concurrency limit. */
+export type RunState = 'waiting' | 'running';
 export interface AgentSnapshot {
   skills?: SkillInfo[];
   /** Model settings shared by every Agent entry (home, canvas, writing); Keys are never included. */
   models?: ModelSettingsView;
-  sessions: ChatSession[];
-  busySessionId: string | null;
+  /** Metadata only; a conversation's messages come from `getSession` and session events. */
+  sessions: ChatSessionMeta[];
+  /** The user's MCP servers and their status; credential values are never included. */
+  mcp?: McpServerView[];
+  /** What sending during a reply does; see the General settings. */
+  replyMode?: ReplyMode;
+  /** Conversations with a round in progress; several may reply at once. */
+  runs: Record<string, RunState>;
+  /**
+   * The main-Agent segment that most recently received a user message; handoffs from space
+   * sub-agents go here. Null until some home conversation has a message.
+   */
+  currentSegmentId?: string | null;
 }
 export interface AgentEvent {
   seq: number;
   snapshot: AgentSnapshot;
+}
+/** Messages of one conversation that were added or changed; shares `seq` with `AgentEvent`. */
+export interface SessionEvent {
+  seq: number;
+  sessionId: string;
+  messages: ChatMessage[];
+  /** Every message ID in order, sent when messages moved (a steering message was delivered). */
+  order?: string[];
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface AgentBridge {
@@ -126,12 +215,47 @@ export interface AgentBridge {
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
   getSnapshot(): Promise<AgentResult<AgentEvent>>;
+  getSettings(): Promise<AgentResult<AgentSettings>>;
+  /** 1–6 model requests streaming at once across all conversations. */
+  setConcurrency(value: number): Promise<AgentResult<AgentSettings>>;
+  setReplyMode(value: ReplyMode): Promise<AgentResult<AgentSettings>>;
+  /** Folders the main Agent may read and change files in. */
+  listFolders(): Promise<AgentResult<AuthorizedFolder[]>>;
+  /** Lets the user pick a folder to authorize; null when they cancel. */
+  addFolder(): Promise<AgentResult<AuthorizedFolder[] | null>>;
+  removeFolder(id: string): Promise<AgentResult<AuthorizedFolder[]>>;
+  calendarStatus(): Promise<AgentResult<CalendarStatus>>;
+  /** Shows the system's calendar permission prompt when it has not been answered yet. */
+  requestCalendarAccess(): Promise<AgentResult<CalendarStatus>>;
+  calendarEvents(range: { from: string; to: string }): Promise<AgentResult<CalendarEvent[]>>;
+  addMcpServer(input: McpServerInput): Promise<AgentResult<McpServerView[]>>;
+  removeMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
+  setMcpServerEnabled(input: {
+    id: string;
+    enabled: boolean;
+  }): Promise<AgentResult<McpServerView[]>>;
+  reconnectMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
+  /** Opens the server's sign-in page in the browser and connects once signed in. */
+  signInMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
+  /** Hands a queued message to the running reply now instead of after it. */
+  steer(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
+  /** One conversation with its messages, as of `seq`. */
+  getSession(sessionId: string): Promise<AgentResult<{ seq: number; session: ChatSession }>>;
+  onSessionEvent(listener: (event: SessionEvent) => void): () => void;
   createSession(): Promise<AgentResult<string>>;
   createCanvasSession(projectId: string): Promise<AgentResult<string>>;
   createWritingSession(scope: WritingScope): Promise<AgentResult<string>>;
   claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
   onWritingCommand(listener: (command: WritingCommand) => void): () => void;
+  /** Undoes one recorded Agent change; the window that owns its data applies it. */
+  undo(input: UndoRequest): Promise<AgentResult<void>>;
+  /** Tool calls in this window's rounds that wait for the user's decision. */
+  listApprovals(): Promise<AgentResult<ApprovalRequest[]>>;
+  respondApproval(input: ApprovalResponse): Promise<AgentResult<void>>;
+  onApprovals(listener: (requests: ApprovalRequest[]) => void): () => void;
+  /** Projects and documents this window can serve tool commands for; delegation targets these. */
+  setOpenTargets(targets: OpenTargets): Promise<AgentResult<void>>;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;
@@ -143,6 +267,8 @@ export interface AgentBridge {
   cancel(runId: string): Promise<AgentResult<void>>;
   copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   onEvent(listener: (event: AgentEvent) => void): () => void;
+  /** The main Agent asks this window to open a project or document. */
+  onNavigate(listener: (target: NavigationTarget) => void): () => void;
 }
 export function agentValue<T>(result: AgentResult<T>): T {
   if (!result.ok) throw new Error(result.error);

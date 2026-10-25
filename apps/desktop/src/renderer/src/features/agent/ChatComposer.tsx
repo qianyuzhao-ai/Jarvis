@@ -75,11 +75,14 @@ export function ChatComposer({
     return () => document.removeEventListener('pointerdown', outside);
   }, [menuOpen, text]);
   const busy = !!agent.session?.runId;
+  // Skill commands need a round of their own, so they queue even in steer mode.
+  const steers = agent.snapshot.replyMode !== 'queue' && !text.trimStart().startsWith('/');
   const configured = agent.configured;
   const selectedModel = agent.configuration.models.find((entry) => entry.id === model);
   const withImages =
     hasAttachments || !!agent.session?.messages.some((m) => m.visionAssets?.length);
-  const locked = !configured || busy || agent.sending || !!agent.snapshot.busySessionId;
+  // Model and thinking stay fixed while this conversation replies; typing a queued message is fine.
+  const locked = !configured || busy || agent.sending;
   useLayoutEffect(() => {
     const node = input.current;
     if (!node) return;
@@ -225,7 +228,7 @@ export function ChatComposer({
             used={agent.session?.contextTokens}
             capacity={agent.session ? agent.session.contextWindow : selectedModel?.contextWindow}
           />
-          {busy ? (
+          {busy && !text.trim() && !hasAttachments ? (
             <IconButton
               className="composer-submit"
               variant="secondary"
@@ -239,16 +242,21 @@ export function ChatComposer({
             <IconButton
               className="composer-submit"
               type="submit"
-              aria-label="发送消息"
-              title={agent.snapshot.busySessionId ? '另一个对话正在回复' : '发送消息'}
+              aria-label={busy ? (steers ? '引导回复' : '排队发送') : '发送消息'}
+              title={
+                busy
+                  ? steers
+                    ? '在当前步骤结束后交给正在进行的回复'
+                    : '当前回复结束后发送'
+                  : '发送消息'
+              }
               disabled={
                 menuOpen ||
                 (!text.trim() && !hasAttachments) ||
                 preparing ||
                 !configured ||
                 agent.loading ||
-                agent.sending ||
-                !!agent.snapshot.busySessionId
+                agent.sending
               }
             >
               <ArrowUp size={18} />
