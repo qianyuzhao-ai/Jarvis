@@ -85,6 +85,8 @@ try {
   assert.equal(state.value.currentVersion, version);
   await page.getByRole('button', { name: '设置', exact: true }).click();
   await expect(page.getByRole('heading', { name: '通用设置', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '关于 Jarvis', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '关于 Jarvis', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '应用更新', exact: true })).toBeVisible();
   console.log(
     `Verified packaged ${process.platform} startup, ASAR window tabs, writing Agent and updater bridges: ${version}`,
