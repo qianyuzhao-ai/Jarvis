@@ -72,6 +72,14 @@ jobs:
             exit 1
           fi
       - run: pnpm install --frozen-lockfile
+      - name: Load and verify release checks from workflow commit
+        env:
+          WORKFLOW_COMMIT: ${{ github.sha }}
+        run: |
+          git show "$WORKFLOW_COMMIT:scripts/check-tokens.mjs" > scripts/check-tokens.mjs
+          git show "$WORKFLOW_COMMIT:scripts/check-tokens.test.mjs" > scripts/check-tokens.test.mjs
+          git show "$WORKFLOW_COMMIT:apps/desktop/scripts/verify-packaged-startup.mjs" > apps/desktop/scripts/verify-packaged-startup.mjs
+          node --test scripts/check-tokens.test.mjs
       - run: pnpm check
       - run: pnpm build
       - name: Load macOS signing and verification tools from workflow commit

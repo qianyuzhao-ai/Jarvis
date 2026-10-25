@@ -10,6 +10,20 @@
 - 测试调用点随签名更新（canvas-agent-runtime、writing-agent-commands、agent-skills-runtime、agent-responses、model-runtime），断言不变；直接调用 `execute` 的地方补齐 SDK 五参数签名。
 - 验证：check、build 通过；运行时 28 例通过；完整实窗 124 例中 122 通过，ui-preview 2 例仍为仓库无 linux 截图基线（生成的 linux png 已逐个删除）。实窗沿用阶段 2 的 keyring 处理：本容器 apt 安装 gnome-keyring，dbus-run-session 内解锁并临时改 playwright-core loader 的 password-store，验证后已还原。`pnpm install --ignore-scripts` 不会下载 Electron，需在 electron 包目录手动执行 `node install.js`。
 
+## 0.3.0 打包启动验收入口同步（2026-10-25）
+
+- Windows 路径修复已由 PR #78 / #79 合入 develop/main（main `cae01f6`），从新工作流重试原 v0.3.0 的运行 `40162527580` 已通过 Windows 检查器回归；随后核对发现 tag 内 `verify-packaged-startup.mjs` 仍在通用页查找已迁到关于页的“应用更新”区域，继续运行必然失败，主动取消该次运行并同步验收入口。
+- 启动验收改为打开关于页并验证标题、更新区域；工作流同样从 workflow commit 加载该验证工具，应用源码与标签均保持原版。没有放宽依赖、ASAR、桥接、版本或原生启动断言。
+- 本地 check、build 通过，未签名 arm64 目录包 `release/66973b2f-682b-48ce-aaa2-666f06225116` 实际启动通过：360 项必需生产依赖、0.3.0、ASAR 窗口标签、写作 Agent 和更新桥接、关于页验证完成。首次沙箱内下载缓存 DNS 失败，获准联网重试后成功；不代表 macOS 签名、公证或 Intel/Windows 原生验证已完成。
+
+
+## 0.3.0 Windows 检查工具修复（2026-10-25）
+
+- `v0.3.0` 原标签指向 main 合并提交 `c393e46`（PR #77），应用与已验证 feature/develop 的完整树一致；功能经 PR #76 合入 develop。标签发布运行 `40162171899` 的 Windows 在 pnpm check 失败：`relative()` 返回反斜杠，Token 允许列表与 icons/tokens 特例使用斜杠，导致合法历史颜色被误报。Windows 作业 `121075828965` 日志已定位，不是应用构建或签名失败。
+- 修复 check-tokens.mjs 统一仓库相对路径为 `/`，完整扫描回归同时模拟 POSIX/Windows，验证允许列表及真正的颜色/原生导入违规仍被拒绝。发布工作流在 check 前从 workflow commit 加载该检查脚本，与原签名工具回放机制一致，以便用新 main 工作流重试原标签；应用源码仍来自原标签，不移动标签、不跳过任何检查。
+- 已请求取消注定无法发布的原运行，避免另外两个 Mac 作业重复签名公证。修复仅检查脚本、测试与工作流，不改变应用源码，沿用原版完整 Electron 124/124 结果；新工具测试 3/3、check 与 build 通过，最终云端结果另行回读。
+
+
 ## 0.3.0 发布准备（2026-10-25）
 
 - 用户明确授权以本地最新状态集成 develop（用户称 dev）并发布 0.3.0，排除远端 `ccr*` 分支。fetch 核对 develop=`fd6db60`、main=`57365e8`，当前本地 `feature/project-more-menu` 独有提交为 `fe41c1e` / `66bde20`；远端 `ccr-1c636605-o0pprj` 只读列出，不合入、不修改。远端无 v0.3.0 标签或开放 PR，最近发布为 v0.2.5。
