@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
+import { Button } from '@jarvis/ui/components/Button';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import logo from '../../../../../resources/icon.png';
 import {
@@ -16,6 +17,15 @@ function replyTime(time: number, now: number) {
   return new Date(time).toLocaleDateString();
 }
 
+/** Who wrote a message that came from another Agent; the title names that conversation. */
+const relayLabel: Record<NonNullable<ChatMessage['relay']>['kind'], string> = {
+  handoff: '空间助手转交',
+  notice: '空间任务状态',
+  delegate: 'Jarvis 委派',
+  message: 'Jarvis 的消息',
+  task: '生成任务',
+};
+
 export function ChatMessageItem({
   message: m,
   sessionId,
@@ -23,6 +33,7 @@ export function ChatMessageItem({
   onError,
   canvas,
   writing,
+  waiting = false,
 }: {
   message: ChatMessage;
   sessionId: string;
@@ -30,6 +41,8 @@ export function ChatMessageItem({
   onError: (message: string) => void;
   canvas?: CanvasActivityActions;
   writing?: WritingActivityActions;
+  /** The conversation's round waits for a free slot under the concurrency limit. */
+  waiting?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -37,6 +50,19 @@ export function ChatMessageItem({
     const timer = setTimeout(() => setCopied(false), 2000);
     return () => clearTimeout(timer);
   }, [copied]);
+  const [steering, setSteering] = useState(false);
+  /** Hands this queued message to the running reply now. */
+  async function steer() {
+    setSteering(true);
+    try {
+      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.agent.steer({ sessionId, messageId: m.id }));
+    } catch (error) {
+      onError(error instanceof Error ? error.message : '引导失败');
+    } finally {
+      setSteering(false);
+    }
+  }
   async function copy() {
     try {
       if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
@@ -54,6 +80,11 @@ export function ChatMessageItem({
       data-status={m.status}
       aria-label={m.role === 'user' ? '用户消息' : 'Jarvis 回复'}
     >
+      {m.relay && (
+        <small data-testid="chat-relay" className="chat-relay">
+          {relayLabel[m.relay.kind]} · {m.relay.title}
+        </small>
+      )}
       {!!m.visionAssets?.length && (
         <div
           data-testid="chat-vision-assets"
@@ -95,11 +126,22 @@ export function ChatMessageItem({
         </div>
       )}
       {m.role === 'assistant' && (
-        <ChatActivity activities={m.activities} canvas={canvas} writing={writing} />
+        <ChatActivity
+          activities={m.activities}
+          canvas={canvas}
+          writing={writing}
+          replying={m.status === 'running'}
+          onError={onError}
+        />
       )}
       <div className="chat-bubble">
         <div data-testid="chat-text" className="chat-text">
-          {m.text || (m.status === 'running' ? '正在等待模型回复…' : '未收到回复内容')}
+          {m.text ||
+            (m.status === 'running'
+              ? waiting
+                ? '等待中：同时回复的对话已达上限'
+                : '正在等待模型回复…'
+              : '未收到回复内容')}
           {m.status === 'running' && m.text && (
             <span className="chat-cursor" aria-hidden="true">
               {' '}
@@ -107,7 +149,23 @@ export function ChatMessageItem({
             </span>
           )}
         </div>
-        {m.status === 'cancelled' && <small>已停止，部分回复已保留</small>}
+        {m.status === 'cancelled' && (
+          <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
+        )}
+        {m.status === 'queued' && m.steer && (
+          <small data-testid="chat-steer-status">将在当前步骤结束后引导回复</small>
+        )}
+        {m.status === 'queued' && !m.steer && (
+          <small data-testid="chat-queue-status" className="chat-queued">
+            排队中，当前回复结束后发送
+            <Button variant="secondary" size="xs" disabled={steering} onClick={() => void steer()}>
+              引导
+            </Button>
+          </small>
+        )}
+        {m.status === 'succeeded' && m.steer && (
+          <small data-testid="chat-steer-status">已引导当前回复</small>
+        )}
         {m.error && (
           <div className="chat-message-error">
             <CircleAlert size={14} />

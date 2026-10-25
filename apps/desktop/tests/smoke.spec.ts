@@ -292,11 +292,12 @@ test('settings validate, cancel, save and restore without requests', async () =>
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction('workspace', 'readwrite');
         const store = tx.objectStore('workspace');
-        const request = store.get('current');
+        // Preferences saved by this version, edited as an older build would have left them.
+        const request = store.get('preferences');
         request.onsuccess = () => {
           const data = request.result;
           data.settings.generateUrl = 'https://old-platform.invalid/aigc/';
-          store.put(data, 'current');
+          store.put(data, 'preferences');
         };
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);

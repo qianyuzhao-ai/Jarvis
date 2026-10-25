@@ -123,6 +123,10 @@ export function useGeneration(
     },
     [patch, getCurrent],
   );
+  // Generation the canvas Agent starts runs in the main process with the same service settings.
+  useEffect(() => {
+    void window.desktop?.generation.setAgentSettings(data.settings);
+  }, [data.settings]);
   const generate = useCallback(
     async (projectId: string, nodeId: string) => {
       const key = projectId + ':' + nodeId;
@@ -268,7 +272,9 @@ export function useGeneration(
       p.nodes
         .filter(
           (n): n is MediaNode =>
-            n.type === 'media' && (generationBusy(n.data) || !!n.data.generation?.quotaPending),
+            n.type === 'media' &&
+            !n.data.generation?.agent &&
+            (generationBusy(n.data) || !!n.data.generation?.quotaPending),
         )
         .map((n) => `${p.id}:${n.id}:${n.data.generation?.requestId}`),
     )
@@ -281,8 +287,10 @@ export function useGeneration(
       for (const p of state.projects)
         for (const n of p.nodes) {
           if (stopped) return;
+          // Jobs the canvas Agent started are tracked and written by the main process.
           if (
             n.type !== 'media' ||
+            n.data.generation?.agent ||
             (!generationBusy(n.data) && !n.data.generation?.quotaPending) ||
             starting.current.has(p.id + ':' + n.id)
           )

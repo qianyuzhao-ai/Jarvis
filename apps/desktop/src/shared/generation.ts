@@ -150,4 +150,6 @@ export interface GenerationBridge {
   upload(request: UploadRequest): Promise<BridgeResult<{ url: string }>>;
   start(request: StartRequest): Promise<BridgeResult<GenerationJob>>;
   get(requestId: string): Promise<BridgeResult<GenerationJob | null>>;
+  /** Shares the service settings with generation the canvas Agent starts. */
+  setAgentSettings(settings: unknown): Promise<BridgeResult<void>>;
 }

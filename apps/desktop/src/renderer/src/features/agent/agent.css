@@ -51,6 +51,20 @@
   .chat-bubble {
     color: var(--color-ink);
   }
+  .chat-queued {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .chat-relay {
+    display: block;
+    margin-bottom: 4px;
+    text-align: right;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-secondary);
+  }
   .user .chat-bubble {
     padding: 10px 16px;
     border-radius: 16px;

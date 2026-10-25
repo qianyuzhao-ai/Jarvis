@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { registerGeneration, trustGenerationWindow } from './generation/bridge';
 import { registerWriting, trustWritingWindow } from './writing/bridge';
 import { registerAgent, trustAgentWindow } from './agent/bridge';
+import { registerProjects, trustProjectsWindow } from './projects/bridge';
 import { registerUpdates, trustUpdateWindow, isUpdateInstalling } from './updates/bridge';
 export { configureUpdates } from './updates/bridge';
 export { createElectronBackend } from './updates/backend';
@@ -72,6 +73,7 @@ async function createWindow(): Promise<void> {
   trustGenerationWindow(window.webContents, trustedUrl);
   trustWritingWindow(window.webContents, trustedUrl);
   trustAgentWindow(window.webContents, trustedUrl);
+  trustProjectsWindow(window.webContents, trustedUrl);
   trustUpdateWindow(window.webContents, trustedUrl);
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, url) => {
@@ -108,6 +110,7 @@ void app
       ]),
     );
 
+    await registerProjects();
     await registerGeneration(join(app.getPath('userData'), 'generation-jobs.json'));
     await registerWriting();
     await registerAgent();

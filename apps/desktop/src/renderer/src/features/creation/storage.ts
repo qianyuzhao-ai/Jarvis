@@ -1,5 +1,9 @@
 import { emptyWorkspace, workspaceSchema, type WorkspaceData } from './types';
 
+/** Settings kept in the renderer; projects live in the main process. */
+export type Preferences = Omit<WorkspaceData, 'projects'>;
+const preferencesSchema = workspaceSchema.omit({ projects: true });
+
 const database = new Promise<IDBDatabase>((resolve, reject) => {
   const request = indexedDB.open('jarvis-workspace', 1);
   request.onupgradeneeded = () => request.result.createObjectStore('workspace');
@@ -11,29 +15,41 @@ const database = new Promise<IDBDatabase>((resolve, reject) => {
   request.onblocked = () =>
     reject(new Error('本地存储被其他窗口占用，请关闭其他 Jarvis 窗口后重试。'));
 });
-export async function loadWorkspace(): Promise<WorkspaceData> {
+async function read(key: string): Promise<unknown> {
   const db = await database;
   return new Promise((resolve, reject) => {
-    const request = db.transaction('workspace').objectStore('workspace').get('current');
-    request.onsuccess = () => {
-      if (request.result === undefined) return resolve(emptyWorkspace);
-      const parsed = workspaceSchema.safeParse(request.result);
-      if (parsed.success) {
-        for (const project of parsed.data.projects)
-          for (const node of project.nodes)
-            if (node.type === 'asset' && node.data.upload.status === 'uploading')
-              node.data.upload = { status: 'failed', error: '上传已中断，尚未保存资源 URL' };
-        resolve(parsed.data);
-      } else reject(new Error('本地数据格式无法读取，原数据已保留。请勿清除应用数据。'));
-    };
+    const request = db.transaction('workspace').objectStore('workspace').get(key);
+    request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(new Error('读取本地数据失败，原数据已保留。'));
   });
 }
-export async function saveWorkspace(data: WorkspaceData): Promise<void> {
+/**
+ * The workspace as earlier versions saved it, projects included, under `current`. It is only
+ * read: after the projects moved to the main process it stays as the original copy.
+ */
+export async function loadLegacyWorkspace(): Promise<WorkspaceData> {
+  const raw = await read('current');
+  if (raw === undefined) return emptyWorkspace;
+  const parsed = workspaceSchema.safeParse(raw);
+  if (!parsed.success) throw new Error('本地数据格式无法读取，原数据已保留。请勿清除应用数据。');
+  return parsed.data;
+}
+/** Saved preferences, or those of the earlier workspace record before the first save. */
+export async function loadPreferences(): Promise<Preferences> {
+  const raw = await read('preferences');
+  if (raw !== undefined) {
+    const parsed = preferencesSchema.safeParse(raw);
+    if (!parsed.success) throw new Error('本地设置格式无法读取，原数据已保留。');
+    return parsed.data;
+  }
+  const { projects: _, ...rest } = await loadLegacyWorkspace();
+  return rest;
+}
+export async function savePreferences(data: Preferences): Promise<void> {
   const db = await database;
   return new Promise((resolve, reject) => {
     const tx = db.transaction('workspace', 'readwrite');
-    tx.objectStore('workspace').put(data, 'current');
+    tx.objectStore('workspace').put(preferencesSchema.parse(data), 'preferences');
     tx.oncomplete = () => resolve();
     tx.onabort = tx.onerror = () => reject(new Error('本地保存失败，请检查磁盘空间并重试。'));
   });

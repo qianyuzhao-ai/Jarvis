@@ -1,7 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@jarvis/ui/components/Tabs';
-import { Button } from '@jarvis/ui/components/Button';
 import { useState } from 'react';
-import { Plus } from '@jarvis/ui/icons';
+import type { McpServerView } from '../../../../shared/agent-mcp';
+import { McpSettings } from './McpSettings';
 import type { SkillInfo } from '../../../../shared/agent-skills';
 import { SkillsSettings } from '../agent/SkillsSettings';
 
@@ -10,7 +10,15 @@ const tabs = [
   ['skill', 'Skill'],
 ] as const;
 
-export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: boolean }) {
+export function PluginSettings({
+  skills,
+  busy,
+  mcp = [],
+}: {
+  skills: SkillInfo[];
+  busy: boolean;
+  mcp?: McpServerView[];
+}) {
   const [tab, setTab] = useState('skill');
   const [actionTarget, setActionTarget] = useState<HTMLDivElement | null>(null);
   return (
@@ -40,14 +48,7 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
             data-testid="plugins-actions"
             className="flex items-center gap-2"
             ref={setActionTarget}
-          >
-            {tab === 'mcp' && (
-              <Button variant="ghost" type="button" className="" disabled title="MCP 暂未接入">
-                <Plus size={16} />
-                添加mcp
-              </Button>
-            )}
-          </div>
+          ></div>
         </div>
         <TabsContent
           value="mcp"
@@ -57,16 +58,7 @@ export function PluginSettings({ skills, busy }: { skills: SkillInfo[]; busy: bo
           hidden={tab !== 'mcp'}
           tabIndex={0}
         >
-          <section
-            data-testid="plugins-mcp"
-            className="flex min-h-13 items-center justify-between gap-4 border-b border-separator"
-            aria-labelledby="plugins-mcp-title"
-          >
-            <h2 id="plugins-mcp-title" className="text-title-3">
-              MCP
-            </h2>
-            <span className="text-callout text-fg-secondary">暂未接入</span>
-          </section>
+          <McpSettings servers={mcp} actionTarget={actionTarget} active={tab === 'mcp'} />
         </TabsContent>
         <TabsContent
           value="skill"

@@ -1,26 +1,19 @@
+import { readProjects } from './helpers/workspace';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test, type Page } from '@playwright/test';
-import type { WorkspaceData } from '../src/renderer/src/features/creation/types';
 import { addRelayModel } from './helpers/model-setup';
+import { ledgerStatuses } from './helpers/ledger';
 
+/** The projects as the main process saved them, the project under test first. */
 async function workspace(page: Page) {
-  return page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open('jarvis-workspace', 1);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-    try {
-      return await new Promise<WorkspaceData>((resolve) => {
-        const r = db.transaction('workspace').objectStore('workspace').get('current');
-        r.onsuccess = () => resolve(r.result);
-      });
-    } finally {
-      db.close();
-    }
-  });
+  const projects = await readProjects(page);
+  return {
+    projects: [...projects].sort(
+      (a, b) => Number(b.name === '画布 Agent 项目') - Number(a.name === '画布 Agent 项目'),
+    ),
+  };
 }
 test('canvas sidebar reads selection, applies and undoes grouped edits, restores project conversations and keeps tools scoped', async () => {
   test.setTimeout(60000);
@@ -202,8 +195,10 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.keyboard.press('ArrowLeft');
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(370);
     await page.screenshot({ path: test.info().outputPath('canvas-agent-light.png') });
+    await expect.poll(() => ledgerStatuses(profile)).toEqual(['applied']);
     await sidebar.getByRole('button', { name: '撤销本次修改' }).last().click();
     await expect.poll(async () => (await workspace(page)).projects[0]?.nodes.length).toBe(1);
+    await expect.poll(() => ledgerStatuses(profile)).toEqual(['undone']);
     expect((await workspace(page)).projects[0]?.edges).toHaveLength(0);
     await sidebar.getByRole('button', { name: '新建画布对话' }).click();
     await sidebar.getByLabel('消息', { exact: true }).fill('持续等待');
@@ -212,12 +207,11 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
     const running = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
-    expect(running?.ok && running.value.snapshot.busySessionId).toBeTruthy();
+    const runningIds = running?.ok ? Object.keys(running.value.snapshot.runs) : [];
+    expect(runningIds).toHaveLength(1);
     await page.getByRole('button', { name: '首页', exact: true }).click();
     const background = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
-    expect(background?.ok && background.value.snapshot.busySessionId).toBe(
-      running?.ok && running.value.snapshot.busySessionId,
-    );
+    expect(background?.ok && Object.keys(background.value.snapshot.runs)).toEqual(runningIds);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     await sidebar.getByRole('button', { name: '停止回复' }).click();
@@ -248,6 +242,7 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     app = await launch();
     page = await app.firstWindow();
     sidebar = page.getByRole('complementary', { name: '画布助手' });
+    expect(await ledgerStatuses(profile)).toEqual(['undone']);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布 Agent 项目' }).click();
     await expect(

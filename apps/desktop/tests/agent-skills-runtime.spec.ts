@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { skillRuntime } from '../src/main/agent/skill-runtime';
+import { chatPack } from '../src/main/agent/packs/chat';
+import { skillsPack } from '../src/main/agent/packs/skills';
 import { openAgent } from '../src/main/agent/runtime';
 import type { ChatMessage } from '../src/shared/agent';
 import { relayModel } from './helpers/models';
@@ -22,30 +23,42 @@ const skill: StoredSkill = {
 function output(): ChatMessage {
   return { id: randomUUID(), role: 'assistant', text: '', status: 'running' };
 }
+function context() {
+  return { output: output(), changed: () => {} };
+}
 test('skill activation honors explicit-only rules and restricts reference reads to loaded packages', async () => {
   const manual = { ...skill, name: 'manual-plan', manualOnly: true };
-  const normal = skillRuntime([skill, manual], 'plan shots', output(), () => {});
+  const normal = skillsPack(context(), [skill, manual], 'plan shots');
   const [load, read] = normal.tools;
   if (!load || !read) throw new Error('Missing skill tools');
-  expect(normal.context).toContain('shot-plan');
-  expect(normal.context).not.toContain('manual-plan');
-  await expect(load.execute('id', { name: 'manual-plan' }, undefined)).rejects.toThrow('主动选择');
+  expect(normal.prompt).toContain('shot-plan');
+  expect(normal.prompt).not.toContain('manual-plan');
   await expect(
-    read.execute('id', { name: 'shot-plan', path: 'references/rules.md' }, undefined),
+    load.execute('id', { name: 'manual-plan' }, undefined, undefined, {} as never),
+  ).rejects.toThrow('主动选择');
+  await expect(
+    read.execute(
+      'id',
+      { name: 'shot-plan', path: 'references/rules.md' },
+      undefined,
+      undefined,
+      {} as never,
+    ),
   ).rejects.toThrow('先加载');
-  await load.execute('id', { name: 'shot-plan' }, undefined);
+  await load.execute('id', { name: 'shot-plan' }, undefined, undefined, {} as never);
   await expect(
-    read.execute('id', { name: 'shot-plan', path: '../secrets' }, undefined),
+    read.execute(
+      'id',
+      { name: 'shot-plan', path: '../secrets' },
+      undefined,
+      undefined,
+      {} as never,
+    ),
   ).rejects.toThrow('清单');
-  const explicit = skillRuntime(
-    [manual],
-    '/skill:manual-plan make three shots',
-    output(),
-    () => {},
-  );
-  expect(explicit.prompt).toContain('make three shots');
-  expect(explicit.prompt).toContain('Make a shot list');
-  expect(() => skillRuntime([], '/missing', output(), () => {})).toThrow('未知');
+  const explicit = skillsPack(context(), [manual], '/skill:manual-plan make three shots');
+  expect(explicit.userPrompt).toContain('make three shots');
+  expect(explicit.userPrompt).toContain('Make a shot list');
+  expect(() => skillsPack(context(), [], '/missing')).toThrow('未知');
 });
 
 test('Pi can choose a skill, load its references and answer while filesystem tools stay disabled', async () => {
@@ -90,21 +103,19 @@ test('Pi can choose a skill, load its references and answer while filesystem too
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Missing server');
   const out = output();
-  const skills = skillRuntime([skill], 'Plan shots', out, () => {});
+  const skills = skillsPack({ output: out, changed: () => {} }, [skill], 'Plan shots');
   const runtime = await openAgent(
     test.info().outputPath('agent'),
     randomUUID(),
     relayModel({ model: 'mock', baseUrl: `http://127.0.0.1:${address.port}/v1` }),
-    false,
-    undefined,
-    skills,
+    { packs: [chatPack(), skills] },
   );
   try {
     expect(runtime.session.getActiveToolNames().sort()).toEqual([
       'load_skill',
       'read_skill_resource',
     ]);
-    await runtime.session.prompt(skills.prompt);
+    await runtime.session.prompt(skills.userPrompt);
     expect(requests).toHaveLength(3);
     expect(JSON.stringify(requests[1])).toContain('Make a shot list');
     expect(JSON.stringify(requests[2])).toContain('RULE: keep the subject consistent');

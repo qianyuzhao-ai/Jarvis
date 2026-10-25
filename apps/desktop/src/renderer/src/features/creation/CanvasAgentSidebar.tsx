@@ -13,7 +13,6 @@ import { useAgent } from '../agent/use-agent';
 import { ChatComposer } from '../agent/ChatComposer';
 import { ChatMessageItem } from '../agent/ChatMessageItem';
 import { canvasSnapshot } from './canvas-context';
-import { prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
 
 export function CanvasAgentSidebar({
@@ -21,7 +20,6 @@ export function CanvasAgentSidebar({
   selectedIds,
   open,
   focus,
-  commit,
   configure,
   width,
   onWidth,
@@ -34,7 +32,6 @@ export function CanvasAgentSidebar({
   selectedIds: string[];
   open: boolean;
   focus: (ids: string[]) => void;
-  commit: (change: (p: Project) => Project) => Promise<void>;
   configure: () => void;
 }) {
   const agent = useAgent(project.id);
@@ -76,8 +73,7 @@ export function CanvasAgentSidebar({
       pending.current ||
       attachments.preparing ||
       attachments.blocked ||
-      (!text.trim() && !attachments.images.length) ||
-      agent.snapshot.busySessionId
+      (!text.trim() && !attachments.images.length)
     )
       return;
     pending.current = true;
@@ -117,18 +113,12 @@ export function CanvasAgentSidebar({
     }
   }
   async function undo(id: string) {
-    if (pending.current || agent.snapshot.busySessionId) return;
+    if (pending.current || agent.scopeBusy) return;
     pending.current = true;
     setUndoing(true);
     agent.setError('');
     try {
-      const next = await prepareCanvasUndo(project, id);
-      await commit((current) => {
-        if (current !== project) throw new Error('画布已发生修改，请重试');
-        return next;
-      });
-    } catch (error) {
-      agent.setError(error instanceof Error ? error.message : '撤销失败');
+      await agent.undoChange(id);
     } finally {
       pending.current = false;
       setUndoing(false);
@@ -137,8 +127,7 @@ export function CanvasAgentSidebar({
   const actions = {
     focus,
     undo: (id: string) => void undo(id),
-    canUndo: (id: string) =>
-      !undoing && !agent.snapshot.busySessionId && project.agentEdits.at(-1)?.id === id,
+    canUndo: (id: string) => !undoing && !agent.scopeBusy && project.agentEdits.at(-1)?.id === id,
   };
   return (
     <div
@@ -311,7 +300,7 @@ export function CanvasAgentSidebar({
               <span>最近的画布修改</span>
               <button
                 type="button"
-                disabled={!!agent.snapshot.busySessionId || undoing}
+                disabled={agent.scopeBusy || undoing}
                 onClick={() => {
                   const id = project.agentEdits.at(-1)?.id;
                   if (id) void undo(id);
@@ -325,7 +314,7 @@ export function CanvasAgentSidebar({
           <CanvasConversations
             sessions={agent.snapshot.sessions}
             currentId={session?.id}
-            busy={!!agent.snapshot.busySessionId || agent.sending || attachments.preparing}
+            busy={agent.scopeBusy || agent.sending || attachments.preparing}
             select={(id) => {
               if (attachments.preparing) return;
               agent.select(id);
@@ -389,6 +378,7 @@ export function CanvasAgentSidebar({
                 <ChatMessageItem
                   key={m.id}
                   message={m}
+                  waiting={agent.waiting}
                   sessionId={session.id}
                   now={now}
                   onError={agent.setError}

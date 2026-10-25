@@ -1,6 +1,6 @@
 import { z } from 'zod';
 export const tabViewSchema = z.object({
-  kind: z.enum(['chat', 'canvas', 'writing', 'settings']),
+  kind: z.enum(['chat', 'canvas', 'writing', 'settings', 'calendar']),
   ref: z.string().max(4096).nullable(),
   title: z.string().max(500),
   rootId: z.string().optional(),
@@ -35,6 +35,7 @@ export function sameObject(a: TabView, b: TabView) {
   return (
     a.kind === b.kind &&
     (a.kind === 'settings' ||
+      a.kind === 'calendar' ||
       (a.ref === b.ref && a.rootId === b.rootId && (a.ref !== null || a.kind !== 'chat')))
   );
 }

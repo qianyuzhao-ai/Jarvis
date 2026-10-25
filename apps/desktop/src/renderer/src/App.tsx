@@ -16,17 +16,24 @@ import {
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
+import { AgentApprovals } from './features/agent/AgentApprovals';
 import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
-import { loadWorkspace } from './features/creation/storage';
+import { CalendarSpace } from './features/calendar/CalendarSpace';
+import { FileAccessSettings } from './features/settings/FileAccessSettings';
+import { loadWorkspace } from './features/creation/workspace-load';
+import type { ProjectRecord } from '../../shared/project';
+import type { NavigationTarget } from '../../shared/agent';
 import { createProject, type Project, type WorkspaceData } from './features/creation/types';
 import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
 import { GenerationNotice } from './features/creation/GenerationNotice';
 import { useAssetUpload } from './features/creation/useAssetUpload';
 import { useAgent } from './features/agent/use-agent';
+import { focusConversation, focusKey } from './features/agent/conversation-focus';
+import type { ChatSessionMeta } from '../../shared/agent';
 import { ChatTab } from './features/shell/ChatTab';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
@@ -37,11 +44,11 @@ import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
-function Workbench({ initial }: { initial: WorkspaceData }) {
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'files' | 'about';
+function Workbench({ initial }: { initial: { data: WorkspaceData; records: ProjectRecord[] } }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
-  const { data, update, commit, getCurrent, status, saveError } = useWorkspace(initial);
+  const { data, update, commit, hold, getCurrent, status, saveError } = useWorkspace(initial);
   const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
   const agent = useAgent();
@@ -130,6 +137,62 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
     syncView(shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId)!);
   }
   const projectView = (p: Project): TabView => ({ kind: 'canvas', ref: p.id, title: p.name });
+  /** Opens the space and conversation behind a home-page result card, with its assistant shown. */
+  async function openCard(session: ChatSessionMeta) {
+    const key = focusKey(session.projectId, session.writingScope);
+    if (session.projectId) {
+      const project = data.projects.find((p) => p.id === session.projectId);
+      if (!project) return agent.setError('这个任务所在的项目已删除');
+      if (key) focusConversation(key, session.id);
+      await open(projectView(project));
+    } else if (session.writingScope) {
+      const { rootId, path } = session.writingScope;
+      if (writing.root?.id !== rootId)
+        return agent.setError('请先在写作空间打开这个文档所在的文件夹');
+      await writing.openDocument({ kind: 'file', path, name: path.split('/').at(-1) ?? path });
+      if (key) focusConversation(key, session.id);
+      await open({ kind: 'writing', ref: path, rootId, title: path.split('/').at(-1) ?? path });
+    } else return;
+    change((s) => ({
+      ...s,
+      tabs: s.tabs.map((t) => (t.id === s.activeId ? { ...t, rightPanelOpen: true } : t)),
+    }));
+  }
+  /**
+   * Opens what the main Agent asked for, a project (possibly just created) or a document, in a new
+   * tab so the conversation's tab stays where it is.
+   */
+  const navigate = useRef<(target: NavigationTarget) => Promise<void>>(async () => {});
+  navigate.current = async (target) => {
+    if (target.kind === 'canvas') {
+      // A project the Agent just created reaches this window with the store's next push.
+      let project = getCurrent().projects.find((p) => p.id === target.projectId);
+      for (let i = 0; i < 30 && !project; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        project = getCurrent().projects.find((p) => p.id === target.projectId);
+      }
+      if (!project) return agent.setError('要打开的项目还没有同步到窗口，请稍后从项目列表打开');
+      await open(projectView(project), true);
+      return;
+    }
+    const root = writing.roots.find((r) => r.id === target.rootId);
+    if (!root) return agent.setError('没有这个写作文件夹');
+    if (writing.root?.id !== target.rootId) await writing.switchRoot(root);
+    const name = target.path.split('/').at(-1) ?? target.path;
+    await writing.openDocument({ kind: 'file', path: target.path, name });
+    await open({ kind: 'writing', ref: target.path, rootId: target.rootId, title: name }, true);
+  };
+  useEffect(
+    () =>
+      window.desktop?.agent.onNavigate((target) => {
+        void navigate
+          .current(target)
+          .catch((error: unknown) =>
+            agent.setError(error instanceof Error ? error.message : '打开失败'),
+          );
+      }),
+    [agent.setError],
+  );
   async function space(kind: TabView['kind']) {
     const recent = [...shell.current.current.tabs]
       .filter((t) => t.kind === kind)
@@ -152,7 +215,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           : {
               kind,
               ref: kind === 'settings' ? 'general' : null,
-              title: kind === 'settings' ? '设置' : '新对话',
+              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : '新对话',
             },
       true,
     );
@@ -359,7 +422,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             return true;
           }}
           onDeleteChat={agent.deleteConversation}
-          busy={!!agent.snapshot.busySessionId}
+          busy={agent.anyBusy}
+          cards={agent.cards}
+          onOpenCard={(session) => void openCard(session)}
           onSettings={openSettings}
         />
       )}
@@ -424,6 +489,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               />
             </div>
           ))}
+        <div className="shell-view" hidden={route !== 'calendar'}>
+          {route === 'calendar' && <CalendarSpace active />}
+        </div>
         <div className="shell-view" hidden={route !== 'settings'}>
           {route === 'settings' && (
             <header className="shell-settings-toolbar">
@@ -434,6 +502,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                     models: '模型',
                     services: '内网地址',
                     plugins: '插件',
+                    files: '文件与权限',
                     about: '关于 Jarvis',
                   }[settingsSection]
                 }
@@ -444,6 +513,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                 hidden={
                   settingsSection === 'models' ||
                   settingsSection === 'plugins' ||
+                  settingsSection === 'files' ||
                   settingsSection === 'about'
                 }
               >
@@ -456,13 +526,15 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />
+          ) : route === 'settings' && settingsSection === 'files' ? (
+            <FileAccessSettings />
           ) : route === 'settings' && settingsSection === 'about' ? (
             <AboutSettings updates={updates} />
           ) : route === 'settings' && settingsSection === 'models' ? (
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <ModelSettings value={agent.configuration} busy={!!agent.snapshot.busySessionId} />
+              <ModelSettings value={agent.configuration} busy={agent.anyBusy} />
             )
           ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (
@@ -470,7 +542,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             ) : (
               <PluginSettings
                 skills={agent.snapshot.skills ?? []}
-                busy={!!agent.snapshot.busySessionId}
+                busy={agent.anyBusy}
+                mcp={agent.snapshot.mcp ?? []}
               />
             )
           ) : route === 'settings' ? (
@@ -484,9 +557,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
           ) : null}
         </div>
         {data.projects
-          .filter(
-            (p) => (route === 'canvas' && active.ref === p.id) || agent.busyProjectId === p.id,
-          )
+          .filter((p) => route === 'canvas' && active.ref === p.id)
           .map((project) => (
             <div
               className="shell-view"
@@ -512,7 +583,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   )
                 }
                 onConfigureAgent={() => void openSettings('models')}
-                agentBusy={agent.busyProjectId === project.id}
+                onHold={(held) => hold(project.id, held)}
+                agentBusy={agent.busyProjectIds.includes(project.id)}
                 theme={theme}
                 status={status}
                 shell={{
@@ -601,7 +673,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   );
 }
 export function App() {
-  const [initial, setInitial] = useState<WorkspaceData | null>(null);
+  const [initial, setInitial] = useState<Awaited<ReturnType<typeof loadWorkspace>> | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
@@ -641,6 +713,7 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <ConfirmProvider>
         <Workbench initial={initial} />
+        <AgentApprovals />
         <Toaster />
       </ConfirmProvider>
     </MotionConfig>

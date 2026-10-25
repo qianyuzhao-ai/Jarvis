@@ -55,8 +55,6 @@ export class CanvasBroker {
     const entry = this.pending.get(reply.requestId);
     if (!entry || entry.owner !== owner || entry.projectId !== reply.projectId || !entry.claimed)
       throw new Error('画布回执已失效');
-    if (reply.snapshot && reply.snapshot.projectId !== entry.projectId)
-      throw new Error('画布项目不匹配');
     entry.resolve(reply);
   }
 }

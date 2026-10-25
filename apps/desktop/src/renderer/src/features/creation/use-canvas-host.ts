@@ -1,11 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { agentValue } from '../../../../shared/agent';
 import { canvasCommandSchema, type CanvasCommand } from '../../../../shared/canvas-agent';
-import { canvasSnapshot } from './canvas-context';
-import { canvasChanges } from './canvas-changes';
-import { prepareCanvasEdit } from './canvas-transactions';
+import { prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
+import { openProject } from '../agent/open-targets';
 
+/**
+ * Serves the canvas Agent's commands for a project shown in this window: focusing nodes, and
+ * undoing edits made before Agent edits moved to the main process. Edits themselves are saved by
+ * the main process and arrive as project updates.
+ */
 export function useCanvasHost(
   project: Project,
   commit: (change: (p: Project) => Project) => Promise<void>,
@@ -14,6 +18,7 @@ export function useCanvasHost(
 ) {
   const latest = useRef({ project, commit, focus, onError });
   latest.current = { project, commit, focus, onError };
+  useEffect(() => openProject(project.id, project.name), [project.id, project.name]);
   useEffect(() => {
     const bridge = window.desktop?.agent;
     if (!bridge) return;
@@ -31,34 +36,21 @@ export function useCanvasHost(
           if (command.command.nodeIds.some((id) => !current.nodes.some((n) => n.id === id)))
             throw new Error('节点已不存在');
           latest.current.focus(command.command.nodeIds);
-          agentValue(
-            await connected.completeCanvasCommand({
-              requestId: command.requestId,
-              projectId: project.id,
-              ok: true,
-              nodeIds: command.command.nodeIds,
-            }),
-          );
         } else {
-          const edit = await prepareCanvasEdit(current, command);
-          const changes = canvasChanges(current, edit.project);
-          if (!mounted) throw new Error('当前画布已关闭');
+          const next = await prepareCanvasUndo(current, command.command.transactionId);
           await latest.current.commit((p) => {
-            if (p !== current) throw new Error('画布已发生修改，请重新读取后再操作');
-            return edit.project;
+            if (p !== current) throw new Error('画布已发生修改，请重试');
+            return next;
           });
-          agentValue(
-            await connected.completeCanvasCommand({
-              requestId: command.requestId,
-              projectId: project.id,
-              ok: true,
-              snapshot: await canvasSnapshot(edit.project, []),
-              transactionId: edit.transactionId,
-              changes,
-              nodeIds: edit.nodeIds,
-            }),
-          );
         }
+        agentValue(
+          await connected.completeCanvasCommand({
+            requestId: command.requestId,
+            projectId: project.id,
+            ok: true,
+            ...(command.command.type === 'focus' ? { nodeIds: command.command.nodeIds } : {}),
+          }),
+        );
       } catch (error) {
         await connected.completeCanvasCommand({
           requestId: command.requestId,
@@ -78,13 +70,6 @@ export function useCanvasHost(
     return () => {
       mounted = false;
       unsubscribe();
-      void bridge.getSnapshot().then((result) => {
-        if (!result.ok) return;
-        const session = result.value.snapshot.sessions.find(
-          (s) => s.projectId === project.id && s.runId,
-        );
-        if (session?.runId) return bridge.cancel(session.runId);
-      });
     };
   }, [project.id]);
 }
