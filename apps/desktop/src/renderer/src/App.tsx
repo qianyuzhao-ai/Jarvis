@@ -354,6 +354,10 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             return true;
           }}
           onRenameChat={agent.renameConversation}
+          onDeleteProject={async (id) => {
+            await commit((s) => ({ ...s, projects: s.projects.filter((p) => p.id !== id) }), true);
+            return true;
+          }}
           onDeleteChat={agent.deleteConversation}
           busy={!!agent.snapshot.busySessionId}
           onSettings={openSettings}

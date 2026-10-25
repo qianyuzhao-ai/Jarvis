@@ -47,6 +47,7 @@ export function ShellSidebar({
   onChat,
   onSettings,
   onRenameProject,
+  onDeleteProject,
   onRenameChat,
   onDeleteChat,
   busy,
@@ -62,6 +63,7 @@ export function ShellSidebar({
   onChat: (id: string | null, title: string, newTab: boolean) => void;
   onSettings: (s: Section) => void;
   onRenameProject: (id: string, title: string) => Promise<boolean>;
+  onDeleteProject: (id: string) => Promise<boolean>;
   onRenameChat: (id: string, title: string) => Promise<boolean>;
   onDeleteChat: (id: string) => Promise<boolean>;
   busy: boolean;
@@ -98,45 +100,55 @@ export function ShellSidebar({
   const actions = (kind: 'canvas' | 'chat', id: string, title: string) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton variant="ghost" size="icon-xs" aria-label={`更多 ${title}`}>
+        <IconButton variant="ghost" size="icon-xs" aria-label="更多">
           <Ellipsis />
         </IconButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent className="shell-row-menu">
+        {kind === 'canvas' && (
+          <DropdownMenuItem
+            onSelect={() => {
+              const project = projects.find((p) => p.id === id);
+              if (project) onOpenProject(project, true);
+            }}
+          >
+            在新标签页打开
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           disabled={busy || saving}
           onSelect={() => setEditing({ kind, id, value: title })}
         >
           重命名
         </DropdownMenuItem>
-        {kind === 'chat' && (
-          <DropdownMenuItem
-            disabled={busy || saving}
-            onSelect={() => {
-              setSaving(true);
-              void (async () => {
-                try {
-                  if (
-                    await confirm({
-                      title: '删除对话？',
-                      message: `删除“${title}”后无法恢复。`,
-                      confirmLabel: '删除对话',
-                      tone: 'destructive',
-                    })
-                  ) {
-                    if (!(await onDeleteChat(id))) setError('删除失败，请稍后重试');
-                  }
-                } catch (error) {
-                  setError(error instanceof Error ? error.message : '操作失败');
-                } finally {
-                  setSaving(false);
+        <DropdownMenuItem
+          destructive
+          disabled={busy || saving}
+          onSelect={() => {
+            setSaving(true);
+            void (async () => {
+              try {
+                if (
+                  await confirm({
+                    title: kind === 'canvas' ? '删除项目？' : '删除对话？',
+                    message: `删除“${title}”后无法恢复。`,
+                    confirmLabel: kind === 'canvas' ? '删除项目' : '删除对话',
+                    tone: 'destructive',
+                  })
+                ) {
+                  const deleted = await (kind === 'canvas' ? onDeleteProject : onDeleteChat)(id);
+                  if (!deleted) setError('删除失败，请稍后重试');
                 }
-              })();
-            }}
-          >
-            删除对话
-          </DropdownMenuItem>
-        )}
+              } catch (error) {
+                setError(error instanceof Error ? error.message : '操作失败');
+              } finally {
+                setSaving(false);
+              }
+            })();
+          }}
+        >
+          {kind === 'canvas' ? '删除' : '删除对话'}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

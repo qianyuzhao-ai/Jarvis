@@ -2,6 +2,14 @@
 
 最后更新：2026-10-25
 
+## 项目更多菜单恢复（2026-10-25）
+
+- 分支 `feature/project-more-menu` 从 develop 创建；已有未跟踪 `skills/` 保留不动。用户于同日授权提交；未推送、提 PR 或发布。
+- `ShellSidebar` 接入 `onDeleteProject`、新标签页打开和删除确认，IconButton 标签统一“更多”；App 通过现有 commit 保存移除单个项目（rollbackOnFailure=true），不新增原生能力或远端删除请求。行菜单专用 CSS 按内容占宽，上限 320px 并受 Radix 可用宽度约束。
+- `pruneTabs` 在关闭失效标签后同时过滤失效历史并重算 cursor，防止删除项目后前进/后退进入空白画布。新增 project-menu 实窗与删除历史单测，调整旧 window-shell 的更多按钮定位。
+- `pnpm check`、`pnpm build`、`git diff --check` 通过；相关 Electron/标签/侧栏 9/9（15.6s）通过，浅深菜单截图检查通过。存储失败回滚沿用现有 commit 机制，此轮未注入磁盘/IndexedDB 故障。
+
+
 ## 关于 Jarvis 与更新入口迁移（2026-10-25）
 
 - 从 develop 创建 `feature/settings-about`。`ShellSidebar` 启用 about 分类，App 接入标题、分类渲染和全局提醒去重；`AboutSettings` 复用 `UpdateStatus`，`GeneralSettings` 移除更新依赖。更新 hook 保持在 Workbench，不因分类切换重置下载和检查状态；无新增 IPC 或主进程变更。
