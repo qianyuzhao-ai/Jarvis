@@ -17,7 +17,7 @@ async function workspace(page: Page) {
   };
 }
 
-test('the home Agent delegates to a project open in a tab, which edits it and reports back', async () => {
+test('the home Agent delegates to a project no tab shows; the edit appears and undoes once it is opened', async () => {
   test.setTimeout(90000);
   const toolResults: string[] = [];
   const server = createServer(async (req, res) => {
@@ -79,7 +79,7 @@ test('the home Agent delegates to a project open in a tab, which edits it and re
       if (tools.length === 0) return call('list_agents', {});
       if (tools.length === 1)
         return call('delegate_task', {
-          target: { projectId: listed.openProjects[0].id },
+          target: { projectId: listed.projects[0].id },
           task: '排三格分镜',
         });
       if (tools.length === 2)
@@ -115,7 +115,9 @@ test('the home Agent delegates to a project open in a tab, which edits it and re
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await expect(page.locator('.react-flow__node-media')).toHaveCount(1);
 
-    // The project stays in its tab while the user talks to Jarvis at home.
+    // The project's tab is closed: nothing in the window shows it while Jarvis works on it.
+    await page.getByRole('button', { name: '关闭 分镜项目' }).click();
+    await expect(page.locator('.react-flow')).toHaveCount(0);
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
     await page.getByLabel('消息', { exact: true }).fill('去项目排分镜');
@@ -126,7 +128,8 @@ test('the home Agent delegates to a project open in a tab, which edits it and re
     await expect(notice).toBeVisible({ timeout: 30000 });
     await expect(notice.getByTestId('chat-relay')).toHaveText('空间任务状态 · 排三格分镜');
     await expect(page.getByText('分镜项目已完成：节点改名为分镜一。')).toBeVisible();
-    expect(toolResults.some((r) => r.includes('没有在任何窗口中打开'))).toBe(true);
+    expect(toolResults.some((r) => r.includes('这个项目不存在或已删除'))).toBe(true);
+    await expect(page.locator('.react-flow')).toHaveCount(0);
     await expect
       .poll(async () => (await workspace(page)).projects[0]?.nodes[0]?.data.name)
       .toBe('分镜一');
@@ -144,6 +147,8 @@ test('the home Agent delegates to a project open in a tab, which edits it and re
     );
     await expect(sidebar.getByTestId('chat-relay')).toContainText('Jarvis 委派 · ');
     await expect(sidebar.getByText('分镜已排好')).toBeVisible();
+    const name = page.locator('.react-flow__node-media').first();
+    await expect(page.locator('.react-flow')).toContainText('分镜一');
     // Let the panel finish sliding in before the screenshot.
     await expect
       .poll(async () => {
@@ -152,6 +157,14 @@ test('the home Agent delegates to a project open in a tab, which edits it and re
       })
       .toBeLessThanOrEqual(page.viewportSize()?.width ?? 1280);
     await page.screenshot({ path: test.info().outputPath('delegation-canvas.png') });
+    // Undo runs on the stored project and the open canvas follows.
+    await sidebar.getByRole('button', { name: '撤销本次修改' }).first().click();
+    await expect
+      .poll(async () => (await workspace(page)).projects[0]?.nodes[0]?.data.name)
+      .toBe('图像生成');
+    await expect(name).toBeVisible();
+    await expect(page.locator('.react-flow')).not.toContainText('分镜一');
+    await expect(sidebar.getByRole('button', { name: '撤销本次修改' }).first()).toBeDisabled();
     expect(errors).toEqual([]);
   } finally {
     await app.close();

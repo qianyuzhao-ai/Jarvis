@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A2c：画布 Agent 直连 ProjectStore（2026-10-25）
+
+- origin/main 无新提交。纯画布逻辑移到 shared：`shared/canvas-media.ts`（normalizeMedia 等泛型化、defaultMedia、mediaName；渲染进程 models.ts / types.ts 改为转出）、`shared/canvas-graph.ts`（acceptsSource、connectionIssue、snapshotOf，渲染进程项目与主进程项目结构都适用）。主进程新增 `main/projects/canvas-engine.ts`：graphRevision（节点+连线的 sha256，视口等设置不计）、canvasSnapshotOf、applyCanvasOperations、canvasChanges、applyAgentEdit（同一轮共用一个 agentEdits 条目，沿用原渲染进程逻辑）。删除渲染进程 canvas-commands.ts、canvas-changes.ts、prepareCanvasEdit、use-canvas-targets.ts 与 canvas `apply` / `snapshot` 命令及回执中的 snapshot/transactionId/changes 字段。
+- 画布能力包：直接读写 ProjectStore，不再需要窗口。读取用本轮开始（或本轮上次修改后）的快照；修改时若当前节点/连线修订号与快照不同则本轮停止写入（与原语义一致），仅设置变化（如平移视口）导致的版本冲突自动按新版本重试一次；保存经 `diffProjects` → `applyOps`（source `agent:<会话>`，更新 updatedAt），窗口通过 A2b 的推送同步。账本条目新增 `inverse`（本轮所有修改的逆操作，后改的先执行）与 `afterRevision`。focus_nodes 只发给正在显示该项目的窗口（画布挂载时登记），无窗口时返回“没有显示在窗口中”而不报错。
+- 撤销：有 inverse 的画布条目在主进程执行——须是项目最后一个 Agent 修改且修订号等于 afterRevision，否则沿用原提示；执行逆操作后标记 undone，窗口经推送更新（agentEdits 一并恢复，按钮状态不变）。A2c 之前的修改没有 inverse，仍经显示该画布的窗口用 agentEdits 撤销。
+- 委派：画布项目只需存在于 ProjectStore，无需打开；list_agents 返回全部项目（`projects`），子 Agent 字段 `targetOpen` 改为 `available`；写作文档仍需在写作空间打开。无窗口发起的画布轮次 owner 为 -1，任何窗口都可停止。画布不再因“有回复在进行”而挂载隐藏实例，关闭项目标签页也不再取消该项目的回复。服务启动顺序改为先注册项目再注册 Agent（Agent 服务构造参数新增 ProjectStore）。
+- 测试：canvas-agent-commands 改测主进程引擎（快照与渲染进程一致、批量校验、同轮合并与字段变更）并单独覆盖旧修改的窗口撤销；canvas-agent-runtime 改为无窗口直写 store、账本逆操作可完全恢复，新增“读取后图被改则停写、仅视口变化可继续、无窗口定位返回说明”；agent-delegation 改为委派到无窗口项目、不存在项目报错、删除项目后发消息报错；实窗 agent-delegation-ui 改为关闭项目标签后委派，打开后看到修改、从画布助手撤销后存储与画布同步；generation.spec 改用主进程引擎构造 Agent 节点。
+- 验证：check、build 通过；完整实窗 161 例中 159 通过，仅 ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）；截图检查通过。
+
 ## Agent 架构改造 A2b：项目迁移与画布客户端化（2026-10-25）
 
 - origin/main 无新提交。画布项目从渲染进程 IndexedDB 整体记录改存主进程 ProjectStore（`userData/projects/`）；主题、侧栏宽度、内网地址等偏好仍在 IndexedDB，改存新键 `preferences`（首次没有时从旧 `current` 读取）。旧 `current` 记录只读、原样保留作备份。

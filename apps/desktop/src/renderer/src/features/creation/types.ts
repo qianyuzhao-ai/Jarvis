@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { Edge, Node } from '@xyflow/react';
 import { httpUrl } from '../../../../shared/generation';
 import { loginFields } from '../../../../shared/generation-login';
+import { defaultMedia, mediaName } from '../../../../shared/canvas-media';
 
 export const assetSchema = z.object({
   kind: z.enum(['image', 'video', 'audio']),
@@ -131,20 +132,7 @@ export function createProject(): Project {
     agentEdits: [],
   };
 }
-export function mediaName(data: Pick<MediaData, 'kind' | 'name'>): string {
-  return data.name || (data.kind === 'image' ? '图像生成' : '视频生成');
-}
+export { mediaName };
 export function createMedia(kind: MediaData['kind']): MediaData {
-  return {
-    kind,
-    name: mediaName({ kind }),
-    prompt: '',
-    model: kind === 'image' ? 'gpt-image-2.5-flare' : 'seedance-2.5',
-    size: kind === 'image' ? '16:9(2k)' : '16:9',
-    resolution: kind === 'image' ? '2K' : '1080p',
-    quality: 'medium',
-    duration: 5,
-    generateAudio: true,
-    references: [],
-  };
+  return { ...defaultMedia(kind), references: [] };
 }

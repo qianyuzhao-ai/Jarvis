@@ -1,45 +1,10 @@
 import { httpUrl, REFERENCE_LIMITS } from '../../../../shared/generation';
-import type { CanvasNode, MediaData, Project } from './types';
+import type { MediaData, Project } from './types';
+import { acceptsSource, connectionIssue } from '../../../../shared/canvas-graph';
 
-type Connection = { source: string; target: string };
 type Link = Project['edges'][number];
 export type LinkedReference = { nodeId: string; kind: 'image' | 'video' | 'audio'; url: string };
-export function acceptsSource(source: CanvasNode, target: CanvasNode) {
-  return target.type === 'media' && (target.data.kind === 'video' || source.data.kind === 'image');
-}
-export function connectionIssue(project: Project, connection: Connection): string | null {
-  const { source, target } = connection;
-  if (source === target) return '节点不能连接自身';
-  const from = project.nodes.find((n) => n.id === source);
-  const to = project.nodes.find((n) => n.id === target);
-  if (!from || !to) return '连接节点已不存在';
-  if (!acceptsSource(from, to))
-    return '图像节点仅接收图像；视频节点可接收图像、视频和音频；上传资源不能作为输入目标';
-  if (project.edges.some((e) => e.source === source && e.target === target))
-    return '这两个节点已连接';
-  const reachable = new Set([target]);
-  const queue = [target];
-  for (let index = 0; index < queue.length; index++) {
-    for (const edge of project.edges) {
-      if (edge.source !== queue[index] || reachable.has(edge.target)) continue;
-      if (edge.target === source) return '不能创建循环连接';
-      reachable.add(edge.target);
-      queue.push(edge.target);
-    }
-  }
-  if (to.type === 'media') {
-    const kind = from.data.kind;
-    const count =
-      to.data.references.filter((r) => r.type === kind).length +
-      project.edges.filter(
-        (e) =>
-          e.target === target && project.nodes.find((n) => n.id === e.source)?.data.kind === kind,
-      ).length;
-    if (count >= REFERENCE_LIMITS[kind])
-      return `${{ image: '图片', video: '视频', audio: '音频' }[kind]}参考最多 ${REFERENCE_LIMITS[kind]} 个（含面板素材和连线）`;
-  }
-  return null;
-}
+export { acceptsSource, connectionIssue };
 export function connectSelected(
   project: Project,
   sourceIds: string[],

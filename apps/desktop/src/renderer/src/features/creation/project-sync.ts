@@ -100,9 +100,16 @@ export class ProjectSync {
     this.saved.set(project.id, { version, project, blobs });
   }
   private async load(version: number, stored: StoredProject) {
-    const project = await projectFromStored(stored, async (id) =>
-      value(await this.bridge.readBlob({ projectId: stored.id, id })),
-    );
+    // Reference files never change under one ID, so those already loaded are reused.
+    const known = new Map<string, Blob>();
+    for (const node of this.latest().find((p) => p.id === stored.id)?.nodes ?? [])
+      if (node.type === 'media') for (const r of node.data.references) known.set(r.id, r.blob);
+    const project = await projectFromStored(stored, async (id) => {
+      const blob = known.get(id);
+      return blob
+        ? new Uint8Array(await blob.arrayBuffer())
+        : value(await this.bridge.readBlob({ projectId: stored.id, id }));
+    });
     this.remember(version, stored);
     this.onRemote(stored.id, project);
   }

@@ -21,6 +21,7 @@ import { approvalResponseSchema } from '../../shared/agent-approval';
 import { undoRequestSchema } from '../../shared/agent-ledger';
 import { concurrencySchema } from '../../shared/agent-settings';
 import { openTargetsSchema } from '../../shared/agent-targets';
+import { projectStore } from '../projects/bridge';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -42,7 +43,7 @@ export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
   const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
-  service = new AgentService(config, store, root);
+  service = new AgentService(config, store, root, projectStore());
   let initializationError = '';
   try {
     await config.initialize();

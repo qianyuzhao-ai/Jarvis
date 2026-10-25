@@ -18,7 +18,8 @@ import {
   type GenerationInput,
   type StartRequest,
 } from '../src/shared/generation';
-import { applyCanvasOperations } from '../src/renderer/src/features/creation/canvas-commands';
+import { applyCanvasOperations } from '../src/main/projects/canvas-engine';
+import { storedForm } from '../src/renderer/src/features/creation/project-records';
 import { createProject, emptyWorkspace } from '../src/renderer/src/features/creation/types';
 
 const expect = baseExpect.configure({ timeout: 12_000 });
@@ -544,7 +545,7 @@ test('Agent-created image and video nodes upload, generate through Electron and 
     });
   let app = await launch();
   try {
-    const project = applyCanvasOperations(createProject(), [
+    const project = applyCanvasOperations(storedForm(createProject()).project, [
       {
         kind: 'create_node',
         nodeId: 'agent-image',

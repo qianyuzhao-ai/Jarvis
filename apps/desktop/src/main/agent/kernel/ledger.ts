@@ -43,12 +43,18 @@ export class Ledger {
   entries(sessionId: string) {
     return this.sessions.get(sessionId) ?? [];
   }
-  /** Adds a change, or updates the summary of the same transaction from a later edit. */
+  /** Adds a change, or updates the same transaction from a later edit in its round. */
   record(entry: Omit<LedgerEntry, 'status' | 'createdAt' | 'updatedAt'>) {
     const entries = this.entries(entry.sessionId);
     const now = Date.now();
     const existing = entries.find((e) => e.id === entry.id);
-    if (existing) Object.assign(existing, { summary: entry.summary, updatedAt: now });
+    if (existing)
+      Object.assign(existing, {
+        summary: entry.summary,
+        updatedAt: now,
+        ...(entry.inverse ? { inverse: entry.inverse } : {}),
+        ...(entry.afterRevision ? { afterRevision: entry.afterRevision } : {}),
+      });
     else entries.push({ ...entry, status: 'applied', createdAt: now, updatedAt: now });
     const runs = [...new Set(entries.map((e) => e.runId))].slice(-LEDGER_ROUNDS);
     this.sessions.set(

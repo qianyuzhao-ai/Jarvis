@@ -26,7 +26,10 @@ export interface ToolContext {
   changed: () => void;
   /** Adds a reversible change to the operation ledger, once its data owner has applied it. */
   record: (
-    change: Pick<LedgerEntry, 'id' | 'pack' | 'summary' | 'projectId' | 'writingScope'>,
+    change: Pick<
+      LedgerEntry,
+      'id' | 'pack' | 'summary' | 'projectId' | 'writingScope' | 'inverse' | 'afterRevision'
+    >,
   ) => void;
 }
 

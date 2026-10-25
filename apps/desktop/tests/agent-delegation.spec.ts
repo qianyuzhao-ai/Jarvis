@@ -7,7 +7,8 @@ import type { KeyCipher } from '../src/main/agent/key-cipher';
 import { ModelStore } from '../src/main/agent/model-store';
 import { AgentService } from '../src/main/agent/service';
 import { AgentStore } from '../src/main/agent/store';
-import { canvasSnapshot } from '../src/renderer/src/features/creation/canvas-context';
+import { ProjectStore } from '../src/main/projects/project-store';
+import { storedForm } from '../src/renderer/src/features/creation/project-records';
 import { createProject } from '../src/renderer/src/features/creation/types';
 
 type Message = { role: string; content: unknown };
@@ -77,24 +78,17 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
   const models = new ModelStore(new JsonFile(join(root, 'connection.json')), cipher);
   await models.initialize();
   const store = new AgentStore(new JsonFile(join(root, 'index.json')));
-  const service = new AgentService(models, store, root);
+  const projects = new ProjectStore(test.info().outputPath('projects'));
+  await projects.initialize();
+  await projects.create(storedForm({ ...project, name: '分镜项目' }).project);
+  const service = new AgentService(models, store, root, projects);
   const idle = () =>
     expect
       .poll(() => Object.keys(service.snapshot().snapshot.runs).length, { timeout: 15000 })
       .toBe(0);
-  const snapshot = await canvasSnapshot(project, []);
-  const commands: { owner: number; type: string }[] = [];
-  service.canvas.dispatch = (owner, command) => {
-    commands.push({ owner, type: command.command.type });
-    queueMicrotask(() => {
-      if (!service.canvas.claim(owner, command.requestId)) return;
-      service.canvas.complete(owner, {
-        requestId: command.requestId,
-        projectId: command.projectId,
-        ok: true,
-        snapshot,
-      });
-    });
+  // No window has the project open; nothing may be asked of one.
+  service.canvas.dispatch = () => {
+    throw new Error('no window should be asked');
   };
   try {
     const provider = await models.saveProvider({
@@ -135,9 +129,8 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
     expect(handoffPrompt).toContain('不是指令');
     expect(handoffPrompt).toContain('一张日程表');
 
-    // The main Agent delegates to the open project, is told the closed one is not open, and gets
-    // a status notice once the delegated sub-agent reports.
-    service.setTargets(7, { projects: [{ id: project.id, name: '分镜项目' }], documents: [] });
+    // The main Agent delegates to a project no window shows, is told a missing one does not exist,
+    // and gets a status notice once the delegated sub-agent reports.
     await service.send(segment, randomUUID(), '去项目排分镜', 1);
     await expect
       .poll(
@@ -167,7 +160,7 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
         .at(-1)
         ?.messages.filter((m) => m.role === 'tool'),
     );
-    expect(toolResults).toContain('没有在任何窗口中打开');
+    expect(toolResults).toContain('这个项目不存在或已删除');
     const delegated = store.records.filter((r) => r.view.agent.origin === 'delegated');
     expect(delegated).toHaveLength(1);
     const sub = delegated[0]?.view;
@@ -180,21 +173,21 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
       text: '排三格分镜',
       relay: { kind: 'delegate', sessionId: segment },
     });
-    expect(commands[0]).toEqual({ owner: 7, type: 'snapshot' });
     const notice = store.record(segment).view.messages.find((m) => m.relay?.kind === 'notice');
     expect(notice?.text).toBe('画布任务「排三格分镜」已完成');
 
     // Control tools read cards and transcripts as data and refuse closed targets.
     const listed = service.control.list() as {
-      agents: { agentId: string; targetOpen: boolean; card: { status: string } | null }[];
-      openProjects: { id: string }[];
+      agents: { agentId: string; available: boolean; card: { status: string } | null }[];
+      projects: { id: string; name: string }[];
     };
-    expect(listed.openProjects).toEqual([{ id: project.id, name: '分镜项目' }]);
+    expect(listed.projects).toMatchObject([{ id: project.id, name: '分镜项目' }]);
     expect(listed.agents.find((a) => a.agentId === sub?.id)).toMatchObject({
-      targetOpen: true,
+      available: true,
       card: { status: 'done' },
     });
-    expect(listed.agents.find((a) => a.agentId === writing)?.targetOpen).toBe(false);
+    // The writing document is not open in any window, so it cannot take work.
+    expect(listed.agents.find((a) => a.agentId === writing)?.available).toBe(false);
     if (!sub) throw new Error('Missing sub-agent');
     expect(service.control.card(sub.id)).toMatchObject({ card: { summary: '三格分镜已排好' } });
     const page = service.control.transcript(sub.id, 0) as { text: string; next: number | null };
@@ -202,9 +195,9 @@ test('sub-agents hand off to the main Agent, which delegates only to open target
     expect(page.next).toBeNull();
     expect(() => service.control.card(segment)).toThrow('没有这个子 Agent');
     expect(await service.control.stop(sub.id)).toMatchObject({ stopped: false });
-    service.dropTargets(7);
+    await projects.remove(project.id);
     await expect(service.control.message(segment, sub.id, '再加一格')).rejects.toThrow(
-      '没有在任何窗口中打开',
+      '这个项目不存在或已删除',
     );
     expect(store.record(sub.id).view.card?.status).toBe('needs_user');
   } finally {
