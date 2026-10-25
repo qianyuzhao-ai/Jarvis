@@ -14,7 +14,7 @@ export function ChatPage({
   agent: ReturnType<typeof useAgent>;
   onConfigure: () => void;
 }) {
-  const { session, configuration, snapshot } = agent;
+  const { session, configuration } = agent;
   const [text, setText] = useState('');
   const [draftModel, setDraftModel] = useState('');
   const [atBottom, setAtBottom] = useState(true);
@@ -48,7 +48,7 @@ export function ChatPage({
     return () => observer.disconnect();
   }, []);
   async function submit() {
-    if (!text.trim() || busy || agent.sending || snapshot.busySessionId || !configured) return;
+    if (!text.trim() || agent.sending || !configured) return;
     const value = text.trim();
     following.current = true;
     setAtBottom(true);
@@ -171,6 +171,7 @@ export function ChatPage({
               <ChatMessageItem
                 key={message.id}
                 message={message}
+                waiting={agent.waiting}
                 sessionId={session.id}
                 now={now}
                 onError={agent.setError}

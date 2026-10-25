@@ -39,7 +39,7 @@ test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and suppo
         test.info().outputPath('runtime'),
         randomUUID(),
         { ...config, modelId: model, name: model },
-        true,
+        { transient: true },
       );
       try {
         expect(session.getActiveToolNames()).toEqual([]);

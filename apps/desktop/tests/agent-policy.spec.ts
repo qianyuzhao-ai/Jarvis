@@ -134,15 +134,11 @@ test('Pi runs a confirm tool only after approval and tells the model when it was
   async function round(approve: Approver) {
     const { pack, state } = testPack('confirm');
     requests.length = 0;
-    const { session } = await openAgent(
-      test.info().outputPath(randomUUID()),
-      randomUUID(),
-      model,
-      true,
-      [pack],
-      'off',
+    const { session } = await openAgent(test.info().outputPath(randomUUID()), randomUUID(), model, {
+      transient: true,
+      packs: [pack],
       approve,
-    );
+    });
     try {
       await session.prompt('删除便签 n1', { expandPromptTemplates: false });
     } finally {

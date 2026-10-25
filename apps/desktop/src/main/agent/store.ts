@@ -81,12 +81,18 @@ export class AgentStore {
         interrupted.add(view.id);
         view.runId = null;
       }
-      for (const m of view.messages)
+      for (const m of view.messages) {
+        if (m.status === 'queued') {
+          m.status = 'cancelled';
+          m.error = '应用已重启，排队的消息没有发送';
+          interrupted.add(view.id);
+        }
         if (m.status === 'running') {
           m.status = 'interrupted';
           if (m.role === 'assistant') m.error = '应用已重启，上次回复已中断；不会自动重发';
           interrupted.add(view.id);
         }
+      }
     }
     if (interrupted.size) {
       await Promise.all([...interrupted].map((id) => this.saveView(id)));

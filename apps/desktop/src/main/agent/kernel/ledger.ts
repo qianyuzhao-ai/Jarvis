@@ -75,6 +75,10 @@ export class Ledger {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
   }
+  /** Resolves once every queued write has finished, successful or not. */
+  async settled() {
+    await Promise.all([...this.files.values()].map((file) => file.settled()));
+  }
   private path(sessionId: string) {
     return join(this.dir, `${sessionId}.json`);
   }

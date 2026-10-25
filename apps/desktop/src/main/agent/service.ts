@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
-import type { AgentEvent, ChatMessage, SessionEvent } from '../../shared/agent';
+import type { AgentEvent, ChatMessage, RunState, SessionEvent } from '../../shared/agent';
 import {
   nearestThinkingLevel,
   type ProbeResult,
@@ -31,8 +31,35 @@ import { Ledger } from './kernel/ledger';
 import type { UndoRequest } from '../../shared/agent-ledger';
 import type { Approver } from './kernel/policy';
 import type { ToolContext } from './kernel/capability';
+import { Scheduler } from './kernel/scheduler';
 import { skillCommand } from '../../shared/agent-skills';
 import type { StoredSkill } from './skill-store';
+
+/** Per-round limits by role: the main Agent coordinates longer rounds than space sub-agents. */
+const ROUND_LIMITS = {
+  main: { requests: 24, timeout: 10 * 60_000 },
+  space: { requests: 12, timeout: 5 * 60_000 },
+} as const;
+const MAX_TOOL_CALLS = 40;
+
+type Run = {
+  id: string;
+  sessionId: string;
+  owner: number;
+  cancelled: boolean;
+  sdk?: AgentSession;
+  done?: Promise<void>;
+};
+/** A message sent while its conversation was replying; it starts when the reply ends. */
+type Pending = {
+  runId: string;
+  owner: number;
+  user: ChatMessage;
+  text: string;
+  canvas?: CanvasSnapshot;
+  images: VisionAsset[];
+  writing?: WritingScope;
+};
 
 export class AgentService {
   readonly skills: SkillStore;
@@ -40,19 +67,15 @@ export class AgentService {
   readonly writing = new WritingBroker();
   readonly approvals = new ApprovalQueue();
   readonly ledger: Ledger;
+  readonly scheduler = new Scheduler();
   private seq = 0;
-  private active: {
-    id: string;
-    sessionId: string;
-    owner: number;
-    cancelled: boolean;
-    sdk?: AgentSession;
-  } | null = null;
+  /** The round each replying conversation is running, by conversation. */
+  private runs = new Map<string, Run>();
+  private queues = new Map<string, Pending[]>();
   private timer?: ReturnType<typeof setTimeout>;
   private operations = Promise.resolve();
   private testing = false;
   private testRun: { owner: number; cancelled: boolean; sdk?: AgentSession } | null = null;
-  private completion: Promise<void> | null = null;
   private persistenceError = '';
   onChange: (event: AgentEvent) => void = () => {};
   onSessionChange: (event: SessionEvent) => void = () => {};
@@ -69,6 +92,7 @@ export class AgentService {
       this.persistenceError = '操作记录保存失败，请重启应用后检查本地存储';
       this.emit();
     };
+    this.scheduler.onChange = () => this.emit();
   }
   snapshot(): AgentEvent {
     return {
@@ -77,9 +101,15 @@ export class AgentService {
         skills: this.skills.list(),
         models: this.config.view(),
         sessions: structuredClone(this.store.records.map((r) => this.store.meta(r.view))),
-        busySessionId: this.active?.sessionId ?? null,
+        runs: this.runStates(),
       },
     };
+  }
+  private runStates() {
+    const waiting = this.scheduler.waiting();
+    const states: Record<string, RunState> = {};
+    for (const id of this.runs.keys()) states[id] = waiting.has(id) ? 'waiting' : 'running';
+    return states;
   }
   /** One conversation with its messages; later session events carry a larger `seq`. */
   session(id: string) {
@@ -129,9 +159,15 @@ export class AgentService {
     this.dirty.set(sessionId, ids);
     this.timer ??= setTimeout(() => this.flush(), 40);
   }
+  /** For changes that affect every conversation, such as models and skills. */
   private idle() {
     if (this.persistenceError) throw new Error(this.persistenceError);
-    if (this.active || this.testing) throw new Error('请先停止或等待当前请求完成');
+    if (this.runs.size || this.testing) throw new Error('请先停止或等待当前请求完成');
+  }
+  /** For changes to one conversation; other conversations may keep replying. */
+  private sessionIdle(id: string) {
+    if (this.persistenceError) throw new Error(this.persistenceError);
+    if (this.runs.has(id)) throw new Error('请先停止或等待这个对话的回复完成');
   }
   private async exclusive<T>(action: () => Promise<T>): Promise<T> {
     const pending = this.operations.then(action);
@@ -144,7 +180,7 @@ export class AgentService {
   create(projectId?: string, writingScope?: WritingScope) {
     if (projectId && writingScope) throw new Error('会话不能同时属于画布与文档');
     return this.exclusive(async () => {
-      this.idle();
+      if (this.persistenceError) throw new Error(this.persistenceError);
       const selected = this.config.resolve();
       const remembered = this.config.view().models.find((m) => m.id === selected.id);
       const level = nearestThinkingLevel(
@@ -213,7 +249,7 @@ export class AgentService {
   }
   deleteSession(id: string) {
     return this.exclusive(async () => {
-      this.idle();
+      this.sessionIdle(id);
       this.store.record(id);
       const path = join(this.root, 'sessions', `${id}.jsonl`);
       const pending = join(this.root, 'sessions', `${id}.${randomUUID()}.deleted`);
@@ -243,7 +279,12 @@ export class AgentService {
   undo(owner: number, request: UndoRequest) {
     return this.exclusive(async () => {
       if (this.persistenceError) throw new Error(this.persistenceError);
-      if (this.active) throw new Error('请先停止或等待当前请求完成');
+      const target = (view: { projectId?: string; writingScope?: WritingScope }) =>
+        'projectId' in request
+          ? view.projectId === request.projectId
+          : sameWritingScope(view.writingScope, request.writingScope);
+      if (this.store.records.some((r) => this.runs.has(r.view.id) && target(r.view)))
+        throw new Error('请先停止或等待正在修改这里的回复完成');
       const entry = this.ledger.find(request.transactionId);
       if (entry?.status === 'undone') throw new Error('这次修改已撤销');
       const runId = entry?.runId ?? randomUUID();
@@ -264,7 +305,7 @@ export class AgentService {
   }
   setModel(id: string, model: string) {
     return this.exclusive(async () => {
-      this.idle();
+      this.sessionIdle(id);
       const r = this.store.record(id);
       const before = structuredClone(r);
       const selected = this.config.resolve(model);
@@ -292,7 +333,7 @@ export class AgentService {
   }
   setThinkingLevel(id: string, level: ThinkingLevel) {
     return this.exclusive(async () => {
-      this.idle();
+      this.sessionIdle(id);
       const r = this.store.record(id);
       if (!r.view.modelId) throw new Error('请先为此对话选择一个已保存的模型');
       const selected = this.config.resolve(r.view.modelId);
@@ -346,32 +387,15 @@ export class AgentService {
           throw new Error('同一请求标识不能用于不同消息');
         return prior.runId;
       }
-      this.idle();
+      if (this.persistenceError) throw new Error(this.persistenceError);
+      if (this.testing) throw new Error('请先等待连接测试完成');
       const record = this.store.record(id);
       if (!record.view.modelId) throw new Error('此对话使用旧配置，请重新选择一个已保存的模型');
-      const current = this.config.resolve(record.view.modelId);
-      delete record.config;
-      record.view.model = current.modelId;
-      record.view.contextWindow = current.contextWindow;
       this.assertVision(
-        current,
+        this.config.resolve(record.view.modelId),
         images.length > 0 || record.view.messages.some((message) => message.visionAssets?.length),
       );
-      const thinking = nearestThinkingLevel(
-        current.thinkingLevels,
-        record.view.thinkingLevel ?? 'off',
-      );
-      if (record.view.messages.reduce((sum, m) => sum + m.text.length, 0) + text.length > 60000)
-        throw new Error('这段对话较长，请新建对话后继续，历史不会删除');
-      const run = { id: randomUUID(), sessionId: id, owner, cancelled: false };
-      const before = structuredClone(record.view);
       const user: ChatMessage = { id: randomUUID(), role: 'user', text, status: 'succeeded' };
-      const assistant: ChatMessage = {
-        id: randomUUID(),
-        role: 'assistant',
-        text: '',
-        status: 'running',
-      };
       if (canvas)
         user.canvasReferences = canvas.nodes
           .filter((n) => canvas.selectedIds.includes(n.id))
@@ -384,46 +408,114 @@ export class AgentService {
           time,
           preview,
         }));
-      record.view.messages.push(user, assistant);
-      record.view.runId = run.id;
-      record.view.updatedAt = Date.now();
-      if (record.view.messages.length === 2) record.view.title = text.slice(0, 36);
-      this.store.requests.push({ id: requestId, runId: run.id, sessionId: id, text, inputHash });
-      this.active = run;
+      const pending: Pending = { runId: randomUUID(), owner, user, text, canvas, images, writing };
+      this.store.requests.push({
+        id: requestId,
+        runId: pending.runId,
+        sessionId: id,
+        text,
+        inputHash,
+      });
+      if (!this.runs.has(id)) {
+        try {
+          await this.start(id, pending, skills);
+        } catch (error) {
+          this.store.requests.pop();
+          throw error;
+        }
+        return pending.runId;
+      }
+      // The conversation is replying: show the message as queued and send it afterwards.
+      user.status = 'queued';
+      record.view.messages.push(user);
       try {
         await this.store.save(id);
       } catch (error) {
-        record.view = before;
+        record.view.messages.pop();
         this.store.requests.pop();
-        this.active = null;
         throw error;
       }
-      this.changed(id, user.id, assistant.id);
+      this.queues.set(id, [...(this.queues.get(id) ?? []), pending]);
+      this.changed(id, user.id);
       this.emit();
-      this.completion = this.perform(
-        run,
-        current,
-        thinking,
-        assistant,
-        text,
-        canvas,
-        images,
-        skills,
-        writing,
-      );
-      return run.id;
+      return pending.runId;
     });
   }
+  /**
+   * Starts one round. A queued message is already in the transcript; its reply is inserted right
+   * after it, before any later queued messages.
+   */
+  private async start(id: string, pending: Pending, skills = this.skills.snapshot()) {
+    const record = this.store.record(id);
+    if (!record.view.modelId) throw new Error('此对话使用旧配置，请重新选择一个已保存的模型');
+    const current = this.config.resolve(record.view.modelId);
+    this.assertVision(
+      current,
+      pending.images.length > 0 ||
+        record.view.messages.some((message) => message.visionAssets?.length),
+    );
+    const thinking = nearestThinkingLevel(
+      current.thinkingLevels,
+      record.view.thinkingLevel ?? 'off',
+    );
+    const before = structuredClone(record.view);
+    delete record.config;
+    record.view.model = current.modelId;
+    record.view.contextWindow = current.contextWindow;
+    const { user } = pending;
+    const assistant: ChatMessage = {
+      id: randomUUID(),
+      role: 'assistant',
+      text: '',
+      status: 'running',
+    };
+    const index = record.view.messages.findIndex((m) => m.id === user.id);
+    if (index >= 0) {
+      user.status = 'succeeded';
+      record.view.messages.splice(index + 1, 0, assistant);
+    } else record.view.messages.push(user, assistant);
+    if (!record.view.messages.some((m) => m.role === 'user' && m.id !== user.id))
+      record.view.title = pending.text.slice(0, 36);
+    record.view.runId = pending.runId;
+    record.view.updatedAt = Date.now();
+    const run: Run = { id: pending.runId, sessionId: id, owner: pending.owner, cancelled: false };
+    this.runs.set(id, run);
+    try {
+      await this.store.save(id);
+    } catch (error) {
+      record.view = before;
+      this.runs.delete(id);
+      throw error;
+    }
+    this.changed(id, user.id, assistant.id);
+    this.emit();
+    const limits = record.view.agent.kind === 'main' ? ROUND_LIMITS.main : ROUND_LIMITS.space;
+    run.done = this.perform(run, current, thinking, assistant, pending, skills, limits);
+  }
+  /** Starts the next queued message of a conversation whose round just ended. */
+  private async startNext(id: string) {
+    const next = this.queues.get(id)?.shift();
+    if (!next || this.runs.has(id) || !this.store.records.some((r) => r.view.id === id)) return;
+    try {
+      if (this.persistenceError) throw new Error(this.persistenceError);
+      await this.start(id, next);
+    } catch (error) {
+      next.user.status = 'failed';
+      next.user.error = error instanceof Error ? error.message : '发送失败';
+      await this.store.saveView(id).catch(() => {});
+      this.changed(id, next.user.id);
+      this.emit();
+      await this.startNext(id);
+    }
+  }
   private async perform(
-    run: NonNullable<AgentService['active']>,
+    run: Run,
     model: ResolvedModel,
     thinking: ThinkingLevel,
     output: ChatMessage,
-    text: string,
-    canvas?: CanvasSnapshot,
-    images: VisionAsset[] = [],
-    skills: StoredSkill[] = [],
-    writing?: WritingScope,
+    { text, canvas, images, writing }: Pending,
+    skills: StoredSkill[],
+    limits: (typeof ROUND_LIMITS)[keyof typeof ROUND_LIMITS],
   ) {
     let stop: (() => void) | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -451,7 +543,7 @@ export class AgentService {
           output.error = '请求超时，已保留部分回复';
           run.cancelled = true;
           void run.sdk?.abort();
-        }, 120000);
+        }, limits.timeout);
       };
       // Waiting for the user does not count toward the round's time limit.
       const approve: Approver = async ({ tool, input, signal }) => {
@@ -475,15 +567,14 @@ export class AgentService {
         if (!run.cancelled) arm();
         return outcome;
       };
-      const runtime = await openAgent(
-        this.root,
-        run.sessionId,
-        model,
-        false,
-        [space, skill],
-        thinking,
+      const runtime = await openAgent(this.root, run.sessionId, model, {
+        packs: [space, skill],
+        thinkingLevel: thinking,
         approve,
-      );
+        slot: (signal) => this.scheduler.acquire(run.sessionId, signal),
+        maxRequests: limits.requests,
+        maxToolCalls: MAX_TOOL_CALLS,
+      });
       run.sdk = runtime.session;
       if (run.cancelled) {
         output.status = 'cancelled';
@@ -500,8 +591,20 @@ export class AgentService {
           changed();
         });
       }, 1000);
+      let compaction: NonNullable<ChatMessage['activities']>[number] | undefined;
       stop = runtime.session.subscribe((event) => {
         if (run.cancelled) return;
+        if (event.type === 'compaction_start') {
+          compaction = { id: randomUUID(), label: '正在压缩较早的对话内容…', files: [] };
+          output.activities = [...(output.activities ?? []), compaction];
+          changed();
+        }
+        if (event.type === 'compaction_end' && compaction) {
+          compaction.label = event.result
+            ? '已压缩较早的对话内容，保留摘要继续对话'
+            : '压缩较早的对话内容失败';
+          changed();
+        }
         if (event.type === 'message_update' && event.assistantMessageEvent.type === 'text_delta') {
           output.text += event.assistantMessageEvent.delta;
           if (output.text.length > 200000) {
@@ -561,32 +664,42 @@ export class AgentService {
         output.error = this.persistenceError;
         output.status = 'failed';
       }
-      if (this.active === run) this.active = null;
+      if (this.runs.get(run.sessionId) === run) this.runs.delete(run.sessionId);
       this.emit();
+      if (this.queues.get(run.sessionId)?.length)
+        void this.exclusive(() => this.startNext(run.sessionId));
     }
   }
+  /** Stops a round and drops the messages queued behind it. */
   async cancel(id: string, owner?: number) {
-    const run = this.active;
-    if (!run || run.id !== id) return;
+    const run = [...this.runs.values()].find((r) => r.id === id);
+    if (!run) return;
     if (owner !== undefined && run.owner !== owner) throw new Error('不能停止其他窗口的请求');
     run.cancelled = true;
+    const queued = this.queues.get(run.sessionId) ?? [];
+    this.queues.delete(run.sessionId);
+    for (const { user } of queued) {
+      user.status = 'cancelled';
+      this.changed(run.sessionId, user.id);
+    }
     this.approvals.cancelSession(run.sessionId);
     await run.sdk?.abort();
-    await this.completion;
+    await run.done;
   }
   async cancelOwner(owner: number) {
     this.approvals.cancelOwner(owner);
-    if (this.active?.owner === owner) await this.cancel(this.active.id, owner);
+    for (const run of [...this.runs.values()])
+      if (run.owner === owner) await this.cancel(run.id, owner);
     if (this.testRun?.owner === owner) {
       this.testRun.cancelled = true;
       await this.testRun.sdk?.abort();
     }
   }
   get isBusy() {
-    return !!this.active || this.testing;
+    return this.runs.size > 0 || this.testing;
   }
   async shutdown() {
-    if (this.active) await this.cancel(this.active.id);
+    for (const run of [...this.runs.values()]) await this.cancel(run.id);
     if (this.testRun) {
       this.testRun.cancelled = true;
       await this.testRun.sdk?.abort();
@@ -671,7 +784,7 @@ export class AgentService {
     let sdk: AgentSession | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const runtime = await openAgent(this.root, randomUUID(), model, true);
+      const runtime = await openAgent(this.root, randomUUID(), model, { transient: true });
       sdk = runtime.session;
       run.sdk = sdk;
       if (run.cancelled) throw new Error('连接测试已取消');

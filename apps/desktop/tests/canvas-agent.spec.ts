@@ -215,12 +215,11 @@ test('canvas sidebar reads selection, applies and undoes grouped edits, restores
     await page.getByRole('button', { name: '收起画布助手', exact: true }).click();
     await expect(sidebar).toBeHidden();
     const running = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
-    expect(running?.ok && running.value.snapshot.busySessionId).toBeTruthy();
+    const runningIds = running?.ok ? Object.keys(running.value.snapshot.runs) : [];
+    expect(runningIds).toHaveLength(1);
     await page.getByRole('button', { name: '首页', exact: true }).click();
     const background = await page.evaluate(async () => window.desktop?.agent.getSnapshot());
-    expect(background?.ok && background.value.snapshot.busySessionId).toBe(
-      running?.ok && running.value.snapshot.busySessionId,
-    );
+    expect(background?.ok && Object.keys(background.value.snapshot.runs)).toEqual(runningIds);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
     await sidebar.getByRole('button', { name: '停止回复' }).click();

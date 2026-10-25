@@ -108,8 +108,7 @@ test('Pi can choose a skill, load its references and answer while filesystem too
     test.info().outputPath('agent'),
     randomUUID(),
     relayModel({ model: 'mock', baseUrl: `http://127.0.0.1:${address.port}/v1` }),
-    false,
-    [chatPack(), skills],
+    { packs: [chatPack(), skills] },
   );
   try {
     expect(runtime.session.getActiveToolNames().sort()).toEqual([

@@ -41,7 +41,7 @@ export function useAgent(
     : projectId
       ? `jarvis:canvas-chat:${projectId}`
       : 'jarvis:chat-session';
-  const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], busySessionId: null });
+  const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], runs: {} });
   const [selected, setSelected] = useState<string | null>(() =>
     initialSelection === undefined
       ? storageKey
@@ -161,7 +161,7 @@ export function useAgent(
     images?: VisionAsset[],
   ) {
     const bridge = window.desktop?.agent;
-    if (!bridge || sendingRef.current || snapshot.busySessionId) return false;
+    if (!bridge || sendingRef.current) return false;
     sendingRef.current = true;
     setSending(true);
     setError('');
@@ -290,7 +290,15 @@ export function useAgent(
     snapshot: { ...snapshot, sessions },
     projectId,
     writingScope,
-    busyProjectId: snapshot.sessions.find((s) => s.id === snapshot.busySessionId)?.projectId,
+    /** Any conversation is replying: settings that affect every conversation wait. */
+    anyBusy: Object.keys(snapshot.runs).length > 0,
+    /** A conversation of this hook's project or document is replying. */
+    scopeBusy: sessions.some((s) => s.id in snapshot.runs),
+    /** The open conversation's round waits for a free slot under the concurrency limit. */
+    waiting: !!session && snapshot.runs[session.id] === 'waiting',
+    busyProjectIds: snapshot.sessions.flatMap((s) =>
+      s.projectId && s.id in snapshot.runs ? [s.projectId] : [],
+    ),
     configuration,
     configured: !!configuration.defaultModelId,
     session,

@@ -185,10 +185,10 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .poll(async () =>
         page.evaluate(async () => {
           const r = await window.desktop!.agent.getSnapshot();
-          return r.ok ? r.value.snapshot.busySessionId : 'error';
+          return r.ok ? Object.keys(r.value.snapshot.runs).length : 'error';
         }),
       )
-      .toBeNull();
+      .toBe(0);
     await expect(editor).toContainText('独立文档。');
     expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe(original);
     await page

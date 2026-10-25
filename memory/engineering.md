@@ -2,6 +2,20 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A1a-2：并发调度、排队与压缩（2026-10-25）
+
+- origin/main 无新提交。去掉全局单运行锁：service 以 `runs: Map<sessionId, Run>` 管理进行中的轮次，多个对话可同时回复；`idle()` 只用于影响全部对话的操作（模型配置、技能导入/启停、连接测试），单个对话的改名外操作（删除、切模型、思考档位）用 `sessionIdle(id)` 只挡该对话；新建对话不再受其他对话影响；撤销只在同一项目/文档有对话在回复时拒绝。
+- `kernel/scheduler.ts`：全局并发槽（默认 3，A1a-3 改为设置项），按“模型请求”计——`openAgent` 的 streamFunction 在发请求前 `slot()` 取槽、流结束释放；工具执行、等待确认、两次请求之间都不占槽；先到先得，取消等待即退出队列。快照 `busySessionId` 改为 `runs: Record<sessionId, 'waiting' | 'running'>`，等待槽位的轮次在回复气泡显示“等待中：同时回复的对话已达上限”。
+- 排队（followUp）：对话回复中再次发送时，用户消息以新状态 `queued` 写入（显示“排队中，当前回复结束后发送”），本轮结束后自动开始下一条，回复插在该条之后；停止回复时排队消息标为 cancelled（用户消息显示“已取消，未发送”）；重启后遗留的 queued 改为 cancelled 并注明未发送；排队后启动失败（如模型已不支持图片）把该条标为 failed 并继续下一条。排队消息带的画布快照是发送时的，若画布已改，画布工具会如实报冲突。
+- 插话（steer）未实现：需要输入框上的明确控件与设计，待用户决定（文档 A1a-2 原含插话）。线程“常驻”只做到轮次内：每轮仍新建 SDK 会话（各包的提示词/工具按轮生成），历史由 jsonl 续接；空闲常驻 10 分钟收益小、复杂度高，未做。
+- 压缩：SDK `compaction.enabled = true`（默认 reserve 16384 / keepRecent 20000），移除 6 万字对话上限；压缩摘要请求经同一 streamFunction，靠 `compaction_start/end` 事件豁免请求计数（否则纯聊天每轮仅 1 次请求会被摘要占用），仍需取槽；回复中写活动记录“已压缩较早的对话内容，保留摘要继续对话”。
+- 按角色限制：main 每轮 24 次请求、10 分钟；canvas / writing 12 次、5 分钟；策略引擎每轮工具调用上限 40（各包原有 20/20/12 上限保留）。`openAgent` 签名改为 `openAgent(root, id, model, { transient, packs, thinkingLevel, approve, slot, maxRequests, maxToolCalls })`，测试调用点同步更新。
+- 渲染层：`useAgent` 新增 `anyBusy`（任一对话在回复：模型/插件设置、侧栏菜单仍锁定）、`scopeBusy`（本项目/文档有对话在回复：撤销与对话列表删除锁定）、`waiting`、`busyProjectIds`；输入框只在本对话回复时锁定模型与思考选择，有输入时按钮为“排队发送”，无输入时为“停止回复”；ChatPage 提交不再因本对话回复而拒绝。
+- 测试：新增 `agent-concurrency.spec`（调度器先到先得/取消/提高上限；上限 1 时第二个对话等待槽位、其他对话可改设置、本对话被锁；上限 2 时两个对话同时回复；排队顺序与插入位置、停止时排队取消、重启后排队消息不发送；压缩摘要后纯聊天轮次仍能回复）4 例，`agent-queue.spec`（实窗：排队发送、排队标签、另一个对话同时回复、回复后按序完成）1 例；canvas-agent / writing-agent / agent-store 由 `busySessionId` 改为 `runs`。
+- 顺带修复 A0-3 的不稳定测试：`agent-ledger.spec` 用固定 50ms 等待 55 次排队写入，满载时读到中间状态（48/50）；`Ledger` 新增 `settled()`，测试改为等待写入完成。
+- 验证：check、build 通过；完整实窗 139 例中 135 通过：ui-preview 2 例无 linux 基线（生成的 png 已逐个删除）；agent-ledger 1 例为上述不稳定测试（修复后重复 5 轮 10/10 通过）；`updates.spec.ts:179`（确认安装后立即断言 `app.windows()` 为 0）为既有时序不稳定——不含本次改动的上一提交单独 worktree 重复 10 次也失败 2 次，本次重复 5 次失败 1 次，与 Agent 无关（安装流程只调用 `isAgentBusy()`，空闲语义未变），未修改该测试。
+- 中途 Bash 安全检查连续无结论导致一次中断，恢复后完成上述验证再提交。
+
 ## Agent 架构改造 A1a-1：会话记录 v2、存储拆分与增量推送（2026-10-25）
 
 - origin/main 无新提交（仍为 `6761f10`），直接在作业分支开工。

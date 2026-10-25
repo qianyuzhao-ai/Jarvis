@@ -57,7 +57,15 @@ export const agentSendSchema = z.object({
   writing: writingScopeSchema.optional(),
   images: z.array(visionAssetSchema).max(12).optional(),
 });
-export const agentStatus = z.enum(['running', 'succeeded', 'failed', 'cancelled', 'interrupted']);
+/** `queued`: a user message sent while its conversation was replying, not yet started. */
+export const agentStatus = z.enum([
+  'running',
+  'succeeded',
+  'failed',
+  'cancelled',
+  'interrupted',
+  'queued',
+]);
 export const chatActivitySchema = z.object({
   id: z.string().min(1).max(200),
   label: z.string().max(500),
@@ -129,13 +137,16 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type AgentRole = z.infer<typeof agentRoleSchema>;
 export type ChatSessionMeta = z.infer<typeof sessionMetaSchema>;
 export type ChatSession = ChatSessionMeta & { messages: ChatMessage[] };
+/** `waiting`: the round waits for a free slot under the concurrency limit. */
+export type RunState = 'waiting' | 'running';
 export interface AgentSnapshot {
   skills?: SkillInfo[];
   /** Model settings shared by every Agent entry (home, canvas, writing); Keys are never included. */
   models?: ModelSettingsView;
   /** Metadata only; a conversation's messages come from `getSession` and session events. */
   sessions: ChatSessionMeta[];
-  busySessionId: string | null;
+  /** Conversations with a round in progress; several may reply at once. */
+  runs: Record<string, RunState>;
 }
 export interface AgentEvent {
   seq: number;

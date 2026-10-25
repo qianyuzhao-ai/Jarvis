@@ -9,8 +9,6 @@ import { ModelStore } from '../src/main/agent/model-store';
 import { AgentService } from '../src/main/agent/service';
 import { AgentStore } from '../src/main/agent/store';
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
-
 test('ledger merges a round, keeps recent rounds, survives restart and forgets deleted conversations', async () => {
   const dir = test.info().outputPath('ledger');
   const session = randomUUID(),
@@ -43,7 +41,7 @@ test('ledger merges a round, keeps recent rounds, survives restart and forgets d
   expect(ledger.entries(other)).toHaveLength(LEDGER_ROUNDS);
   expect(ledger.entries(other)[0]?.summary).toBe('第 5 轮');
   ledger.markUndone(id);
-  await settle();
+  await ledger.settled();
 
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, `${gone}.json`), '{"broken":');
@@ -61,8 +59,8 @@ test('ledger merges a round, keeps recent rounds, survives restart and forgets d
   const broken = new Ledger(join(test.info().outputPath('not-a-dir'), 'ledger'));
   broken.onError = (error) => errors.push(error);
   broken.record({ id: randomUUID(), sessionId: session, runId, pack: 'canvas', summary: 'x' });
-  await settle();
-  expect(errors).toHaveLength(1);
+  await broken.settled();
+  await expect.poll(() => errors.length).toBe(1);
 });
 
 test('undo goes through the ledger to the window that owns the data and is recorded once', async () => {
@@ -140,7 +138,7 @@ test('undo goes through the ledger to the window that owns the data and is recor
     { type: 'undo', transactionId: writingEdit },
     { type: 'undo', transactionId: expect.any(String) },
   ]);
-  await settle();
+  await service.ledger.settled();
   const restarted = new Ledger(join(root, 'ledger'));
   await restarted.initialize([sessionId]);
   expect(restarted.entries(sessionId).map((e) => e.status)).toEqual(['undone', 'undone']);

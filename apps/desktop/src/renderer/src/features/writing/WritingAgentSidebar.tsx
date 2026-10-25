@@ -38,7 +38,7 @@ export function WritingAgentSidebar({
   }, [last?.text, last?.status, agent.session?.messages.length]);
   const name = document.path.split('/').at(-1) ?? document.path;
   async function submit() {
-    if (pending.current || !text.trim() || agent.snapshot.busySessionId) return;
+    if (pending.current || !text.trim()) return;
     pending.current = true;
     try {
       await host.snapshot(scope);
@@ -50,7 +50,7 @@ export function WritingAgentSidebar({
     }
   }
   async function undo(id: string) {
-    if (agent.snapshot.busySessionId) return;
+    if (agent.scopeBusy) return;
     await agent.undoChange(id);
   }
   return (
@@ -122,7 +122,7 @@ export function WritingAgentSidebar({
           scope="writing"
           sessions={agent.snapshot.sessions}
           currentId={agent.session?.id}
-          busy={!!agent.snapshot.busySessionId}
+          busy={agent.scopeBusy}
           select={(id) => {
             agent.select(id);
             setText('');
@@ -148,12 +148,13 @@ export function WritingAgentSidebar({
               <ChatMessageItem
                 key={message.id}
                 message={message}
+                waiting={agent.waiting}
                 sessionId={agent.session!.id}
                 now={Date.now()}
                 onError={agent.setError}
                 writing={{
                   undo: (id) => void undo(id),
-                  canUndo: (id) => !agent.snapshot.busySessionId && host.canUndo(scope, id),
+                  canUndo: (id) => !agent.scopeBusy && host.canUndo(scope, id),
                 }}
               />
             ))

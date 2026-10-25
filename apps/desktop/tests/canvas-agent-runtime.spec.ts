@@ -98,8 +98,7 @@ test('Pi canvas tools read, persist an edit and consume its receipt before repor
     test.info().outputPath('runtime'),
     randomUUID(),
     relayModel({ baseUrl: `http://127.0.0.1:${address.port}/v1`, model: 'mock' }),
-    false,
-    [pack],
+    { packs: [pack] },
   );
   try {
     expect(runtime.session.getActiveToolNames().sort()).toEqual(

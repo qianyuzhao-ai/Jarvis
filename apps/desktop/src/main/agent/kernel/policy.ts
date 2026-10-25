@@ -15,11 +15,13 @@ const reasons: Record<Exclude<ApprovalOutcome, 'approved'>, string> = {
 };
 
 /**
- * Decides every tool call before it runs: tools outside the session's packs are blocked, `read`
- * and `reversible` tools run, and `confirm` tools run only after the user approves.
+ * Decides every tool call before it runs: tools outside the session's packs are blocked, at most
+ * `maxCalls` calls run per round, `read` and `reversible` tools run, and `confirm` tools run only
+ * after the user approves.
  */
-export function createPolicy(packs: CapabilityPack[], approve?: Approver) {
+export function createPolicy(packs: CapabilityPack[], approve?: Approver, maxCalls = 40) {
   const tools = new Map(packs.flatMap((pack) => pack.tools).map((tool) => [tool.name, tool]));
+  let calls = 0;
   async function decide(
     toolName: string,
     input: Record<string, unknown>,
@@ -27,6 +29,7 @@ export function createPolicy(packs: CapabilityPack[], approve?: Approver) {
   ): Promise<ToolCallEventResult | undefined> {
     const tool = tools.get(toolName);
     if (!tool) return { block: true, reason: '该工具不在当前会话的能力范围内，未执行。' };
+    if (++calls > maxCalls) return { block: true, reason: '本轮工具调用次数已达上限，未执行。' };
     if (tool.risk !== 'confirm') return undefined;
     if (!approve) return { block: true, reason: '当前会话无法请求用户确认，未执行。' };
     const outcome = await approve({ tool, input, signal });

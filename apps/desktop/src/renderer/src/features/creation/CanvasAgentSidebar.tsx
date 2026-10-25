@@ -73,8 +73,7 @@ export function CanvasAgentSidebar({
       pending.current ||
       attachments.preparing ||
       attachments.blocked ||
-      (!text.trim() && !attachments.images.length) ||
-      agent.snapshot.busySessionId
+      (!text.trim() && !attachments.images.length)
     )
       return;
     pending.current = true;
@@ -114,7 +113,7 @@ export function CanvasAgentSidebar({
     }
   }
   async function undo(id: string) {
-    if (pending.current || agent.snapshot.busySessionId) return;
+    if (pending.current || agent.scopeBusy) return;
     pending.current = true;
     setUndoing(true);
     agent.setError('');
@@ -128,8 +127,7 @@ export function CanvasAgentSidebar({
   const actions = {
     focus,
     undo: (id: string) => void undo(id),
-    canUndo: (id: string) =>
-      !undoing && !agent.snapshot.busySessionId && project.agentEdits.at(-1)?.id === id,
+    canUndo: (id: string) => !undoing && !agent.scopeBusy && project.agentEdits.at(-1)?.id === id,
   };
   return (
     <div
@@ -302,7 +300,7 @@ export function CanvasAgentSidebar({
               <span>最近的画布修改</span>
               <button
                 type="button"
-                disabled={!!agent.snapshot.busySessionId || undoing}
+                disabled={agent.scopeBusy || undoing}
                 onClick={() => {
                   const id = project.agentEdits.at(-1)?.id;
                   if (id) void undo(id);
@@ -316,7 +314,7 @@ export function CanvasAgentSidebar({
           <CanvasConversations
             sessions={agent.snapshot.sessions}
             currentId={session?.id}
-            busy={!!agent.snapshot.busySessionId || agent.sending || attachments.preparing}
+            busy={agent.scopeBusy || agent.sending || attachments.preparing}
             select={(id) => {
               if (attachments.preparing) return;
               agent.select(id);
@@ -380,6 +378,7 @@ export function CanvasAgentSidebar({
                 <ChatMessageItem
                   key={m.id}
                   message={m}
+                  waiting={agent.waiting}
                   sessionId={session.id}
                   now={now}
                   onError={agent.setError}

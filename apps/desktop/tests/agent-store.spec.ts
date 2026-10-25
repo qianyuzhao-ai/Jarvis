@@ -167,7 +167,7 @@ test('streaming writes only its own view, and pushes carry metadata or changed m
       const previous = service.onChange;
       service.onChange = (e) => {
         previous(e);
-        if (!e.snapshot.busySessionId && sessionEvents.length) resolve();
+        if (!Object.keys(e.snapshot.runs).length && sessionEvents.length) resolve();
       };
     });
     await service.send(busy, randomUUID(), '你好', 1);

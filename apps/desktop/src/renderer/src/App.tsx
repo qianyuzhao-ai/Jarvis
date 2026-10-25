@@ -360,7 +360,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             return true;
           }}
           onDeleteChat={agent.deleteConversation}
-          busy={!!agent.snapshot.busySessionId}
+          busy={agent.anyBusy}
           onSettings={openSettings}
         />
       )}
@@ -463,16 +463,13 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
             agent.loading ? (
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
-              <ModelSettings value={agent.configuration} busy={!!agent.snapshot.busySessionId} />
+              <ModelSettings value={agent.configuration} busy={agent.anyBusy} />
             )
           ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (
               <p className="launch-message">正在读取插件…</p>
             ) : (
-              <PluginSettings
-                skills={agent.snapshot.skills ?? []}
-                busy={!!agent.snapshot.busySessionId}
-              />
+              <PluginSettings skills={agent.snapshot.skills ?? []} busy={agent.anyBusy} />
             )
           ) : route === 'settings' ? (
             <ServiceSettings
@@ -486,7 +483,8 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
         </div>
         {data.projects
           .filter(
-            (p) => (route === 'canvas' && active.ref === p.id) || agent.busyProjectId === p.id,
+            (p) =>
+              (route === 'canvas' && active.ref === p.id) || agent.busyProjectIds.includes(p.id),
           )
           .map((project) => (
             <div
@@ -513,7 +511,7 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
                   )
                 }
                 onConfigureAgent={() => void openSettings('models')}
-                agentBusy={agent.busyProjectId === project.id}
+                agentBusy={agent.busyProjectIds.includes(project.id)}
                 theme={theme}
                 status={status}
                 shell={{

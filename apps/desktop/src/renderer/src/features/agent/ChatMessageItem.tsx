@@ -23,6 +23,7 @@ export function ChatMessageItem({
   onError,
   canvas,
   writing,
+  waiting = false,
 }: {
   message: ChatMessage;
   sessionId: string;
@@ -30,6 +31,8 @@ export function ChatMessageItem({
   onError: (message: string) => void;
   canvas?: CanvasActivityActions;
   writing?: WritingActivityActions;
+  /** The conversation's round waits for a free slot under the concurrency limit. */
+  waiting?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -99,7 +102,12 @@ export function ChatMessageItem({
       )}
       <div className="chat-bubble">
         <div data-testid="chat-text" className="chat-text">
-          {m.text || (m.status === 'running' ? '正在等待模型回复…' : '未收到回复内容')}
+          {m.text ||
+            (m.status === 'running'
+              ? waiting
+                ? '等待中：同时回复的对话已达上限'
+                : '正在等待模型回复…'
+              : '未收到回复内容')}
           {m.status === 'running' && m.text && (
             <span className="chat-cursor" aria-hidden="true">
               {' '}
@@ -107,7 +115,10 @@ export function ChatMessageItem({
             </span>
           )}
         </div>
-        {m.status === 'cancelled' && <small>已停止，部分回复已保留</small>}
+        {m.status === 'cancelled' && (
+          <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
+        )}
+        {m.status === 'queued' && <small>排队中，当前回复结束后发送</small>}
         {m.error && (
           <div className="chat-message-error">
             <CircleAlert size={14} />
