@@ -2,7 +2,7 @@
 
 最后更新：2026-10-25
 
-来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0–A6 全部完成（A6 的 macOS EventKit 路径待真机联调）（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0–A6 全部完成并经 PR #84 合入 develop（A6 的 macOS EventKit 路径待真机联调）（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
 
 详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。实施结果（2026-10-25）写入新标签页“改造执行结果”（tabId `t.4b006s5tbq47`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.4b006s5tbq47），含分批完成表、决策落实、与方案差异、验证、遗留与合并事项。
 
