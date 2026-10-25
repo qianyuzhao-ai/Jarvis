@@ -2,9 +2,9 @@
 
 最后更新：2026-10-25
 
-来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0–A6 全部完成（A6 的 macOS EventKit 路径待真机联调）（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
+来源：用户方案文档《Jarvis - Personal Agent 实现方案》（Google Doc `1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE`，状态“核心架构已确认 2026-10-24”）。本文件记录对现有代码的分析与改造建议。实施进度：A0–A6 全部完成并经 PR #84 合入 develop（A6 的 macOS EventKit 路径待真机联调）（2026-10-25，见 engineering.md），后续批次开工需用户另行授权。
 
-详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。
+详细改造方案与分批阶段（2026-10-25）已写入同一文档的新标签页“改造方案与分批阶段”（tabId `t.vp81kh6emtuk`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.vp81kh6emtuk），以该标签页为准；本文件保留代码现状与差距分析。实施结果（2026-10-25）写入新标签页“改造执行结果”（tabId `t.4b006s5tbq47`，https://docs.google.com/document/d/1XRTSeFJfDT0IgQxRw_HHxbrw6KzkWpGNqpOzpRWGJHE/edit?tab=t.4b006s5tbq47），含分批完成表、决策落实、与方案差异、验证、遗留与合并事项。
 
 ## 1. 用户方案要点（已确认）
 
@@ -106,6 +106,7 @@ main/agent/
 - 2026-10-25：A1a-1 完成。与文档差异：v2 元数据暂不含 `status` / `card`（分别在 A1a-2 / A1b-2 加入）；没有主进程侧的按窗口订阅，消息事件广播、渲染层只应用当前会话；新增派生字段 `lastReplyAt` 供对话列表显示时间。
 - 2026-10-25：A1a-2 完成。与文档差异：插话（steer）未做，待设计输入框控件后补；排队（followUp）由 service 自己的队列实现（新一轮），没有用 SDK followUp；线程常驻只在轮次内，空闲 10 分钟常驻未做；运行状态放在快照 `runs` 而不是持久化元数据的 `status` 字段；模型配置变更仍需所有对话空闲（文档写“只等待使用该模型的线程”）。
 - 2026-10-25：A1a-3 完成，并发上限为设置 - 常规中的“同时运行的 Agent 数”（1–6，默认 3），与文档一致。
+- 2026-10-25：在方案文档新增标签页“改造执行结果”，写入结论、18 行分批完成表（批次/内容/提交）、用户决策落实、与方案差异、验证结果、遗留与待联调、合并与发布；已回读核对标题层级、表格与列表结构。
 - 2026-10-25：A6 完成。与文档差异：EventKit 通过 osascript 运行 JXA 脚本桥接（不编译原生模块）；非 macOS 回退为 Jarvis 本地日历（未做 CalDAV / Google Calendar API，Google 日历可经 A5 的 MCP 接入）；写日历一律确认；提前提醒未做（属于主动提醒，按文档建议另行排期）；EventKit 路径未在真机验证。
 - 2026-10-25：A5 完成。与文档差异：未启用 Pi CLI 的 MCP 扩展与 codemode / tool_search，改用 pi-mcp 客户端在主进程自管连接，工具直接作为能力包暴露（上限 128 个）；Google 与邮件通过 MCP 服务接入而非内置 API；“外部写入默认草稿”通过提示词要求 + 所有非只读工具强制确认实现。
 - 2026-10-25：A4 完成。与文档差异：路径越界由文件工具自身拦截（策略引擎按工具名放行，路径在工具内校验）；新建/建目录/移动直接执行并可撤销，覆盖与删除需确认；移动限同一授权文件夹；Shell 未提供。
