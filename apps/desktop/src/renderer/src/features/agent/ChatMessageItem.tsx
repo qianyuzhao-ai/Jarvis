@@ -16,6 +16,14 @@ function replyTime(time: number, now: number) {
   return new Date(time).toLocaleDateString();
 }
 
+/** Who wrote a message that came from another Agent; the title names that conversation. */
+const relayLabel: Record<NonNullable<ChatMessage['relay']>['kind'], string> = {
+  handoff: '空间助手转交',
+  notice: '空间任务状态',
+  delegate: 'Jarvis 委派',
+  message: 'Jarvis 的消息',
+};
+
 export function ChatMessageItem({
   message: m,
   sessionId,
@@ -57,6 +65,11 @@ export function ChatMessageItem({
       data-status={m.status}
       aria-label={m.role === 'user' ? '用户消息' : 'Jarvis 回复'}
     >
+      {m.relay && (
+        <small data-testid="chat-relay" className="chat-relay">
+          {relayLabel[m.relay.kind]} · {m.relay.title}
+        </small>
+      )}
       {!!m.visionAssets?.length && (
         <div
           data-testid="chat-vision-assets"

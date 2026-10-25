@@ -235,6 +235,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .map((t) => t.function.name)
       .sort();
     expect(toolNames).toEqual([
+      'handoff_to_main',
       'insert_text',
       'read_document',
       'read_selection',

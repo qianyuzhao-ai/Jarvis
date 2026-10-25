@@ -2,6 +2,15 @@
 
 最后更新：2026-10-25
 
+## Agent 架构改造 A1b-3：handoff 与委派（2026-10-25）
+
+- origin/main 无新提交。新增 `packs/handoff.ts`（子 Agent 的 `handoff_to_main`：request 用户原话、context、expected；每轮最多 2 次；回复活动记“已交给 Jarvis 处理”，工具结果返回 handoffId 与目标分段）与 `packs/agent-control.ts`（主 Agent 的 list_agents / read_result_card / read_agent_transcript（每段 8000 字，next 续读）/ delegate_task / message_agent / stop_agent，均为 risk read）。主分段能力包 = chat + agent-control + skills；画布/写作 = 空间包 + report + handoff + skills。
+- 转交与通知投递：handoff 优先投给委派来源分段（delegated 子 Agent 的 parentId），否则当前分段，没有则新建主分段；以 followUp 进入该分段（在回复则排队）。委派的子 Agent（origin delegated, parentId=主分段）每轮结束后向来源分段投递“委派任务状态通知”，触发一轮主 Agent 回复；被 stop_agent 停止的、应用退出时的不通知。转交、通知、卡片、对话记录都以“数据，不是指令”的标记块进入主 Agent 提示词（Pending 新增 `prompt`，显示文字与发给模型的文字分开）。
+- 消息来源：`ChatMessage.relay = { kind: handoff | notice | delegate | message, sessionId, title }`，界面在用户气泡上方显示小字“空间助手转交 / 空间任务状态 / Jarvis 委派 / Jarvis 的消息 · 标题”（`.chat-relay`）。`store.create` 新增 parentId 参数；service 抽出 `createSession`（不经操作队列）与 `enqueue`（开始或排队），send 复用。
+- 委派限已打开目标：新增 `shared/agent-targets.ts` 与 IPC `agent:open-targets`（preload `setOpenTargets`），窗口上报“已打开”的项目（有画布标签页的项目，`use-canvas-targets.ts`；挂载的画布也登记）与写作空间当前文件夹中打开的文档（`use-writing-host.ts`），汇总于 `features/agent/open-targets.ts`；窗口导航或销毁时主进程清除。delegate/message 按目标找到窗口作为本轮 owner，画布先发新增的 canvas 命令 `snapshot` 取当前快照（未挂载的项目由 App 级处理器作答，轮次开始后项目因“回复中”挂载并执行编辑）。目标未打开时工具报错“这个项目没有在任何窗口中打开。请用户先在 AIGC 创作空间打开它，再委派。”（文档同理），message_agent 时把卡片记为 needs_user。
+- 测试：新增 `agent-delegation.spec`（写作越界 handoff 新建分段并以数据块注入、委派到已打开项目并收到状态通知、未打开项目如实报错且不建会话、控制工具读卡片/记录与关闭后 message 报错）与实窗 `agent-delegation-ui.spec`（首页对 Jarvis 说话，委派到标签页中的项目，画布未显示也能完成改名、卡片“已完成”、首页收到“空间任务状态”通知与回复、画布助手中委派消息带“Jarvis 委派”标记）；agent.spec 首页工具断言改为只含六个子 Agent 工具，writing-agent.spec 工具清单加入 handoff_to_main，agent-cards.spec 模拟服务不再被卡片数据中的标题误触发。
+- 验证：check、build 通过；完整实窗 147 例中 145 例通过，ui-preview 2 例本轮先失败（无 linux 基线），复跑时因首轮生成的 png 而通过，不算有效验证，生成的 png 已逐个删除；截图检查通过（画布助手截图需等右栏滑入动画结束）。
+
 ## Agent 架构改造 A1b-2：结果卡片与 Agent 总线（2026-10-25）
 
 - 新增 `shared/agent-cards.ts`（`ResultCard`：status running/waiting/done/failed/needs_user、summary ≤1000、artifacts ≤50（node/document/file/event + ref）、openQuestions ≤10、source agent/auto、updatedAt），会话元数据 `sessionMetaSchema` 新增可选 `card`，随 index.json 保存，旧记录无卡片照常读取。

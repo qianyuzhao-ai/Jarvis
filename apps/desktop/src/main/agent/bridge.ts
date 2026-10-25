@@ -20,6 +20,7 @@ import { canvasReplySchema } from '../../shared/canvas-agent';
 import { approvalResponseSchema } from '../../shared/agent-approval';
 import { undoRequestSchema } from '../../shared/agent-ledger';
 import { concurrencySchema } from '../../shared/agent-settings';
+import { openTargetsSchema } from '../../shared/agent-targets';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
@@ -27,10 +28,13 @@ export const isAgentBusy = () => service?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });
   contents.on('did-start-navigation', (_event, _url, _inPlace, main) => {
-    if (main) void service.cancelOwner(contents.id);
+    if (!main) return;
+    service.dropTargets(contents.id);
+    void service.cancelOwner(contents.id);
   });
   contents.once('destroyed', () => {
     trusted.delete(contents.id);
+    service.dropTargets(contents.id);
     void service.cancelOwner(contents.id);
   });
 }
@@ -130,6 +134,7 @@ export async function registerAgent() {
       const v = approvalResponseSchema.parse(r);
       service.approvals.respond(owner, v.id, v.approved);
     },
+    'agent:open-targets': (r, owner) => service.setTargets(owner, openTargetsSchema.parse(r)),
     'agent:claim-canvas': (r, owner) => service.canvas.claim(owner, agentId.parse(r)),
     'agent:complete-canvas': (r, owner) =>
       service.canvas.complete(owner, canvasReplySchema.parse(r)),

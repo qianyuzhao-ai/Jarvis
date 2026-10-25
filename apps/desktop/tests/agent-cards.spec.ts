@@ -34,7 +34,7 @@ test('space conversations get result cards that the next main-Agent segment open
     if (last.includes('慢慢整理')) {
       res.write(': open\n\n');
       release = () => text('画布已整理完毕');
-    } else if (last.includes('需要确认') && !answered) {
+    } else if (last.includes('需要确认') && !last.includes('未完成的空间任务卡片') && !answered) {
       res.end(
         chunk({
           tool_calls: [

@@ -86,6 +86,7 @@ export const canvasCommandSchema = z
         .strict(),
       z.object({ type: z.literal('focus'), nodeIds: z.array(nodeId).min(1).max(100) }).strict(),
       z.object({ type: z.literal('undo'), transactionId: z.string().uuid() }).strict(),
+      z.object({ type: z.literal('snapshot') }).strict(),
     ]),
   })
   .strict();

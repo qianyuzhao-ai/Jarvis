@@ -382,8 +382,25 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         '[data-testid="chat-message"][data-message-role="assistant"][data-status="failed"]',
       ),
     ).toContainText('你好🙂');
+    // Home chat streams and only carries the main Agent's sub-agent tools; no file or shell tools.
+    const control = [
+      'delegate_task',
+      'list_agents',
+      'message_agent',
+      'read_agent_transcript',
+      'read_result_card',
+      'stop_agent',
+    ];
     expect(
-      requests.every((r) => r.stream === true && (!r.tools || (r.tools as unknown[]).length === 0)),
+      requests.every(
+        (r) =>
+          r.stream === true &&
+          JSON.stringify(
+            ((r.tools ?? []) as { function: { name: string } }[])
+              .map((t) => t.function.name)
+              .sort(),
+          ) === JSON.stringify(control),
+      ),
     ).toBe(true);
     expect(errors).toEqual([]);
     expect(await readFile(join(userData, 'agent', 'index.json'), 'utf8')).not.toContain(

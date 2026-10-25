@@ -14,6 +14,7 @@ import {
 import { bufferVersion, textSliceEnd, WritingTransactions } from './writing-transactions';
 import { agentHistoryAnnotations, finishWritingAgent, lastAgentRun } from './writing-history';
 import type { useWriting } from './useWriting';
+import { setOpenDocuments } from '../agent/open-targets';
 export function useWritingHost(
   writing: ReturnType<typeof useWriting>,
   view: MutableRefObject<EditorView | null>,
@@ -23,6 +24,16 @@ export function useWritingHost(
   const [, refresh] = useState(0);
   const latest = useRef(writing);
   latest.current = writing;
+  // Documents of the open folder are delegation targets while this space is mounted.
+  const openKey = JSON.stringify(
+    writing.documents
+      .filter((d) => d.rootId === writing.root?.id)
+      .map((d) => ({ rootId: d.rootId, path: d.path, name: d.path.split('/').at(-1) ?? d.path })),
+  );
+  useEffect(() => {
+    setOpenDocuments(JSON.parse(openKey));
+    return () => setOpenDocuments([]);
+  }, [openKey]);
   const find = useCallback((scope: WritingScope) => {
     const w = latest.current;
     if (w.root?.id !== scope.rootId) throw new Error('文档不在当前打开的文件夹中');

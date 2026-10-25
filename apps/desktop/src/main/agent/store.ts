@@ -196,6 +196,7 @@ export class AgentStore {
     projectId?: string,
     thinkingLevel: ThinkingLevel = 'off',
     writingScope?: WritingScope,
+    parentId?: string,
   ) {
     const view: StoredSession = {
       id: randomUUID(),
@@ -209,7 +210,9 @@ export class AgentStore {
       runId: null,
       contextTokens: null,
       contextWindow: model.contextWindow,
-      agent: roleOf({ projectId, writingScope }),
+      agent: parentId
+        ? { ...roleOf({ projectId, writingScope }), origin: 'delegated', parentId }
+        : roleOf({ projectId, writingScope }),
       ...(projectId ? { projectId } : {}),
       ...(writingScope ? { writingScope } : {}),
     };

@@ -68,6 +68,7 @@ const desktop: DesktopInfo = {
       ipcRenderer.on('agent:approvals', handle);
       return () => ipcRenderer.removeListener('agent:approvals', handle);
     },
+    setOpenTargets: (targets) => ipcRenderer.invoke('agent:open-targets', targets),
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
     completeCanvasCommand: (reply) => ipcRenderer.invoke('agent:complete-canvas', reply),
     onCanvasCommand: (listener) => {

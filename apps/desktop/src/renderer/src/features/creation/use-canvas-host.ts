@@ -5,6 +5,7 @@ import { canvasSnapshot } from './canvas-context';
 import { canvasChanges } from './canvas-changes';
 import { prepareCanvasEdit, prepareCanvasUndo } from './canvas-transactions';
 import type { Project } from './types';
+import { openProject } from '../agent/open-targets';
 
 export function useCanvasHost(
   project: Project,
@@ -14,6 +15,7 @@ export function useCanvasHost(
 ) {
   const latest = useRef({ project, commit, focus, onError });
   latest.current = { project, commit, focus, onError };
+  useEffect(() => openProject(project.id, project.name), [project.id, project.name]);
   useEffect(() => {
     const bridge = window.desktop?.agent;
     if (!bridge) return;
@@ -37,6 +39,15 @@ export function useCanvasHost(
               projectId: project.id,
               ok: true,
               nodeIds: command.command.nodeIds,
+            }),
+          );
+        } else if (command.command.type === 'snapshot') {
+          agentValue(
+            await connected.completeCanvasCommand({
+              requestId: command.requestId,
+              projectId: project.id,
+              ok: true,
+              snapshot: await canvasSnapshot(current, []),
             }),
           );
         } else if (command.command.type === 'undo') {

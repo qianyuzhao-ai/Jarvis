@@ -37,6 +37,7 @@ import { useAppUpdates } from './features/updates/use-app-updates';
 import { useUpdateGuard } from './features/updates/use-update-guard';
 import { UpdateStatus } from './features/updates/UpdateStatus';
 import { useWriting } from './features/writing/useWriting';
+import { useCanvasTargets } from './features/creation/use-canvas-targets';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
@@ -53,6 +54,9 @@ function Workbench({ initial }: { initial: WorkspaceData }) {
   const { state, change } = shell;
   const active = state.tabs.find((t) => t.id === state.activeId)!;
   const route = active.kind;
+  useCanvasTargets(
+    data.projects.filter((p) => state.tabs.some((t) => t.kind === 'canvas' && t.ref === p.id)),
+  );
   const settingsSection = (active.ref ?? 'general') as SettingsSection;
   const [settingsDirty, setSettingsDirty] = useState(false);
   const leaving = useRef(false);

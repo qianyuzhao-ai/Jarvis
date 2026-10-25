@@ -10,6 +10,7 @@ import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import type { UndoRequest } from './agent-ledger';
 import { resultCardSchema } from './agent-cards';
 import type { AgentSettings } from './agent-settings';
+import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
   baseUrlSchema,
@@ -59,6 +60,17 @@ export const agentSendSchema = z.object({
   writing: writingScopeSchema.optional(),
   images: z.array(visionAssetSchema).max(12).optional(),
 });
+/**
+ * A message written by another Agent rather than typed here: a sub-agent's handoff or status
+ * notice in a main-Agent segment, or the main Agent's task or message in a sub-agent.
+ */
+export const relaySourceSchema = z
+  .object({
+    kind: z.enum(['handoff', 'notice', 'delegate', 'message']),
+    sessionId: agentId,
+    title: z.string().max(100),
+  })
+  .strict();
 /** `queued`: a user message sent while its conversation was replying, not yet started. */
 export const agentStatus = z.enum([
   'running',
@@ -102,6 +114,7 @@ export const chatMessageSchema = z.object({
     .array(z.object({ id: z.string(), name: z.string() }))
     .max(100)
     .optional(),
+  relay: relaySourceSchema.optional(),
 });
 /** v1 record: metadata and messages in one object, as stored in `index.json` version 1. */
 export const chatSessionSchema = z.object({
@@ -141,6 +154,7 @@ export const sessionMetaSchema = chatSessionSchema.omit({ messages: true }).exte
 });
 export type RelayConfig = z.infer<typeof relaySchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+export type StoredRelay = z.infer<typeof relaySourceSchema>;
 export type AgentRole = z.infer<typeof agentRoleSchema>;
 export type ChatSessionMeta = z.infer<typeof sessionMetaSchema>;
 export type ChatSession = ChatSessionMeta & { messages: ChatMessage[] };
@@ -194,6 +208,8 @@ export interface AgentBridge {
   listApprovals(): Promise<AgentResult<ApprovalRequest[]>>;
   respondApproval(input: ApprovalResponse): Promise<AgentResult<void>>;
   onApprovals(listener: (requests: ApprovalRequest[]) => void): () => void;
+  /** Projects and documents this window can serve tool commands for; delegation targets these. */
+  setOpenTargets(targets: OpenTargets): Promise<AgentResult<void>>;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;
