@@ -480,3 +480,270 @@
     background: transparent;
   }
 }
+@layer utilities {
+  .writing-editor-host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+  }
+  .writing-view-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 8px 24px;
+    color: var(--color-fg-secondary);
+    font-size: var(--text-callout);
+    border-bottom: 0.5px solid var(--color-separator);
+  }
+  .writing-document-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    scroll-behavior: smooth;
+  }
+  .writing-document-header,
+  .writing-block-editor {
+    width: calc(100% - 96px);
+    max-width: 680px;
+    min-width: min(480px, 100%);
+    margin: 0 auto;
+  }
+  .writing-document-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 24px 0 8px;
+  }
+  .writing-document-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 40px;
+    height: 44px;
+    padding: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .writing-document-header small {
+    font-size: var(--text-callout);
+    color: var(--color-fg-tertiary);
+  }
+  .writing-document-icon {
+    font-size: 40px;
+    width: 56px;
+    height: 56px;
+  }
+  .writing-add-icon {
+    opacity: 0;
+  }
+  .writing-document-header:hover .writing-add-icon,
+  .writing-document-header:focus-within .writing-add-icon {
+    opacity: 1;
+  }
+  .writing-block-editor {
+    position: relative;
+    padding-bottom: 160px;
+  }
+  .writing-block-content {
+    outline: none;
+    min-height: 300px;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--color-fg);
+    padding: 16px 0;
+    overflow-wrap: anywhere;
+  }
+  .writing-block-content > * {
+    margin: 0 0 16px;
+  }
+  .writing-block-content h1 {
+    font-size: 26px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  .writing-block-content h2 {
+    font-size: 22px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+  .writing-block-content h3 {
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .writing-block-content ul {
+    list-style: disc;
+    padding-left: 24px;
+  }
+  .writing-block-content ol {
+    list-style: decimal;
+    padding-left: 24px;
+  }
+  .writing-block-content li p {
+    margin: 0;
+  }
+  .writing-block-content ul[data-type='taskList'] {
+    list-style: none;
+    padding-left: 0;
+  }
+  .writing-block-content li[data-type='taskItem'] {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .writing-block-content li[data-type='taskItem'] > div {
+    flex: 1;
+  }
+  .writing-block-content blockquote {
+    border-left: 3px solid var(--color-border);
+    padding-left: 16px;
+    color: var(--color-fg-secondary);
+  }
+  .writing-block-content pre,
+  .writing-raw-block {
+    background: var(--color-fill);
+    border-radius: var(--radius-control);
+    padding: 12px;
+    font-family: var(--font-mono);
+    white-space: pre-wrap;
+  }
+  .writing-raw-block {
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .writing-raw-block small {
+    font-family: var(--font-sans);
+    color: var(--color-fg-secondary);
+  }
+  .writing-block-content img {
+    max-width: 100%;
+    height: auto;
+  }
+  .writing-block-content table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .writing-block-content th,
+  .writing-block-content td {
+    border: 1px solid var(--color-border);
+    padding: 6px 10px;
+  }
+  .writing-block-content .ProseMirror-selectednode {
+    outline: 2px solid var(--color-accent);
+    background: var(--color-selection);
+  }
+  .writing-block-handle {
+    position: absolute;
+    left: -46px;
+    display: flex;
+    gap: 2px;
+    z-index: 2;
+    opacity: 0;
+  }
+  .writing-block-editor:hover .writing-block-handle,
+  .writing-block-editor:focus-within .writing-block-handle {
+    opacity: 1;
+  }
+  .writing-bubble-menu {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: var(--color-surface-raised);
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-popover);
+  }
+  .writing-outline-rail {
+    position: absolute;
+    right: 12px;
+    top: 100px;
+    z-index: 3;
+  }
+  .writing-outline-rail nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .writing-outline-line {
+    display: block;
+    height: 2px;
+    background: var(--color-fg-tertiary);
+  }
+  .writing-outline-rail [aria-current] .writing-outline-line {
+    background: var(--color-accent);
+  }
+  .writing-outline-list {
+    padding: 8px;
+    max-width: 280px;
+    background: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-popover);
+  }
+  .writing-wiki-candidates {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    z-index: 4;
+    width: 280px;
+  }
+  .writing-inline-reference,
+  .writing-inline-tag {
+    color: var(--color-accent);
+    background: var(--color-info-subtle);
+    border-radius: var(--radius-small);
+    padding: 1px 3px;
+  }
+  .writing-inline-reference {
+    cursor: pointer;
+  }
+  .writing-editor-host.source-mode .writing-document-scroll {
+    display: flex;
+    flex-direction: column;
+  }
+  .writing-editor-host.source-mode .writing-editor {
+    flex: 1;
+    min-height: 200px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .writing-document-scroll {
+      scroll-behavior: auto;
+    }
+  }
+}
+@layer utilities {
+  .writing-inline-reference.broken {
+    color: var(--color-danger);
+    background: var(--color-danger-subtle);
+    text-decoration: underline dashed;
+  }
+  .writing-drop-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-accent);
+    pointer-events: none;
+    z-index: 3;
+  }
+}
+
+@layer utilities {
+  .writing-editor-toolbar-slot {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .writing-view-toolbar {
+    padding: 0;
+    border: 0;
+  }
+  .writing-block-editor:focus-within .writing-block-handle {
+    color: var(--color-accent);
+  }
+}

@@ -108,3 +108,14 @@ export const FileMusic = /* @__PURE__ */ icon(Lucide.FileMusic);
 export const FileVideoCamera = /* @__PURE__ */ icon(Lucide.FileVideoCamera);
 
 export const FileArchive = /* @__PURE__ */ icon(Lucide.FileArchive);
+
+export const Bold = /* @__PURE__ */ icon(Lucide.Bold);
+
+export const Italic = /* @__PURE__ */ icon(Lucide.Italic);
+
+export const Strikethrough = /* @__PURE__ */ icon(Lucide.Strikethrough);
+
+export const Link = /* @__PURE__ */ icon(Lucide.Link);
+
+export const GripVertical = /* @__PURE__ */ icon(Lucide.GripVertical);
+export const Code = /* @__PURE__ */ icon(Lucide.Code);

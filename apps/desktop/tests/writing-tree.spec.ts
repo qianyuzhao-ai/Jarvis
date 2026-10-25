@@ -41,6 +41,7 @@ test('writing tree renames an open file, edits its new path, previews images and
     await page.getByRole('textbox', { name: '重命名文件' }).fill('renamed.md');
     await page.getByRole('textbox', { name: '重命名文件' }).press('Enter');
     await expect(page.getByRole('tab', { name: 'renamed.md', exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await editor.press('ControlOrMeta+a');
     await page.keyboard.insertText('# Renamed\n');
@@ -83,6 +84,8 @@ test('legacy writing tabs migrate once into global tabs without losing multiple 
   });
   try {
     const page = await app.firstWindow();
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
     await app.evaluate(({ dialog }, directory) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [directory] });
     }, directory);
@@ -103,7 +106,8 @@ test('legacy writing tabs migrate once into global tabs without losing multiple 
     await expect(page.getByRole('tab', { name: 'legacy.md', exact: true })).toBeVisible();
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBeNull();
     await page.getByRole('tab', { name: 'legacy.md', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText('Legacy');
+    await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText('Legacy');
+    expect(pageErrors).toEqual([]);
     await page.reload();
     await expect(page.getByRole('tab', { name: 'legacy.md', exact: true })).toHaveCount(1);
   } finally {

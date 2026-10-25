@@ -695,13 +695,20 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     document.querySelector<HTMLButtonElement>('[aria-label="展开右侧栏"]')?.focus(),
                   );
                 },
-                onOpen: (path, newTab) => {
+                onAssistant: () =>
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelOpen: true } : t,
+                    ),
+                  })),
+                onOpen: (path, newTab, rootId) => {
                   if (writing.root)
                     void open(
                       {
                         kind: 'writing',
                         ref: path,
-                        rootId: writing.root.id,
+                        rootId: rootId ?? writing.root.id,
                         title: path.split('/').at(-1)!,
                       },
                       newTab ||

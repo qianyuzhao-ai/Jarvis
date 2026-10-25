@@ -1,3 +1,4 @@
+import { takeWritingAssistantRequest } from './assistant-request';
 import { useEffect, useRef, useState } from 'react';
 import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
 import { Alert } from '@jarvis/ui/components/Alert';
@@ -36,6 +37,18 @@ export function WritingAgentSidebar({
     const node = viewport.current;
     if (node && following.current) node.scrollTop = node.scrollHeight;
   }, [last?.text, last?.status, agent.session?.messages.length]);
+  useEffect(() => {
+    const consume = () => {
+      const prompt = takeWritingAssistantRequest(document.id);
+      if (prompt) {
+        setText(prompt);
+        requestAnimationFrame(() => input.current?.focus());
+      }
+    };
+    consume();
+    window.addEventListener('jarvis:writing-assistant-request', consume);
+    return () => window.removeEventListener('jarvis:writing-assistant-request', consume);
+  }, [document.id]);
   const name = document.path.split('/').at(-1) ?? document.path;
   async function submit() {
     if (pending.current || !text.trim()) return;

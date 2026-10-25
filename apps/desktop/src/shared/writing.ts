@@ -70,6 +70,7 @@ export interface WritingEntry {
   mtime?: number;
 }
 export interface WritingFile {
+  mtime?: number;
   content: string;
   revision: string;
 }

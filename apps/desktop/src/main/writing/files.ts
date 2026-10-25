@@ -169,7 +169,7 @@ export class WritingFiles {
     try {
       const info = await handle.stat();
       if (!info.isFile() || info.size > limit) throw new Error('仅支持 4 MiB 以内的文本文件');
-      return { target, bytes: await handle.readFile() };
+      return { target, bytes: await handle.readFile(), mtime: info.mtimeMs };
     } finally {
       await handle.close();
     }
@@ -182,8 +182,9 @@ export class WritingFiles {
     }
   }
   async read(rootId: string, path: string): Promise<WritingFile> {
-    const { bytes } = await this.bytes(rootId, path);
+    const { bytes, mtime } = await this.bytes(rootId, path);
     return {
+      mtime,
       content: normalize(this.decode(bytes)),
       revision: revision(bytes),
     };
@@ -218,7 +219,11 @@ export class WritingFiles {
       } finally {
         if (exists) await unlink(temporary);
       }
-      return { content: clean, revision: revision(bytes) };
+      return {
+        content: clean,
+        revision: revision(bytes),
+        mtime: (await lstat(original.target)).mtimeMs,
+      };
     });
   }
   async create(

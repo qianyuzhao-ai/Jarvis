@@ -20,6 +20,7 @@ export interface DocumentSession {
   manualSave?: boolean;
   fileType?: import('../../../../shared/writing').WritingFileType;
   size?: number;
+  mtime?: number;
   revision: string;
   status: 'saved' | 'dirty' | 'saving' | 'error' | 'conflict';
   error: string;
@@ -95,6 +96,7 @@ export function useWriting() {
           const current = documentsRef.current.find((d) => d.id === id);
           update(id, {
             revision: result.value.revision,
+            mtime: result.value.mtime,
             savedContent: doc.content,
             manualSave: current?.content === doc.content ? false : current?.manualSave,
             status: current?.content === doc.content ? 'saved' : 'dirty',

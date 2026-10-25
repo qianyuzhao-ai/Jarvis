@@ -139,13 +139,20 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '甲.md', exact: true })
       .click();
-    const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
-    await editor.focus();
-    await editor.press('ControlOrMeta+Home');
-    await editor.press('ArrowDown');
-    await editor.press('ArrowDown');
-    await editor.press('Home');
-    await editor.press('Shift+End');
+    const editor = page.getByRole('textbox', { name: '块编辑器' });
+    await editor.evaluate((element) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode())
+        if (node.textContent?.includes('原始段落。')) {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          break;
+        }
+      (element as HTMLElement).focus();
+    });
     await page.getByRole('button', { name: '展开右侧栏', exact: true }).click();
     const panel = page.getByRole('complementary', { name: '写作助手' });
     await panel.getByLabel('消息', { exact: true }).fill('改写选中段落并修改两处');

@@ -42,10 +42,10 @@ import {
   Search,
   X,
 } from '@jarvis/ui/icons';
-import type { EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
 import type { WritingEntry } from '../../../../shared/writing';
-import { MarkdownEditor } from './MarkdownEditor';
+import { EditorHost } from './editor/EditorHost';
+import { createViewCache, type BufferView } from './editor/buffer-view';
+import { requestWritingAssistant } from './assistant-request';
 import { unwrap, useWriting } from './useWriting';
 
 function ResizeHandle({
@@ -121,8 +121,9 @@ export function WritingSpace({
     rightWidth: number;
     onWidth: (width: number) => void;
     onClose: () => void;
+    onAssistant: () => void;
     configure: () => void;
-    onOpen: (path: string, newTab: boolean) => void;
+    onOpen: (path: string, newTab: boolean, rootId?: string) => void;
   };
 }) {
   const confirm = useConfirm();
@@ -131,8 +132,8 @@ export function WritingSpace({
   const [moveTargets, setMoveTargets] = useState<string[]>([]);
   const [moveTarget, setMoveTarget] = useState('');
   const lastMarkdown = useRef('');
+  const [editorToolbar, setEditorToolbar] = useState<HTMLDivElement | null>(null);
   const [selectedParagraphs, setSelectedParagraphs] = useState(0);
-  const [source, setSource] = useState(false);
   const [folderMenu, setFolderMenu] = useState(false);
   const [moreMenu, setMoreMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -146,11 +147,17 @@ export function WritingSpace({
   const creationInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
-  const view = useRef<EditorView | null>(null);
-  const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
+  const view = useRef<BufferView | null>(null);
+  const editorCache = useRef(createViewCache());
   useEffect(() => {
     const ids = new Set(writing.documents.map((d) => d.id));
-    for (const id of editorCache.current.keys()) if (!ids.has(id)) editorCache.current.delete(id);
+    for (const values of [
+      editorCache.current.source,
+      editorCache.current.blocks,
+      editorCache.current.selections,
+      editorCache.current.generations,
+    ])
+      for (const id of values.keys()) if (!ids.has(id)) values.delete(id);
   }, [writing.documents]);
   const writingHost = useWritingHost(writing, view, editorCache);
   const active = writing.documents.find((d) => d.id === writing.activeId);
@@ -520,17 +527,7 @@ export function WritingSpace({
               ? `${writing.roots.find((r) => r.id === active?.rootId)?.name ?? writing.root.name}${active ? ' / ' + active.path.replaceAll('/', ' / ') : ''}`
               : '本地 Markdown 工作区'}
           </span>
-          {active && !preview && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSource((s) => !s)}
-              title="切换 Markdown 源码与实时预览"
-            >
-              {source || active.fileType === 'text' ? '源码模式' : '实时预览'}
-              <ChevronDown size={12} />
-            </Button>
-          )}
+          <div ref={setEditorToolbar} className="writing-editor-toolbar-slot" />
         </div>
         {writing.notice && (
           <Alert tone="error" onDismiss={() => writing.setNotice('')}>
@@ -602,22 +599,57 @@ export function WritingSpace({
             }
           />
         ) : active ? (
-          <MarkdownEditor
+          <EditorHost
+            toolbarHost={editorToolbar}
+            key={active.id}
             document={active}
             onChange={writing.change}
             onPosition={() => {
-              const editor = view.current;
-              const range = editor?.state.selection.main;
-              const selected =
-                editor && range && !range.empty ? editor.state.sliceDoc(range.from, range.to) : '';
+              const range = view.current?.getSelection();
+              const selected = range ? active.content.slice(range.from, range.to) : '';
               setSelectedParagraphs(
                 selected ? selected.split(/\n\s*\n/).filter((p) => p.trim()).length : 0,
               );
             }}
             onSave={() => void writing.save(active.id)}
-            source={source || active.fileType === 'text'}
-            viewRef={view}
-            cache={editorCache}
+            bufferRef={view}
+            cache={editorCache.current}
+            onRename={async (name) => {
+              if (!window.desktop) throw new Error('写作接口不可用');
+              if (!(await writing.flush())) throw new Error('请先处理未保存文档');
+              unwrap(
+                await window.desktop.writing.rename({
+                  rootId: active.rootId,
+                  path: active.path,
+                  name,
+                }),
+              );
+            }}
+            onOpenLink={(target, newTab) => {
+              void (async () => {
+                if (!window.desktop) return;
+                const entries = unwrap(
+                  await window.desktop.writing.searchFiles({
+                    rootId: active.rootId,
+                    query: target.split('/').at(-1) ?? target,
+                  }),
+                );
+                const entry = entries.find(
+                  (e) =>
+                    e.path.replace(/\.(md|markdown)$/i, '') === target ||
+                    e.name.replace(/\.(md|markdown)$/i, '') === target,
+                );
+                if (!entry) return writing.setNotice('引用的文档不存在：' + target);
+                await writing.openDocument(entry, active.rootId);
+                shell.onOpen(entry.path, newTab, active.rootId);
+              })().catch((e: unknown) =>
+                writing.setNotice(e instanceof Error ? e.message : '无法打开文档'),
+              );
+            }}
+            onAsk={() => {
+              requestWritingAssistant(active.id, '请润色当前选中的内容，保持原意，仅修改选区。');
+              shell.onAssistant();
+            }}
           />
         ) : (
           <div className="writing-empty">
