@@ -2,6 +2,12 @@
 
 最后更新：2026-10-25
 
+## 0.4.0 发布准备（2026-10-25）
+
+- 用户明确授权提交首页建议布局修复并发布新版本，包含提交、推送、feature → develop → main PR 合并、新版本标签与云端发布。远端最新已发布为 v0.3.0，无开放 PR、无 v0.4.0 标签；当前 feature 基于最新 origin/develop `ae9a57b`，develop 比 main 多 32 个提交，包含 A0–A6 Agent 架构能力。
+- 首页修复提交 `e35dfaa`；连同 V1 遗留迁移 `fae6fcf` 纳入本次发布。版本选择 0.4.0，以覆盖尚未发布的 Agent 权限、委派、文件、MCP、日历与并发能力；根包、桌面包及 README 统一版本，CHANGELOG 列明范围与实机验证限制。
+- 另一项写作组件设计的 memory/design.md 段落及两份新 JSON 保留在工作区，不纳入提交或发布。不移动旧标签、不覆盖旧 Release。最终验证与云端结果在本轮完成后补记。
+
 ## 首页快捷建议布局修复（2026-10-25）
 
 - 在 `feature/ui-v1-legacy-migration`、`fae6fcf` 后修复用户截图指出的首页标题与快捷建议分离问题；只改 ChatPage 内容布局、pages.css 建议组宽度/对齐，并清理 agent.css 的旧按钮规则。没有改 Button 组件或业务点击行为。
