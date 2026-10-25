@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 
-test('a replying conversation queues follow-ups while another conversation replies too', async () => {
+test('mid-reply messages steer by default; in queue mode they wait, can be steered once, and do not block other conversations', async () => {
   const held: { prompt: string; finish: (text: string) => void }[] = [];
   const server = createServer(async (req, res) => {
     const chunks = [];
@@ -45,6 +45,28 @@ test('a replying conversation queues follow-ups while another conversation repli
     const input = page.getByLabel('消息', { exact: true });
     const messages = page.locator('[data-testid="chat-message"]');
 
+    // Default: a message sent mid-reply steers the reply at its next step.
+    await input.fill('乙的问题');
+    await page.getByRole('button', { name: '发送消息' }).click();
+    await expect(page.getByRole('button', { name: '停止回复' })).toBeVisible();
+    await input.fill('乙的引导');
+    await page.getByRole('button', { name: '引导回复' }).click();
+    await expect(messages.last()).toHaveAttribute('data-status', 'queued');
+    await expect(messages.last()).toContainText('将在当前步骤结束后引导回复');
+    await reply('乙的问题', '乙的回答');
+    await reply('乙的引导', '乙的新回答');
+    await expect(messages).toHaveCount(4);
+    await expect(messages.nth(1)).toContainText('乙的回答');
+    await expect(messages.nth(2)).toContainText('已引导当前回复');
+    await expect(messages.nth(3)).toContainText('乙的新回答');
+
+    // Switch to queueing in General settings.
+    await page.getByRole('button', { name: '设置', exact: true }).click();
+    await page.getByRole('combobox', { name: '回复中发送消息' }).selectOption('queue');
+    await expect(page.getByRole('status').filter({ hasText: /^已保存$/ })).toBeVisible();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
+    await page.getByRole('button', { name: '新对话', exact: true }).click();
+
     await input.fill('甲的问题');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(page.getByRole('button', { name: '停止回复' })).toBeVisible();
@@ -52,23 +74,33 @@ test('a replying conversation queues follow-ups while another conversation repli
     await page.getByRole('button', { name: '排队发送' }).click();
     await expect(messages.last()).toHaveAttribute('data-status', 'queued');
     await expect(messages.last()).toContainText('排队中，当前回复结束后发送');
-    await expect(page.getByRole('button', { name: '停止回复' })).toBeVisible();
+    await input.fill('甲的再问');
+    await page.getByRole('button', { name: '排队发送' }).click();
+    await expect(messages).toHaveCount(4);
 
     // A second conversation is not blocked by the first one replying.
     await page.getByRole('button', { name: '新对话', exact: true }).click();
-    await input.fill('乙的问题');
+    await input.fill('丙的问题');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect.poll(() => held.length).toBe(2);
-    await reply('乙的问题', '乙的回答');
-    await expect(messages.last()).toContainText('乙的回答');
+    await reply('丙的问题', '丙的回答');
+    await expect(messages.last()).toContainText('丙的回答');
 
+    // The first queued message is steered in by hand; the second keeps waiting.
     await page.getByRole('button', { name: '打开对话：甲的问题' }).click();
+    await messages.nth(2).getByRole('button', { name: '引导' }).click();
+    await expect(messages.nth(2)).toContainText('将在当前步骤结束后引导回复');
+    await expect(messages.nth(3)).toContainText('排队中，当前回复结束后发送');
+    await page.screenshot({ path: test.info().outputPath('steer-queue.png') });
     await reply('甲的问题', '甲的回答');
     await reply('甲的追问', '追问的回答');
-    await expect(messages).toHaveCount(4);
+    await reply('甲的再问', '再问的回答');
+    await expect(messages).toHaveCount(6);
     await expect(messages.nth(1)).toContainText('甲的回答');
-    await expect(messages.nth(2)).toHaveAttribute('data-status', 'succeeded');
+    await expect(messages.nth(2)).toContainText('已引导当前回复');
     await expect(messages.nth(3)).toContainText('追问的回答');
+    await expect(messages.nth(4)).toHaveAttribute('data-status', 'succeeded');
+    await expect(messages.nth(5)).toContainText('再问的回答');
     await expect(page.getByRole('button', { name: '发送消息' })).toBeVisible();
   } finally {
     for (const h of held.splice(0)) h.finish('');

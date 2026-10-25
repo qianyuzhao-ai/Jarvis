@@ -9,7 +9,7 @@ import type { SkillInfo } from './agent-skills';
 import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
 import type { UndoRequest } from './agent-ledger';
 import { resultCardSchema } from './agent-cards';
-import type { AgentSettings } from './agent-settings';
+import type { AgentSettings, ReplyMode } from './agent-settings';
 import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import {
@@ -127,6 +127,8 @@ export const chatMessageSchema = z.object({
     .max(100)
     .optional(),
   relay: relaySourceSchema.optional(),
+  /** A message handed to a running reply: `queued` until delivered at the reply's next step. */
+  steer: z.boolean().optional(),
 });
 /** v1 record: metadata and messages in one object, as stored in `index.json` version 1. */
 export const chatSessionSchema = z.object({
@@ -178,6 +180,8 @@ export interface AgentSnapshot {
   models?: ModelSettingsView;
   /** Metadata only; a conversation's messages come from `getSession` and session events. */
   sessions: ChatSessionMeta[];
+  /** What sending during a reply does; see the General settings. */
+  replyMode?: ReplyMode;
   /** Conversations with a round in progress; several may reply at once. */
   runs: Record<string, RunState>;
   /**
@@ -195,6 +199,8 @@ export interface SessionEvent {
   seq: number;
   sessionId: string;
   messages: ChatMessage[];
+  /** Every message ID in order, sent when messages moved (a steering message was delivered). */
+  order?: string[];
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface AgentBridge {
@@ -205,6 +211,9 @@ export interface AgentBridge {
   getSettings(): Promise<AgentResult<AgentSettings>>;
   /** 1–6 model requests streaming at once across all conversations. */
   setConcurrency(value: number): Promise<AgentResult<AgentSettings>>;
+  setReplyMode(value: ReplyMode): Promise<AgentResult<AgentSettings>>;
+  /** Hands a queued message to the running reply now instead of after it. */
+  steer(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
   /** One conversation with its messages, as of `seq`. */
   getSession(sessionId: string): Promise<AgentResult<{ seq: number; session: ChatSession }>>;
   onSessionEvent(listener: (event: SessionEvent) => void): () => void;

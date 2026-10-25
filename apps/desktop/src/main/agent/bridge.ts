@@ -19,7 +19,7 @@ import { AgentStore } from './store';
 import { canvasReplySchema } from '../../shared/canvas-agent';
 import { approvalResponseSchema } from '../../shared/agent-approval';
 import { undoRequestSchema } from '../../shared/agent-ledger';
-import { concurrencySchema } from '../../shared/agent-settings';
+import { concurrencySchema, replyModeSchema } from '../../shared/agent-settings';
 import { openTargetsSchema } from '../../shared/agent-targets';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
@@ -136,6 +136,11 @@ export async function registerAgent() {
     'agent:snapshot': () => service.snapshot(),
     'agent:settings': () => service.settings.get(),
     'agent:set-concurrency': (r) => service.setConcurrency(concurrencySchema.parse(r)),
+    'agent:set-reply-mode': (r) => service.setReplyMode(replyModeSchema.parse(r)),
+    'agent:steer': (r, owner) => {
+      const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
+      return service.steer(v.sessionId, v.messageId, owner);
+    },
     'agent:session': (r) => service.session(agentId.parse(r)),
     'agent:create': () => service.create(),
     'agent:create-canvas': (r) => service.create(agentId.parse(r)),

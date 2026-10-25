@@ -2,6 +2,13 @@
 
 最后更新：2026-10-25
 
+## Agent 插话（引导）设置（2026-10-25）
+
+- 用户决定（2026-10-25）：插话放进设置；默认“回复中再次发送 = 引导当前回复”，可改为“排队”；排队模式下排队中的消息可直接单次引导。
+- 实现：`agent/settings.json` 新增 `whileReplying: 'steer' | 'queue'`（缺省 steer，旧文件按 steer 读取），IPC `agent:set-reply-mode`，快照带 `replyMode`；设置 - 常规在“同时运行的 Agent 数”下新增“回复中发送消息”（引导当前回复 / 排队等待）。引导走 Pi SDK `steer()`：消息先显示 `queued + steer`（“将在当前步骤结束后引导回复”），SDK 在当前步骤结束、下一次模型请求前送达（最终回答流式中也会再请求一次）；送达时（`message_start` 用户消息文本匹配）已写的回复拆成一条完成的回复，引导消息排在其后（“已引导当前回复”），回复在原消息中继续；会话推送新增 `order` 字段，渲染进程按其重排。技能命令（/开头）、回复尚未建立 SDK 会话、或已停止时改为排队；回复结束仍未送达的引导标记为未送达。排队消息显示“引导”按钮，IPC `agent:steer` 把它移出队列交给当前回复（同一窗口或无窗口回复）。输入框在回复中按模式显示“引导回复”或“排队发送”。
+- 测试：新增 `agent-steer.spec`（默认引导：同一轮两次请求、第二次含部分回答与引导消息、消息拆分与 order 推送；排队模式：消息等待、单次引导、重复引导报错、其余排队消息随后发送、无回复时引导报错；设置持久化与旧文件默认 steer）；实窗 `agent-queue.spec` 改为先验证默认引导，再在设置中切到排队，验证排队、单次引导与另一对话不受阻。
+- 验证：check、build 通过；完整实窗 166 例中 164 通过，仅 ui-preview 2 例无 linux 基线（png 已逐个删除）；截图检查通过。
+
 ## Agent 架构改造 A3：生成续跑、跨文档写作与导航（2026-10-25）
 
 - origin/main 无新提交。纯逻辑再下沉 shared：`shared/generation-refs.ts`（numberReferences、submittedPrompt、linkedReferences、validateReferences，渲染进程原模块改为转出）；canvas-graph 的结构类型补 result/url。

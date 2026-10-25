@@ -29,6 +29,10 @@ function applyEvent(view: MessageView, event: SessionEvent): MessageView {
     if (index >= 0) messages[index] = message;
     else messages.push(message);
   }
+  if (event.order) {
+    const position = new Map(event.order.map((id, i) => [id, i]));
+    messages.sort((a, b) => (position.get(a.id) ?? Infinity) - (position.get(b.id) ?? Infinity));
+  }
   return { ...view, seq: event.seq, messages };
 }
 

@@ -43,6 +43,8 @@ const desktop: DesktopInfo = {
     getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
     getSettings: () => ipcRenderer.invoke('agent:settings'),
     setConcurrency: (value) => ipcRenderer.invoke('agent:set-concurrency', value),
+    setReplyMode: (value) => ipcRenderer.invoke('agent:set-reply-mode', value),
+    steer: (input) => ipcRenderer.invoke('agent:steer', input),
     getSession: (id) => ipcRenderer.invoke('agent:session', id),
     onSessionEvent: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);

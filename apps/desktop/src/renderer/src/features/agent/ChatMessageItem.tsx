@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
+import { Button } from '@jarvis/ui/components/Button';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import logo from '../../../../../resources/icon.png';
 import {
@@ -49,6 +50,19 @@ export function ChatMessageItem({
     const timer = setTimeout(() => setCopied(false), 2000);
     return () => clearTimeout(timer);
   }, [copied]);
+  const [steering, setSteering] = useState(false);
+  /** Hands this queued message to the running reply now. */
+  async function steer() {
+    setSteering(true);
+    try {
+      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.agent.steer({ sessionId, messageId: m.id }));
+    } catch (error) {
+      onError(error instanceof Error ? error.message : '引导失败');
+    } finally {
+      setSteering(false);
+    }
+  }
   async function copy() {
     try {
       if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
@@ -132,7 +146,20 @@ export function ChatMessageItem({
         {m.status === 'cancelled' && (
           <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
         )}
-        {m.status === 'queued' && <small>排队中，当前回复结束后发送</small>}
+        {m.status === 'queued' && m.steer && (
+          <small data-testid="chat-steer-status">将在当前步骤结束后引导回复</small>
+        )}
+        {m.status === 'queued' && !m.steer && (
+          <small data-testid="chat-queue-status" className="chat-queued">
+            排队中，当前回复结束后发送
+            <Button variant="secondary" size="xs" disabled={steering} onClick={() => void steer()}>
+              引导
+            </Button>
+          </small>
+        )}
+        {m.status === 'succeeded' && m.steer && (
+          <small data-testid="chat-steer-status">已引导当前回复</small>
+        )}
         {m.error && (
           <div className="chat-message-error">
             <CircleAlert size={14} />

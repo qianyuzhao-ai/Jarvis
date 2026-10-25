@@ -2,6 +2,7 @@ import type { ThemePreference } from './theme';
 import { ToggleGroup, ToggleGroupItem } from '@jarvis/ui/components/ToggleGroup';
 import { DownloadSettings } from './DownloadSettings';
 import { AgentConcurrencySettings } from './AgentConcurrencySettings';
+import { AgentReplyModeSettings } from './AgentReplyModeSettings';
 const choices = [
   ['system', '跟随系统', '跟随系统'],
   ['light', 'Light Mode', 'Light'],
@@ -45,6 +46,7 @@ export function GeneralSettings({
         </ToggleGroup>
       </div>
       <AgentConcurrencySettings />
+      <AgentReplyModeSettings />
       <DownloadSettings />
     </section>
   );

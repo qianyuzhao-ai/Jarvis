@@ -47,6 +47,7 @@ import type { Approver } from './kernel/policy';
 import type { ToolContext } from './kernel/capability';
 import { Scheduler } from './kernel/scheduler';
 import { AgentSettingsStore } from './settings';
+import type { ReplyMode } from '../../shared/agent-settings';
 import { AgentBus } from './kernel/bus';
 import { reportPack } from './packs/report';
 import { UNFINISHED_CARD_STATES, type ResultCard } from '../../shared/agent-cards';
@@ -83,6 +84,8 @@ type Run = {
   quiet?: boolean;
   sdk?: AgentSession;
   done?: Promise<void>;
+  /** Messages handed to this reply that it has not taken in yet, with the text the model gets. */
+  steers: { user: ChatMessage; text: string }[];
 };
 /** A message sent while its conversation was replying; it starts when the reply ends. */
 type Pending = {
@@ -137,6 +140,8 @@ export class AgentService {
   onSessionChange: (event: SessionEvent) => void = () => {};
   /** Messages changed since the last session push, by conversation. */
   private dirty = new Map<string, Set<string>>();
+  /** Conversations whose messages moved since the last push; the push carries their order. */
+  private reordered = new Set<string>();
   constructor(
     readonly config: ModelStore,
     readonly store: AgentStore,
@@ -162,6 +167,7 @@ export class AgentService {
       snapshot: {
         skills: this.skills.list(),
         models: this.config.view(),
+        replyMode: this.settings.get().whileReplying,
         sessions: structuredClone(this.store.records.map((r) => this.store.meta(r.view))),
         runs: this.runStates(),
         currentSegmentId: this.currentSegment(),
@@ -197,6 +203,11 @@ export class AgentService {
    * Changes how many model requests may stream at once. Requests already streaming finish; new
    * ones follow the new limit.
    */
+  async setReplyMode(whileReplying: ReplyMode) {
+    const settings = await this.settings.update({ whileReplying });
+    this.emit();
+    return settings;
+  }
   async setConcurrency(concurrency: number) {
     const settings = await this.settings.update({ concurrency });
     this.scheduler.setLimit(settings.concurrency);
@@ -217,14 +228,21 @@ export class AgentService {
     clearTimeout(this.timer);
     this.timer = undefined;
     const dirty = this.dirty;
+    const reordered = this.reordered;
     this.dirty = new Map();
+    this.reordered = new Set();
     for (const [sessionId, ids] of dirty) {
       const record = this.store.records.find((r) => r.view.id === sessionId);
       if (!record) continue;
       const messages = record.view.messages.filter((m) => ids.has(m.id));
       if (!messages.length) continue;
       this.seq++;
-      this.onSessionChange({ seq: this.seq, sessionId, messages: structuredClone(messages) });
+      this.onSessionChange({
+        seq: this.seq,
+        sessionId,
+        messages: structuredClone(messages),
+        ...(reordered.has(sessionId) ? { order: record.view.messages.map((m) => m.id) } : {}),
+      });
     }
   }
   importSkill(directory: string) {
@@ -531,7 +549,23 @@ export class AgentService {
           time,
           preview,
         }));
-      const pending: Pending = { runId: randomUUID(), owner, user, text, canvas, images, writing };
+      const running = this.runs.get(id);
+      // While replying: steer the reply (the default) unless the user asked for queueing, the
+      // message is a skill command (it needs a fresh round) or the reply cannot take input yet.
+      const steering =
+        !!running?.sdk &&
+        !running.cancelled &&
+        !text.startsWith('/') &&
+        this.settings.get().whileReplying === 'steer';
+      const pending: Pending = {
+        runId: steering && running ? running.id : randomUUID(),
+        owner,
+        user,
+        text,
+        canvas,
+        images,
+        writing,
+      };
       this.store.requests.push({
         id: requestId,
         runId: pending.runId,
@@ -540,13 +574,95 @@ export class AgentService {
         inputHash,
       });
       try {
-        await this.enqueue(id, pending, skills);
+        if (steering && running) await this.steerNow(running, pending);
+        else await this.enqueue(id, pending, skills);
       } catch (error) {
         this.store.requests.pop();
         throw error;
       }
       return pending.runId;
     });
+  }
+  /** Hands a message to a running reply; it shows as waiting until the reply takes it in. */
+  private async steerNow(run: Run, pending: Pending) {
+    const record = this.store.record(run.sessionId);
+    const { user } = pending;
+    user.status = 'queued';
+    user.steer = true;
+    if (!record.view.messages.includes(user)) {
+      record.view.messages.push(user);
+      try {
+        await this.store.save(run.sessionId);
+      } catch (error) {
+        record.view.messages.pop();
+        throw error;
+      }
+    }
+    const text = pending.prompt ?? pending.text;
+    run.steers.push({ user, text });
+    try {
+      await run.sdk?.steer(
+        text,
+        pending.images.map(({ data, mimeType }) => ({ type: 'image' as const, data, mimeType })),
+      );
+    } catch (error) {
+      run.steers = run.steers.filter((s) => s.user !== user);
+      user.status = 'failed';
+      user.error = '引导失败，请等待当前回复结束后重新发送';
+      this.changed(run.sessionId, user.id);
+      this.emit();
+      throw error;
+    }
+    this.changed(run.sessionId, user.id);
+    this.emit();
+  }
+  /** Steers the running reply with a message that was queued behind it. */
+  steer(sessionId: string, messageId: string, owner?: number) {
+    return this.exclusive(async () => {
+      const run = this.runs.get(sessionId);
+      if (!run?.sdk || run.cancelled) throw new Error('这个对话当前没有可以引导的回复');
+      if (owner !== undefined && run.owner !== owner && run.owner !== NO_WINDOW)
+        throw new Error('不能引导其他窗口的回复');
+      const queue = this.queues.get(sessionId) ?? [];
+      const index = queue.findIndex((p) => p.user.id === messageId);
+      const pending = queue[index];
+      if (!pending) throw new Error('这条消息已发送或不在排队中');
+      if ((pending.prompt ?? pending.text).startsWith('/'))
+        throw new Error('技能命令需要单独一轮，不能用于引导，请等待当前回复结束');
+      queue.splice(index, 1);
+      await this.steerNow(run, pending);
+    });
+  }
+  /**
+   * The reply took in a steering message: what it wrote so far becomes a finished reply, the
+   * message follows it, and the reply continues in the same live message after that.
+   */
+  private deliverSteer(sessionId: string, output: ChatMessage, user: ChatMessage) {
+    const messages = this.store.record(sessionId).view.messages;
+    const at = messages.indexOf(output);
+    if (at < 0) return;
+    const ids = [user.id, output.id];
+    let insert = at;
+    if (output.text || output.activities?.length) {
+      const part: ChatMessage = {
+        ...structuredClone(output),
+        id: randomUUID(),
+        status: 'succeeded',
+        completedAt: Date.now(),
+      };
+      delete part.error;
+      messages.splice(at, 1, part);
+      ids.push(part.id);
+      output.text = '';
+      delete output.activities;
+      insert = at + 1;
+    } else messages.splice(at, 1);
+    const from = messages.indexOf(user);
+    if (from >= 0) messages.splice(from, 1);
+    user.status = 'succeeded';
+    messages.splice(insert, 0, user, output);
+    this.reordered.add(sessionId);
+    this.changed(sessionId, ...ids);
   }
   /** Starts a round, or queues the message behind the round the conversation is replying in. */
   private async enqueue(id: string, pending: Pending, skills = this.skills.snapshot()) {
@@ -904,7 +1020,13 @@ export class AgentService {
         source: record.view.card?.source ?? 'auto',
         updatedAt: Date.now(),
       };
-    const run: Run = { id: pending.runId, sessionId: id, owner: pending.owner, cancelled: false };
+    const run: Run = {
+      id: pending.runId,
+      sessionId: id,
+      owner: pending.owner,
+      cancelled: false,
+      steers: [],
+    };
     this.runs.set(id, run);
     try {
       await this.store.save(id);
@@ -1117,6 +1239,16 @@ export class AgentService {
       let compaction: NonNullable<ChatMessage['activities']>[number] | undefined;
       stop = runtime.session.subscribe((event) => {
         if (run.cancelled) return;
+        if (event.type === 'message_start' && event.message.role === 'user' && run.steers.length) {
+          const content = event.message.content;
+          const said =
+            typeof content === 'string'
+              ? content
+              : content.map((c) => (c.type === 'text' ? c.text : '')).join('');
+          const index = run.steers.findIndex((s) => s.text === said);
+          const steer = run.steers.splice(index, index < 0 ? 0 : 1)[0];
+          if (steer) this.deliverSteer(run.sessionId, output, steer.user);
+        }
         if (event.type === 'compaction_start') {
           compaction = { id: randomUUID(), label: '正在压缩较早的对话内容…', files: [] };
           output.activities = [...(output.activities ?? []), compaction];
@@ -1174,6 +1306,11 @@ export class AgentService {
       output.error ??= '模型连接失败或回复中断，请检查模型服务后重新发送';
     } finally {
       output.completedAt = Date.now();
+      for (const { user } of run.steers.splice(0)) {
+        user.status = 'cancelled';
+        user.error = '回复已结束，这条引导未送达';
+        this.changed(run.sessionId, user.id);
+      }
       clearTimeout(timeout);
       clearInterval(checkpoint);
       stop?.();
