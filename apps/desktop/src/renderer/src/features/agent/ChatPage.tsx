@@ -162,8 +162,8 @@ export function ChatPage({
                     }}
                   >
                     <FileText size={16} />
-                    {s}
-                    <ArrowUp size={14} />
+                    <span className="flex-1 text-left">{s}</span>
+                    <ArrowUp size={14} className="rotate-90 text-fg-secondary" />
                   </Button>
                 ))}
               </div>

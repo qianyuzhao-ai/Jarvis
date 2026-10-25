@@ -21,8 +21,16 @@
     color: var(--color-fg-secondary);
   }
   .window-shell .chat-suggestions {
+    width: min(100%, 320px);
+    margin-inline: auto;
     margin-top: 24px;
     text-align: left;
+  }
+  .window-shell .chat-suggestions small {
+    padding-inline: 8px;
+  }
+  .window-shell .chat-suggestions .ui-button-content {
+    width: 100%;
   }
   .window-shell .agent-composer {
     gap: 0;

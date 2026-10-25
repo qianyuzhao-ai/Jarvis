@@ -287,25 +287,6 @@
     color: var(--color-fg-secondary);
     margin-bottom: 4px;
   }
-  .chat-suggestions button {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 38px;
-    padding: 4px 12px;
-    border: 0;
-    border-radius: 8px;
-    background: none;
-    text-align: left;
-  }
-  .chat-suggestions button > svg:last-child {
-    margin-left: auto;
-    color: var(--color-fg-secondary);
-    transform: rotate(90deg);
-  }
-  .chat-suggestions button:hover {
-    background: var(--color-fill);
-  }
   .chat-latest {
     position: absolute;
     bottom: calc(100% + 8px);

@@ -118,6 +118,49 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByRole('button', { name: '新对话', exact: true }).click();
+    const suggestions = page.locator('.chat-suggestions');
+    await expect(suggestions.getByRole('button')).toHaveCount(3);
+    const originalTheme = await page.locator('html').getAttribute('data-theme');
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate((value) => {
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      for (const width of [1280, 900]) {
+        await app.evaluate(
+          ({ BrowserWindow }, value) => BrowserWindow.getAllWindows()[0]?.setSize(value, 820),
+          width,
+        );
+        await expect
+          .poll(() =>
+            suggestions.evaluate((group) => {
+              const box = group.getBoundingClientRect();
+              const welcome = group.parentElement!.getBoundingClientRect();
+              const title = group.querySelector('small')!;
+              const titleStart =
+                title.getBoundingClientRect().left +
+                parseFloat(getComputedStyle(title).paddingLeft);
+              const icons = Array.from(
+                group.querySelectorAll('button .ui-button-content > svg:first-child'),
+              );
+              return (
+                box.width <= 320 &&
+                Math.abs(box.left + box.width / 2 - welcome.left - welcome.width / 2) < 1 &&
+                icons.length === 3 &&
+                icons.every((icon) => Math.abs(icon.getBoundingClientRect().left - titleStart) < 1)
+              );
+            }),
+          )
+          .toBe(true);
+        await page.screenshot({
+          path: test.info().outputPath(`chat-suggestions-${theme}-${width}.png`),
+          animations: 'disabled',
+        });
+      }
+    }
+    await page.evaluate((value) => {
+      if (value) document.documentElement.dataset.theme = value;
+    }, originalTheme);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     const messageInput = page.getByLabel('消息', { exact: true });
     const dockGap = () =>
       page.evaluate(() => {
