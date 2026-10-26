@@ -1,4 +1,11 @@
 import { NodeActionsContext } from './node-actions-context';
+import {
+  captureNodes,
+  editingText,
+  pasteNodes,
+  readCanvasCopy,
+  storeCanvasCopy,
+} from './canvas-clipboard';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { createPortal } from 'react-dom';
 import { Alert } from '@jarvis/ui/components/Alert';
@@ -371,6 +378,30 @@ function CanvasContent({
       };
     });
   }
+  function paste(snapshot: ReturnType<typeof captureNodes>) {
+    if (!snapshot.nodes.length) return;
+    const copied = pasteNodes(project, snapshot);
+    if (
+      project.nodes.length + copied.nodes.length > 2000 ||
+      project.edges.length + copied.edges.length > 10000
+    ) {
+      setConnectionNotice('复制后将超出画布上限（2000 个节点 / 10000 条连线），未粘贴');
+      return;
+    }
+    onChange((p) => ({
+      ...p,
+      nodes: [...p.nodes, ...copied.nodes],
+      edges: [...p.edges, ...copied.edges],
+    }));
+    setSelectedIds(copied.ids);
+    setEditorId(null);
+    setSelectedEdge(null);
+    setConnectingIds(null);
+    setConnectionNotice(
+      copied.missingEdges ? '已粘贴节点；原上游不在当前画布中，未保留相关连线' : '',
+    );
+    container.current?.focus({ preventScroll: true });
+  }
   function edgeChanges(items: EdgeChange<CanvasEdge>[]) {
     for (const change of items)
       if (change.type === 'select' && !store.getState().userSelectionRect) {
@@ -437,6 +468,7 @@ function CanvasContent({
       value={{
         measure,
         generate: onGenerate,
+        duplicate: (id) => paste(captureNodes(project, [id])),
         details: (id) => {
           setSelectedIds([id]);
           setEditorId(id);
@@ -509,6 +541,29 @@ function CanvasContent({
             data-testid="canvas-body"
             className="canvas-body"
             ref={container}
+            tabIndex={-1}
+            onPointerDownCapture={(e) => {
+              if (
+                e.target instanceof Element &&
+                e.target.closest('.react-flow__pane, .react-flow__node') &&
+                !editingText(e.target)
+              )
+                container.current?.focus({ preventScroll: true });
+            }}
+            onCopy={(e) => {
+              if (!shell.active || editingText(e.target) || !selectedIds.length) return;
+              const snapshot = captureNodes(project, selectedIds);
+              if (!snapshot.nodes.length) return;
+              e.preventDefault();
+              e.clipboardData.setData('text/plain', storeCanvasCopy(snapshot));
+            }}
+            onPaste={(e) => {
+              if (!shell.active || editingText(e.target)) return;
+              const snapshot = readCanvasCopy(e.clipboardData.getData('text/plain'));
+              if (!snapshot) return;
+              e.preventDefault();
+              paste(snapshot);
+            }}
             onDragEnter={(e) => {
               if (!e.dataTransfer.types.includes('Files')) return;
               e.preventDefault();
