@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## 左侧空间导航选中态恢复（2026-10-26）
+
+- 用户反馈左侧首页/AIGC/写作/日历/设置按钮在当前页面时没有选中高亮。原因：`Toggle` 外包 `Tooltip`（Radix asChild）时 `data-state` 被改写为提示状态 `closed`，`.ui-toggle[data-state='on']` 永不命中；标题栏右侧助手开关同样受影响。
+- 修复：`packages/ui/src/styles/base.css` 中 `.ui-toggle` 的开启态选择器改为 `[aria-pressed='true']`（Radix Toggle 自带，Tooltip 不改写）；`ui-toggle-item` 不变。选中态沿用 `--color-selection` 背景 + `--color-accent` 图标色。
+- 验证：check/build 通过；smoke/ui-preview/window-shell/sidebar 17 项中 16 通过，sidebar 尺寸动画 1 项首轮失败，单独重跑及 repeat-each 3 共 6/6 通过（时序波动，未改断言）；smoke 新增当前空间按钮有背景、其他透明的断言；深色真实窗口截图确认写作空间按钮高亮。
+
 ## 窗口标签高度 32px（2026-10-26）
 
 - 用户要求顶部 Tab 标签总高改为 32px（原 28px）。改 `packages/ui/src/styles/base.css` 的 `.ui-window-tab` 高度；44px 标题栏中上下各留 6px 居中。本轮未修改 Figma。

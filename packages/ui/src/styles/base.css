@@ -363,12 +363,13 @@
   .ui-toggle-item:hover {
     background: var(--color-fill);
   }
-  .ui-toggle[data-state='on'],
+  /* Tooltip 包裹时 data-state 会被改写为提示状态，开关态以 aria-pressed 为准。 */
+  .ui-toggle[aria-pressed='true'],
   .ui-toggle-item[data-variant='default'][data-state='on'] {
     background: var(--color-selection);
     color: var(--color-accent);
   }
-  .ui-toggle[data-variant='outline'][data-state='on'] {
+  .ui-toggle[data-variant='outline'][aria-pressed='true'] {
     border: var(--border-standard) solid var(--color-accent);
   }
   .ui-toggle-item {
@@ -387,7 +388,7 @@
     border-color: transparent;
     background: transparent;
   }
-  .ui-toggle:disabled[data-state='on'],
+  .ui-toggle:disabled[aria-pressed='true'],
   .ui-toggle-item:disabled[data-state='on'] {
     background: var(--color-fill);
   }
@@ -397,7 +398,7 @@
     color: var(--color-fg-disabled);
     box-shadow: none;
   }
-  .ui-toggle[data-variant='outline']:disabled[data-state='on'] {
+  .ui-toggle[data-variant='outline']:disabled[aria-pressed='true'] {
     background: var(--color-fill);
   }
   .ui-toggle svg,

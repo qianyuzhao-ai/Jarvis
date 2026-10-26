@@ -23,6 +23,15 @@ test('desktop navigation and isolation', async () => {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await expect(page.getByRole('heading', { name: '我的画布' })).toBeVisible();
+    const rail = page.getByRole('navigation', { name: '空间导航' });
+    await expect(rail.getByRole('button', { name: 'AIGC 创作空间' })).not.toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)',
+    );
+    await expect(rail.getByRole('button', { name: '首页' })).toHaveCSS(
+      'background-color',
+      'rgba(0, 0, 0, 0)',
+    );
     const renderer = await page.evaluate(() => ({
       bridge: window.desktop,
       require: 'require' in window,
