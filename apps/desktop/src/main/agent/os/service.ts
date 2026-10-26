@@ -729,7 +729,6 @@ export class AgentOs {
     if (!modelId) throw new Error('请先在设置中添加一个模型');
     // A removed model fails here rather than after the message is recorded.
     const model = this.config.resolve(modelId);
-    if (session.kind === 'thread') this.reopen(session);
     const message: OsMessage = {
       id: randomUUID(),
       role: 'user',
@@ -760,8 +759,10 @@ export class AgentOs {
           ...(time === undefined ? {} : { time }),
           preview,
         }));
-      this.canvasInput.set(message.id, canvas);
     }
+    // Only a message that passed its checks reopens a resolved thread.
+    if (session.kind === 'thread') this.reopen(session);
+    if (canvas) this.canvasInput.set(message.id, canvas);
     await this.deliver(session, {
       reason: 'user_message',
       trust: 'principal',
