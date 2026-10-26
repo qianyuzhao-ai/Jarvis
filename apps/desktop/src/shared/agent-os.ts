@@ -406,9 +406,16 @@ export const spaceThreadSchema = z
     canvas: canvasContextSchema.optional(),
   })
   .strict();
+/** OTHER_ANSWER as the option: the user wrote their own answer instead of picking one. */
+export const OTHER_ANSWER = -1;
 export const decisionAnswerSchema = z
-  .object({ decisionId: osId, option: z.number().int().min(0).max(3) })
-  .strict();
+  .object({
+    decisionId: osId,
+    option: z.number().int().min(OTHER_ANSWER).max(3),
+    text: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict()
+  .refine((v) => (v.option === OTHER_ANSWER) === !!v.text, '自己写的答案不能为空');
 
 export type OsResult<T> = { ok: true; value: T } | { ok: false; error: string };
 /** The renderer's Agent OS interface; settings-only calls stay on `desktop.agent`. */

@@ -876,15 +876,16 @@ export class AgentOs {
    * The user's answer on a decision card. Only this IPC path answers cards: an approval is a
    * single-use grant for one exact tool call, and the thread is woken with the answer.
    */
-  answerDecision(decisionId: string, option: number) {
+  /** Answers a card with one of its options, or a question with the user's own `text`. */
+  answerDecision(decisionId: string, option: number, text?: string) {
     return this.exclusive(async () => {
       this.guard();
       const runtime = this.registry.list().find((r) => r.decisions.get(decisionId));
       if (!runtime) throw new Error('这张决策卡已失效');
-      const decision = await runtime.decisions.answer(decisionId, option);
+      const decision = await runtime.decisions.answer(decisionId, option, text);
       const session = this.sessionOf(decision.threadId);
       const thread = runtime.thread(decision.threadId);
-      const label = decision.options[option]?.label ?? '';
+      const label = text ? `其他：${text}` : (decision.options[option]?.label ?? '');
       const message: OsMessage = {
         id: randomUUID(),
         role: 'user',
@@ -923,7 +924,6 @@ export class AgentOs {
       });
     });
   }
-  /** Undoes one round's file changes from their snapshots, latest first. */
   /**
    * Undoes a round's reversible change: local files from their snapshots, a canvas edit with its
    * inverse ops while the canvas is unchanged since, an open document's edit in its editor, and a

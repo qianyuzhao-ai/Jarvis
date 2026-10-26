@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { useWritingGraph } from './graph/use-writing-graph';
+import { ResonanceCards } from './graph/ResonanceCards';
+import { useSpaceThread } from '../agent/use-space-thread';
 import { Backlinks } from './graph/Backlinks';
 const GraphView = lazy(() => import('./graph/GraphView'));
 import { Tabs, TabsList, TabsTrigger } from '@jarvis/ui/components/Tabs';
@@ -167,7 +169,13 @@ export function WritingSpace({
   }, [writing.documents]);
   const writingHost = useWritingHost(writing, view, editorCache);
   const active = writing.documents.find((d) => d.id === writing.activeId);
-  const graph = useWritingGraph(writing.root?.id, active, writing.documents);
+  // The active Markdown document's thread: the sidebar talks to it, the graph asks it for resonance.
+  const documentThread = useSpaceThread(
+    active && active.fileType !== 'text' && isWritingText(active.path)
+      ? { kind: 'document', rootId: active.rootId, path: active.path }
+      : null,
+  );
+  const graph = useWritingGraph(writing.root?.id, active, writing.documents, documentThread);
   function expandGraph() {
     restoreAssistant.current = shell.rightOpen;
     setPanorama(true);
@@ -759,6 +767,17 @@ export function WritingSpace({
               <WritingAgentSidebar
                 key={active.id}
                 document={active}
+                space={documentThread}
+                after={
+                  graph.candidates.length ? (
+                    <ResonanceCards
+                      workspace={graph}
+                      rootId={active.rootId}
+                      path={active.path}
+                      onOpen={graphProps.onOpen}
+                    />
+                  ) : undefined
+                }
                 host={writingHost}
                 selectedParagraphs={selectedParagraphs}
                 configure={shell.configure}

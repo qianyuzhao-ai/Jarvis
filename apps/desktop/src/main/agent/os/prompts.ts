@@ -146,6 +146,8 @@ export const envelope = {
   decision: (decision: Decision) => {
     const option = decision.options[decision.answer?.option ?? -1];
     const approved = decision.tool && decision.answer?.option === 0;
+    if (decision.answer?.text)
+      return `[唤醒 · 决策结果 · trust=principal：用户本人在决策卡上的回答]\n决策卡 ${decision.id}「${decision.question}」：用户没有选给出的选项，而是自己写了答案：\n<user_answer trust="principal">\n${decision.answer.text}\n</user_answer>\n按这个答案继续；之前按推荐项做的可逆部分如与答案不符，请调整。答案不清楚时可以再发一张决策卡确认。`;
     return `[唤醒 · 决策结果 · trust=principal：用户本人在决策卡上的选择]\n决策卡 ${decision.id}「${decision.question}」：用户选择了「${option?.label ?? '?'}」。${
       decision.tool
         ? approved

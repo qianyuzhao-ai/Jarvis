@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from '@jarvis/ui/components/Toast';
 import type { WritingGraph, WritingLinkRequest } from '../../../../../shared/writing-graph';
 import type { DocumentSession } from '../useWriting';
-import type { OsMessage } from '../../../../../shared/agent-os';
+import type { useSpaceThread } from '../../agent/use-space-thread';
 
 export function useWritingGraph(
   rootId: string | undefined,
   active: DocumentSession | undefined,
   documents: DocumentSession[],
+  thread: ReturnType<typeof useSpaceThread>,
 ) {
   const [graph, setGraph] = useState<WritingGraph | null>(null);
   const [error, setError] = useState(''),
@@ -29,16 +30,8 @@ export function useWritingGraph(
   rootRef.current = rootId;
   const generation = useRef(0),
     pending = useRef(false);
-  // Resonance comes from the document's writing thread, which returns in V1.0.0 batch 2; until
-  // then nothing is searching and the search stays unavailable.
-  const agent = {
-    session: undefined as { messages: OsMessage[] } | undefined,
-    error: '',
-    setError: (_value: string) => {},
-    loading: false,
-    scopeBusy: true,
-    send: async (_text: string) => false,
-  };
+  // Resonance comes from the active document's thread; searching is one of its rounds.
+  const agent = { ...thread, scopeBusy: thread.busy };
   const scopeKey = active?.id ?? '';
   const refresh = useCallback(async () => {
     const api = window.desktop?.writing;

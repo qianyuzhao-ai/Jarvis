@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Badge, StatusDot } from '@jarvis/ui/components/Badge';
 import { Button } from '@jarvis/ui/components/Button';
+import { Input } from '@jarvis/ui/components/Input';
 import { Progress } from '@jarvis/ui/components/Progress';
 import { Check, ChevronRight, CircleAlert, Quote, TriangleAlert, Workflow } from '@jarvis/ui/icons';
 import {
+  OTHER_ANSWER,
   osValue,
   type ChecklistItem,
   type CitedMessage,
@@ -15,24 +17,34 @@ import { osBridge } from './use-agent';
 
 /**
  * A decision card. An approval for an irreversible step shows the exact call and needs the
- * user's click here; other cards list their options with one marked as recommended. Nothing
- * expires: unanswered cards wait.
+ * user's click here; other cards list their options with one marked as recommended, and the user
+ * may write their own answer instead. Nothing expires: unanswered cards wait. `compact` is the
+ * sidebar form: the recommendation in one line and the options as buttons.
  */
 export function DecisionCard({
   decision,
   threadTitle,
+  compact = false,
   onError,
 }: {
   decision: Decision;
   threadTitle?: string;
+  compact?: boolean;
   onError: (message: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [other, setOther] = useState('');
   const approval = !!decision.tool || !!decision.budget;
-  async function answer(option: number) {
+  async function answer(option: number, text?: string) {
     setBusy(true);
     try {
-      osValue(await osBridge().answerDecision({ decisionId: decision.id, option }));
+      osValue(
+        await osBridge().answerDecision({
+          decisionId: decision.id,
+          option,
+          ...(text ? { text } : {}),
+        }),
+      );
     } catch (error) {
       onError(error instanceof Error ? error.message : '回答失败');
       setBusy(false);
@@ -40,8 +52,69 @@ export function DecisionCard({
   }
   const order = decision.options
     .map((option, index) => ({ option, index }))
-    .sort(
-      (a, b) => Number(a.index === decision.recommended) - Number(b.index === decision.recommended),
+    .sort((a, b) =>
+      compact
+        ? Number(b.index === decision.recommended) - Number(a.index === decision.recommended)
+        : Number(a.index === decision.recommended) - Number(b.index === decision.recommended),
+    );
+  const recommended = decision.options[decision.recommended];
+  const buttons = order.map(({ option, index }) => (
+    <Button
+      key={option.label}
+      size="sm"
+      variant={index === decision.recommended ? 'default' : 'secondary'}
+      disabled={busy}
+      onClick={() => void answer(index)}
+    >
+      {option.label}
+    </Button>
+  ));
+  const own = !approval && (
+    <form
+      className="os-decision-other"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (other.trim()) void answer(OTHER_ANSWER, other.trim());
+      }}
+    >
+      <Input
+        size="sm"
+        aria-label="其他答案"
+        placeholder="其他答案：写下你自己的选择…"
+        maxLength={500}
+        value={other}
+        disabled={busy}
+        onChange={(e) => setOther(e.target.value)}
+      />
+      <Button type="submit" size="sm" variant="secondary" disabled={busy || !other.trim()}>
+        回答
+      </Button>
+    </form>
+  );
+  if (compact)
+    return (
+      <section
+        data-testid="decision-card"
+        className="os-decision os-decision-compact"
+        data-irreversible={decision.irreversible || undefined}
+        aria-label={`决策：${decision.question}`}
+      >
+        <header className="os-decision-head">
+          {decision.irreversible ? <TriangleAlert size={14} /> : <CircleAlert size={14} />}
+          <strong>{decision.question}</strong>
+          <Badge tone={decision.irreversible ? 'warning' : 'info'}>
+            {decision.irreversible ? '不可逆' : '需要你决定'}
+          </Badge>
+        </header>
+        {decision.tool && <pre className="os-decision-detail">{decision.tool.detail}</pre>}
+        <span className="os-muted">
+          {approval
+            ? '不批准就不会执行；不会超时拒绝。'
+            : `推荐「${recommended?.label ?? ''}」：${recommended?.consequence ?? ''}。等你回答期间先按推荐项准备，不会超时。`}
+        </span>
+        <div className="os-decision-buttons">{buttons}</div>
+        {own}
+      </section>
     );
   return (
     <section
@@ -72,23 +145,14 @@ export function DecisionCard({
           ))}
         </ul>
       )}
+      {own}
       <footer className="os-decision-foot">
         <span className="os-muted">
           {approval
             ? '不批准就不会执行，线程会先做其余部分；不会超时拒绝。'
             : '等你回答期间，线程先按推荐项推进可逆的部分；不会超时，也不会替你决定。'}
         </span>
-        {order.map(({ option, index }) => (
-          <Button
-            key={option.label}
-            size="sm"
-            variant={index === decision.recommended ? 'default' : 'secondary'}
-            disabled={busy}
-            onClick={() => void answer(index)}
-          >
-            {option.label}
-          </Button>
-        ))}
+        {buttons}
       </footer>
     </section>
   );

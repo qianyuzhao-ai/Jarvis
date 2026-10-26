@@ -252,7 +252,7 @@ export async function registerAgent() {
     },
     'os:answer': (r) => {
       const v = decisionAnswerSchema.parse(r);
-      return os.answerDecision(v.decisionId, v.option);
+      return os.answerDecision(v.decisionId, v.option, v.text);
     },
     'os:create-project': (r) => os.createProject(z.string().trim().min(1).max(100).parse(r)),
     'os:update-project': (r) => {

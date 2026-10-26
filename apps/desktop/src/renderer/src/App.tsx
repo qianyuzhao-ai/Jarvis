@@ -35,6 +35,7 @@ import { useOsSnapshot } from './features/agent/use-agent';
 import { AgentTab } from './features/agent/AgentViews';
 import { ProjectSidebar } from './features/agent/ProjectSidebar';
 import { placeExists, placeOf, placeTitle } from './features/agent/os-view';
+import { setThreadOpener } from './features/agent/open-thread';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
 import { useAppUpdates } from './features/updates/use-app-updates';
@@ -240,6 +241,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
     );
   };
   useEffect(() => window.desktop?.os.onOpen((sessionId) => reveal.current(sessionId)), []);
+  useEffect(() => setThreadOpener((sessionId) => reveal.current(sessionId)), []);
   useEffect(() => {
     if (agent.loading) return;
     change((s) => {

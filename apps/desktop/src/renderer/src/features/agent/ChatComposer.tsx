@@ -196,19 +196,22 @@ export function ChatComposer({
           >
             <Plus size={20} />
           </IconButton>
-          <Button
-            className="composer-skills"
-            variant="ghost"
-            size="sm"
-            aria-label="选择技能"
-            onClick={() => {
-              setText('/');
-              setDismissed(null);
-              input.current?.focus();
-            }}
-          >
-            <Sparkles /> 技能
-          </Button>
+          {/* Sidebars are too narrow for it; / still opens the skill list there. */}
+          {!compact && (
+            <Button
+              className="composer-skills"
+              variant="ghost"
+              size="sm"
+              aria-label="选择技能"
+              onClick={() => {
+                setText('/');
+                setDismissed(null);
+                input.current?.focus();
+              }}
+            >
+              <Sparkles /> 技能
+            </Button>
+          )}
           <div className="composer-spacer" />
           <ModelPicker
             settings={agent.configuration}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChatSession } from '../../../../shared/agent';
 import {
   osValue,
+  type CanvasContext,
   type OsEvent,
   type OsMessage,
   type OsSessionEvent,
@@ -97,12 +98,25 @@ export function useOsSnapshot() {
   };
 }
 
+/** Starts a conversation with its first message and returns its session ID (a sidebar thread). */
+export type Starter = (input: {
+  requestId: string;
+  text: string;
+  model?: string;
+  thinkingLevel?: ThinkingLevel;
+  canvas?: CanvasContext;
+}) => Promise<string>;
+
 /**
  * One conversation of the Agent OS: a project's Coordinator or a thread. With no session yet,
  * the first message starts a project (or fills the current one if it has no messages) and
- * `onCreated` receives its Coordinator.
+ * `onCreated` receives its Coordinator; with `start`, the first message starts what it starts.
  */
-export function useAgent(sessionId: string | null, onCreated?: (id: string) => void) {
+export function useAgent(
+  sessionId: string | null,
+  onCreated?: (id: string) => void,
+  start?: Starter,
+) {
   const os = useOsSnapshot();
   const { snapshot, configuration, setError } = os;
   const [draftThinking, setDraftThinking] = useState<ThinkingLevel>();
@@ -185,7 +199,7 @@ export function useAgent(sessionId: string | null, onCreated?: (id: string) => v
       return false;
     }
   }
-  async function send(text: string, model?: string) {
+  async function send(text: string, model?: string, canvas?: CanvasContext) {
     if (sendingRef.current) return false;
     sendingRef.current = true;
     setSending(true);
@@ -193,6 +207,17 @@ export function useAgent(sessionId: string | null, onCreated?: (id: string) => v
     try {
       const bridge = osBridge();
       let id = session?.id;
+      if (!id && start) {
+        const created = await start({
+          requestId: crypto.randomUUID(),
+          text,
+          ...(model ? { model } : {}),
+          ...(draftThinking ? { thinkingLevel: draftThinking } : {}),
+          ...(canvas ? { canvas } : {}),
+        });
+        onCreated?.(created);
+        return true;
+      }
       const title = text.replace(/\s+/g, ' ').slice(0, 36) || '新项目';
       // A project made from the menu takes its name from its first message.
       if (
@@ -230,7 +255,14 @@ export function useAgent(sessionId: string | null, onCreated?: (id: string) => v
             }),
           );
       }
-      osValue(await bridge.send({ sessionId: id, requestId: crypto.randomUUID(), text }));
+      osValue(
+        await bridge.send({
+          sessionId: id,
+          requestId: crypto.randomUUID(),
+          text,
+          ...(canvas ? { canvas } : {}),
+        }),
+      );
       if (!session) onCreated?.(id);
       return true;
     } catch (e) {

@@ -231,6 +231,27 @@
     line-height: 18px;
     color: var(--color-fg-secondary);
   }
+  .os-decision-other {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .os-decision-other > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .os-decision-compact {
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .os-decision-compact .os-decision-head {
+    font-size: 12px;
+  }
+  .os-decision-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
   .os-decision-foot {
     display: flex;
     align-items: center;
@@ -354,5 +375,126 @@
     .os-page-scroll {
       padding-inline: 16px;
     }
+  }
+}
+
+/* Canvas and writing sidebars: the thread bound to the canvas or document. */
+@layer legacy {
+  .space-thread-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 8px 0 16px;
+    flex-shrink: 0;
+  }
+  .space-thread-header > strong {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+  .space-thread-spacer {
+    flex: 1;
+  }
+  .space-thread-bar,
+  .space-thread-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 12px 4px 16px;
+    border-bottom: 1px solid var(--color-separator);
+    flex-shrink: 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-fg-tertiary);
+  }
+  .space-thread-bar > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .space-thread-progress {
+    padding-block: 8px;
+    color: var(--color-fg-secondary);
+    text-align: left;
+    cursor: default;
+  }
+  .space-thread-progress > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .space-thread-progress > svg:first-child {
+    color: var(--color-success);
+    flex-shrink: 0;
+  }
+  .space-thread-progress[aria-expanded='true'] > svg:last-child {
+    transform: rotate(180deg);
+  }
+  .space-thread-progress:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+  .ui-assistant-panel .os-checklist {
+    margin: 8px 16px 0;
+  }
+  .space-thread-scroll {
+    position: relative;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px 16px 24px;
+  }
+  .space-thread-scroll .chat-messages {
+    gap: 20px;
+  }
+  .space-thread-scroll .chat-message.user {
+    max-width: 90%;
+  }
+  .space-thread-latest {
+    position: sticky;
+    bottom: 0;
+    margin: 8px auto 0;
+    display: flex;
+  }
+  .space-thread-history {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px 24px;
+  }
+  .space-thread-history > small {
+    padding: 8px 8px 2px;
+    font-size: 12px;
+    color: var(--color-fg-tertiary);
+  }
+  .space-thread-note {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-panel);
+    background: var(--color-info-subtle);
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-fg-secondary);
+  }
+  .space-thread-note strong {
+    color: var(--color-fg);
+    font-weight: 600;
   }
 }

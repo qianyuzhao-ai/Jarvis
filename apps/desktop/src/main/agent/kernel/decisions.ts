@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { decisionSchema, type Decision } from '../../../shared/agent-os';
+import { decisionSchema, OTHER_ANSWER, type Decision } from '../../../shared/agent-os';
 import { JsonFile, readJson } from '../json-file';
 
 /** An unanswered card is brought up again once after this long, then left alone. */
@@ -100,9 +100,18 @@ export class DecisionStore {
     return true;
   }
   /** The user's answer; the caller must only pass clicks from the user's window. */
-  async answer(id: string, option: number) {
+  /** Answers with one of the options, or with `text` the user wrote (option OTHER_ANSWER). */
+  async answer(id: string, option: number, text?: string) {
     const decision = this.get(id);
     if (!decision || decision.status !== 'open') throw new Error('这张决策卡已处理或已撤回');
+    if (text !== undefined) {
+      // Approvals and budget cards are yes-or-no; only questions take a written answer.
+      if (decision.tool || decision.budget) throw new Error('这张卡片只能批准或拒绝');
+      decision.status = 'answered';
+      decision.answer = { option: OTHER_ANSWER, at: Date.now(), text };
+      await this.save();
+      return decision;
+    }
     if (option < 0 || option >= decision.options.length) throw new Error('没有这个选项');
     decision.status = 'answered';
     decision.answer = { option, at: Date.now() };
