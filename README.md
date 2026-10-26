@@ -4,7 +4,7 @@
 
 当前源码版本：`1.0.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
-v1.0.0 正在准备发布，包含 Agent OS 和写作空间升级。旧版 Agent 对话不迁移，原记录保留在磁盘。
+[v1.0.0 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.0) 已发布，包含 Agent OS 和写作空间升级。macOS arm64/x64 签名公证包与 Windows x64 未签名包均通过云端实际启动，12 个资产已核对。旧版 Agent 对话不迁移，原记录保留在磁盘。
 
 [0.4.0 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.4.0) 已发布：包含 Agent 委派、工具权限与操作撤销、授权文件夹、MCP、日历和并发设置，以及 V1 遗留界面迁移与首页建议布局修复。macOS arm64、Intel x64 和 Windows x64 均通过云端打包应用启动验证；两种 macOS 包通过签名、公证和 Gatekeeper，Windows 安装器未签名。macOS 最低系统目标为 13.0，真实日历授权、13 实机与真实版本升级仍待验收。
 

@@ -3,6 +3,16 @@
 最后更新：2026-10-26
 
 
+## 1.0.0 已发布（2026-10-26）
+
+- [v1.0.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.0) 已于北京时间 2026-10-26 15:50:27 发布，非草稿、沿用预发布设置，12 个资产均 uploaded。注释标签对象 `ab341afb8c2a937df31326e824ecdb7c6022a328` 指向 main 发布合并提交 `2fab5938d915dfb82c8ce45a72147b6bd59d7e84`，未移动旧标签。
+- 唯一发布运行 [40286904283](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40286904283) 首次运行的三个平台与统一发布全部 success；三平台均通过 593 项生产依赖、ASAR 实际启动、新 Agent OS 项目创建/快照、写作与更新桥接、更新清单校验。macOS arm64/x64 通过目录包和 DMG/ZIP 内应用签名、公证票据及 Gatekeeper，Windows x64 未签名。
+- 公证等待期间只读查询 [40287857740](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40287857740) 返回本轮两个提交 Accepted，没有重提公证或重跑构建。
+- 已下载线上 latest-mac.yml/latest.yml，SHA-256 与 GitHub asset digest 一致；版本、引用目标和大小匹配，包含两种 macOS ZIP。实际文件 SHA-512 已在云端验证。中文说明与自动生成记录一并保留；证据目录 `/private/tmp/jarvis-100-release-verification/`。
+- 本地完整回归 204/206（5.9m），日历周视图与原生焦点两项失败保留；其余验证见下方准备记录。真实外部服务、macOS 日历授权/通知、系统版本兼容性与真实升级仍待实机验证，不能把本地回归称为全绿。
+- 本地保持 main/develop 两条长期分支，原有两份未跟踪 Figma JSON 保留。发布后的文档同步不改变标签对应应用源码。
+
+
 ## 1.0.0 发布准备（2026-10-26）
 
 - 用户明确授权发布 v1.0.0。基线 develop `98d3418`，临时分支 `feature/prepare-v1.0.0`；通过 PR 完成版本准备 → develop → main，再在 main 合并提交创建新标签，不移动旧标签。
@@ -10,7 +20,8 @@
 - 发布启动脚本仍检查已移除的 `createWritingSession`。改为检查现有写作命令桥和 Agent OS 桥，并在隔离 profile 实际创建项目、读取快照验证持久服务已接通；保留 ASAR、依赖、版本及更新桥接检查。
 - 两份原有未跟踪 Figma JSON 保留，不纳入发布。沿用 GitHub 预发布、macOS arm64/x64 签名公证、Windows x64 未签名的现有流程。
 - 本地 check/build、版本一致性、发布工具 13 项及 Apple 网络重试测试通过。完整回归 204/206（5.9m），保留日历周视图 0/7 与原生窗口焦点 false 两项既有环境失败，没有跳过或改断言。日志 `/private/tmp/jarvis-100-smoke.log`。
-- 本地 arm64 目录包 `release/ec28cbcc-a3d1-4ef9-a49c-6b08fc972fa8` 通过 593 项生产依赖检查、ASAR 原生启动、Agent OS 项目创建/快照、写作/更新桥接、块编辑保存、Mermaid/思维导图和星图验证。日志 `/private/tmp/jarvis-100-packaged-check.log`。云端签名、公证与发布尚未开始。
+- 本地 arm64 目录包 `release/ec28cbcc-a3d1-4ef9-a49c-6b08fc972fa8` 通过 593 项生产依赖检查、ASAR 原生启动、Agent OS 项目创建/快照、写作/更新桥接、块编辑保存、Mermaid/思维导图和星图验证。日志 `/private/tmp/jarvis-100-packaged-check.log`。云端结果待回读。
+- 版本准备 [PR #93](https://github.com/qianyuzhao-ai/Jarvis/pull/93) 合入 develop `f40ebf5`，发布 [PR #94](https://github.com/qianyuzhao-ai/Jarvis/pull/94) 合入 main `2fab593`；完整源码树一致。新标签 `v1.0.0` 指向该 main 合并提交，运行 [40286904283](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40286904283) 已启动，尚未称发布完成。
 
 ## V1.0.0 Agent OS 第一批（2026-10-26）
 
