@@ -17,6 +17,7 @@ export const ArrowUp = /* @__PURE__ */ icon(Lucide.ArrowUp);
 export const BookOpen = /* @__PURE__ */ icon(Lucide.BookOpen);
 export const Brain = /* @__PURE__ */ icon(Lucide.Brain);
 export const Calendar = /* @__PURE__ */ icon(Lucide.Calendar);
+export const ChartColumn = /* @__PURE__ */ icon(Lucide.ChartColumn);
 export const Check = /* @__PURE__ */ icon(Lucide.Check);
 export const ChevronDown = /* @__PURE__ */ icon(Lucide.ChevronDown);
 export const ChevronLeft = /* @__PURE__ */ icon(Lucide.ChevronLeft);

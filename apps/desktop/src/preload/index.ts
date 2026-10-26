@@ -113,6 +113,7 @@ const desktop: DesktopInfo = {
     removeFolder: (input) => ipcRenderer.invoke('os:remove-folder', input),
     listMemory: (id) => ipcRenderer.invoke('os:memory', id),
     readMemory: (input) => ipcRenderer.invoke('os:memory-topic', input),
+    getUsage: (query) => ipcRenderer.invoke('os:usage', query),
     onNavigate: (listener) => {
       const handle = (_event: Electron.IpcRendererEvent, target: NavigationTarget) =>
         listener(target);

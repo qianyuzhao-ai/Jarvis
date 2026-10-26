@@ -2,7 +2,11 @@
 
 最后更新：2026-10-26
 
-### V1.0.0 设置「用量与统计」评审稿（2026-10-26，待评审）
+### V1.0.0 设置「用量与统计」实现（2026-10-26）
+
+- 用户确认评审稿样式通过，费用用美元，测试 / 探测消耗计入“其他”不单独做卡。已按稿实现 `features/settings/UsageSettings.tsx`；与稿差异：图表在有“其他”消耗时多一段灰色（`fg-tertiary` 50%）与图例；全部无价格时总消耗卡只写“N 个模型无价格”；Y 轴刻度按 1/2/5 取整；30 天视图横轴最多 10 个日期标签；空状态为一行说明框（稿中未画）。实窗截图由 `tests/usage-ui.spec.ts` 生成（浅 / 深）。
+
+### V1.0.0 设置「用量与统计」评审稿（2026-10-26，已通过）
 
 - 用户确认方案（`memory/agent-os-v1.md` 第 7.4 节 S1–S4）并要求先出 Figma。文件 `mIwnyR5nAlECFMam1NvmER`，页「V1-视觉换新」`319:27345` 新增 Section `524:45539`「V1.0.0 · 用量与统计（待评审）」，由 `Settings · Models` 浅 `428:29687` / 深 `431:43867` 复制改造：`Settings · Usage / Light` `524:45540`、`Settings · Usage / Dark` `524:46104`（1440 × 1431，窗口加高以显示整页）。
 - 侧栏在「插件」后加 Sidebar Item「用量与统计」（selected，隐藏 Action），图标为新增组件 `Icon / chart-column` `523:42370`（V1-Components 页 Icon grid，Lucide chart-column，描边 1.75 绑定 `color/fg/default`）；「模型」改回 default。

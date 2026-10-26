@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import type { Usage } from '@earendil-works/pi-ai';
 import type { ThinkingLevel } from '../../shared/models';
 import type { CapabilityPack } from './kernel/capability';
 import { createPolicy, type PolicyOptions } from './kernel/policy';
@@ -30,6 +31,11 @@ export interface AgentOptions {
   maxRequests?: number;
   /** Tool calls allowed in one round, across all packs. */
   maxToolCalls?: number;
+  /**
+   * Called once per model request that reported tokens, compaction summaries included. `priced`
+   * is false when the model has no price (custom relays), so its cost is unknown rather than 0.
+   */
+  onUsage?: (usage: Usage, priced: boolean) => void;
 }
 
 /**
@@ -52,6 +58,7 @@ export async function openAgent(
     slot,
     maxRequests = 8,
     maxToolCalls,
+    onUsage,
   }: AgentOptions = {},
 ) {
   const tools = packs.flatMap((pack) => pack.tools);
@@ -107,6 +114,8 @@ export async function openAgent(
   await models.setRuntimeApiKey(provider, key || 'jarvis-no-auth');
   const selectedModel = models.getModel(provider, model.modelId);
   if (!selectedModel) throw new Error('当前 SDK 不支持此模型，请选择可用模型');
+  const { input, output, cacheRead, cacheWrite } = selectedModel.cost;
+  const priced = model.kind !== 'custom' && input + output + cacheRead + cacheWrite > 0;
   const settings = sdk.SettingsManager.inMemory({
     retry: { enabled: false },
     compaction: { enabled: true },
@@ -207,6 +216,10 @@ export async function openAgent(
           if (event.type === 'error')
             event.error.errorMessage =
               event.reason === 'aborted' ? '请求已停止' : replyFailure(httpStatus);
+          if (event.type === 'done' || event.type === 'error') {
+            const { usage } = event.type === 'done' ? event.message : event.error;
+            if (usage.totalTokens || usage.input + usage.output) onUsage?.(usage, priced);
+          }
           result.push(event);
         }
       } catch {
