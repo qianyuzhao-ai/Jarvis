@@ -4,7 +4,7 @@
 
 ## 写作空间 W6 总验收（2026-10-26）
 
-用户明确开始 W6，沿用 feature/writing-space，授权范围仍是阶段提交与功能分支推送；不创建 PR、合并、标签或发布。原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+用户明确开始 W6，沿用 feature/writing-space，验收与报告提交 `f851825`；完整回归 205/207，保留日历/焦点失败，整体验收未通过。授权范围仍是阶段提交与功能分支推送；不创建 PR、合并、标签或发布。原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
 
 ## 写作空间 W5（2026-10-26）
 
