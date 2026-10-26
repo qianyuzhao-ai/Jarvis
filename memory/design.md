@@ -32,6 +32,13 @@
 - 用户要求 Windows 不显示 File / Edit / View / Window 菜单栏。主进程在 win32 上通过 `Menu.setApplicationMenu(null)` 移除应用菜单，保留系统标题栏和窗口控制按钮；macOS 与 Linux 沿用现有菜单。本轮未修改 Figma。
 - 验证：`pnpm check`、`pnpm build` 通过，macOS 真实 Electron 启动、导航与隔离冒烟 1/1 通过。Windows 实机显示效果待验证；未发布。
 
+## 视频节点恢复原生控件（2026-10-26）
+
+- 用户明确要求恢复原生视频播放控件与进度调节。生成视频和上传视频共用 UrlMedia，均启用原生 controls，移除视频自定义播放按钮和时长角标；音频控件不变。
+- 视频收到 loadedmetadata 后即可显示控件，不再等待 loadeddata 才开放播放。视频使用 nodrag/nopan，避免操作进度条拖动画布。沿用原有节点布局和 Figma 节点，本轮未修改 Figma，最新用户要求优先于旧自定义播放器设计。
+- 验证：check/build 与媒体专项 7/7 已通过；Windows 内网现场尚未验证。反复放大后加载卡住未解决，不能按控件恢复已修复处理。
+
+
 ### V1.0.0 设置「用量与统计」实现（2026-10-26）
 
 - 用户确认评审稿样式通过，费用用美元，测试 / 探测消耗计入“其他”不单独做卡。已按稿实现 `features/settings/UsageSettings.tsx`；与稿差异：图表在有“其他”消耗时多一段灰色（`fg-tertiary` 50%）与图例；全部无价格时总消耗卡只写“N 个模型无价格”；Y 轴刻度按 1/2/5 取整；30 天视图横轴最多 10 个日期标签；空状态为一行说明框（稿中未画）。实窗截图由 `tests/usage-ui.spec.ts` 生成（浅 / 深）。

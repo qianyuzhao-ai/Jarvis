@@ -14,6 +14,14 @@
 - `feature/style-polish-2026-10-26` 从 develop `87388cf` 创建；`apps/desktop/src/main/index.ts` 在 win32 初始化时设置空应用菜单，不创建 File / Edit / View / Window 菜单栏。
 - `pnpm check`、`pnpm build` 通过；启动导航与隔离冒烟沙箱内无法启动 Electron，沙箱外复验 1/1 通过。验证主机为 macOS，Windows 实机外观仍待验证；用户随后授权本地提交 `ec20340`，未推送或发布。
 
+## 视频控件与媒体卡住排查（2026-10-26）
+
+- feature/bugfix-2026-10-26：UrlMedia 恢复原生视频 controls，metadata 就绪后展示，移除视频自定义按钮/角标；音频保持原行为。上传与生成节点共用该组件和 jarvis-media 转发。
+- 用户现场：Windows，生成图像/视频曾正常，在同一画布多次放大预览后卡在加载；上传资源正常，原始链接在浏览器一直可用。因此不以链接过期为已确认根因。
+- 隔离 Electron + 本地不返回响应的服务实验：外层 net.fetch 取消返回 AbortError，但 1 秒后上游请求仍未关闭（started=1、closed=0）。将 request.signal 传给上游也未改变结果，实验性改动已撤回。证据脚本 /private/tmp/jarvis-media-abort-check.mjs。仅证实待响应请求取消未释放，尚未证明现场连接耗尽或定位 Windows 根因。
+- check/build 通过，canvas-assets 与 node-visuals 媒体回归 7/7 通过；Windows 内网资源和原生控件实机操作仍待验证。补充暂停与跳转进度的 node-visuals 回归 2/2 通过；用户随后授权本地提交，不推送或发布。
+
+
 ## 1.0.1 已发布（2026-10-26）
 
 - [v1.0.1](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.1) 于北京时间 2026-10-26 18:46:55 发布，非草稿、沿用预发布设置，12 个资产均 uploaded；标签指向 main 发布合并提交 `50f31e688c14b9c8d60f31521998dc48e3fc947b`，未移动任何旧标签。
