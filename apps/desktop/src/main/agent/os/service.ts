@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import type { z } from 'zod';
 import { watch, type FSWatcher } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
 import {
   writablePackSchema,
+  type CanvasContext,
   type CitedMessage,
   type Decision,
   type OsEvent,
@@ -14,9 +16,15 @@ import {
   type OsThread,
   type ProjectPatch,
   type ThreadState,
+  type ThreadTarget,
   type WakeReason,
   type WakeSpec,
+  type WritablePack,
+  type spaceThreadSchema,
 } from '../../../shared/agent-os';
+import { writingFileType } from '../../../shared/writing';
+import { canvasSnapshotOf, graphRevision } from '../../projects/canvas-engine';
+import { validateVisionInput } from '../vision-input';
 import { nearestThinkingLevel, type ThinkingLevel } from '../../../shared/models';
 import type { ReplyMode } from '../../../shared/agent-settings';
 import { skillCommand } from '../../../shared/agent-skills';
@@ -44,13 +52,14 @@ import type { WritingFiles } from '../../writing/files';
 import type { WritingEntry } from '../../../shared/writing';
 import type { WritingLinkRequest } from '../../../shared/writing-graph';
 import type { GraphIndex } from '../../writing/graph-index';
-import type { GenerationRunner } from '../../generation/agent-runner';
+import type { FinishedTask, GenerationRunner } from '../../generation/agent-runner';
 import type { ProjectStore } from '../../projects/project-store';
 import { AgentSettingsStore } from '../settings';
 import { JsonFile } from '../json-file';
 import { ProjectRegistry, type ProjectRuntime } from './projects';
 import { ModelAdmin } from './model-admin';
 import { SpaceHosts } from './spaces';
+import { canvasOf, checkResonance, documentOf, targetPacks } from './target-packs';
 import { memoryPack } from './memory-pack';
 import { coordinatorPack, type Coordination, type SpawnInput } from './coordinator-pack';
 import { threadPack, type ThreadControl } from './thread-pack';
@@ -127,6 +136,7 @@ type Delivery = {
   steer: boolean;
 };
 
+type SpaceThreadInput = z.infer<typeof spaceThreadSchema>;
 export type OsDeps = {
   projects?: ProjectStore;
   generation?: GenerationRunner;
@@ -165,6 +175,10 @@ export class AgentOs {
   onSessionChange: (event: OsSessionEvent) => void = () => {};
   onNotify: (notice: OsNotice) => void = () => {};
   readonly spaces: SpaceHosts;
+  /** What a canvas sidebar sent with a user message, until its round starts; never stored. */
+  private canvasInput = new Map<string, CanvasContext>();
+  /** Space threads already started per request, so a retried request does not start another. */
+  private spaceRequests = new Map<string, string>();
   onNavigate: (target: NavigationTarget) => void = () => {};
   private sessions = new Map<string, Session>();
   private seq = 0;
@@ -197,6 +211,7 @@ export class AgentOs {
       this.emit();
     };
     if (deps.mcp) deps.mcp.onChange = () => this.emit();
+    if (deps.generation) deps.generation.onFinished = (task) => this.generationFinished(task);
   }
 
   // ---------------------------------------------------------------- lifecycle
@@ -572,10 +587,37 @@ export class AgentOs {
   linkRoot(transactionId: string) {
     return this.spaces.linkLedger.find(transactionId)?.writingScope?.rootId;
   }
+  /** Threads bound to a document under this path (the path itself or a folder above it). */
+  private documentThreads(rootId: string, path: string) {
+    return this.registry
+      .list()
+      .flatMap((runtime) =>
+        runtime.threads.filter((t) =>
+          t.targets.some(
+            (target) =>
+              target.kind === 'document' &&
+              target.rootId === rootId &&
+              (target.path === path || target.path.startsWith(`${path}/`)),
+          ),
+        ),
+      );
+  }
+  private documentBusy(rootId: string, path: string) {
+    return this.documentThreads(rootId, path).some((t) => {
+      const session = this.sessions.get(t.id);
+      return !!session?.run || !!session?.inbox.length;
+    });
+  }
   /** Adds, changes or undoes a link the user drew in the writing space's graph. */
   linkWriting(request: WritingLinkRequest) {
     return this.exclusive(async () => {
       if (!this.spaces.links) throw new Error('星图服务不可用');
+      const scope =
+        request.action === 'undo'
+          ? this.spaces.linkLedger.find(request.transactionId)?.writingScope
+          : { rootId: request.rootId, path: request.from };
+      if (scope && this.documentBusy(scope.rootId, scope.path))
+        throw new Error('线程正在修改这篇文档，请等它完成后再修改关联');
       const result = await this.spaces.links.execute(request);
       this.emit();
       return result;
@@ -584,7 +626,25 @@ export class AgentOs {
   /** Renames or moves a document or folder; undo records follow the new path. */
   relocateWriting(rootId: string, from: string, operation: () => Promise<WritingEntry>) {
     return this.exclusive(async () => {
+      if (this.documentBusy(rootId, from))
+        throw new Error('线程正在修改这篇文档，请稍后再改名或移动');
       const entry = await operation();
+      // Threads bound to the document follow it to its new path.
+      const moved = (path: string) => entry.path + path.slice(from.length);
+      for (const runtime of this.registry.list()) {
+        let changed = false;
+        for (const thread of runtime.threads)
+          for (const target of thread.targets)
+            if (
+              target.kind === 'document' &&
+              target.rootId === rootId &&
+              (target.path === from || target.path.startsWith(`${from}/`))
+            ) {
+              target.path = moved(target.path);
+              changed = true;
+            }
+        if (changed) await runtime.saveThreads();
+      }
       for (const ledger of [
         this.spaces.linkLedger,
         ...this.registry.list().map((runtime) => runtime.ledger),
@@ -601,39 +661,128 @@ export class AgentOs {
    * A user message to a Coordinator or a thread. It is the only way principal text enters a
    * conversation. While the session replies it steers the reply or waits, per the settings.
    */
-  send(sessionId: string, text: string) {
+  send(sessionId: string, text: string, canvas?: CanvasContext) {
     return this.exclusive(async () => {
       this.guard();
-      const session = this.sessionOf(sessionId);
-      const command = skillCommand(text);
-      if (
-        text.startsWith('/') &&
-        (!command || !this.skills.snapshot().some((s) => s.name === command.name))
-      )
-        throw new Error('未知或已停用的技能，请使用 / 重新选择');
-      const modelId = this.modelOf(session);
-      if (!modelId) throw new Error('请先在设置中添加一个模型');
-      // A removed model fails here rather than after the message is recorded.
-      this.config.resolve(modelId);
-      if (session.kind === 'thread') this.reopen(session);
-      const message: OsMessage = {
-        id: randomUUID(),
-        role: 'user',
-        text,
-        status: 'succeeded',
-        trust: 'principal',
-      };
-      await this.deliver(session, {
-        reason: 'user_message',
-        trust: 'principal',
-        prompt: envelope.user(message.id, text),
-        message,
-        text,
-        priority: 1,
-        steer: !text.startsWith('/') && this.settings.get().whileReplying === 'steer',
-      });
-      return message.id;
+      return this.userMessage(this.sessionOf(sessionId), text, canvas);
     });
+  }
+  /**
+   * Starts a thread bound to a canvas or document from its sidebar, in the current project (a
+   * first project is made when there is none), and sends it the user's first message.
+   */
+  startSpaceThread(input: SpaceThreadInput) {
+    return this.exclusive(async () => {
+      this.guard();
+      const prior = this.spaceRequests.get(input.requestId);
+      if (prior) return prior;
+      const capabilities: WritablePack[] =
+        input.target.kind === 'document'
+          ? ['writing']
+          : this.deps.generation
+            ? ['canvas', 'generation']
+            : ['canvas'];
+      await this.checkTargets([input.target], capabilities);
+      const modelId = input.model || this.config.view().defaultModelId || undefined;
+      if (!modelId) throw new Error('请先在设置中添加一个模型');
+      const model = this.config.resolve(modelId);
+      let runtime = this.registry.currentId ? this.registry.get(this.registry.currentId) : null;
+      if (!runtime) {
+        runtime = await this.registry.create('我的项目', { modelId });
+        await this.loadProject(runtime);
+      }
+      const label = this.targetLabel([input.target]);
+      const { thread, session } = await this.addThread(runtime, {
+        title: input.text.replace(/\s+/g, ' ').slice(0, 36),
+        brief: {
+          objective: `在${label}里按用户在右侧栏的要求工作`,
+          outputFormat: '直接在线程里回复；修改后说明改了什么',
+          toolsAndSources: [],
+          boundaries: `只改${label}；其他事用 ask_coordinator 交给协调对话`,
+          effortHint: 'normal',
+          capabilities,
+          dependsOn: [],
+          cited: [],
+        },
+        targets: [input.target],
+        origin: 'space',
+        modelId,
+      });
+      if (input.thinkingLevel) {
+        thread.thinkingLevel = nearestThinkingLevel(model.thinkingLevels, input.thinkingLevel);
+        await runtime.saveThreads();
+      }
+      this.spaceRequests.set(input.requestId, thread.id);
+      await this.userMessage(session, input.text, input.canvas);
+      return thread.id;
+    });
+  }
+  /** A message the user typed into a conversation, with what a canvas sidebar sent along. */
+  private async userMessage(session: Session, text: string, canvas?: CanvasContext) {
+    const command = skillCommand(text);
+    if (
+      text.startsWith('/') &&
+      (!command || !this.skills.snapshot().some((s) => s.name === command.name))
+    )
+      throw new Error('未知或已停用的技能，请使用 / 重新选择');
+    const modelId = this.modelOf(session);
+    if (!modelId) throw new Error('请先在设置中添加一个模型');
+    // A removed model fails here rather than after the message is recorded.
+    const model = this.config.resolve(modelId);
+    if (session.kind === 'thread') this.reopen(session);
+    const message: OsMessage = {
+      id: randomUUID(),
+      role: 'user',
+      text,
+      status: 'succeeded',
+      trust: 'principal',
+    };
+    if (canvas) {
+      const view = this.canvasView(session, canvas.selectedIds);
+      if (canvas.images.length && model.vision !== 'supported')
+        throw new Error(`${model.name} 不能读图，请换一个图片能力为“支持”的模型`);
+      validateVisionInput(
+        canvas.images,
+        view,
+        session.messages.reduce((n, m) => n + (m.visionAssets?.length ?? 0), 0),
+      );
+      const selected = view.nodes.filter((n) => canvas.selectedIds.includes(n.id));
+      if (selected.length)
+        message.canvasReferences = selected.map(({ id, name }) => ({
+          id,
+          name: name.slice(0, 200),
+        }));
+      if (canvas.images.length)
+        message.visionAssets = canvas.images.map(({ nodeId, name, kind, time, preview }) => ({
+          nodeId,
+          name,
+          kind,
+          ...(time === undefined ? {} : { time }),
+          preview,
+        }));
+      this.canvasInput.set(message.id, canvas);
+    }
+    await this.deliver(session, {
+      reason: 'user_message',
+      trust: 'principal',
+      prompt: envelope.user(message.id, text),
+      message,
+      text,
+      priority: 1,
+      // Images and a new selection need a round of their own.
+      steer: !canvas && !text.startsWith('/') && this.settings.get().whileReplying === 'steer',
+    });
+    return message.id;
+  }
+  /** The canvas a thread is bound to, with the given nodes selected. */
+  private canvasView(session: Session, selectedIds: readonly string[]) {
+    const thread =
+      session.kind === 'thread' ? this.registry.get(session.projectId).thread(session.id) : null;
+    const canvasId = thread && canvasOf(thread.targets);
+    if (!canvasId || !this.deps.projects) throw new Error('这个对话没有绑定画布');
+    const view = canvasSnapshotOf(this.deps.projects.get(canvasId).project, selectedIds);
+    if (view.selectedIds.length !== selectedIds.length) throw new Error('所选节点不属于这个画布');
+    return view;
   }
   /** Hands a queued user message to the running reply now. */
   steer(sessionId: string, messageId: string) {
@@ -663,6 +812,7 @@ export class AgentOs {
     const dropped = session.inbox.filter((w) => w.reason === 'user_message');
     session.inbox = session.inbox.filter((w) => w.reason !== 'user_message');
     for (const wake of dropped) {
+      if (wake.messageId) this.canvasInput.delete(wake.messageId);
       await session.log.taken(wake.id);
       const message = session.messages.find((m) => m.id === wake.messageId);
       if (message) {
@@ -773,23 +923,59 @@ export class AgentOs {
     });
   }
   /** Undoes one round's file changes from their snapshots, latest first. */
+  /**
+   * Undoes a round's reversible change: local files from their snapshots, a canvas edit with its
+   * inverse ops while the canvas is unchanged since, an open document's edit in its editor, and a
+   * closed document's saved edits while the file still holds them.
+   */
   undo(transactionId: string) {
     return this.exclusive(async () => {
       this.guard();
       for (const runtime of this.registry.list()) {
         const entry = runtime.ledger.find(transactionId);
         if (!entry) continue;
-        if (entry.pack !== 'files' || !entry.fileOps) throw new Error('这次修改不支持撤销');
         if (entry.status === 'undone') throw new Error('这次修改已撤销');
         if (this.sessions.get(entry.sessionId)?.run)
           throw new Error('请先停止或等待这个对话的回复完成');
-        const { remaining, error } = await runtime.files.undo(entry.fileOps);
-        if (error) {
-          runtime.ledger.setFileOps(entry.id, remaining);
-          throw new Error(
-            remaining.length < entry.fileOps.length ? `部分修改已撤销；${error}` : error,
-          );
-        }
+        if (entry.pack === 'files' && entry.fileOps) {
+          const { remaining, error } = await runtime.files.undo(entry.fileOps);
+          if (error) {
+            runtime.ledger.setFileOps(entry.id, remaining);
+            throw new Error(
+              remaining.length < entry.fileOps.length ? `部分修改已撤销；${error}` : error,
+            );
+          }
+        } else if (
+          entry.pack === 'canvas' &&
+          entry.projectId &&
+          entry.inverse &&
+          entry.afterRevision
+        ) {
+          const store = this.deps.projects;
+          if (!store) throw new Error('画布存储不可用，请重启应用');
+          const { version, project } = store.get(entry.projectId);
+          if (project.agentEdits.at(-1)?.id !== entry.id)
+            throw new Error('请先撤销最近一次画布修改');
+          if (graphRevision(project) !== entry.afterRevision)
+            throw new Error('画布已发生后续修改，为保留你的工作，暂不能撤销这次操作');
+          await store.applyOps(entry.projectId, version, entry.inverse, {
+            source: `agent:${entry.sessionId}`,
+          });
+        } else if (entry.pack === 'writing' && entry.writingScope && entry.textChanges) {
+          if (!this.spaces.disk) throw new Error('写作文件服务不可用，请重启应用');
+          if (this.spaces.documentOwner(entry.writingScope) !== undefined)
+            throw new Error('这篇文档已在写作空间打开；请关闭后再撤销，或在编辑器里撤销');
+          await this.spaces.disk.undo(entry.writingScope, entry.textChanges);
+        } else if (entry.pack === 'writing' && entry.writingScope) {
+          const owner = this.spaces.documentOwner(entry.writingScope);
+          if (owner === undefined) throw new Error('这篇文档已关闭，编辑器里的修改无法再撤销');
+          const reply = await this.spaces.writing.request(owner, {
+            runId: entry.runId,
+            scope: entry.writingScope,
+            command: { type: 'undo', transactionId: entry.id },
+          });
+          if (!reply.ok) throw new Error(reply.error || '撤销失败');
+        } else throw new Error('这次修改不支持撤销');
         runtime.ledger.markUndone(entry.id);
         const session = this.sessions.get(entry.sessionId);
         for (const message of session?.messages ?? [])
@@ -1010,15 +1196,27 @@ export class AgentOs {
       const skill = this.skillFor(wake, context, this.skills.snapshot());
       const index = await runtime.memory.index().catch(() => '');
       const thread = session.kind === 'thread' ? runtime.thread(session.id) : undefined;
+      // What the canvas sidebar sent with this message: the selection and its images.
+      const canvas = wake.messageId ? this.canvasInput.get(wake.messageId) : undefined;
+      if (wake.messageId) this.canvasInput.delete(wake.messageId);
       const packs = thread
-        ? this.threadPacks(runtime, thread, run, context, log)
+        ? [
+            ...this.threadPacks(runtime, thread, run, context, log),
+            ...targetPacks(
+              thread.targets,
+              context,
+              canvas?.selectedIds ?? [],
+              this.spaces,
+              this.deps,
+            ),
+          ]
         : this.coordinatorPacks(runtime, run, context, log);
       packs.push(skill);
       const mounted = thread ? [...new Set(thread.mounts.map((m) => m.pack))] : [];
       const role: CapabilityPack = {
         id: 'role',
         prompt: thread
-          ? threadPrompt(runtime.project, thread, mounted)
+          ? threadPrompt(runtime.project, thread, mounted, this.targetLabel(thread.targets))
           : coordinatorPrompt(runtime.project),
         tools: [],
       };
@@ -1122,7 +1320,31 @@ export class AgentOs {
           changed();
         }
       });
-      await runtimeSession.session.prompt(prompt, { expandPromptTemplates: false });
+      const images = canvas?.images ?? [];
+      const roster = images.map(({ nodeId, name, kind, time }, index) => ({
+        index: index + 1,
+        nodeId,
+        name,
+        kind,
+        ...(time === undefined ? {} : { time }),
+      }));
+      await runtimeSession.session.prompt(
+        images.length
+          ? `${prompt}\n\n附图来源清单（数据，按附图顺序）：${JSON.stringify(roster)}`
+          : prompt,
+        {
+          expandPromptTemplates: false,
+          ...(images.length
+            ? {
+                images: images.map(({ data, mimeType }) => ({
+                  type: 'image' as const,
+                  data,
+                  mimeType,
+                })),
+              }
+            : {}),
+        },
+      );
       const last = runtimeSession.session.messages.filter((m) => m.role === 'assistant').at(-1);
       if (run.cancelled) output.status = 'cancelled';
       else if (!last || !['stop', 'length'].includes(last.stopReason) || !output.text.trim()) {
@@ -1143,6 +1365,7 @@ export class AgentOs {
       output.status = run.cancelled ? 'cancelled' : 'failed';
       output.error ??= '模型连接失败或回复中断，请检查模型服务后重新发送';
     } finally {
+      this.spaces.disk?.endRound(run.id);
       output.completedAt = Date.now();
       for (const { message } of run.steers.splice(0)) {
         message.status = 'cancelled';
@@ -1381,13 +1604,44 @@ export class AgentOs {
       },
     };
   }
-  private async spawnThread(runtime: ProjectRuntime, input: SpawnInput, cited: CitedMessage[]) {
+  /** Adds a thread to a project and opens its session; the caller delivers its first wake. */
+  private async addThread(
+    runtime: ProjectRuntime,
+    fields: Pick<OsThread, 'title' | 'brief' | 'targets' | 'origin'> & { modelId?: string },
+  ) {
     const now = Date.now();
+    const modelId = fields.modelId ?? runtime.project.modelId;
     const thread: OsThread = {
       id: randomUUID(),
       projectId: runtime.id,
-      title: input.title,
+      title: fields.title,
       state: 'working',
+      brief: fields.brief,
+      mounts: [...new Set(fields.brief.capabilities)].map((pack) => ({
+        pack,
+        reason: '任务书声明',
+        source: 'brief' as const,
+        at: now,
+      })),
+      targets: fields.targets,
+      origin: fields.origin,
+      checklist: [],
+      resolved: false,
+      ...(modelId ? { modelId } : {}),
+      contextTokens: null,
+      contextWindow: null,
+      usage: { tokens: 0, toolCalls: 0, budget: runtime.project.threadBudget },
+      createdAt: now,
+      updatedAt: now,
+    };
+    runtime.threads.push(thread);
+    await runtime.saveThreads();
+    return { thread, session: await this.openSession(runtime, thread.id, 'thread') };
+  }
+  private async spawnThread(runtime: ProjectRuntime, input: SpawnInput, cited: CitedMessage[]) {
+    await this.checkTargets(input.targets, input.capabilities);
+    const { thread, session } = await this.addThread(runtime, {
+      title: input.title,
       brief: {
         objective: input.objective,
         outputFormat: input.outputFormat,
@@ -1398,24 +1652,9 @@ export class AgentOs {
         dependsOn: input.dependsOn,
         cited,
       },
-      mounts: [...new Set(input.capabilities)].map((pack) => ({
-        pack,
-        reason: '任务书声明',
-        source: 'brief' as const,
-        at: now,
-      })),
-      checklist: [],
-      resolved: false,
-      ...(runtime.project.modelId ? { modelId: runtime.project.modelId } : {}),
-      contextTokens: null,
-      contextWindow: null,
-      usage: { tokens: 0, toolCalls: 0, budget: runtime.project.threadBudget },
-      createdAt: now,
-      updatedAt: now,
-    };
-    runtime.threads.push(thread);
-    await runtime.saveThreads();
-    const session = await this.openSession(runtime, thread.id, 'thread');
+      targets: input.targets,
+      origin: 'coordinator',
+    });
     await this.deliver(session, {
       reason: 'spawn',
       trust: 'relay',
@@ -1463,7 +1702,20 @@ export class AgentOs {
         thread.checklist = items;
         void save();
       },
-      report: (input) => {
+      report: async (input) => {
+        if (input.resonance?.length) {
+          const scope = documentOf(thread.targets);
+          await checkResonance(input.resonance, scope, this.deps);
+          run.output.activities ??= [];
+          run.output.activities.push({
+            id: randomUUID(),
+            label: '发现共鸣点，等待确认',
+            files: [],
+            writingScope: scope,
+            resonance: input.resonance,
+          });
+          this.changed(thread.id, run.output.id);
+        }
         thread.card = {
           status: input.status,
           summary: input.summary,
@@ -1500,6 +1752,16 @@ export class AgentOs {
       },
       mount: (pack, reason) => {
         if (thread.mounts.some((m) => m.pack === pack)) return { mounted: true, already: true };
+        const target =
+          pack === 'writing'
+            ? 'document'
+            : pack === 'canvas' || pack === 'generation'
+              ? 'canvas'
+              : null;
+        if (target && !thread.targets.some((t) => t.kind === target))
+          throw new Error(
+            `这个线程没有绑定${target === 'canvas' ? '画布' : '文档'}；需要改别的画布或文档时用 ask_coordinator 请协调对话开线程`,
+          );
         thread.mounts.push({ pack, reason, source: 'request', at: Date.now() });
         log(`已挂载写能力 · ${pack}：${reason}`);
         void save();
@@ -1758,6 +2020,82 @@ export class AgentOs {
         steer: false,
       });
     }).catch(() => {});
+  }
+  /**
+   * A generation a thread started has ended: the thread wakes with the outcome as data. The round
+   * works on the stored canvas, so it needs no window.
+   */
+  private generationFinished(task: FinishedTask) {
+    if (this.closing) return;
+    const label = { succeeded: '完成', failed: '失败', unknown: '结果未知', running: '进行中' }[
+      task.status
+    ];
+    void this.exclusive(async () => {
+      const session = this.sessions.get(task.sessionId);
+      if (!session || session.kind !== 'thread') return;
+      const data = JSON.stringify({
+        nodeId: task.nodeId,
+        nodeName: task.nodeName,
+        status: task.status,
+        error: task.error,
+        pendingJobs: this.deps.generation?.pending(task.sessionId) ?? 0,
+      });
+      await this.deliver(session, {
+        reason: 'external_event',
+        trust: 'relay',
+        prompt: `${envelope.external('生成服务', data)}\n继续用户交代的任务；还有其他生成未完成时可以先结束本轮，全部完成后再汇报。`,
+        message: {
+          id: randomUUID(),
+          role: 'user',
+          text: `生成${label}：${task.nodeName}`,
+          status: 'succeeded',
+          trust: 'relay',
+          source: { kind: 'external', title: '生成任务' },
+        },
+        priority: 2,
+        steer: false,
+      });
+    }).catch(() => {});
+  }
+  /**
+   * Checks that a thread's targets exist and that the canvas, generation and writing packs it
+   * declares have a target to act on.
+   */
+  private async checkTargets(targets: ThreadTarget[], capabilities: WritablePack[]) {
+    for (const target of targets) {
+      if (target.kind === 'canvas') {
+        if (!this.deps.projects?.list().some((p) => p.id === target.canvasId))
+          throw new Error('这个画布不存在或已删除');
+        continue;
+      }
+      const files = this.deps.files;
+      if (!files?.getRoots().some((r) => r.id === target.rootId))
+        throw new Error('没有这个写作文件夹');
+      if (writingFileType(target.path) !== 'markdown') throw new Error('只能绑定 Markdown 文档');
+      await files.read(target.rootId, target.path);
+    }
+    for (const pack of capabilities) {
+      const kind =
+        pack === 'writing'
+          ? 'document'
+          : pack === 'canvas' || pack === 'generation'
+            ? 'canvas'
+            : undefined;
+      if (kind && !targets.some((t) => t.kind === kind))
+        throw new Error(
+          `写能力 ${pack} 需要在 targets 里写明要改的${kind === 'canvas' ? '画布' : '文档'}`,
+        );
+    }
+  }
+  /** How a thread's targets read in its prompt and status lines. */
+  private targetLabel(targets: ThreadTarget[]) {
+    return targets
+      .map((t) =>
+        t.kind === 'canvas'
+          ? `画布「${this.deps.projects?.list().find((p) => p.id === t.canvasId)?.name ?? t.canvasId}」（canvasId ${t.canvasId}）`
+          : `文档「${t.path}」（写作文件夹 ${t.rootId}）`,
+      )
+      .join('、');
   }
   /** Watches project folders for file subscriptions; changes within 5 s form one wake. */
   private syncWatchers() {

@@ -94,6 +94,7 @@ const desktop: DesktopInfo = {
     },
     setViewing: (ids) => ipcRenderer.invoke('os:viewing', ids),
     send: (input) => ipcRenderer.invoke('os:send', input),
+    startSpaceThread: (input) => ipcRenderer.invoke('os:start-space-thread', input),
     steer: (input) => ipcRenderer.invoke('os:steer', input),
     cancel: (id) => ipcRenderer.invoke('os:cancel', id),
     setModel: (input) => ipcRenderer.invoke('os:set-model', input),

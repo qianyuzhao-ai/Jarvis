@@ -16,6 +16,7 @@ import {
   osId,
   osSendSchema,
   projectPatchSchema,
+  spaceThreadSchema,
 } from '../../shared/agent-os';
 import {
   providerInputSchema,
@@ -207,11 +208,12 @@ export async function registerAgent() {
       const v = osSendSchema.parse(r);
       const prior = sent.get(v.requestId);
       if (prior) return prior;
-      const id = await os.send(v.sessionId, v.text);
+      const id = await os.send(v.sessionId, v.text, v.canvas);
       sent.set(v.requestId, id);
       if (sent.size > 500) sent.delete(sent.keys().next().value as string);
       return id;
     },
+    'os:start-space-thread': (r) => os.startSpaceThread(spaceThreadSchema.parse(r)),
     'os:steer': (r) => {
       const v = z.object({ sessionId: osId, messageId: osId }).strict().parse(r);
       return os.steer(v.sessionId, v.messageId);

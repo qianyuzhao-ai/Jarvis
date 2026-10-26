@@ -7,6 +7,16 @@ import { fileOpSchema } from './agent-files';
  * One round's reversible change to one target. `id` is the transaction ID the data owner (canvas
  * or writing host) returned; repeated edits in the same round share it.
  */
+/** One edit saved to a file: enough to put the old text back while nothing else changed it. */
+export const textChangeSchema = z
+  .object({
+    at: z.number().int().nonnegative(),
+    removed: z.string().max(100000),
+    inserted: z.string().max(100000),
+    afterVersion: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+export type TextChange = z.infer<typeof textChangeSchema>;
 export const ledgerEntrySchema = z
   .object({
     id: z.string().uuid(),
@@ -24,15 +34,9 @@ export const ledgerEntrySchema = z
     afterRevision: z.string().max(100).optional(),
     /** For local file changes: the round's operations, undone in reverse order. */
     fileOps: z.array(fileOpSchema).max(200).optional(),
-    linkChange: z
-      .object({
-        at: z.number().int().nonnegative(),
-        removed: z.string().max(100000),
-        inserted: z.string().max(100000),
-        afterVersion: z.string().regex(/^[a-f0-9]{64}$/),
-      })
-      .strict()
-      .optional(),
+    linkChange: textChangeSchema.optional(),
+    /** For a closed document a thread edited: the round's saved edits, undone newest first. */
+    textChanges: z.array(textChangeSchema).max(200).optional(),
     status: z.enum(['applied', 'undone']),
     createdAt: z.number(),
     updatedAt: z.number(),

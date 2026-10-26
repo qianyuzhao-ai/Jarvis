@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { effortSchema, osId, writablePackSchema } from '../../../shared/agent-os';
+import {
+  effortSchema,
+  osId,
+  threadTargetsSchema,
+  writablePackSchema,
+} from '../../../shared/agent-os';
 import type { CapabilityPack } from '../kernel/capability';
 import { defineTool } from '../kernel/tool';
 
@@ -14,6 +19,8 @@ export const spawnInput = z
     capabilities: z.array(writablePackSchema).max(10).default([]),
     citeUserMessageIds: z.array(osId).max(10).default([]),
     dependsOn: z.array(osId).max(10).default([]),
+    /** A canvas (canvasId) and/or a document (rootId + path) the thread works on. */
+    targets: threadTargetsSchema.default([]),
   })
   .strict();
 export type SpawnInput = z.infer<typeof spawnInput>;
@@ -36,7 +43,7 @@ export function coordinatorPack(control: Coordination): CapabilityPack {
     tools: [
       defineTool(
         'spawn_thread',
-        '按任务书开一个新线程去做一件事；只写清目标、交付、工具与来源、边界、投入、所需写能力，并附上用户原话的消息 id',
+        '按任务书开一个新线程去做一件事；只写清目标、交付、工具与来源、边界、投入、所需写能力，并附上用户原话的消息 id。要改画布或文档时在 targets 里写明（画布 canvasId；文档 rootId + path），并在 capabilities 里声明 canvas / generation / writing；画布和文档都不需要用户打开',
         'read',
         spawnInput,
         (input) => control.spawn(input),

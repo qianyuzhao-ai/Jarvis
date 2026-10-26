@@ -7,20 +7,25 @@ import type { WritingFiles } from '../../writing/files';
 import { CanvasBroker } from '../canvas-broker';
 import { WritingBroker } from '../writing-broker';
 import { Ledger } from '../kernel/ledger';
+import { DiskWriting } from './disk-writing';
 
 /**
  * Where canvas and writing work happens: the windows that have a canvas or document open (and
- * answer tool commands for it), and the writing space's own link edits with their undo record.
+ * answer tool commands for it), the stand-in for documents no window has open, and the writing
+ * space's own link edits with their undo record.
  */
 export class SpaceHosts {
   readonly canvas = new CanvasBroker();
   readonly writing = new WritingBroker();
+  /** Stands in for the editor of a document no window has open. */
+  readonly disk?: DiskWriting;
   readonly links?: GraphLinks;
   /** Link edits the user made in the writing space; they belong to no conversation. */
   readonly linkLedger: Ledger;
   private targets = new Map<number, OpenTargets>();
   constructor(root: string, deps: { files?: WritingFiles; graph?: GraphIndex }) {
     this.linkLedger = new Ledger(join(root, 'link-ledger'));
+    if (deps.files) this.disk = new DiskWriting(deps.files);
     if (deps.files && deps.graph)
       this.links = new GraphLinks(deps.files, deps.graph, this.writing, this.linkLedger, (scope) =>
         this.documentOwner(scope),

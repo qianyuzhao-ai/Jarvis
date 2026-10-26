@@ -7,6 +7,7 @@ import {
   type ChecklistItem,
   type WritablePack,
 } from '../../../shared/agent-os';
+import { resonanceSchema } from '../../../shared/writing-graph';
 import type { CapabilityPack } from '../kernel/capability';
 import { defineTool } from '../kernel/tool';
 import { parseCron } from '../kernel/wakes';
@@ -18,6 +19,8 @@ export const reportInput = z
     outputs: z.array(artifactRefSchema).max(50).default([]),
     openQuestions: z.array(z.string().max(500)).max(10).default([]),
     resolved: z.boolean().default(false),
+    /** For a thread bound to a document: related documents of its folder, for the user to link. */
+    resonance: resonanceSchema.optional(),
   })
   .strict();
 export const askInput = z
@@ -56,7 +59,7 @@ const subscription = z.discriminatedUnion('source', [
 /** What a thread's own tools ask of the OS for one round. */
 export interface ThreadControl {
   checklist(items: ChecklistItem[]): void;
-  report(input: z.infer<typeof reportInput>): void;
+  report(input: z.infer<typeof reportInput>): Promise<void>;
   ask(input: z.infer<typeof askInput>): Promise<unknown>;
   withdraw(decisionId: string, adopted?: string): Promise<void>;
   mount(pack: WritablePack, reason: string): unknown;
@@ -89,12 +92,12 @@ export function threadPack(control: ThreadControl): CapabilityPack {
       ),
       defineTool(
         'report_result',
-        '写本线程的结果卡：status、一两句以结论开头的摘要、产物引用、待用户回答的问题；没有人还欠下一步时 resolved 填 true',
+        '写本线程的结果卡：status、一两句以结论开头的摘要、产物引用、待用户回答的问题；没有人还欠下一步时 resolved 填 true。绑定文档的线程可在 resonance 里给出同文件夹最多三个相关文档（path 与一句理由），只作候选，由用户确认后才建立关联',
         'read',
         reportInput,
-        (input) => {
+        async (input) => {
           if (++reports > 3) throw new Error('本轮结果卡已写过多次');
-          control.report(input);
+          await control.report(input);
           return { success: true };
         },
       ),

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { chatActivitySchema, agentStatus } from './agent';
+import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
 import { thinkingLevelSchema, type ModelSettingsView, type ThinkingLevel } from './models';
 import type { SkillInfo } from './agent-skills';
 import type { McpServerView } from './agent-mcp';
@@ -72,6 +73,13 @@ export const osMessageSchema = z.object({
   threadIds: z.array(osId).max(20).optional(),
   /** A message handed to a running reply: `queued` until delivered at the reply's next step. */
   steer: z.boolean().optional(),
+  /** Canvas nodes the user had selected when sending from the canvas sidebar. */
+  canvasReferences: z
+    .array(z.object({ id: z.string().max(100), name: z.string().max(200) }).strict())
+    .max(100)
+    .optional(),
+  /** Images and video frames sent with the message; the pixels are not kept. */
+  visionAssets: z.array(visionAssetInfoSchema).max(12).optional(),
 });
 export type OsMessage = z.infer<typeof osMessageSchema>;
 
@@ -110,7 +118,33 @@ export const writablePackSchema = z.enum([
   'mcp',
   'writing-library',
   'navigation',
+  // Target packs: only for a thread bound to a canvas or document.
+  'canvas',
+  'generation',
+  'writing',
 ]);
+/** Packs that act on a thread's target, not on the project's folders or services. */
+export const TARGET_PACKS = { canvas: ['canvas', 'generation'], document: ['writing'] } as const;
+
+/** The canvas or document a thread works on; one of each at most. */
+export const threadTargetSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('canvas'), canvasId: osId }).strict(),
+  z
+    .object({
+      kind: z.literal('document'),
+      rootId: z.string().min(1).max(64),
+      path: z.string().min(1).max(4096),
+    })
+    .strict(),
+]);
+export type ThreadTarget = z.infer<typeof threadTargetSchema>;
+export const threadTargetsSchema = z
+  .array(threadTargetSchema)
+  .max(2)
+  .refine(
+    (list) => new Set(list.map((t) => t.kind)).size === list.length,
+    '每种目标最多一个：一个画布、一个文档',
+  );
 export type WritablePack = z.infer<typeof writablePackSchema>;
 
 export const effortSchema = z.enum(['quick', 'normal', 'deep']);
@@ -159,6 +193,9 @@ export const threadSchema = z
     state: threadStateSchema,
     brief: delegationBriefSchema,
     mounts: z.array(mountSchema).max(50),
+    /** What the thread works on; a space thread was started from that canvas or document. */
+    targets: threadTargetsSchema.default([]),
+    origin: z.enum(['coordinator', 'space']).default('coordinator'),
     checklist: z.array(checklistItemSchema).max(50),
     card: resultCardSchema.optional(),
     resolved: z.boolean(),
@@ -342,8 +379,32 @@ export interface OsSessionView {
   runId: string | null;
   messages: OsMessage[];
 }
+/** What a canvas sidebar sends along: the selected nodes and their images or video frames. */
+export const canvasContextSchema = z
+  .object({
+    selectedIds: z.array(z.string().min(1).max(100)).max(100),
+    images: z.array(visionAssetSchema).max(12),
+  })
+  .strict();
+export type CanvasContext = z.infer<typeof canvasContextSchema>;
 export const osSendSchema = z
-  .object({ sessionId: osId, requestId: osId, text: z.string().trim().min(1).max(32000) })
+  .object({
+    sessionId: osId,
+    requestId: osId,
+    text: z.string().trim().min(1).max(32000),
+    canvas: canvasContextSchema.optional(),
+  })
+  .strict();
+/** Starts a thread from a canvas or document sidebar with its first message. */
+export const spaceThreadSchema = z
+  .object({
+    target: threadTargetSchema,
+    requestId: osId,
+    text: z.string().trim().min(1).max(32000),
+    model: z.string().max(200).optional(),
+    thinkingLevel: thinkingLevelSchema.optional(),
+    canvas: canvasContextSchema.optional(),
+  })
   .strict();
 export const decisionAnswerSchema = z
   .object({ decisionId: osId, option: z.number().int().min(0).max(3) })
@@ -359,6 +420,8 @@ export interface OsBridge {
   /** Sessions this window shows; their rounds go first when slots are short. */
   setViewing(sessionIds: string[]): Promise<OsResult<void>>;
   send(input: z.infer<typeof osSendSchema>): Promise<OsResult<string>>;
+  /** Starts a thread bound to a canvas or document in the current project; returns its ID. */
+  startSpaceThread(input: z.infer<typeof spaceThreadSchema>): Promise<OsResult<string>>;
   steer(input: { sessionId: string; messageId: string }): Promise<OsResult<void>>;
   cancel(sessionId: string): Promise<OsResult<void>>;
   setModel(input: { sessionId: string; model: string }): Promise<OsResult<void>>;

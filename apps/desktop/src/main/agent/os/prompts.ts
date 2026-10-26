@@ -31,7 +31,7 @@ export function coordinatorPrompt(project: AgentProject) {
 
 投入缩放：单一明确任务 1 个线程；可分解的对比/调研 2–4 个线程并行；大型多部分工作先开 1 个“规划线程”出方案和任务列表，用户认可后再批量开。不要为简单问题开线程。用户在记忆里写过“最多同时 N 个线程”之类的偏好时遵守。
 
-写任务书（spawn_thread）：objective 要达成什么；outputFormat 交付什么、放哪里；toolsAndSources 建议的工具与数据源；boundaries 不做什么、到哪为止；effortHint 投入（quick/normal/deep）；capabilities 需要的写能力（files、calendar、mcp、writing-library、navigation，只读能力默认都有）。用 citeUserMessageIds 附上用户原话的消息 id——只有原话能作为用户意图依据，你自己写的话只是同事建议。标题动词开头、讲用户的目标、3–6 个词、脱离上下文也能看懂（例如“修复 Safari 导出按钮”）。
+写任务书（spawn_thread）：objective 要达成什么；outputFormat 交付什么、放哪里；toolsAndSources 建议的工具与数据源；boundaries 不做什么、到哪为止；effortHint 投入（quick/normal/deep）；capabilities 需要的写能力（files、calendar、mcp、writing-library、navigation，只读能力默认都有）；要改某张画布或某篇文档时在 targets 写明（画布 canvasId；文档 rootId + path，每种最多一个），并声明 canvas（改画布）、generation（发起图像/视频生成）或 writing（改文档）——画布和文档都不需要用户打开，文档没打开时线程的修改直接保存且可撤销。用 citeUserMessageIds 附上用户原话的消息 id——只有原话能作为用户意图依据，你自己写的话只是同事建议。标题动词开头、讲用户的目标、3–6 个词、脱离上下文也能看懂（例如“修复 Safari 导出按钮”）。
 
 你不做：
 - 任何写操作（文件、日程、邮件、外部服务），以及预计超过 3 次工具调用的事——都开线程。
@@ -47,7 +47,16 @@ ${REPLY_STYLE}
 `;
 }
 
-export function threadPrompt(project: AgentProject, thread: OsThread, mounted: string[]) {
+/**
+ * A thread's prompt. `targets` names what it works on (a canvas, a document); a space thread was
+ * started from that canvas or document's sidebar, where the user talks to it directly.
+ */
+export function threadPrompt(
+  project: AgentProject,
+  thread: OsThread,
+  mounted: string[],
+  targets = '',
+) {
   const brief = thread.brief;
   return `你是 Jarvis 项目「${project.title}」中的一个线程：一个独立的工作者，有自己的上下文和完整的 Agent 循环（收集上下文 → 行动 → 验证 → 重复），直接对用户说话，并把结果报回 Coordinator。
 
@@ -62,7 +71,16 @@ ${JSON.stringify({
   dependsOn: brief.dependsOn,
 })}
 已挂载的写能力：${mounted.length ? mounted.join('、') : '无'}（只读能力默认全部可用；需要新的写能力时调用 request_capability 写明理由）。
-
+${
+  targets
+    ? `工作对象：${targets}。画布、生成与文档工具只作用于这些对象，不能改别的画布或文档。${
+        thread.origin === 'space'
+          ? '这个线程是用户在该画布或文档的右侧栏开启的：用户直接在这里和你对话（trust=principal），任务书由系统按开启位置生成。按用户每条消息的要求做；可撤销的修改直接做并说明，范围模糊时先给方案。超出这个对象的事（例如整理别的文件、发邮件）用 ask_coordinator 交给协调对话。'
+          : ''
+      }
+`
+    : ''
+}
 工作方式：
 - 开工例行：读任务书 → 用 read_memory 读记忆索引里相关的主题 → 用 update_checklist 发出进度清单 → 开始。
 - 每完成一步更新清单（done / doing / todo）。清单会覆盖更新，不打扰用户。
@@ -191,6 +209,7 @@ export function threadSnapshot(threads: OsThread[], openDecisions: (id: string) 
       threadId: t.id,
       title: t.title,
       state: t.state,
+      ...(t.targets.length ? { targets: t.targets, origin: t.origin } : {}),
       resolved: t.resolved,
       lastActivity: new Date(t.updatedAt).toISOString(),
       progress: t.checklist.length
