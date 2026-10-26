@@ -2,6 +2,11 @@
 
 最后更新：2026-10-26
 
+## 窗口标签高度 32px（2026-10-26）
+
+- 用户要求顶部 Tab 标签总高改为 32px（原 28px）。改 `packages/ui/src/styles/base.css` 的 `.ui-window-tab` 高度；44px 标题栏中上下各留 6px 居中。本轮未修改 Figma。
+- 验证：check/build 通过；window-shell/ui-preview/smoke 15/15 通过（window-shell 新增标签高 32px 断言）；真实 Electron 实测高 32、顶部偏移 6，已看截图。
+
 ## macOS 全屏标题栏按钮靠左、侧栏按钮置首（2026-10-26）
 
 - 用户要求（分支 `feature/interaction-polish`）：macOS 全屏时红绿灯隐藏，侧栏/后退/前进按钮不再保留 76px 红绿灯留白而靠最左；侧栏按钮移到三者最左。顺序改为 侧栏 → 后退 → 前进。本轮未修改 Figma。

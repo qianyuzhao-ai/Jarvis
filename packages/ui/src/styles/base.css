@@ -920,7 +920,7 @@
     min-width: 120px;
     max-width: 240px;
     width: 200px;
-    height: 28px;
+    height: 32px;
     gap: 6px;
     padding: 0 4px 0 10px;
     border: var(--border-hairline) solid transparent;
