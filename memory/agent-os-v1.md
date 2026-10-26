@@ -80,6 +80,7 @@ userData/agent/os/
 | 1b 设计 | Figma：项目对话与线程卡片、线程视图与进度清单、Overview、决策卡、项目设置（浅/深） | 已完成，用户已确认（U5） |
 | 1c UI | 按已确认 Figma 实现首页 UI（含 U6–U8）；画布/写作右侧栏已显示“即将接入” | 已完成（2026-10-26，见第 7.1 节） |
 | 2 | 画布 / 写作 / 生成能力包接回线程，右侧栏 = 绑定线程（第 6 节） | 已完成（2026-10-26）：2a 后端、2b Figma（U10 通过）、2c 右侧栏 UI |
+| 3 | 设置「用量与统计」：主 Agent / 子 Agent token 与费用统计（第 7.4 节） | 已完成（2026-10-26）：Figma 通过，账本 + IPC + 面板 |
 
 ## 6. 第二批方案：画布与写作 Agent 接入（2026-10-26，用户已确认，含“未打开文档按可撤销写盘”）
 
@@ -141,6 +142,35 @@ userData/agent/os/
 - 验证（`07569b2`）：`pnpm check`、`pnpm build` 通过；完整回归 206 项中 205 通过，唯一失败为基线即存在的 `agent.spec.ts` 首页建议区几何断言（Linux 字体）。
 - 测试：新增 `tests/space-agent.spec.ts`（画布侧栏：开线程、改画布、紧凑决策卡自填答案、撤销、历史 / 新线程、在首页查看；写作侧栏：改编辑器不落盘、撤销、历史说明）；`writing.spec` 改为检查侧栏空状态文案。
 
+## 7.4 设置「用量与统计」（2026-10-26，已实现）
+
+用户确认（2026-10-26）：
+
+| 编号 | 决策 |
+| --- | --- |
+| S1 | 设置新增「用量与统计」面板，统计 Agent 的 token 消耗，分主 Agent（各项目的协调者）与子 Agent（线程，含画布 / 写作右侧栏的空间线程） |
+| S2 | 旧消耗不补，从上线这一版开始统计；`threads.json` 里已有的线程累计数不导入 |
+| S3 | 费用能算的显示（Pi SDK 回报的费用，美元），算不出的（如自定义中转站没有价格）显示“—” |
+| S4 | 先出 Figma 评审稿，确认后再实现 |
+| S5 | Figma 样式通过；费用用美元；连接测试 / 图片识别检测等不单独做卡，计入“其他”（总消耗与图表里显示） |
+
+现状差距：`service.ts` 在 `message_end` 把总 token 累加到当轮 `run.tokens`；线程轮次结束加进 `thread.usage.tokens`（只为预算）；协调者的消耗不保存；没有输入 / 输出 / 缓存拆分、按天、按模型的记录；压缩与模型探测未计入。
+
+方案：
+1. 用量账本 `main/agent/kernel/usage.ts`：`userData/agent/os/usage/<YYYY-MM>.jsonl` 按月追加；每次模型回复一条（时间、projectId、sessionId、角色 coordinator / thread / other、threadId 与标题、服务商、模型、输入 / 输出 / 缓存读 / 缓存写、合计、费用或 null）；只存数字与 ID。记账点：`service.ts` 的 `message_end`；压缩随所属会话的角色；`model-admin` 的探测与测试记为 other。线程预算逻辑不变。
+2. `os:usage` IPC：参数为范围（今天 / 7 天 / 30 天 / 全部）与项目；主进程汇总后返回总量、主 / 子 / 其他、按天、按模型、主 Agent 按项目、线程排行前 5，渲染进程不读原始文件。
+3. 设置面板 `features/settings/UsageSettings.tsx`，侧栏「插件」后加「用量与统计」（Lucide ChartColumn）；新回复后节流刷新。
+4. 测试：Node（追加与截断行容错、按月切分、汇总、主 / 子分开）与实窗（模拟模型跑协调对话 + 线程后面板数字一致）。
+
+分步：U1 Figma（已出，见 design.md）→ 用户确认 → U2 账本 + IPC + Node 测试 → U3 面板 + 实窗测试 + 记忆更新。
+
+实现要点：
+- 记账点统一在 `runtime.ts` 的 `streamFunction` 包装里：每个模型请求结束（done / error）且有 token 时调 `onUsage(usage, priced)`；上下文压缩也走这里（Pi 的压缩用 `agent.streamFunction`）。`priced` = 非自定义服务商且 SDK 模型有单价，否则费用记 null。
+- `kernel/usage.ts` `UsageLedger`：每次追加都以换行开头，崩溃截断的行读取时跳过；`summary` 按本地日期计算范围（今天 / 7 天 / 30 天 / 全部），“全部”超过 31 天按月分桶；`since` 取最早月份文件里的第一条。线程 / 项目名在查询时按当前注册表解析，已删除的显示“已删除的线程 / 项目”。
+- `AgentOs.recordUsage`（协调者 / 线程，带 projectId 与 sessionId）与 `ModelAdmin.onUsage`（角色 other）；写盘失败不影响轮次。`os:usage` → `AgentOs.usageSummary`，类型在 `shared/agent-usage.ts`，桥 `desktop.os.getUsage`。
+- 界面 `features/settings/UsageSettings.tsx`：设置侧栏「插件」后的「用量与统计」（`ChartColumn`，已加入 `@jarvis/ui/icons`）；快照变化后 2 秒内刷新；子 Agent 色为 `bg-accent/40`，其他为 `bg-fg-tertiary/50`（有其他时图例才显示）；线程行点开首页线程标签（`openThread`），已删除的线程不可点。总消耗：全部无价格时只写“N 个模型无价格”。
+- 测试：`tests/os-usage.spec.ts`（账本按月、截断行、范围与分桶、项目筛选、空账本；Agent OS 实跑协调者 + 线程分开计数、中转站费用为 null）；`tests/usage-ui.spec.ts`（空状态、对话后统计卡 / 按模型 / 按项目 / 7 根柱、切换今天与项目、深色截图、点线程打开）；`tests/helpers/os-relay.ts` 新增可选 `usage`。内置服务商的计价路径没有离线测试（需要真实服务商）。
+
 ## 8. 变更记录
 
 - 2026-10-26：建立本文件，记录用户确认的 U1–U4 与方案 A/B/C。
@@ -150,3 +180,5 @@ userData/agent/os/
 - 2026-10-26：用户通过右侧栏 Figma（U10）并要求决策卡可自填答案（U11）；完成 2c（第 7.3 节）。
 - 2026-10-26：完成 2a 后端（第 7.2 节）与 2b Figma 右侧栏评审稿（见 design.md），2c 待用户评审 Figma 后实现。
 - 2026-10-26：用户确认第二批方案（含“未打开文档按可撤销写盘”）并告知 develop 有写作空间 W1–W6 新功能。已合并 origin/develop `cc331ee`：旧 `service.ts` / `report.ts` / `writing-agent.spec.ts` 保持删除（旧写作 Agent 用例留作第二批参考）；星图拖线关联与撤销、改名/移动改由 AgentOs 处理（`os/spaces.ts`：画布/写作命令中转、各窗口打开的画布与文档、关联专用账本 `os/link-ledger`），画布与写作命令回执通道恢复。写作右侧栏与星图“寻找共鸣点”在第二批线程接回前保持不可用。合并后 `pnpm check`、`pnpm build` 通过；写作 / Agent / 外壳相关实窗 94 项中 93 通过，`updates.spec.ts:179` 单独复跑通过（时序抖动）。
+- 2026-10-26：用户确认设置「用量与统计」方案 S1–S4（第 7.4 节），先出 Figma 评审稿。
+- 2026-10-26：用户通过「用量与统计」Figma 并确认 S5；完成实现（第 7.4 节）。

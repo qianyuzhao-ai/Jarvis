@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { Usage } from '@earendil-works/pi-ai';
 import type { AgentSession } from '@earendil-works/pi-coding-agent';
 import type { ProbeResult, ProviderInput, UpdateModelInput } from '../../../shared/models';
 import { listRemoteModels, type ModelStore, type ResolvedModel } from '../model-store';
@@ -20,6 +21,8 @@ class ProbeError extends Error {
  */
 export class ModelAdmin {
   onChange: () => void = () => {};
+  /** Connection tests and probes spend tokens too; they count as "other" usage. */
+  onUsage: (model: ResolvedModel, usage: Usage, priced: boolean) => void = () => {};
   private operations = Promise.resolve();
   private testing = false;
   private testRun: { cancelled: boolean; sdk?: AgentSession } | null = null;
@@ -156,7 +159,10 @@ export class ModelAdmin {
     let sdk: AgentSession | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const runtime = await openAgent(this.root, randomUUID(), model, { transient: true });
+      const runtime = await openAgent(this.root, randomUUID(), model, {
+        transient: true,
+        onUsage: (usage, priced) => this.onUsage(model, usage, priced),
+      });
       sdk = runtime.session;
       run.sdk = sdk;
       if (run.cancelled) throw new Error('连接测试已取消');

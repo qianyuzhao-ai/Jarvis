@@ -30,6 +30,8 @@ import type { ReplyMode } from '../../../shared/agent-settings';
 import { skillCommand } from '../../../shared/agent-skills';
 import type { ChatMessage, NavigationTarget } from '../../../shared/agent';
 import type { ModelStore, ResolvedModel } from '../model-store';
+import type { Usage } from '@earendil-works/pi-ai';
+import type { UsageQuery } from '../../../shared/agent-usage';
 import { openAgent, replyFailure } from '../runtime';
 import { SessionLog, type QueuedWake } from '../kernel/event-log';
 import { Mailbox, INBOX_LIMIT } from '../kernel/mailbox';
@@ -39,6 +41,7 @@ import { APPROVE, callHash } from '../kernel/decisions';
 import { batchDeleteGuard, type Confirmer } from '../kernel/policy';
 import type { CapabilityPack, ToolContext } from '../kernel/capability';
 import { MemoryConflict } from '../kernel/memory';
+import { UsageLedger, type UsageEntry } from '../kernel/usage';
 import { SkillStore, type StoredSkill } from '../skill-store';
 import { skillsPack } from '../packs/skills';
 import { filesPack } from '../packs/files';
@@ -171,6 +174,7 @@ export class AgentOs {
   readonly scheduler = new Scheduler();
   readonly wakes = new WakeScheduler();
   readonly mailbox = new Mailbox();
+  readonly usage: UsageLedger;
   onChange: (event: OsEvent) => void = () => {};
   onSessionChange: (event: OsSessionEvent) => void = () => {};
   onNotify: (notice: OsNotice) => void = () => {};
@@ -200,8 +204,11 @@ export class AgentOs {
   ) {
     this.registry = new ProjectRegistry(join(root, 'os'));
     this.spaces = new SpaceHosts(join(root, 'os'), deps);
+    this.usage = new UsageLedger(join(root, 'os', 'usage'));
     this.models = new ModelAdmin(config, root, () => this.isBusy);
     this.models.onChange = () => this.emit();
+    this.models.onUsage = (model, usage, priced) =>
+      this.recordUsage({ role: 'other' }, model, usage, priced);
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
     this.settings = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
     this.scheduler.onChange = () => this.emit();
@@ -297,6 +304,7 @@ export class AgentOs {
     await this.models.cancel();
     await this.operations;
     await Promise.all([...this.sessions.values()].map((s) => s.log.settled()));
+    await this.usage.settled();
     clearTimeout(this.timer);
   }
   /** No round runs and no session has a wake it could start now. */
@@ -1274,6 +1282,13 @@ export class AgentOs {
           this.scheduler.acquire(session.id, signal, () => this.priority(session, wake)),
         maxRequests: limits.requests,
         maxToolCalls: limits.toolCalls,
+        onUsage: (usage, priced) =>
+          this.recordUsage(
+            { role: session.kind, projectId: runtime.id, sessionId: session.id },
+            model,
+            usage,
+            priced,
+          ),
       });
       run.sdk = runtimeSession.session;
       if (run.cancelled) {
@@ -1855,6 +1870,46 @@ export class AgentOs {
         return { delivered: true };
       },
     };
+  }
+
+  // ---------------------------------------------------------------- usage
+
+  /** Adds one model reply to the usage ledger; a failed write never affects the round. */
+  private recordUsage(
+    who: Pick<UsageEntry, 'role' | 'projectId' | 'sessionId'>,
+    model: ResolvedModel,
+    usage: Usage,
+    priced: boolean,
+  ) {
+    const whole = (n: number | undefined) => Math.max(0, Math.round(n ?? 0));
+    this.usage
+      .record({
+        ...who,
+        at: Date.now(),
+        provider: model.providerName.slice(0, 200),
+        model: model.name.slice(0, 200),
+        input: whole(usage.input),
+        output: whole(usage.output),
+        cacheRead: whole(usage.cacheRead),
+        cacheWrite: whole(usage.cacheWrite),
+        tokens: whole(
+          usage.totalTokens || usage.input + usage.output + usage.cacheRead + usage.cacheWrite,
+        ),
+        cost: priced && Number.isFinite(usage.cost.total) ? Math.max(0, usage.cost.total) : null,
+      })
+      .catch(() => {});
+  }
+  usageSummary(query: UsageQuery) {
+    return this.usage.summary(query, {
+      project: (id) => this.registry.runtimes.get(id)?.project.title,
+      thread: (id) => {
+        for (const runtime of this.registry.list()) {
+          const thread = runtime.threads.find((t) => t.id === id);
+          if (thread) return { title: thread.title, projectId: runtime.id };
+        }
+        return undefined;
+      },
+    });
   }
 
   // ---------------------------------------------------------------- thread states

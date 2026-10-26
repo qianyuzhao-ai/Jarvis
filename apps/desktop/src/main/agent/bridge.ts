@@ -37,6 +37,7 @@ import { LocalCalendar } from './calendar/local';
 import { rangeSchema } from '../../shared/agent-calendar';
 import { mcpServerInputSchema } from '../../shared/agent-mcp';
 import { memoryName } from './kernel/memory';
+import { usageQuerySchema } from '../../shared/agent-usage';
 import { openTargetsSchema } from '../../shared/agent-targets';
 import { canvasReplySchema } from '../../shared/canvas-agent';
 import { writingReplySchema } from '../../shared/writing-agent';
@@ -271,6 +272,7 @@ export async function registerAgent() {
       return os.removeFolder(v.projectId, v.folderId);
     },
     'os:memory': (r) => os.listMemory(osId.parse(r)),
+    'os:usage': (r) => os.usageSummary(usageQuerySchema.parse(r)),
     'os:memory-topic': (r) => {
       const v = z.object({ projectId: osId, name: memoryName }).strict().parse(r);
       return os.readMemory(v.projectId, v.name);

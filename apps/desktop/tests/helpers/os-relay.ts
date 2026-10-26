@@ -17,13 +17,14 @@ const text = (m?: Message) =>
  * for each user message and repeats the thread's result summary when it hears back; the thread
  * runs `steps` in order. When a step is held for the user's approval (a decision card), the
  * thread ends its round and, once approved, runs that step again and carries on, then reports
- * `done` as its result.
+ * `done` as its result. With `usage`, every reply reports those token counts.
  */
 export async function osRelay(options: {
   title: string;
   capabilities: string[];
   steps: Step[];
   done: string;
+  usage?: { prompt_tokens: number; completion_tokens: number };
 }) {
   const results: string[] = [];
   let blocked = -1;
@@ -79,8 +80,9 @@ export async function osRelay(options: {
       }
     }
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+    const usage = finishUsage(options.usage);
     const chunk = (delta: unknown, finish: string | null = null) =>
-      `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', created: 1, model: 'mock', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+      `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', created: 1, model: 'mock', choices: [{ index: 0, delta, finish_reason: finish }], ...(finish ? usage : {}) })}\n\n`;
     res.end(
       ('call' in reply
         ? chunk({
@@ -100,4 +102,9 @@ export async function osRelay(options: {
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('server');
   return { server, url: `http://127.0.0.1:${address.port}/v1` };
+}
+function finishUsage(usage?: { prompt_tokens: number; completion_tokens: number }) {
+  return usage
+    ? { usage: { ...usage, total_tokens: usage.prompt_tokens + usage.completion_tokens } }
+    : {};
 }

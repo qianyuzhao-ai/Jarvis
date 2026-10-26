@@ -38,6 +38,7 @@ import { placeExists, placeOf, placeTitle } from './features/agent/os-view';
 import { setThreadOpener } from './features/agent/open-thread';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
+import { UsageSettings } from './features/settings/UsageSettings';
 import { useAppUpdates } from './features/updates/use-app-updates';
 import { useUpdateGuard } from './features/updates/use-update-guard';
 import { UpdateStatus } from './features/updates/UpdateStatus';
@@ -45,7 +46,7 @@ import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'usage' | 'about';
 function Workbench({ initial }: { initial: { data: WorkspaceData; records: ProjectRecord[] } }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
@@ -551,6 +552,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     models: '模型',
                     services: '内网地址',
                     plugins: '插件',
+                    usage: '用量与统计',
                     about: '关于 Jarvis',
                   }[settingsSection]
                 }
@@ -561,6 +563,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                 hidden={
                   settingsSection === 'models' ||
                   settingsSection === 'plugins' ||
+                  settingsSection === 'usage' ||
                   settingsSection === 'about'
                 }
               >
@@ -580,6 +583,12 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
               <p className="launch-message">正在读取模型配置…</p>
             ) : (
               <ModelSettings value={agent.configuration} busy={agent.anyBusy} />
+            )
+          ) : route === 'settings' && settingsSection === 'usage' ? (
+            agent.loading ? (
+              <p className="launch-message">正在读取用量…</p>
+            ) : (
+              <UsageSettings snapshot={agent.snapshot} />
             )
           ) : route === 'settings' && settingsSection === 'plugins' ? (
             agent.loading ? (
