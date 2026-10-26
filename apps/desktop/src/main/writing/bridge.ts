@@ -78,10 +78,7 @@ export async function registerWriting() {
     'writing:link': async (request) => {
       const input = writingLinkSchema.parse(request),
         service = writingAgentService();
-      const rootId =
-        input.action === 'undo'
-          ? service.ledger.find(input.transactionId)?.writingScope?.rootId
-          : input.rootId;
+      const rootId = input.action === 'undo' ? service.linkRoot(input.transactionId) : input.rootId;
       const result = await service.linkWriting(input);
       if (rootId) push('writing:graph-changed', { rootId });
       return result;

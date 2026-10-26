@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## V1.0.0 Agent OS 合入 develop（2026-10-26）
+
+- 用户要求把 V1.0.0 Agent OS 分支 `claude/agent-logic-redesign-9irs9g` 提 PR 到 develop，检查之前的分支是否都已合入，并保持远端只剩 main 与 develop。
+- 检查结果：`ccr-d35e3739-eyt9tu` 已完整包含在 develop 中（领先 0）；`feature/claude-md` 有 1 个未合入提交 `ff50fde`（新增 CLAUDE.md），main 有 develop 缺少的 `a804786`（0.4.0 发布合并）与 `fe4be87`（0.4.0 验收记录）。已把 origin/main 与 `feature/claude-md` 合并进 V1 分支（均无冲突），随本次 PR 一并进入 develop。
+- 远端清理：已合入或已并入本 PR 的 `ccr-d35e3739-eyt9tu`、`feature/claude-md` 删除；V1 分支在 PR 合并后删除，届时远端只剩 main 与 develop。标签不动。
+
 ## 写作空间 W6 总验收（2026-10-26）
 
 用户明确开始 W6，沿用 feature/writing-space，验收与报告提交 `f851825`；完整回归 205/207，保留日历/焦点失败，整体验收未通过。授权范围仍是阶段提交与功能分支推送；不创建 PR、合并、标签或发布。原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。

@@ -38,7 +38,7 @@ test('caret menu has thumbnails and keyboard selection; tags delete, undo, cut a
     page.on('pageerror', (e) => errors.push(e.message));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1440, 900));
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
     const image = await readFile(resolve(import.meta.dirname, 'fixtures/vision-sample.jpg'));

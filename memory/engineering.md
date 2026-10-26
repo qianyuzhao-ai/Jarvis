@@ -2,6 +2,13 @@
 
 最后更新：2026-10-26
 
+## V1.0.0 Agent OS 第一批（2026-10-26）
+
+- 分支 `claude/agent-logic-redesign-9irs9g`（基于 origin/develop `48d698e`）。用户授权 V1.0.0 推翻旧 Agent 逻辑、分批实现。决策、模块与验证详见 [agent-os-v1.md](agent-os-v1.md)。
+- 测试：新增 `tests/os-kernel.spec.ts`、`tests/os-flow.spec.ts`、`tests/helpers/os.ts`（Node 级 mock 模型）与 `tests/helpers/os-relay.ts`（实窗测试中同时扮演 Coordinator 与线程的 mock）。删除只覆盖已移除功能的用例：agent-approval、agent-cards(-ui)、agent-delegation(-ui)、agent-generation-ui、agent-migration、agent-store、canvas-agent、canvas-agent-vision、writing-agent（画布/写作 Agent 在第二批重写测试）。
+- 1c（2026-10-26）：新增 `tests/os-ui.spec.ts` 与 `tests/helpers/os-ui.ts`；“新对话”相关用例改用 `newProject`（项目菜单新建）。项目菜单连续操作要先等上一个菜单关闭动画结束（`projectMenu` 助手），否则 Radix 的焦点归还会立即关掉新开的菜单。完整实窗 166/168 → 修正后仅剩基线几何断言失败。
+- Linux 容器复验 keyring 方案仍有效：apt 安装 gnome-keyring，`xvfb-run -a dbus-run-session -- <脚本>` 内用 `gnome-keyring-daemon --unlock` 并设 `XDG_CURRENT_DESKTOP=GNOME`，临时把 playwright-core 的 `lib/coreBundle.js` 与 `lib/server/electron/loader.js` 中 `--password-store=basic` 改为 `gnome-libsecret`，验证后已还原。结果 166/167，唯一失败 `agent.spec.ts:153`（首页建议区几何）在基线同样失败。
+
 ## 写作空间 W6 总验收（2026-10-26）
 
 本轮补齐写作总验收八页面截图及 Chromium PDF 独立 frame 的真实加载验证，没有新增生产依赖或 IPC。文件/资产接口、GraphIndex 缓存位置和 Agent 边界沿用 W1–W5；本轮只读诊断确认日历未授权、原生窗口未获得焦点。check/build 通过，完整回归 205/207（6.2m），仅既有日历和焦点失败；目录包 593 项依赖、ASAR 写作/富模块/星图/保存通过。W6 报告完成但整体验收未通过。详情见 [写作实施记录](writing-space-implementation.md)。

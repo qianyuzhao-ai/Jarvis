@@ -1,20 +1,22 @@
-import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
-import { Button, IconButton } from '@jarvis/ui/components/Button';
-import { Sparkles, X } from '@jarvis/ui/icons';
-import { Alert } from '@jarvis/ui/components/Alert';
+import { AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
+import { Button } from '@jarvis/ui/components/Button';
 import { Toggle } from '@jarvis/ui/components/Toggle';
-import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronLeft, History, Plus } from '@jarvis/ui/icons';
-import { visualSource } from './canvas-vision';
-import { CanvasAttachments } from './CanvasAttachments';
-import { useCanvasAttachments } from './use-canvas-attachments';
-import { CanvasConversations } from './CanvasConversations';
-import { useAgent } from '../agent/use-agent';
+import { Sparkles } from '@jarvis/ui/icons';
+import { useRef, useState } from 'react';
+import { osValue } from '../../../../shared/agent-os';
 import { ChatComposer } from '../agent/ChatComposer';
-import { ChatMessageItem } from '../agent/ChatMessageItem';
-import { canvasSnapshot } from './canvas-context';
+import { SpaceThreadPanel } from '../agent/SpaceThreadPanel';
+import { osBridge } from '../agent/use-agent';
+import { useSpaceThread } from '../agent/use-space-thread';
+import { CanvasAttachments } from './CanvasAttachments';
+import { visualSource } from './canvas-vision';
+import { useCanvasAttachments } from './use-canvas-attachments';
 import type { Project } from './types';
 
+/**
+ * The canvas sidebar: the thread bound to this canvas. Messages carry the selected nodes and,
+ * when added, their images or video frames; edits are saved to the canvas and can be undone.
+ */
 export function CanvasAgentSidebar({
   project,
   selectedIds,
@@ -34,40 +36,17 @@ export function CanvasAgentSidebar({
   focus: (ids: string[]) => void;
   configure: () => void;
 }) {
-  const agent = useAgent(project.id);
-  const attachments = useCanvasAttachments(project, selectedIds, agent.setError);
+  const space = useSpaceThread({ kind: 'canvas', canvasId: project.id });
+  const attachments = useCanvasAttachments(project, selectedIds, space.setError);
   const [text, setText] = useState('');
   const [draftModel, setDraftModel] = useState('');
-  const resize = useRef<{ x: number; width: number } | null>(null);
-  const panelWidth = Math.min(width, window.innerWidth - 360);
-  const session = agent.session;
-  const [history, setHistory] = useState(false);
   const [includeSelected, setIncludeSelected] = useState(true);
-  const [atBottom, setAtBottom] = useState(true);
-  const [now, setNow] = useState(Date.now);
   const [undoing, setUndoing] = useState(false);
+  const resize = useRef<{ x: number; width: number } | null>(null);
   const pending = useRef(false);
   const input = useRef<HTMLTextAreaElement>(null);
-  const viewport = useRef<HTMLDivElement>(null);
-  const following = useRef(true);
-  const last = session?.messages.at(-1);
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-  useEffect(() => {
-    const n = viewport.current;
-    if (n && following.current) n.scrollTop = n.scrollHeight;
-  }, [last?.text, last?.activities?.length, last?.status, open]);
-  useEffect(() => {
-    const node = viewport.current;
-    if (!node) return;
-    const observer = new ResizeObserver(() => {
-      if (following.current) node.scrollTop = node.scrollHeight;
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+  const panelWidth = Math.min(width, window.innerWidth - 360);
+  const session = space.session;
   async function submit() {
     if (
       pending.current ||
@@ -84,8 +63,6 @@ export function CanvasAgentSidebar({
           ...attachments.entries.map((e) => e.nodeId),
         ]),
       ];
-      if (attachments.entries.some((e) => !project.nodes.some((n) => n.id === e.nodeId)))
-        throw new Error('已添加的资产不再位于当前画布，请移除后重试');
       if (
         attachments.entries.some((e) => {
           const node = project.nodes.find((n) => n.id === e.nodeId);
@@ -93,160 +70,34 @@ export function CanvasAgentSidebar({
         })
       )
         throw new Error('已添加的资产发生变化，请移除后重新添加');
-      const snapshot = await canvasSnapshot(project, references);
-      following.current = true;
       if (
-        await agent.send(
-          text.trim() || '请分析本次发送的图片和视频帧。',
-          draftModel || undefined,
-          snapshot,
-          attachments.images,
-        )
+        await space.send(text.trim() || '请分析本次发送的图片和视频帧。', draftModel || undefined, {
+          selectedIds: references,
+          images: attachments.images,
+        })
       ) {
         setText('');
         attachments.clear();
       }
     } catch (error) {
-      agent.setError(error instanceof Error ? error.message : '读取画布失败');
+      space.setError(error instanceof Error ? error.message : '读取画布失败');
     } finally {
       pending.current = false;
     }
   }
   async function undo(id: string) {
-    if (pending.current || agent.scopeBusy) return;
-    pending.current = true;
+    if (undoing) return;
     setUndoing(true);
-    agent.setError('');
-    try {
-      await agent.undoChange(id);
-    } finally {
-      pending.current = false;
-      setUndoing(false);
-    }
+    await space.act(async () => osValue(await osBridge().undo(id)), '撤销失败');
+    setUndoing(false);
   }
-  const actions = {
-    focus,
-    undo: (id: string) => void undo(id),
-    canUndo: (id: string) => !undoing && !agent.scopeBusy && project.agentEdits.at(-1)?.id === id,
-  };
   return (
     <div
       data-testid="canvas-agent-shell"
       className="canvas-agent-shell"
       style={{ width: open ? panelWidth : 0 }}
     >
-      <AssistantPanel
-        title="画布助手"
-        header={
-          <header data-testid="canvas-agent-header" className="canvas-agent-header">
-            {history && (
-              <IconButton
-                variant="ghost"
-                size="icon-sm"
-                aria-label="返回当前聊天"
-                onClick={() => setHistory(false)}
-              >
-                <ChevronLeft size={18} />
-              </IconButton>
-            )}
-            <div className="canvas-agent-heading">
-              <span>画布助手</span>
-              <strong title={history ? '历史对话' : (session?.title ?? '新聊天')}>
-                {history ? '历史对话' : (session?.title ?? '新聊天')}
-              </strong>
-            </div>
-            {!history && (
-              <IconButton
-                variant="ghost"
-                size="icon-sm"
-                aria-label="画布对话历史"
-                disabled={attachments.preparing}
-                onClick={() => setHistory(true)}
-              >
-                <History size={18} />
-              </IconButton>
-            )}
-            <IconButton
-              variant="ghost"
-              size="icon"
-              className="canvas-agent-new-chat"
-              aria-label="新建画布对话"
-              disabled={attachments.preparing}
-              onClick={() => {
-                agent.newChat();
-                setText('');
-                attachments.clear();
-                setHistory(false);
-              }}
-            >
-              <Plus size={18} />
-            </IconButton>
-            <IconButton variant="ghost" size="icon-sm" aria-label="关闭画布助手" onClick={onClose}>
-              <X size={16} />
-            </IconButton>
-          </header>
-        }
-        composer={
-          <div className="canvas-agent-dock" hidden={history}>
-            {!atBottom && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="canvas-agent-latest"
-                type="button"
-                onClick={() => {
-                  const n = viewport.current;
-                  if (n) n.scrollTop = n.scrollHeight;
-                  following.current = true;
-                  setAtBottom(true);
-                }}
-              >
-                <ArrowDown size={14} />
-                回到最新
-              </Button>
-            )}
-            <CanvasAttachments
-              entries={attachments.entries}
-              preparing={attachments.preparing}
-              remove={attachments.remove}
-              focus={focus}
-            />
-            <ChatComposer
-              compact
-              context={
-                <div data-testid="canvas-context-scope" className="canvas-context-scope">
-                  <span>当前画布 · {project.nodes.length} 个节点</span>
-                  {selectedIds.length > 0 && (
-                    <Toggle
-                      size="sm"
-                      pressed={includeSelected}
-                      onPressedChange={setIncludeSelected}
-                    >
-                      {includeSelected ? '已引用' : '引用'} {selectedIds.length} 个选中节点
-                    </Toggle>
-                  )}
-                </div>
-              }
-              onAttach={() => void attachments.add()}
-              preparing={attachments.preparing || attachments.blocked}
-              hasAttachments={attachments.images.length > 0}
-              agent={agent}
-              text={text}
-              setText={setText}
-              input={input}
-              model={
-                session
-                  ? (session.modelId ?? '')
-                  : draftModel || agent.configuration.defaultModelId || ''
-              }
-              onModel={(value) => {
-                if (session) void agent.model(value);
-                else setDraftModel(value);
-              }}
-              onSubmit={submit}
-            />
-          </div>
-        }
+      <SpaceThreadPanel
         id="canvas-agent"
         data-testid="canvas-agent"
         className="canvas-agent"
@@ -255,153 +106,138 @@ export function CanvasAgentSidebar({
         inert={!open}
         data-open={open}
         style={{ width: panelWidth }}
-      >
-        <div
-          className="canvas-agent-resizer"
-          role="separator"
-          tabIndex={0}
-          aria-label="调整画布助手宽度"
-          aria-orientation="vertical"
-          aria-valuenow={width}
-          aria-valuemin={340}
-          aria-valuemax={560}
-          onPointerDown={(e) => {
-            resize.current = { x: e.clientX, width };
-            e.currentTarget.setPointerCapture(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            if (resize.current) {
-              const value = Math.max(
-                340,
-                Math.min(
-                  560,
-                  window.innerWidth - 360,
-                  resize.current.width + resize.current.x - e.clientX,
-                ),
-              );
-              onWidth(value);
-            }
-          }}
-          onPointerUp={() => {
-            resize.current = null;
-          }}
-          onPointerCancel={() => {
-            resize.current = null;
-          }}
-          onKeyDown={(e) => {
-            if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
-              e.preventDefault();
-              const value = Math.max(
-                340,
-                Math.min(560, width + (e.key === 'ArrowLeft' ? 10 : -10)),
-              );
-              onWidth(value);
-            }
-          }}
-        />
-
-        {!history &&
-          !!project.agentEdits.length &&
-          !session?.messages.some((m) =>
-            m.activities?.some((a) => a.transactionId === project.agentEdits.at(-1)?.id),
-          ) && (
-            <div className="canvas-agent-recovery">
-              <span>最近的画布修改</span>
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                disabled={agent.scopeBusy || undoing}
-                onClick={() => {
-                  const id = project.agentEdits.at(-1)?.id;
-                  if (id) void undo(id);
-                }}
-              >
-                撤销最近修改
-              </Button>
-            </div>
-          )}
-        {history && (
-          <CanvasConversations
-            sessions={agent.snapshot.sessions}
-            currentId={session?.id}
-            busy={agent.scopeBusy || agent.sending || attachments.preparing}
-            select={(id) => {
-              if (attachments.preparing) return;
-              agent.select(id);
-              setText('');
-              attachments.clear();
-              setHistory(false);
+        space={space}
+        label="画布助手"
+        closeLabel="关闭画布助手"
+        onClose={onClose}
+        canvas={{
+          focus,
+          undo: (id) => void undo(id),
+          canUndo: (id) => !undoing && !space.busy && project.agentEdits.at(-1)?.id === id,
+        }}
+        before={
+          <div
+            className="canvas-agent-resizer"
+            role="separator"
+            tabIndex={0}
+            aria-label="调整画布助手宽度"
+            aria-orientation="vertical"
+            aria-valuenow={width}
+            aria-valuemin={340}
+            aria-valuemax={560}
+            onPointerDown={(e) => {
+              resize.current = { x: e.clientX, width };
+              e.currentTarget.setPointerCapture(e.pointerId);
             }}
-            rename={agent.renameConversation}
-            remove={agent.deleteConversation}
+            onPointerMove={(e) => {
+              if (resize.current)
+                onWidth(
+                  Math.max(
+                    340,
+                    Math.min(
+                      560,
+                      window.innerWidth - 360,
+                      resize.current.width + resize.current.x - e.clientX,
+                    ),
+                  ),
+                );
+            }}
+            onPointerUp={() => {
+              resize.current = null;
+            }}
+            onPointerCancel={() => {
+              resize.current = null;
+            }}
+            onKeyDown={(e) => {
+              if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                onWidth(Math.max(340, Math.min(560, width + (e.key === 'ArrowLeft' ? 10 : -10))));
+              }
+            }}
           />
-        )}
-        {agent.error && (
-          <Alert tone="error" onDismiss={() => agent.setError('')} closeLabel="关闭">
-            {agent.error}
-          </Alert>
-        )}
-        <div
-          className="canvas-agent-scroll"
-          hidden={history}
-          ref={viewport}
-          onScroll={() => {
-            const n = viewport.current;
-            if (n) {
-              following.current = n.scrollHeight - n.scrollTop - n.clientHeight < 64;
-              setAtBottom(following.current);
-            }
-          }}
-        >
-          {!session?.messages.length ? (
-            <AssistantEmpty
-              className="canvas-agent-welcome"
-              title="画布助手"
-              icon={<Sparkles size={24} />}
-            >
-              <p>可以查看节点、调整提示词和参数、创建节点与连接。修改后可撤销。</p>
-              <p>多选图片或视频后，点击输入框下方 + 添加。图片直接发送，视频抽取代表帧。</p>
-              {!agent.configured ? (
-                <Button variant="secondary" size="sm" type="button" onClick={configure}>
-                  前往模型设置
+        }
+        empty={
+          <AssistantEmpty
+            className="canvas-agent-welcome"
+            title="画布助手"
+            icon={<Sparkles size={24} />}
+          >
+            <p>
+              对这张画布说要做什么，会开一个线程来做：查看节点、调整提示词和参数、创建节点与连接、发起生成。修改后可撤销。
+            </p>
+            <p>多选图片或视频后，点击输入框下方 + 添加。图片直接发送，视频抽取代表帧。</p>
+            {!space.configured ? (
+              <Button variant="secondary" size="sm" type="button" onClick={configure}>
+                前往模型设置
+              </Button>
+            ) : (
+              ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  data-testid="side-link"
+                  className="side-link"
+                  key={s}
+                  onClick={() => {
+                    setText(s);
+                    input.current?.focus();
+                  }}
+                >
+                  {s}
                 </Button>
-              ) : (
-                ['梳理当前画布的流程', '检查选中节点的提示词', '帮我创建一个视频节点'].map((s) => (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    data-testid="side-link"
-                    className="side-link"
-                    key={s}
-                    onClick={() => {
-                      setText(s);
-                      input.current?.focus();
-                    }}
-                  >
-                    {s}
-                  </Button>
-                ))
-              )}
-            </AssistantEmpty>
-          ) : (
-            <div className="chat-messages" role="log" aria-label="画布对话消息" aria-live="off">
-              {session.messages.map((m) => (
-                <ChatMessageItem
-                  key={m.id}
-                  message={m}
-                  waiting={agent.waiting}
-                  sessionId={session.id}
-                  now={now}
-                  onError={agent.setError}
-                  canvas={actions}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </AssistantPanel>
+              ))
+            )}
+          </AssistantEmpty>
+        }
+        composer={
+          <div className="canvas-agent-dock">
+            <CanvasAttachments
+              entries={attachments.entries}
+              preparing={attachments.preparing}
+              remove={attachments.remove}
+              focus={focus}
+            />
+            <ChatComposer
+              compact
+              placeholder="对这个线程说…（只改这个画布）"
+              context={
+                <div data-testid="canvas-context-scope" className="canvas-context-scope">
+                  {selectedIds.length > 0 ? (
+                    <Toggle
+                      size="sm"
+                      pressed={includeSelected}
+                      onPressedChange={setIncludeSelected}
+                    >
+                      {includeSelected ? '已选' : '引用'} {selectedIds.length} 个节点
+                    </Toggle>
+                  ) : (
+                    <span>未选节点</span>
+                  )}
+                  <span>{project.name}</span>
+                </div>
+              }
+              onAttach={() => void attachments.add()}
+              preparing={attachments.preparing || attachments.blocked}
+              hasAttachments={attachments.images.length > 0}
+              agent={space}
+              text={text}
+              setText={setText}
+              input={input}
+              model={
+                session
+                  ? (session.modelId ?? '')
+                  : draftModel || space.configuration.defaultModelId || ''
+              }
+              onModel={(value) => {
+                if (session) void space.model(value);
+                else setDraftModel(value);
+              }}
+              onSubmit={submit}
+            />
+          </div>
+        }
+      />
     </div>
   );
 }

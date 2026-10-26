@@ -272,7 +272,7 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
   try {
     let page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await expect(page.getByRole('button', { name: '展开画布助手', exact: true })).toBeEnabled();
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' });
@@ -297,8 +297,8 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('删除节点后导出');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('删除节点后导出');
     await page
       .getByLabel('导入画布素材')
       .setInputFiles({ name: 'asset.png', mimeType: 'image/png', buffer: png });

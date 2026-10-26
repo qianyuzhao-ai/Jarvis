@@ -55,6 +55,7 @@ export class Ledger {
         ...(entry.inverse ? { inverse: entry.inverse } : {}),
         ...(entry.afterRevision ? { afterRevision: entry.afterRevision } : {}),
         ...(entry.fileOps ? { fileOps: entry.fileOps } : {}),
+        ...(entry.textChanges ? { textChanges: entry.textChanges } : {}),
       });
     else entries.push({ ...entry, status: 'applied', createdAt: now, updatedAt: now });
     const runs = [...new Set(entries.map((e) => e.runId))].slice(-LEDGER_ROUNDS);

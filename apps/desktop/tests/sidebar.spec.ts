@@ -17,7 +17,7 @@ test('canvas assistant slides in and out, reverses, restores focus and respects 
     const page = await app.firstWindow();
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     const sidebar = page.getByTestId('canvas-agent');
     const offset = () =>
       sidebar.evaluate((n) => new DOMMatrixReadOnly(getComputedStyle(n).transform).m41);

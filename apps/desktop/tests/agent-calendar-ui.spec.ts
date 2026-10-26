@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto';
-import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { osRelay } from './helpers/os-relay';
+import { approveInOverview } from './helpers/os-ui';
 
 /** Today at a local hour, as ISO 8601 with the local offset. */
 function todayAt(hour: number) {
@@ -15,42 +15,17 @@ function todayAt(hour: number) {
 
 test('the calendar view shows the week and an event Jarvis booked after the user approved it', async () => {
   test.setTimeout(60000);
-  const server = createServer(async (req, res) => {
-    const chunks = [];
-    for await (const part of req) chunks.push(part);
-    const body = JSON.parse(Buffer.concat(chunks).toString());
-    const userIndex = body.messages.findLastIndex((m: { role: string }) => m.role === 'user');
-    const step = body.messages
-      .slice(userIndex + 1)
-      .filter((m: { role: string }) => m.role === 'tool').length;
-    const steps: [string, unknown][] = [
-      [
+  const { server, url } = await osRelay({
+    title: '约小王开会',
+    capabilities: ['calendar'],
+    steps: [
+      () => [
         'create_event',
         { title: '和小王开会', start: todayAt(15), end: todayAt(16), location: '会议室 A' },
       ],
-    ];
-    const next = steps[step];
-    res.writeHead(200, { 'Content-Type': 'text/event-stream' });
-    const chunk = (delta: unknown, finish: string | null = null) =>
-      `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', created: 1, model: 'mock', choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
-    res.end(
-      (next
-        ? chunk({
-            tool_calls: [
-              {
-                index: 0,
-                id: randomUUID(),
-                type: 'function',
-                function: { name: next[0], arguments: JSON.stringify(next[1]) },
-              },
-            ],
-          }) + chunk({}, 'tool_calls')
-        : chunk({ content: '已约好今天下午三点。' }) + chunk({}, 'stop')) + 'data: [DONE]\n\n',
-    );
+    ],
+    done: '已约好今天下午三点。',
   });
-  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
-  const address = server.address();
-  if (!address || typeof address === 'string') throw new Error('server');
   const app = await electron.launch({
     args: [
       resolve(import.meta.dirname, '..'),
@@ -67,7 +42,7 @@ test('the calendar view shows the week and an event Jarvis booked after the user
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.getByRole('heading', { name: '先添加一个模型' }).waitFor();
-    await addRelayModel(page, { baseUrl: `http://127.0.0.1:${address.port}/v1`, model: 'mock' });
+    await addRelayModel(page, { baseUrl: url, model: 'mock' });
     await page.reload();
 
     await page.getByRole('button', { name: '日历', exact: true }).click();
@@ -80,10 +55,8 @@ test('the calendar view shows the week and an event Jarvis booked after the user
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByLabel('消息', { exact: true }).fill('今天下午三点和小王开会');
     await page.getByRole('button', { name: '发送消息' }).click();
-    const approval = page.getByRole('alertdialog');
-    await expect(approval).toContainText('新建日程');
-    await expect(approval).toContainText('和小王开会');
-    await approval.getByRole('button', { name: '允许' }).click();
+    // A thread does the booking; the irreversible step waits on a decision card.
+    await approveInOverview(page, ['新建日程', '和小王开会']);
     await expect(page.getByText('已约好今天下午三点。')).toBeVisible();
 
     await page.getByRole('button', { name: '日历', exact: true }).click();

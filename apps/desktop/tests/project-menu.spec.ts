@@ -17,8 +17,8 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     for (const name of ['1', '2']) {
-      await page.getByRole('button', { name: '新建项目', exact: true }).click();
-      await page.getByLabel('项目名称', { exact: true }).fill(name);
+      await page.getByRole('button', { name: '新建画布', exact: true }).click();
+      await page.getByLabel('画布名称', { exact: true }).fill(name);
     }
     await page.getByRole('button', { name: '图像', exact: true }).click();
     const rows = page.getByTestId('project-row');
@@ -31,7 +31,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     await more().hover();
     await expect(page.getByRole('tooltip')).toHaveText('更多');
     await more().click();
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('2');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('2');
     const menu = page.getByRole('menu');
     await expect(menu.getByRole('menuitem')).toHaveText(['在新标签页打开', '重命名', '删除']);
     const width = await menu.evaluate((node) => node.getBoundingClientRect().width);
@@ -44,7 +44,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     await page.getByRole('menuitem', { name: '在新标签页打开', exact: true }).click();
     await expect(tabs.getByRole('tab', { name: '1', exact: true })).toBeVisible();
     await expect(tabs.getByRole('tab', { name: '2', exact: true })).toBeVisible();
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('1');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('1');
     const count = await tabs.getByRole('tab').count();
     await more().click();
     await page.getByRole('menuitem', { name: '在新标签页打开', exact: true }).click();
@@ -57,7 +57,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     await expect(rows).toHaveCount(2);
     await more().click();
     await page.getByRole('menuitem', { name: '删除', exact: true }).click();
-    await confirm.getByRole('button', { name: '删除项目', exact: true }).click();
+    await confirm.getByRole('button', { name: '删除画布', exact: true }).click();
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toBeFocused();
     await expect(tabs.getByRole('tab', { name: '1', exact: true })).toHaveCount(0);
@@ -65,7 +65,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
     await expect(page.locator('.react-flow__node')).toHaveCount(1);
     await page.reload();
     await expect(rows).toHaveCount(1);
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('2');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('2');
     await expect(page.locator('.react-flow__node')).toHaveCount(1);
     await page.getByRole('button', { name: '设置', exact: true }).click();
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
@@ -80,7 +80,7 @@ test('project menu opens tabs, confirms deletion and restores the remaining proj
       path: test.info().outputPath('project-menu-dark-compact.png'),
     });
     await page.getByRole('menuitem', { name: '删除', exact: true }).click();
-    await confirm.getByRole('button', { name: '删除项目', exact: true }).click();
+    await confirm.getByRole('button', { name: '删除画布', exact: true }).click();
     await expect(tabs.getByRole('tab', { name: '2', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await expect(rows).toHaveCount(0);

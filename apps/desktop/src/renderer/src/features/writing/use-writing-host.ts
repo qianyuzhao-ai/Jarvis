@@ -173,18 +173,24 @@ export function useWritingHost(
           latest.current.setNotice(error instanceof Error ? error.message : '写作回执失败'),
         );
     });
-    const offEvents = bridge.onEvent(({ snapshot }) => {
-      const current = view.current,
-        run = current?.agentRun();
-      const doc = latest.current.getDocuments().find((d) => d.id === current?.id);
-      if (
-        current &&
-        run &&
-        doc &&
-        !snapshot.sessions.some((s) => sameWritingScope(s.writingScope, doc) && s.runId === run)
-      )
-        current.finishAgent();
-    });
+    // A thread's edits form one undo step in the editor until no thread works on the document.
+    const offEvents =
+      window.desktop?.os.onEvent(({ snapshot }) => {
+        const current = view.current,
+          run = current?.agentRun();
+        const doc = latest.current.getDocuments().find((d) => d.id === current?.id);
+        if (
+          current &&
+          run &&
+          doc &&
+          !snapshot.threads.some(
+            (t) =>
+              t.id in snapshot.runs &&
+              t.targets.some((x) => x.kind === 'document' && sameWritingScope(x, doc)),
+          )
+        )
+          current.finishAgent();
+      }) ?? (() => {});
     return () => {
       mounted = false;
       off();

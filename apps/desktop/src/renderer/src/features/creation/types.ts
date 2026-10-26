@@ -122,7 +122,7 @@ export const emptyWorkspace: WorkspaceData = {
 export function createProject(): Project {
   return {
     id: crypto.randomUUID(),
-    name: '未命名项目',
+    name: '未命名画布',
     updatedAt: Date.now(),
     nodes: [],
     edges: [],

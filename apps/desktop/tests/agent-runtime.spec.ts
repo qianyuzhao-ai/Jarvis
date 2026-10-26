@@ -4,8 +4,6 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test, expect } from '@playwright/test';
 import { openAgent } from '../src/main/agent/runtime';
-import { AgentStore } from '../src/main/agent/store';
-import { JsonFile } from '../src/main/agent/json-file';
 import { relayModel } from './helpers/models';
 
 test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and supports abort', async () => {
@@ -71,26 +69,6 @@ test('Pi SDK streams Unicode, suppresses tools, detects incomplete SSE and suppo
     server.closeAllConnections();
     await new Promise<void>((r) => server.close(() => r()));
   }
-});
-
-test('agent records recover unfinished runs without reissuing requests', async () => {
-  const file = new JsonFile(test.info().outputPath('index.json'));
-  const store = new AgentStore(file);
-  const id = await store.create(relayModel({ baseUrl: 'http://localhost:1234/v1', model: 'mock' }));
-  const r = store.record(id);
-  r.view.runId = randomUUID();
-  r.view.messages.push({
-    id: randomUUID(),
-    role: 'assistant',
-    text: '部分内容',
-    status: 'running',
-  });
-  await store.save(id);
-  const recovered = new AgentStore(file);
-  await recovered.initialize();
-  expect(recovered.record(id).view.runId).toBeNull();
-  expect(recovered.record(id).view.messages[0]?.status).toBe('interrupted');
-  expect(recovered.record(id).view.messages[0]?.text).toBe('部分内容');
 });
 
 test('upstream authentication errors cannot persist a reflected API Key in SDK history', async () => {

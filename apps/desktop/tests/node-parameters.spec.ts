@@ -34,7 +34,7 @@ test('Image, Nano and video use shared single-row macOS controls', async () => {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.emulateMedia({ colorScheme: 'light' });
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page.locator('.react-flow__node-media').last().click();
     const group = page.getByRole('group', { name: '图像参数' });

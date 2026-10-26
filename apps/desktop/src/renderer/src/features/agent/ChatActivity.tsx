@@ -70,8 +70,8 @@ export function ChatActivity({
   async function undoFiles(transactionId: string) {
     setUndoing(true);
     try {
-      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
-      agentValue(await window.desktop.agent.undo({ transactionId, files: true }));
+      if (!window.desktop?.os) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.os.undo(transactionId));
     } catch (error) {
       onError?.(error instanceof Error ? error.message : '撤销失败');
     } finally {
@@ -99,7 +99,9 @@ export function ChatActivity({
                   </Button>
                 }
               >
-                编辑器内容已更新，尚未保存到磁盘。
+                {activity.label.includes('未保存')
+                  ? '编辑器内容已更新，尚未保存到磁盘。'
+                  : '文档没有打开，修改已保存到文件；文件没再变化时可以撤销。'}
               </Alert>
             )}
             {canvas && activity.nodeIds?.length ? (

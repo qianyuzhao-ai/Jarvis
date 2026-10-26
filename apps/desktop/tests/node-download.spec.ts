@@ -322,7 +322,7 @@ test('uploaded and generated image/video nodes download original bytes, cancel a
       await current.getByRole('button', { name: /^重命名 / }).click();
       const input = current.getByRole('textbox', { name: '节点名称', exact: true });
       await input.fill(renamed[index]!);
-      if (index === 1) await page.getByLabel('项目名称', { exact: true }).click();
+      if (index === 1) await page.getByLabel('画布名称', { exact: true }).click();
       else await input.press('Enter');
       await expect(
         current.getByRole('button', { name: `重命名 ${renamed[index]}`, exact: true }),

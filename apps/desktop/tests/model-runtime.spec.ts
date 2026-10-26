@@ -7,8 +7,8 @@ import type { KeyCipher } from '../src/main/agent/key-cipher';
 import { ModelStore } from '../src/main/agent/model-store';
 import { digitsPng } from '../src/main/agent/probe-image';
 import { openAgent } from '../src/main/agent/runtime';
-import { AgentService } from '../src/main/agent/service';
-import { AgentStore } from '../src/main/agent/store';
+import { ModelAdmin } from '../src/main/agent/os/model-admin';
+import { AgentOs } from '../src/main/agent/os/service';
 import type { ThinkingLevel } from '../src/shared/models';
 import { catalogModel, relayModel } from './helpers/models';
 
@@ -141,11 +141,7 @@ test('vision probes record support, rejection and leave failures unconfirmed', a
   const root = test.info().outputPath('agent');
   const models = new ModelStore(new JsonFile(`${root}/connection.json`), cipher);
   await models.initialize();
-  const service = new AgentService(
-    models,
-    new AgentStore(new JsonFile(`${root}/index.json`)),
-    root,
-  );
+  const admin = new ModelAdmin(models, root, () => false);
   let mode: 'read' | 'wrong' | 'reject' = 'read';
   const { requests, server, baseUrl } = await relay((input) => {
     const parts = (input.messages as { content: unknown }[]).flatMap((m) =>
@@ -168,67 +164,47 @@ test('vision probes record support, rejection and leave failures unconfirmed', a
     const [id] = await models.setProviderModels(providerId, [{ modelId: 'qwen3:32b' }]);
     const vision = () => models.view().models[0]!;
     expect(vision()).toMatchObject({ vision: 'unknown' });
-    expect(await service.probeVision(id!, 1)).toMatchObject({ vision: 'supported' });
+    expect(await admin.probeVision(id!)).toMatchObject({ vision: 'supported' });
     expect(vision()).toMatchObject({ vision: 'supported', visionSource: 'probe' });
     expect(requests.at(-1)?.body.messages).toBeTruthy();
     mode = 'wrong';
-    expect(await service.probeVision(id!, 1)).toMatchObject({ vision: 'unsupported' });
+    expect(await admin.probeVision(id!)).toMatchObject({ vision: 'unsupported' });
     mode = 'reject';
-    expect(await service.probeVision(id!, 1)).toMatchObject({ vision: 'unsupported' });
+    expect(await admin.probeVision(id!)).toMatchObject({ vision: 'unsupported' });
     expect(vision()).toMatchObject({ vision: 'unsupported', visionSource: 'probe' });
     server.close();
-    expect(await service.probeVision(id!, 1)).toMatchObject({ vision: 'unknown' });
+    expect(await admin.probeVision(id!)).toMatchObject({ vision: 'unknown' });
     expect(vision()).toMatchObject({ vision: 'unsupported', visionSource: 'probe' });
   } finally {
     server.close();
-    await service.shutdown();
+    await admin.settled();
   }
 });
 
-test('sessions keep a thinking level the model supports and refuse images the model cannot read', async () => {
+test('conversations keep a thinking level the model supports', async () => {
   const cipher: KeyCipher = { available: () => true, encrypt: (t) => t, decrypt: (t) => t };
   const root = test.info().outputPath('agent');
   const models = new ModelStore(new JsonFile(`${root}/connection.json`), cipher);
   await models.initialize();
-  const store = new AgentStore(new JsonFile(`${root}/index.json`));
-  const service = new AgentService(models, store, root);
+  const ds = await models.saveProvider({ kind: 'builtin', sdkProvider: 'deepseek', apiKey: 'k' });
+  const [flash, pro] = await models.setProviderModels(ds, [
+    { modelId: 'deepseek-flash' },
+    { modelId: 'deepseek-v4-pro' },
+  ]);
+  const os = new AgentOs(models, root);
+  await os.initialize();
   try {
-    const ds = await models.saveProvider({ kind: 'builtin', sdkProvider: 'deepseek', apiKey: 'k' });
-    const [flash, pro] = await models.setProviderModels(ds, [
-      { modelId: 'deepseek-flash' },
-      { modelId: 'deepseek-v4-pro' },
-    ]);
-    const relayId = await models.saveProvider({
-      kind: 'custom',
-      name: 'Relay',
-      baseUrl: 'https://relay.example/v1',
-      api: 'openai-completions',
-      apiKey: '',
-      clearKey: false,
-    });
-    const [unknown] = await models.setProviderModels(relayId, [{ modelId: 'qwen3:32b' }]);
-    const session = await service.create();
-    expect(store.record(session).view).toMatchObject({ modelId: flash, thinkingLevel: 'off' });
-    await expect(service.setThinkingLevel(session, 'medium')).rejects.toThrow('不支持这个思考档位');
-    await service.setThinkingLevel(session, 'low');
-    await service.setModel(session, pro!);
-    expect(store.record(session).view.thinkingLevel).toBe('off');
-    await service.setModel(session, flash!);
-    await service.setThinkingLevel(session, 'max');
-    expect((await service.create()) && store.records.at(-1)?.view.thinkingLevel).toBe('max');
-    store.record(session).view.messages.push({
-      id: randomUUID(),
-      role: 'user',
-      text: 'look',
-      status: 'succeeded',
-      visionAssets: [
-        { nodeId: 'n', name: 'a.png', kind: 'image', preview: 'data:image/png;base64,AA==' },
-      ],
-    });
-    await expect(service.setModel(session, pro!)).rejects.toThrow('不支持图片');
-    await expect(service.setModel(session, unknown!)).rejects.toThrow('图片能力未确认');
+    const session = os.registry.get(await os.createProject('思考档位')).project.coordinatorId;
+    expect(os.session(session).session).toMatchObject({ modelId: flash });
+    await expect(os.setThinkingLevel(session, 'medium')).rejects.toThrow('不支持这个思考档位');
+    await os.setThinkingLevel(session, 'low');
+    await os.setModel(session, pro!);
+    expect(os.session(session).session.thinkingLevel).toBe('off');
+    await os.setModel(session, flash!);
+    await os.setThinkingLevel(session, 'max');
+    expect(os.session(session).session.thinkingLevel).toBe('max');
     expect(models.resolve(pro).vision).toBe('unsupported');
   } finally {
-    await service.shutdown();
+    await os.shutdown();
   }
 });

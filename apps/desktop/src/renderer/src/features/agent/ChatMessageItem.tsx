@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
+import type { OsMessage } from '../../../../shared/agent-os';
+import { CitedQuotes } from './AgentCards';
 import logo from '../../../../../resources/icon.png';
 import {
   ChatActivity,
@@ -25,6 +27,16 @@ const relayLabel: Record<NonNullable<ChatMessage['relay']>['kind'], string> = {
   message: 'Jarvis 的消息',
   task: '生成任务',
 };
+/** Where a non-user message in an Agent OS conversation came from. */
+const sourceLabel: Record<NonNullable<OsMessage['source']>['kind'], string> = {
+  coordinator: 'Jarvis 转达',
+  thread: '线程',
+  scheduled: '定时任务',
+  external: '外部事件',
+  decision: '你的选择',
+  task_done: '线程状态',
+  resume: '恢复',
+};
 
 export function ChatMessageItem({
   message: m,
@@ -35,7 +47,7 @@ export function ChatMessageItem({
   writing,
   waiting = false,
 }: {
-  message: ChatMessage;
+  message: ChatMessage & Pick<Partial<OsMessage>, 'source' | 'cited'>;
   sessionId: string;
   now: number;
   onError: (message: string) => void;
@@ -55,8 +67,8 @@ export function ChatMessageItem({
   async function steer() {
     setSteering(true);
     try {
-      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
-      agentValue(await window.desktop.agent.steer({ sessionId, messageId: m.id }));
+      if (!window.desktop?.os) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.os.steer({ sessionId, messageId: m.id }));
     } catch (error) {
       onError(error instanceof Error ? error.message : '引导失败');
     } finally {
@@ -65,8 +77,8 @@ export function ChatMessageItem({
   }
   async function copy() {
     try {
-      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
-      agentValue(await window.desktop.agent.copyReply({ sessionId, messageId: m.id }));
+      if (!window.desktop?.os) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.os.copyReply({ sessionId, messageId: m.id }));
       setCopied(true);
     } catch {
       onError('复制失败，请选择文字后复制');
@@ -80,6 +92,11 @@ export function ChatMessageItem({
       data-status={m.status}
       aria-label={m.role === 'user' ? '用户消息' : 'Jarvis 回复'}
     >
+      {m.source && (
+        <small data-testid="chat-relay" className="chat-relay">
+          {sourceLabel[m.source.kind]} · {m.source.title}
+        </small>
+      )}
       {m.relay && (
         <small data-testid="chat-relay" className="chat-relay">
           {relayLabel[m.relay.kind]} · {m.relay.title}
@@ -150,6 +167,7 @@ export function ChatMessageItem({
             </span>
           )}
         </div>
+        {!!m.cited?.length && <CitedQuotes cited={m.cited} />}
         {m.status === 'cancelled' && (
           <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
         )}

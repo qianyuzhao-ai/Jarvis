@@ -4,6 +4,7 @@
 @import '@jarvis/ui/styles/base.css';
 @import '@xyflow/react/dist/style.css' layer(legacy);
 @import './features/agent/agent.css';
+@import './features/agent/os.css';
 @import './features/updates/updates.css';
 @import './features/creation/canvas-agent.css';
 @import './legacy.css';

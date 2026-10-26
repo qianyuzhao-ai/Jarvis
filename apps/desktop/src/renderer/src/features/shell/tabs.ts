@@ -16,7 +16,7 @@ export type WindowTab = TabView & {
   visited: number;
 };
 export type WindowState = { tabs: WindowTab[]; activeId: string; sidebarOpen: boolean };
-export const blankView: TabView = { kind: 'chat', ref: null, title: '新对话' };
+export const blankView: TabView = { kind: 'chat', ref: null, title: '协调对话' };
 export function makeTab(view: TabView = blankView): WindowTab {
   return {
     ...view,

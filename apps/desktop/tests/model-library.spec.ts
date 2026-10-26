@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { newProject } from './helpers/os-ui';
 
 test('model settings migrate legacy credentials, add providers in the dialog and switch one chat across models', async () => {
   test.setTimeout(60000);
@@ -152,7 +153,7 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       expect(savedText).not.toContain(key);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
     const thinking = page.getByRole('combobox', { name: '思考程度' });
     await expect(thinking).toHaveValue('off');
@@ -191,9 +192,9 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     expect(calls[3]?.body).not.toHaveProperty('reasoning_effort');
     expect(JSON.stringify(calls[2]?.body.messages)).toContain('第一条');
     expect(JSON.stringify(calls[3]?.body.messages)).toContain('继续第二条');
-    const snapshot = await page.evaluate(async () => window.desktop!.agent.getSnapshot());
-    expect(snapshot.ok && snapshot.value.snapshot.sessions).toHaveLength(1);
-    expect(snapshot.ok && snapshot.value.snapshot.sessions[0]?.modelId).toBe(beta.id);
+    const snapshot = await page.evaluate(async () => window.desktop!.os.getSnapshot());
+    expect(snapshot.ok && snapshot.value.snapshot.projects).toHaveLength(1);
+    expect(snapshot.ok && snapshot.value.snapshot.projects[0]?.modelId).toBe(beta.id);
     await page.screenshot({ path: test.info().outputPath('chat-model-switch.png') });
     await app.close();
     app = await launch();
@@ -224,11 +225,11 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await page.getByRole('menuitem', { name: '移除模型', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '移除', exact: true }).click();
     await expect(page.getByTestId('configured-model')).toHaveCount(2);
-    if (!snapshot.ok || !snapshot.value.snapshot.sessions[0]) throw new Error('Missing chat');
-    const sessionId = snapshot.value.snapshot.sessions[0].id;
+    if (!snapshot.ok || !snapshot.value.snapshot.projects[0]) throw new Error('Missing chat');
+    const sessionId = snapshot.value.snapshot.projects[0].coordinatorId;
     const rejected = await page.evaluate(
       async (id) =>
-        window.desktop!.agent.send({
+        window.desktop!.os.send({
           sessionId: id,
           requestId: crypto.randomUUID(),
           text: '已删除模型不能发送',
@@ -245,70 +246,8 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       }),
     );
     expect(bad.ok).toBe(false);
-    const imageBlocked = await page.evaluate(async () => {
-      const settings = await window.desktop!.models.getSettings();
-      if (!settings.ok) throw new Error(settings.error);
-      const provider = settings.value.providers.find((p) => p.sdkProvider === 'deepseek');
-      if (!provider) throw new Error('Missing DeepSeek');
-      const updated = await window.desktop!.models.setProviderModels({
-        providerId: provider.id,
-        models: [{ modelId: 'deepseek-flash' }, { modelId: 'deepseek-v4-pro' }],
-      });
-      if (!updated.ok) throw new Error(updated.error);
-      const pro = updated.value.models.find((m) => m.modelId === 'deepseek-v4-pro');
-      if (!pro) throw new Error('Missing Pro model');
-      const bridge = window.desktop!.agent;
-      const projectId = crypto.randomUUID();
-      const created = await bridge.createCanvasSession(projectId);
-      if (!created.ok) throw new Error(created.error);
-      const selected = await bridge.setModel({ sessionId: created.value, model: pro.id });
-      if (!selected.ok) throw new Error(selected.error);
-      return bridge.send({
-        sessionId: created.value,
-        requestId: crypto.randomUUID(),
-        text: '识别图片',
-        canvas: {
-          projectId,
-          name: '图片测试',
-          revision: '1',
-          selectedIds: ['source'],
-          nodes: [
-            {
-              id: 'source',
-              type: 'asset',
-              kind: 'image',
-              name: 'test.png',
-              x: 0,
-              y: 0,
-              status: 'ready',
-              referenceCount: 0,
-            },
-          ],
-          edges: [],
-        },
-        images: [
-          {
-            nodeId: 'source',
-            name: 'test.png',
-            kind: 'image',
-            preview: 'data:image/jpeg;base64,/9j/',
-            mimeType: 'image/png',
-            data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK9sAAAAASUVORK5CYII=',
-          },
-        ],
-      });
-    });
-    expect(imageBlocked.ok).toBe(false);
-    expect(!imageBlocked.ok && imageBlocked.error).toContain('不支持图片');
     expect(calls).toHaveLength(4);
     await app.close();
-    const indexFile = join(userData, 'agent', 'index.json');
-    const legacyIndex = JSON.parse(await readFile(indexFile, 'utf8'));
-    const legacyRecord = legacyIndex.sessions.find(
-      (record: { meta: { id: string } }) => record.meta.id === sessionId,
-    );
-    delete legacyRecord.meta.modelId;
-    await writeFile(indexFile, JSON.stringify(legacyIndex));
     app = await launch();
     page = await app.firstWindow();
     await redirectDeepSeek();
@@ -317,10 +256,10 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText(
       '选择模型',
     );
+    // A new project's conversation starts from the level last used with the model it picks.
+    await newProject(page);
     await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
-    // A new chat starts from the level last used with the model; a draft pick applies on send.
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
     const thinkingAgain = page.getByRole('combobox', { name: '思考程度' });
     await expect(thinkingAgain).toHaveValue('high');
     await thinkingAgain.selectOption('off');
