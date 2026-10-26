@@ -452,12 +452,12 @@ function CanvasContent({
         >
           <div className="canvas-title">
             <input
-              aria-label="项目名称"
+              aria-label="画布名称"
               value={project.name}
               maxLength={80}
               onChange={(e) => patch({ name: e.target.value })}
               onBlur={() => {
-                if (!project.name.trim()) patch({ name: '未命名项目' });
+                if (!project.name.trim()) patch({ name: '未命名画布' });
               }}
             />
             <span className="canvas-save-label">{status}</span>

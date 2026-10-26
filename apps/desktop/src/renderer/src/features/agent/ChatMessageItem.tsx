@@ -3,6 +3,7 @@ import { Check, CircleAlert, Copy } from '@jarvis/ui/icons';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import type { OsMessage } from '../../../../shared/agent-os';
+import { CitedQuotes } from './AgentCards';
 import logo from '../../../../../resources/icon.png';
 import {
   ChatActivity,
@@ -46,7 +47,7 @@ export function ChatMessageItem({
   writing,
   waiting = false,
 }: {
-  message: ChatMessage & Pick<Partial<OsMessage>, 'source'>;
+  message: ChatMessage & Pick<Partial<OsMessage>, 'source' | 'cited'>;
   sessionId: string;
   now: number;
   onError: (message: string) => void;
@@ -166,6 +167,7 @@ export function ChatMessageItem({
             </span>
           )}
         </div>
+        {!!m.cited?.length && <CitedQuotes cited={m.cited} />}
         {m.status === 'cancelled' && (
           <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
         )}

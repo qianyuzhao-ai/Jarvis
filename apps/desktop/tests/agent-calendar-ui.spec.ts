@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 import { osRelay } from './helpers/os-relay';
+import { approveInOverview } from './helpers/os-ui';
 
 /** Today at a local hour, as ISO 8601 with the local offset. */
 function todayAt(hour: number) {
@@ -54,11 +55,8 @@ test('the calendar view shows the week and an event Jarvis booked after the user
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await page.getByLabel('消息', { exact: true }).fill('今天下午三点和小王开会');
     await page.getByRole('button', { name: '发送消息' }).click();
-    const approval = page.getByRole('alertdialog');
-    await expect(approval).toContainText('新建日程');
-    await expect(approval).toContainText('和小王开会');
     // A thread does the booking; the irreversible step waits on a decision card.
-    await approval.getByRole('button', { name: '批准执行' }).click();
+    await approveInOverview(page, ['新建日程', '和小王开会']);
     await expect(page.getByText('已约好今天下午三点。')).toBeVisible();
 
     await page.getByRole('button', { name: '日历', exact: true }).click();

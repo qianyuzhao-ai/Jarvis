@@ -150,8 +150,8 @@ async function configure(page: Page, base: string) {
   await page.getByRole('button', { name: '保存更改' }).click();
   await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
   await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-  await page.getByRole('button', { name: '新建项目', exact: true }).click();
-  await page.getByLabel('项目名称', { exact: true }).fill('资源画布测试');
+  await page.getByRole('button', { name: '新建画布', exact: true }).click();
+  await page.getByLabel('画布名称', { exact: true }).fill('资源画布测试');
 }
 async function drop(page: Page, files: { name: string; mime: string; bytes: number[] }[]) {
   const transfer = await page.evaluateHandle((files) => {
@@ -334,8 +334,8 @@ test('uploads survive project navigation and drop coordinates account for zoom',
       y: Math.round((point.y - point.origin.y - viewport.y) / viewport.zoom / 24) * 24,
     });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('另一个项目');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('另一个项目');
     mock.release();
     await expect
       .poll(async () => {
@@ -377,7 +377,7 @@ test('failed, interrupted and removed uploads stay explicit and never recreate r
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await drop(page, [{ name: 'image.png', mime: 'image/png', bytes: Array.from(png) }]);
     await expect(page.getByTestId('canvas-import-notice')).toContainText('req_from');
     expect(mock.calls).toHaveLength(0);

@@ -208,6 +208,6 @@ export function exportFileName(projectName: string, now = new Date()) {
       .replace(/[<>:"/\\|?*]/g, '-')
       .replace(/\p{Cc}/gu, '')
       .replace(/[. ]+$/g, '')
-      .slice(0, 80) || '未命名项目';
+      .slice(0, 80) || '未命名画布';
   return `${name}-请求记录-${now.toISOString().replace(/[:.]/g, '-')}.xlsx`;
 }

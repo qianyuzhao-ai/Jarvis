@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { newProject } from './helpers/os-ui';
 
 test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and isolation', async () => {
   test.setTimeout(60000);
@@ -117,7 +118,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1280, 820));
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     const suggestions = page.locator('.chat-suggestions');
     await expect(suggestions.getByRole('button')).toHaveCount(3);
     const originalTheme = await page.locator('html').getAttribute('data-theme');
@@ -261,16 +262,12 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByRole('radio', { name: 'Dark Mode', exact: true }).click();
     await page.getByRole('button', { name: '模型', exact: true }).click();
     await page.screenshot({ path: test.info().outputPath('models-dark.png') });
-    await page
-      .getByRole('button', { name: '打开对话：本周工作安排' })
-      .count()
-      .then(async (count) => {
-        if (!count) await page.getByRole('button', { name: '首页', exact: true }).click();
-      });
-    await page.getByRole('button', { name: '打开对话：本周工作安排' }).click();
+    await page.getByRole('button', { name: '首页', exact: true }).click();
+    await expect(page.getByTestId('project-switcher')).toHaveText('本周工作安排');
+    await page.getByRole('button', { name: '打开协调对话' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     const historyColor = await page
-      .locator('[data-testid="chat-history"] [data-testid="side-link"]')
+      .getByTestId('side-link')
       .first()
       .evaluate((n) => getComputedStyle(n).color);
     expect(historyColor).not.toBe('rgb(0, 0, 0)');
@@ -280,9 +277,12 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     const viewport = await page.evaluate(() => innerWidth);
     expect(box && box.x + box.width <= viewport).toBeTruthy();
     await page.screenshot({ path: test.info().outputPath('chat-compact.png') });
-    await page.getByRole('button', { name: '重命名对话' }).click();
-    await page.getByLabel('对话名称', { exact: true }).fill('已保存的对话');
-    await page.getByRole('button', { name: '保存名称' }).click();
+    // The conversation's name is its project's, renamed in the project settings.
+    await page.getByRole('button', { name: '项目设置' }).click();
+    await page.getByLabel('项目名称', { exact: true }).fill('已保存的对话');
+    await page.getByRole('button', { name: '保存名称与说明' }).click();
+    await expect(page.getByTestId('project-switcher')).toHaveText('已保存的对话');
+    await page.getByRole('button', { name: '返回协调对话' }).click();
     await app.close();
     // The conversation is the first project's Coordinator; its log replays message upserts.
     const os = join(userData, 'agent', 'os');
@@ -322,7 +322,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
         '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
       ),
     ).toContainText('这是流式回复。');
-    await expect(page.getByRole('button', { name: '打开对话：已保存的对话' })).toBeVisible();
+    await expect(page.getByTestId('project-switcher')).toHaveText('已保存的对话');
     await page.locator('[data-testid="chat-file"] > [data-ui="collapsible-trigger"]').click();
     await expect(page.getByTestId('chat-file-path')).toHaveText('Jarvis/preview.html');
     await expect(page.getByTestId('chat-diff')).toBeVisible();
@@ -345,7 +345,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     ).toHaveCount(2);
     expect(JSON.stringify(requests.at(-1)?.messages)).toContain('本周工作安排');
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await page.evaluate(async (model) => {
       const bridge = window.desktop!.models;
       const view = await bridge.getSettings();
@@ -420,7 +420,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     expect(invalid?.ok).toBe(false);
     expect(requests).toHaveLength(calls);
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await page.evaluate(async (model) => {
       const bridge = window.desktop!.models;
       const view = await bridge.getSettings();

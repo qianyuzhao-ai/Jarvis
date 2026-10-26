@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 import { osRelay } from './helpers/os-relay';
+import { approveInOverview, newProject } from './helpers/os-ui';
 
 test('an MCP server added in Plugins gives Jarvis its tools; drafting asks first; it can be paused and removed', async () => {
   test.setTimeout(60000);
@@ -65,13 +66,10 @@ test('an MCP server added in Plugins gives Jarvis its tools; drafting asks first
     await page.screenshot({ path: test.info().outputPath('mcp-settings.png') });
 
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await page.getByLabel('消息', { exact: true }).fill('回复报价邮件');
     await page.getByRole('button', { name: '发送消息' }).click();
-    const approval = page.getByRole('alertdialog');
-    await expect(approval).toContainText('boss@example.com');
-    await expect(approval).toContainText('mail');
-    await approval.getByRole('button', { name: '批准执行' }).click();
+    await approveInOverview(page, ['boss@example.com', 'mail']);
     await expect(page.getByText('草稿已建好，未发送。')).toBeVisible();
     const calls = (await readFile(log, 'utf8'))
       .trim()

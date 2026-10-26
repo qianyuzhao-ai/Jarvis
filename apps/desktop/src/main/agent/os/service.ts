@@ -128,7 +128,17 @@ export type OsDeps = {
   mcp?: McpService;
   calendar?: CalendarProvider;
 };
-export type OsNotice = { projectId: string; sessionId: string; title: string; body: string };
+/**
+ * A system notification. `answer` is set only for a question the user may answer from the
+ * notification itself; approvals and other irreversible steps open the card instead.
+ */
+export type OsNotice = {
+  projectId: string;
+  sessionId: string;
+  title: string;
+  body: string;
+  answer?: { decisionId: string; options: string[] };
+};
 
 /**
  * The Agent OS: projects, each a Coordinator conversation and its threads. Kernel parts (event
@@ -397,6 +407,10 @@ export class AgentOs {
   /** Sessions a window shows; their rounds go first when slots are short. */
   setViewing(owner: number, sessionIds: string[]) {
     this.viewing.set(owner, new Set(sessionIds.slice(0, 20)));
+  }
+  /** Whether a window shows this session. */
+  viewedBy(owner: number, sessionId: string) {
+    return !!this.viewing.get(owner)?.has(sessionId);
   }
   dropWindow(owner: number) {
     this.viewing.delete(owner);
@@ -1421,7 +1435,15 @@ export class AgentOs {
       ask: async (input) => {
         const decision = await runtime.decisions.create({ threadId: thread.id, ...input });
         log(`已发决策卡 · ${input.question}`);
-        this.notice(runtime, thread, '需要你决定', input.question);
+        this.notice(
+          runtime,
+          thread,
+          '需要你决定',
+          input.question,
+          input.irreversible
+            ? undefined
+            : { decisionId: decision.id, options: input.options.map((o) => o.label) },
+        );
         return {
           decisionId: decision.id,
           note: input.irreversible
@@ -1634,12 +1656,19 @@ export class AgentOs {
     });
     this.notice(runtime, thread, '预算已用完', '是否继续这个线程？');
   }
-  private notice(runtime: ProjectRuntime, thread: OsThread, title: string, body: string) {
+  private notice(
+    runtime: ProjectRuntime,
+    thread: OsThread,
+    title: string,
+    body: string,
+    answer?: OsNotice['answer'],
+  ) {
     this.onNotify({
       projectId: runtime.id,
       sessionId: thread.id,
       title: `${thread.title} · ${title}`,
       body: body.slice(0, 200),
+      answer,
     });
   }
 

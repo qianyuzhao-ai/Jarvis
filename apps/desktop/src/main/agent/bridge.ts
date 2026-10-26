@@ -73,8 +73,9 @@ async function pickFolder(owner: number, title: string) {
 
 /**
  * The Agent OS in the main process and its IPC. Rounds belong to no window: any trusted window
- * may watch, steer or stop them, and they go on when windows close. Only `os:answer` (a click in
- * a trusted window) answers decision cards.
+ * may watch, steer or stop them, and they go on when windows close. Decision cards are answered
+ * by `os:answer` (a click in a trusted window) or, for questions that are not irreversible, by a
+ * button on their macOS notification.
  */
 export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
@@ -126,9 +127,54 @@ export async function registerAgent() {
     const focused = windows.find(({ contents }) => contents.isFocused());
     (focused ?? windows[0])?.contents.send('os:navigate', target);
   };
+  // A notification click shows the conversation, in the window already showing it if any.
+  const reveal = (sessionId: string) => {
+    const windows = open();
+    const target =
+      windows.find(({ contents }) => os.viewedBy(contents.id, sessionId)) ??
+      windows.find(({ contents }) => contents.isFocused()) ??
+      windows[0];
+    const window = target && BrowserWindow.fromWebContents(target.contents);
+    if (!target || !window) return;
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+    target.contents.send('os:open', sessionId);
+  };
+  // Kept until closed: a collected notification loses its click and button handlers.
+  const shown = new Set<Notification>();
   os.onNotify = (notice) => {
-    if (open().some(({ contents }) => contents.isFocused()) || !Notification.isSupported()) return;
-    new Notification({ title: notice.title, body: notice.body, silent: false }).show();
+    if (!Notification.isSupported()) return;
+    // Nothing to announce for a conversation the user is looking at.
+    if (
+      open().some(
+        ({ contents }) => contents.isFocused() && os.viewedBy(contents.id, notice.sessionId),
+      )
+    )
+      return;
+    // Notification buttons exist only on macOS. A question may be answered there; approvals and
+    // other irreversible steps only offer “查看”, and the user approves on the card itself.
+    const buttons = process.platform === 'darwin' ? (notice.answer?.options ?? ['查看']) : [];
+    const notification = new Notification({
+      title: notice.title,
+      body: notice.body,
+      silent: false,
+      actions: buttons.map((text) => ({ type: 'button' as const, text })),
+    });
+    const done = () => shown.delete(notification);
+    notification.on('close', done);
+    notification.on('click', () => {
+      done();
+      reveal(notice.sessionId);
+    });
+    notification.on('action', (_event, index) => {
+      done();
+      if (!notice.answer) return reveal(notice.sessionId);
+      // An answer that no longer applies (answered in a window, thread stopped) shows the thread.
+      os.answerDecision(notice.answer.decisionId, index).catch(() => reveal(notice.sessionId));
+    });
+    shown.add(notification);
+    notification.show();
   };
   // Settings pages act on the current project; adding a folder before any chat creates one.
   const current = async () => os.registry.currentId ?? (await os.createProject('我的项目'));

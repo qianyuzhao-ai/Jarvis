@@ -36,7 +36,7 @@ export function CanvasExport({
     try {
       const result = await window.desktop!.generation.exportProject({
         projectId,
-        projectName: projectName.trim() || '未命名项目',
+        projectName: projectName.trim() || '未命名画布',
       });
       if (!result.ok) throw new Error(result.error);
       toast.update(id, {

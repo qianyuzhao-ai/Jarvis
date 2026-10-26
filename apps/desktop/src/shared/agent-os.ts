@@ -392,6 +392,8 @@ export interface OsBridge {
         | { kind: 'writing'; rootId: string; path: string },
     ) => void,
   ): () => void;
+  /** A system notification was clicked: show this conversation (a thread or a Coordinator). */
+  onOpen(listener: (sessionId: string) => void): () => void;
 }
 export function osValue<T>(result: OsResult<T>): T {
   if (!result.ok) throw new Error(result.error);

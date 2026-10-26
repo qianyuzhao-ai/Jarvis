@@ -30,6 +30,7 @@ export function ChatComposer({
   hasAttachments = false,
   context,
   compact = false,
+  placeholder = '输入 / 选择技能，或与 Jarvis 对话',
 }: {
   agent: ReturnType<typeof useAgent>;
   text: string;
@@ -43,6 +44,7 @@ export function ChatComposer({
   hasAttachments?: boolean;
   context?: ReactNode;
   compact?: boolean;
+  placeholder?: string;
 }) {
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [active, setActive] = useState(0);
@@ -79,8 +81,7 @@ export function ChatComposer({
   const steers = agent.snapshot.replyMode !== 'queue' && !text.trimStart().startsWith('/');
   const configured = agent.configured;
   const selectedModel = agent.configuration.models.find((entry) => entry.id === model);
-  const withImages =
-    hasAttachments || !!agent.session?.messages.some((m) => m.visionAssets?.length);
+  const withImages = hasAttachments;
   // Model and thinking stay fixed while this conversation replies; typing a queued message is fine.
   const locked = !configured || busy || agent.sending;
   useLayoutEffect(() => {
@@ -142,7 +143,7 @@ export function ChatComposer({
             }
             value={text}
             maxLength={32000}
-            placeholder={configured ? '输入 / 选择技能，或与 Jarvis 对话' : '添加模型后开始对话'}
+            placeholder={configured ? placeholder : '添加模型后开始对话'}
             disabled={agent.loading || !configured}
             onChange={(e) => {
               setText(e.target.value);

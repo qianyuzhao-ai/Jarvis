@@ -118,6 +118,11 @@ const desktop: DesktopInfo = {
       ipcRenderer.on('os:navigate', handle);
       return () => ipcRenderer.removeListener('os:navigate', handle);
     },
+    onOpen: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, sessionId: string) => listener(sessionId);
+      ipcRenderer.on('os:open', handle);
+      return () => ipcRenderer.removeListener('os:open', handle);
+    },
   },
   models: {
     getSettings: () => ipcRenderer.invoke('models:settings'),

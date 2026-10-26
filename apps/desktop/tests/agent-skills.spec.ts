@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { newProject } from './helpers/os-ui';
 
 test('skills import, slash selection, automatic activation, disablement and restart work in real windows', async () => {
   test.setTimeout(60000);
@@ -141,7 +142,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('checkbox', { name: '启用 shot-plan' }).check();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     let input = page.getByLabel('消息', { exact: true });
     await input.fill('/');
     await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(2);
@@ -168,7 +169,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     expect(JSON.stringify(requests[0])).toContain('三个镜头');
     await expect(page.getByTestId('chat-activities')).toContainText('主动选择');
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     input = page.getByLabel('消息', { exact: true });
     await input.fill('自动规划三个镜头');
     await input.press('Enter');
@@ -198,7 +199,7 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.emulateMedia({ colorScheme: 'light' });
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await input.fill('/manual');
     await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(0);
     await input.press('Escape');

@@ -1,30 +1,44 @@
-import { Button, IconButton } from '@jarvis/ui/components/Button';
-import { Field, FieldLabel } from '@jarvis/ui/components/Field';
-import { Input } from '@jarvis/ui/components/Input';
+import { Button } from '@jarvis/ui/components/Button';
 import { Alert } from '@jarvis/ui/components/Alert';
-import { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, FileText, Pencil, Brain } from '@jarvis/ui/icons';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowDown, ArrowUp, FileText, Brain } from '@jarvis/ui/icons';
+import type { OsMessage } from '../../../../shared/agent-os';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 import type { useAgent } from './use-agent';
 
+/**
+ * One Agent OS conversation: a project's Coordinator or a thread. The caller supplies the header,
+ * content above and below the messages (progress, decision cards), what follows a message
+ * (thread cards) and messages it renders itself (thread notices).
+ */
 export function ChatPage({
   agent,
   onConfigure,
+  header,
+  before,
+  after,
+  renderMessage,
+  afterMessage,
+  placeholder,
 }: {
   agent: ReturnType<typeof useAgent>;
   onConfigure: () => void;
+  header?: ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
+  /** Replaces the default rendering of a message; return undefined to keep it. */
+  renderMessage?: (message: OsMessage) => ReactNode | undefined;
+  afterMessage?: (message: OsMessage) => ReactNode;
+  placeholder?: string;
 }) {
   const { session, configuration } = agent;
   const [text, setText] = useState('');
   const [draftModel, setDraftModel] = useState('');
   const [atBottom, setAtBottom] = useState(true);
-  const [renaming, setRenaming] = useState(false);
-  const [title, setTitle] = useState(session?.title ?? '');
   const viewport = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const following = useRef(true);
-  const busy = !!session?.runId;
   const configured = agent.configured;
   const model = session
     ? (session.modelId ?? '')
@@ -59,6 +73,7 @@ export function ChatPage({
     }
   }
   const suggestions = ['梳理一份资料', '推敲一个想法', '把讨论变成计划'];
+  const empty = !session?.messages.length && !before && !after;
   return (
     <section data-testid="chat-page" className="chat-page" aria-label="首页 Chat">
       {agent.error && (
@@ -76,58 +91,10 @@ export function ChatPage({
           {agent.error}
         </Alert>
       )}
-      {session && (
-        <div className="chat-title">
-          <span>{session.title}</span>
-          <IconButton
-            variant="ghost"
-            size="icon-xs"
-            aria-label="重命名对话"
-            onClick={() => {
-              setTitle(session.title);
-              setRenaming(true);
-            }}
-          >
-            <Pencil size={14} />
-          </IconButton>
-          {busy && (
-            <span className="chat-running" role="status">
-              正在回复…
-            </span>
-          )}
-        </div>
-      )}
-      {renaming && (
-        <form
-          className="chat-rename"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (title.trim())
-              void agent.rename(title.trim()).then((ok) => {
-                if (ok) setRenaming(false);
-              });
-          }}
-        >
-          <Field controlId="chat-title" className="flex-1" orientation="horizontal">
-            <FieldLabel>对话名称</FieldLabel>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={100}
-              required
-            />
-          </Field>
-          <Button type="submit" disabled={!title.trim()}>
-            保存名称
-          </Button>
-          <Button variant="secondary" onClick={() => setRenaming(false)}>
-            取消
-          </Button>
-        </form>
-      )}
+      {header}
       <div
         data-testid="chat-scroll"
-        className={`chat-scroll ${session?.messages.length ? '' : 'chat-empty-scroll'}`}
+        className={`chat-scroll ${empty ? 'chat-empty-scroll' : ''}`}
         ref={viewport}
         onScroll={() => {
           const n = viewport.current;
@@ -137,17 +104,17 @@ export function ChatPage({
           }
         }}
       >
-        {!session?.messages.length ? (
+        {empty ? (
           <div className="chat-welcome">
             <Brain size={40} aria-hidden="true" />
             <h1>{configured ? '今天想让 Jarvis 帮你做什么？' : '先添加一个模型'}</h1>
             <p>
               {configured
-                ? '聊一个想法，读一份资料，或继续手头的工作。'
+                ? '说一件事，Jarvis 会分给线程去做；你可以随时离开，做完会回来告诉你。'
                 : '填写 API 地址和 Key，选择模型后即可开始对话。'}
             </p>
             {!configured && <Button onClick={onConfigure}>前往模型设置</Button>}
-            {!session?.messages.length && configured && (
+            {configured && (
               <div className="chat-suggestions">
                 <small>也可以从这里开始</small>
                 {suggestions.map((s) => (
@@ -171,21 +138,27 @@ export function ChatPage({
           </div>
         ) : (
           <div className="chat-messages" role="log" aria-label="对话消息" aria-live="off">
-            {session.messages.map((message) => (
-              <ChatMessageItem
-                key={message.id}
-                message={message}
-                waiting={agent.waiting}
-                sessionId={session.id}
-                now={now}
-                onError={agent.setError}
-              />
+            {before}
+            {session?.messages.map((message) => (
+              <div key={message.id} className="os-message-group" data-role={message.role}>
+                {renderMessage?.(message) ?? (
+                  <ChatMessageItem
+                    message={message}
+                    waiting={agent.waiting}
+                    sessionId={session.id}
+                    now={now}
+                    onError={agent.setError}
+                  />
+                )}
+                {afterMessage?.(message)}
+              </div>
             ))}
+            {after}
           </div>
         )}
       </div>
       <div data-testid="chat-dock" className="chat-dock">
-        {!atBottom && !!session?.messages.length && (
+        {!atBottom && !empty && (
           <Button
             variant="ghost"
             size="sm"
@@ -201,13 +174,13 @@ export function ChatPage({
             回到最新
           </Button>
         )}
-
         <ChatComposer
           agent={agent}
           text={text}
           setText={setText}
           input={input}
           model={model}
+          placeholder={placeholder}
           onModel={(value) => {
             if (session) void agent.model(value);
             else setDraftModel(value);
