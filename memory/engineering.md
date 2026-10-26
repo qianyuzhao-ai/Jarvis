@@ -2,6 +2,11 @@
 
 最后更新：2026-10-26
 
+## Windows 原生菜单栏移除（2026-10-26）
+
+- `feature/style-polish-2026-10-26` 从 develop `87388cf` 创建；`apps/desktop/src/main/index.ts` 在 win32 初始化时设置空应用菜单，不创建 File / Edit / View / Window 菜单栏。
+- `pnpm check`、`pnpm build` 通过；启动导航与隔离冒烟沙箱内无法启动 Electron，沙箱外复验 1/1 通过。验证主机为 macOS，Windows 实机外观仍待验证；未提交、推送或发布。
+
 ## 1.0.1 已发布（2026-10-26）
 
 - [v1.0.1](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.1) 于北京时间 2026-10-26 18:46:55 发布，非草稿、沿用预发布设置，12 个资产均 uploaded；标签指向 main 发布合并提交 `50f31e688c14b9c8d60f31521998dc48e3fc947b`，未移动任何旧标签。

@@ -105,13 +105,15 @@ void app
     session.defaultSession.setPermissionCheckHandler(() => false);
 
     Menu.setApplicationMenu(
-      Menu.buildFromTemplate([
-        ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
-        { role: 'fileMenu' },
-        { role: 'editMenu' },
-        { role: 'viewMenu' },
-        { role: 'windowMenu' },
-      ]),
+      process.platform === 'win32'
+        ? null
+        : Menu.buildFromTemplate([
+            ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
+            { role: 'fileMenu' },
+            { role: 'editMenu' },
+            { role: 'viewMenu' },
+            { role: 'windowMenu' },
+          ]),
     );
 
     await registerProjects();
