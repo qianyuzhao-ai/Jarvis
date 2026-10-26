@@ -18,13 +18,11 @@ import type { CanvasActivityActions, WritingActivityActions } from './ChatActivi
 import { ChatMessageItem } from './ChatMessageItem';
 import { Checklist, DecisionCard } from './AgentCards';
 import { threadStatus } from './os-view';
-import { openThread } from './open-thread';
 import type { useSpaceThread } from './use-space-thread';
 
 /**
  * A canvas or document sidebar: the thread bound to it, compact. The header names the thread and
- * its state, a bar names its project and opens the full view, progress stays pinned in one line,
- * and decision cards sit after the messages. History lists this target's threads.
+ * its state, progress stays pinned in one line, and decision cards sit after the messages. History lists this target's threads.
  */
 export function SpaceThreadPanel({
   space,
@@ -144,14 +142,6 @@ export function SpaceThreadPanel({
           <X size={16} />
         </IconButton>
       </header>
-      {!history && thread && (
-        <div className="space-thread-bar">
-          <span>线程 · {project?.title}</span>
-          <Button variant="ghost" size="sm" onClick={() => openThread(thread.id)}>
-            在首页查看
-          </Button>
-        </div>
-      )}
       {!history && checklist.length > 0 && (
         <button
           type="button"

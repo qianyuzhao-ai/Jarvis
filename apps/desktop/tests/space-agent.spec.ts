@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 import { call, mockModel, promptOf, toolResults, type MockReply } from './helpers/os';
+import { openActivities } from './helpers/os-ui';
 
 const isCoordinator = (system: string) => system.includes('协调者（Coordinator）');
 function launch(profile: string) {
@@ -85,6 +86,7 @@ test('the canvas sidebar is the thread bound to the canvas: edits, undo, a writt
     await expect(card).toHaveCount(0);
     expect(JSON.stringify(server.bodies.at(-1)?.messages)).toContain('都不要，用方形');
     // The round's canvas edit is undone from its receipt.
+    await openActivities(sidebar);
     const undo = sidebar.getByRole('button', { name: '撤销本次修改' });
     await expect(undo).toBeEnabled();
     await undo.click();
@@ -98,9 +100,8 @@ test('the canvas sidebar is the thread bound to the canvas: edits, undo, a writt
     await sidebar.getByRole('button', { name: '线程历史', exact: true }).click();
     await sidebar.getByTestId('space-thread').click();
     await expect(header).toContainText('把提示词改成暖色调');
-    // The full view of the thread is on the home page, in the project's thread list.
-    await sidebar.getByRole('button', { name: '在首页查看', exact: true }).click();
-    await expect(page.getByTestId('thread-header')).toContainText('把提示词改成暖色调');
+    // The thread is also listed on the home page, in the project's thread list.
+    await page.getByRole('button', { name: '首页', exact: true }).click();
     await expect(
       page.getByTestId('thread-link').filter({ hasText: '把提示词改成暖色调' }),
     ).toHaveCount(1);
@@ -165,6 +166,7 @@ test('the writing sidebar edits the open document in its editor, unsaved, and un
     expect(await readFile(join(directory, '周报.md'), 'utf8')).toBe(original);
     await expect(sidebar).toContainText('编辑器内容已更新，尚未保存到磁盘。');
     await page.screenshot({ path: test.info().outputPath('writing-thread.png') });
+    await openActivities(sidebar);
     await sidebar.getByRole('button', { name: '撤销本次修改' }).click();
     await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText(
       '这周完成了很多工作。',

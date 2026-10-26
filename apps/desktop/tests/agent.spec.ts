@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
-import { newProject } from './helpers/os-ui';
+import { newProject, openActivities } from './helpers/os-ui';
 import { pickModel } from './helpers/model-picker';
 
 test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and isolation', async () => {
@@ -324,6 +324,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       ),
     ).toContainText('这是流式回复。');
     await expect(page.getByTestId('project-switcher')).toHaveText('已保存的对话');
+    await openActivities(page);
     await page.locator('[data-testid="chat-file"] > [data-ui="collapsible-trigger"]').click();
     await expect(page.getByTestId('chat-file-path')).toHaveText('Jarvis/preview.html');
     await expect(page.getByTestId('chat-diff')).toBeVisible();

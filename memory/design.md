@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## 工具调用折叠为「已运行 N 个命令」、去掉侧栏线程项目行（2026-10-26）
+
+- 用户要求回复中的「已读取画布概况 / 已应用画布修改」等逐条显示改为参考图样式：一个大折叠「已运行 N 个命令」，展开后逐条详细展示。`ChatActivity.tsx` 外层改为一个 Collapsible（默认收起，回复中显示「正在运行 N 个命令」），展开为带边框分隔线的列表；有可操作内容（撤销、定位节点、变更明细、文件改动）的条目在展开列表后默认展开，纯标签条目只显示文字。样式在 `agent.css` 末尾（无层）。首页与画布/写作侧栏共用。
+- 用户要求去掉画布/写作侧栏线程视图中「线程 · 项目名 / 在首页查看」一行：删除 `SpaceThreadPanel` 中该栏与 `.space-thread-bar` 样式；AGENTS.md 与 agent-os-v1.md 同步。
+- 测试：新增 `openActivities` 助手（tests/helpers/os-ui.ts），space-agent/agent/agent-files-ui 在点击撤销或文件行前先展开；space-agent 原「在首页查看」步骤改为点首页后检查线程列表。按用户要求暂缓 check/build/测试，仅 biome lint；未看截图。
+
 ## 线程通知卡片悬停反馈（2026-10-26）
 
 - 用户要求 Jarvis Chat 中「线程「…」待你查看」卡片（`ThreadNotice`，`.os-thread-notice`）悬停有交互效果。`os.css` 新增：悬停底色 `--color-fill` → `--color-fill-hover`、文字提亮为 `--color-fg`、右箭头右移 2px；按下 `--color-fill-pressed`；120ms 过渡，减少动态效果时关闭过渡。未运行验证。

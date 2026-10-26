@@ -560,3 +560,32 @@
   min-width: 120px;
   width: max-content;
 }
+
+/* 工具调用折叠为「已运行 N 个命令」，展开后为带边框的逐条列表（无层，覆盖 Collapsible 默认缩进）。 */
+.chat-activities > .ui-collapse-trigger {
+  width: fit-content;
+}
+.chat-activities > .ui-collapse-content {
+  padding-left: 0;
+}
+.chat-activity-list {
+  margin-top: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.chat-activity-list > .chat-activity + .chat-activity {
+  border-top: 1px solid var(--color-border);
+}
+.chat-activity-list > div.chat-activity:not(.ui-collapsible) {
+  padding: 8px 12px 8px 28px;
+  font-size: var(--text-callout);
+  line-height: var(--text-callout--line-height);
+}
+.chat-activity-list > .chat-activity > .ui-collapse-trigger {
+  padding: 8px 12px;
+  border-radius: 0;
+}
+.chat-activity-list > .chat-activity > .ui-collapse-content {
+  padding: 0 12px 10px 28px;
+}

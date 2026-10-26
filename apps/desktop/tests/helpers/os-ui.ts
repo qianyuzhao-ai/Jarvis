@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Picks an item from the project menu. A menu that is still closing hands focus back to its
@@ -27,4 +27,12 @@ export async function approveInOverview(page: Page, texts: string[], screenshot?
   await card.getByRole('button', { name: '批准执行' }).click();
   await expect(card).toHaveCount(0);
   await page.getByRole('button', { name: '打开 Jarvis Chat' }).click();
+}
+
+/** Expands every collapsed 「已运行 N 个命令」 list in `scope`, so its undo and file rows can be used. */
+export async function openActivities(scope: Page | Locator) {
+  const closed = scope.locator(
+    '[data-testid="chat-activities"][data-state="closed"] > [data-testid="chat-activities-summary"]',
+  );
+  while ((await closed.count()) > 0) await closed.first().click();
 }

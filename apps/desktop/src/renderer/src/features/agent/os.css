@@ -419,7 +419,6 @@
   .space-thread-spacer {
     flex: 1;
   }
-  .space-thread-bar,
   .space-thread-progress {
     display: flex;
     align-items: center;
@@ -431,13 +430,6 @@
     font-size: 12px;
     line-height: 18px;
     color: var(--color-fg-tertiary);
-  }
-  .space-thread-bar > span {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .space-thread-progress {
     padding-block: 8px;

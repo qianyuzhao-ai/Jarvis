@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 import { osRelay } from './helpers/os-relay';
-import { approveInOverview, newProject, projectMenu } from './helpers/os-ui';
+import { approveInOverview, newProject, openActivities, projectMenu } from './helpers/os-ui';
 
 test('a folder authorized in settings lets Jarvis overwrite a file after approval, and the round undoes', async () => {
   test.setTimeout(60000);
@@ -73,6 +73,7 @@ test('a folder authorized in settings lets Jarvis overwrite a file after approva
     await page.getByTestId('thread-card').filter({ hasText: '整理待办' }).click();
     await expect(page.getByTestId('chat-file')).toContainText('修改');
 
+    await openActivities(page);
     await page.getByRole('button', { name: '撤销本轮文件修改' }).click();
     await expect(page.getByRole('button', { name: '本轮文件修改已撤销' })).toBeDisabled();
     expect(await readFile(join(folder, '待办.txt'), 'utf8')).toBe('一、买菜');
