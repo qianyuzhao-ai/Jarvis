@@ -18,10 +18,20 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SidebarItem } from '@jarvis/ui/components/SidebarItem';
 import { Input } from '@jarvis/ui/components/Input';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
-import { LayoutGrid, Settings, Cpu, Plug, Puzzle, Database, Info, Plus } from '@jarvis/ui/icons';
+import {
+  LayoutGrid,
+  Settings,
+  Cpu,
+  Plug,
+  Puzzle,
+  ChartColumn,
+  Database,
+  Info,
+  Plus,
+} from '@jarvis/ui/icons';
 import type { Project } from '../creation/types';
 import type { TabView } from './tabs';
-type Section = 'general' | 'services' | 'models' | 'plugins' | 'about';
+type Section = 'general' | 'services' | 'models' | 'plugins' | 'usage' | 'about';
 export function ShellSidebar({
   kind,
   section,
@@ -155,6 +165,7 @@ export function ShellSidebar({
                 { id: 'models', name: '模型', Icon: Cpu },
                 { id: 'services', name: '内网地址', Icon: Plug },
                 { id: 'plugins', name: '插件', Icon: Puzzle },
+                { id: 'usage', name: '用量与统计', Icon: ChartColumn },
               ] as const
             ).map(({ id, name, Icon }) => (
               <SidebarItem

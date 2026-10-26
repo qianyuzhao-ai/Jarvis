@@ -2,7 +2,7 @@
 
 个人工作台桌面应用。首页提供项目协调者与任务线程，AIGC 画布和本地 Markdown 写作空间通过右侧栏接入对应线程。
 
-当前源码版本：`1.0.0`，功能和验证边界见 [版本记录](CHANGELOG.md)。
+当前源码版本：`1.0.1`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
 [v1.0.0 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.0) 已发布，包含 Agent OS 和写作空间升级。macOS arm64/x64 签名公证包与 Windows x64 未签名包均通过云端实际启动，12 个资产已核对。旧版 Agent 对话不迁移，原记录保留在磁盘。
 

@@ -6,6 +6,7 @@ import type { SkillInfo } from './agent-skills';
 import type { McpServerView } from './agent-mcp';
 import type { ReplyMode } from './agent-settings';
 import type { AuthorizedFolder } from './agent-files';
+import type { UsageQuery, UsageSummary } from './agent-usage';
 
 /**
  * Jarvis V1.0.0 Agent OS. A project is one OS: a thin Coordinator conversation plus threads that do
@@ -454,6 +455,8 @@ export interface OsBridge {
     projectId: string;
     name: string;
   }): Promise<OsResult<({ body: string } & MemoryTopic) | null>>;
+  /** Token usage and cost of the Coordinators, threads and model tests. */
+  getUsage(query: UsageQuery): Promise<OsResult<UsageSummary>>;
   /** A thread or the user asks this window to open a canvas project or document. */
   onNavigate(
     listener: (
