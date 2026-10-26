@@ -22,7 +22,7 @@
     width: max(100px, calc(var(--shell-sidebar-width) + 40px));
     flex-shrink: 0;
   }
-  [data-platform='darwin'] .shell-navigation {
+  .window-shell[data-platform='darwin']:not([data-fullscreen]) .shell-navigation {
     padding-left: 76px;
     min-width: 168px;
   }

@@ -31,6 +31,20 @@ test('desktop navigation and isolation', async () => {
     expect(renderer.bridge?.versions.electron).toBeTruthy();
     expect(renderer.require).toBe(false);
     expect(renderer.process).toBe(false);
+    const navigation = page.locator('.shell-navigation');
+    await expect(navigation.getByRole('button').first()).toHaveAccessibleName('收起侧栏');
+    expect(await page.evaluate(() => window.desktop!.appearance.getFullScreen())).toBe(false);
+    if (process.platform === 'darwin') {
+      await expect(navigation).toHaveCSS('padding-left', '76px');
+      await app.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0]?.webContents.send('appearance:fullscreen-changed', true);
+      });
+      await expect(navigation).toHaveCSS('padding-left', '0px');
+      await app.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0]?.webContents.send('appearance:fullscreen-changed', false);
+      });
+      await expect(navigation).toHaveCSS('padding-left', '76px');
+    }
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('complementary', { name: '主导航' })).toBeHidden();
     await page.getByRole('button', { name: '展开侧栏' }).click();

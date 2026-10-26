@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { IconButton } from '@jarvis/ui/components/Button';
 import { Toggle } from '@jarvis/ui/components/Toggle';
 import { Tooltip } from '@jarvis/ui/components/Tooltip';
@@ -58,6 +58,21 @@ export function AppShell({
 }) {
   const active = state.tabs.find((t) => t.id === state.activeId)!;
   const tabs = useRef<HTMLDivElement>(null);
+  const [fullScreen, setFullScreen] = useState(false);
+  useEffect(() => {
+    const appearance = window.desktop?.appearance;
+    if (window.desktop?.platform !== 'darwin' || !appearance) return;
+    let live = true;
+    void appearance.getFullScreen().then(
+      (value) => live && setFullScreen(value),
+      () => {},
+    );
+    const dispose = appearance.onFullScreen(setFullScreen);
+    return () => {
+      live = false;
+      dispose();
+    };
+  }, []);
   useEffect(() => {
     tabs.current
       ?.querySelector('[role="tab"][aria-selected="true"]')
@@ -74,10 +89,23 @@ export function AppShell({
     <div
       className="window-shell"
       data-platform={window.desktop?.platform}
+      data-fullscreen={fullScreen || undefined}
       style={{ '--shell-sidebar-width': `${state.sidebarOpen ? width : 0}px` } as CSSProperties}
     >
       <header className="shell-titlebar window-drag">
         <div className="shell-navigation">
+          <IconButton
+            aria-label={state.sidebarOpen ? '收起侧栏' : '展开侧栏'}
+            variant="ghost"
+            aria-expanded={state.sidebarOpen}
+            aria-controls="sidebar"
+            onClick={(event) => {
+              event.currentTarget.focus();
+              onSidebar();
+            }}
+          >
+            <PanelLeft />
+          </IconButton>
           <IconButton
             aria-label="后退"
             variant="ghost"
@@ -93,18 +121,6 @@ export function AppShell({
             onClick={() => onTravel(1)}
           >
             <ArrowRight />
-          </IconButton>
-          <IconButton
-            aria-label={state.sidebarOpen ? '收起侧栏' : '展开侧栏'}
-            variant="ghost"
-            aria-expanded={state.sidebarOpen}
-            aria-controls="sidebar"
-            onClick={(event) => {
-              event.currentTarget.focus();
-              onSidebar();
-            }}
-          >
-            <PanelLeft />
           </IconButton>
         </div>
         <WindowTabs ref={tabs} aria-label="窗口标签" className="shell-tabs">

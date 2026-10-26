@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## macOS 全屏标题栏按钮靠左、侧栏按钮置首（2026-10-26）
+
+- 用户要求（分支 `feature/interaction-polish`）：macOS 全屏时红绿灯隐藏，侧栏/后退/前进按钮不再保留 76px 红绿灯留白而靠最左；侧栏按钮移到三者最左。顺序改为 侧栏 → 后退 → 前进。本轮未修改 Figma。
+- 实现：外观桥新增 `getFullScreen`/`onFullScreen`（主进程转发窗口 enter/leave-full-screen，沿用外观来源校验）；`AppShell` 在 `.window-shell` 上标 `data-fullscreen`，`shell.css` 留白规则改为 `.window-shell[data-platform='darwin']:not([data-fullscreen])`（`<html>` 也带 data-platform，不能用裸属性选择器）。
+- 验证：check/build 通过；smoke/appearance/sidebar 8/8 通过（新增按钮顺序与全屏事件留白断言）；真实 Electron `setFullScreen(true)` 留白 0px、退出后恢复 76px，已看截图。未提交。
+
 ## 顶部新建标签按钮紧邻标签（2026-10-26）
 
 - 用户要求顶部加号默认靠左，紧跟最后一个标签。`shell.css` 将 `.shell-tabs` 从占满剩余空间改为按内容宽度排布并允许收缩；右侧助手入口仍由已有自动间距靠右，标签溢出时保留横向滚动及可见加号。本轮未修改 Figma。
