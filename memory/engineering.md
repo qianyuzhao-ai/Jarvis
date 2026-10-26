@@ -2,12 +2,21 @@
 
 最后更新：2026-10-26
 
+## 1.0.1 已发布（2026-10-26）
+
+- [v1.0.1](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.1) 于北京时间 2026-10-26 18:46:55 发布，非草稿、沿用预发布设置，12 个资产均 uploaded；标签指向 main 发布合并提交 `50f31e688c14b9c8d60f31521998dc48e3fc947b`，未移动任何旧标签。
+- 唯一运行 [40308275354](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40308275354) 首次运行四个作业全部 success。三平台通过 593 项生产依赖、ASAR 实际启动、Agent OS 项目与写作/更新桥接、更新清单验证；两种 macOS 目录与 DMG/ZIP 内应用通过签名、公证票据、Gatekeeper，Windows x64 安装器未签名。
+- 线上 latest-mac.yml/latest.yml 已下载，SHA-256 与 GitHub digest 一致，版本、引用、大小及双架构 ZIP 目标核对通过，实际资产 SHA-512 在云端通过。中文说明保留自动生成记录。证据 `/private/tmp/jarvis-101-release-verification/`。
+- 本地回归 208/210，新增用量后端 3 项与 UI 1 项均通过；保留日历与原生焦点两项既有失败。内置服务商真实计价、外部服务与实机升级仍待核验。
+- 额外公证状态查询工作流被自动审批拒绝，未执行；通过原发布运行的最终日志确认公证成功，未重跑构建。原有两份未跟踪 Figma JSON 保留。
+
 ## 1.0.1 发布准备（2026-10-26）
 
 - 用户要求发布新的小版本，按补丁版本 v1.0.1 执行。基线 develop `515f665`，包含 [PR #97](https://github.com/qianyuzhao-ai/Jarvis/pull/97) 的用量与统计；从 `feature/prepare-v1.0.1` 准备版本和说明，通过 PR 集成 develop → main 后在 main 合并提交打新标签。
 - 统计主/子 Agent token 与美元费用，支持时间/项目筛选、模型/项目/线程明细；无价格显示未知，旧用量不补录。两份原有未跟踪 Figma JSON 保留，不纳入发布。
 - check/build、版本一致性通过；完整 Electron 回归 208/210（5.9m），新增用量后端 3 项和 UI 1 项全部通过，仅既有日历周视图与原生焦点失败，未跳过或改断言。日志 `/private/tmp/jarvis-101-smoke.log`。
-- 本地 arm64 目录包 `release/d177942b-6f08-4433-a541-367cfc33f5f7` 通过 593 项生产依赖、ASAR 实际启动、Agent OS 项目与写作/更新桥接验证。日志 `/private/tmp/jarvis-101-packaged-check.log`。云端发布待执行。
+- 本地 arm64 目录包 `release/d177942b-6f08-4433-a541-367cfc33f5f7` 通过 593 项生产依赖、ASAR 实际启动、Agent OS 项目与写作/更新桥接验证。日志 `/private/tmp/jarvis-101-packaged-check.log`。云端结果待回读。
+- 版本准备 [PR #98](https://github.com/qianyuzhao-ai/Jarvis/pull/98) 合入 develop `1de9247`，发布 [PR #99](https://github.com/qianyuzhao-ai/Jarvis/pull/99) 合入 main `50f31e6`，完整源码树一致。新标签 v1.0.1 指向 main 合并提交；唯一运行 [40308275354](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40308275354) 已启动。
 
 
 ## 1.0.0 已发布（2026-10-26）
