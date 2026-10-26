@@ -131,22 +131,6 @@
     position: absolute;
     inset: 0;
   }
-  .node-video-control {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    opacity: 0;
-  }
-  .node-video-control button {
-    pointer-events: auto;
-  }
-  .node-media:is(:hover, :focus-within) .node-video-control,
-  .media-placeholder[data-selected='true'] .node-video-control {
-    opacity: 1;
-  }
   .node-audio-player {
     display: flex;
     flex-direction: column;
@@ -154,11 +138,6 @@
     justify-content: center;
     gap: 8px;
     height: 100%;
-  }
-  .node-duration {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
   }
   .node-kind-badge {
     position: absolute;
