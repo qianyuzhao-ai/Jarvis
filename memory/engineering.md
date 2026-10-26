@@ -2,6 +2,16 @@
 
 最后更新：2026-10-26
 
+
+## 1.0.0 发布准备（2026-10-26）
+
+- 用户明确授权发布 v1.0.0。基线 develop `98d3418`，临时分支 `feature/prepare-v1.0.0`；通过 PR 完成版本准备 → develop → main，再在 main 合并提交创建新标签，不移动旧标签。
+- 根包与桌面包升级为 1.0.0，CHANGELOG/README 记录 Agent OS、目标线程与写作空间升级；旧 Agent 对话不迁移，旧文件保留。
+- 发布启动脚本仍检查已移除的 `createWritingSession`。改为检查现有写作命令桥和 Agent OS 桥，并在隔离 profile 实际创建项目、读取快照验证持久服务已接通；保留 ASAR、依赖、版本及更新桥接检查。
+- 两份原有未跟踪 Figma JSON 保留，不纳入发布。沿用 GitHub 预发布、macOS arm64/x64 签名公证、Windows x64 未签名的现有流程。
+- 本地 check/build、版本一致性、发布工具 13 项及 Apple 网络重试测试通过。完整回归 204/206（5.9m），保留日历周视图 0/7 与原生窗口焦点 false 两项既有环境失败，没有跳过或改断言。日志 `/private/tmp/jarvis-100-smoke.log`。
+- 本地 arm64 目录包 `release/ec28cbcc-a3d1-4ef9-a49c-6b08fc972fa8` 通过 593 项生产依赖检查、ASAR 原生启动、Agent OS 项目创建/快照、写作/更新桥接、块编辑保存、Mermaid/思维导图和星图验证。日志 `/private/tmp/jarvis-100-packaged-check.log`。云端签名、公证与发布尚未开始。
+
 ## V1.0.0 Agent OS 第一批（2026-10-26）
 
 - 分支 `claude/agent-logic-redesign-9irs9g`（基于 origin/develop `48d698e`）。用户授权 V1.0.0 推翻旧 Agent 逻辑、分批实现。决策、模块与验证详见 [agent-os-v1.md](agent-os-v1.md)。
