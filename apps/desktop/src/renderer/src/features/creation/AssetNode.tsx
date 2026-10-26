@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { Trash, CircleAlert } from '@jarvis/ui/icons';
+import { Trash, CircleAlert, Copy } from '@jarvis/ui/icons';
 import { useReactFlow, type NodeProps } from '@xyflow/react';
 import { IconButton } from '@jarvis/ui/components/Button';
 import { Badge } from '@jarvis/ui/components/Badge';
@@ -18,7 +18,8 @@ export function AssetNode({
   height = 180,
 }: NodeProps<AssetNodeType>) {
   const flow = useReactFlow<CanvasNode>(),
-    measure = useContext(NodeActionsContext)?.measure;
+    actions = useContext(NodeActionsContext),
+    measure = actions?.measure;
   const url = data.upload.status === 'ready' ? data.upload.url : undefined;
   useEffect(() => {
     measure?.(id, 180);
@@ -72,6 +73,18 @@ export function AssetNode({
               fileName={data.name}
             />
           )}
+          <IconButton
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`复制资源 ${data.name}`}
+            title="复制节点"
+            onClick={(event) => {
+              event.stopPropagation();
+              actions?.duplicate(id);
+            }}
+          >
+            <Copy size={16} />
+          </IconButton>
           <IconButton
             variant="ghost"
             size="icon-sm"

@@ -2,6 +2,33 @@
 
 最后更新：2026-10-26
 
+## 1.0.2 发布准备（2026-10-26）
+
+- 用户授权发布补丁版本 v1.0.2。PR #103 已合入 develop `6933736`，从该基线创建 `feature/prepare-v1.0.2`；包含画布节点复制粘贴、视频原生控件恢复及菜单/按钮/标签布局修复。版本与中文说明已更新。
+- check/build、版本一致性、发布工具 10 项与 Apple 网络重试测试通过。完整 Electron 回归 212/213（6.1m），唯一失败为既有日历周视图 0/7；原生焦点本次通过。保留失败，未改断言。日志 `/private/tmp/jarvis-102-smoke.log`。
+- 本地 arm64 目录包 `release/b99478e7-3297-4480-b7c5-abe5306af7b8` 通过 593 项生产依赖和 ASAR 实际启动、Agent OS 项目、写作与更新桥接验证。日志 `/private/tmp/jarvis-102-packaged-check.log`。
+- 沿用三平台统一预发布；Windows 实机操作、内网媒体反复放大后加载卡住和真实升级待验证。云端发布结果尚待回读。
+
+## 画布节点 Copy 与复制粘贴（2026-10-26）
+
+- `copy-graph.ts` 生成独立节点、连线与参考素材 ID，清除副本生成任务并保留已有结果；上传中资源复制为明确失败态，避免副本一直等待原上传。`canvas-clipboard.ts` 管理本窗口内存快照与剪贴板标识、单节点上游/多节点内部连线筛选和粘贴偏移；不增加 IPC、依赖或磁盘权限。
+- `Canvas.tsx` 处理原生 copy/paste 事件，排除文本输入，创建后选中副本，通过既有 ProjectStore 路径保存，节点/连线数量上限前置检查。Copy 按钮接入 `NodeActionsContext`，在资源与生成节点删除按钮左侧。
+- check/build 通过；最终 `canvas-copy.spec.ts`、`canvas-copy-ui.spec.ts`、`connections.spec.ts` 共 14/14（36.4s）通过，包含框选两节点后真实 Cmd+C/V、连续粘贴、单节点上游连线、删除后恢复节点数量、文字复制粘贴不创建节点、资源复制、重载持久化及原有引用/连线交互。已检查实窗按钮位置与多选副本截图。
+- 初轮连接专项 10/11，发现 canvas-body pointerdown 抢走引用候选菜单焦点；已将焦点接管限定到画布空白区和节点，最终同轮全部通过。验证主机为 macOS，Windows Ctrl+C/V 实机验证仍待完成。用户已授权本地提交本轮功能、测试与记录；未推送或发布。上一项回到最新修复已按用户要求提交 `e6721b8`。
+
+## Windows 原生菜单栏移除（2026-10-26）
+
+- `feature/style-polish-2026-10-26` 从 develop `87388cf` 创建；`apps/desktop/src/main/index.ts` 在 win32 初始化时设置空应用菜单，不创建 File / Edit / View / Window 菜单栏。
+- `pnpm check`、`pnpm build` 通过；启动导航与隔离冒烟沙箱内无法启动 Electron，沙箱外复验 1/1 通过。验证主机为 macOS，Windows 实机外观仍待验证；用户随后授权本地提交 `ec20340`，未推送或发布。
+
+## 视频控件与媒体卡住排查（2026-10-26）
+
+- feature/bugfix-2026-10-26：UrlMedia 恢复原生视频 controls，metadata 就绪后展示，移除视频自定义按钮/角标；音频保持原行为。上传与生成节点共用该组件和 jarvis-media 转发。
+- 用户现场：Windows，生成图像/视频曾正常，在同一画布多次放大预览后卡在加载；上传资源正常，原始链接在浏览器一直可用。因此不以链接过期为已确认根因。
+- 隔离 Electron + 本地不返回响应的服务实验：外层 net.fetch 取消返回 AbortError，但 1 秒后上游请求仍未关闭（started=1、closed=0）。将 request.signal 传给上游也未改变结果，实验性改动已撤回。证据脚本 /private/tmp/jarvis-media-abort-check.mjs。仅证实待响应请求取消未释放，尚未证明现场连接耗尽或定位 Windows 根因。
+- check/build 通过，canvas-assets 与 node-visuals 媒体回归 7/7 通过；Windows 内网资源和原生控件实机操作仍待验证。补充暂停与跳转进度的 node-visuals 回归 2/2 通过；用户随后授权本地提交，不推送或发布。
+
+
 ## 1.0.1 已发布（2026-10-26）
 
 - [v1.0.1](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.1) 于北京时间 2026-10-26 18:46:55 发布，非草稿、沿用预发布设置，12 个资产均 uploaded；标签指向 main 发布合并提交 `50f31e688c14b9c8d60f31521998dc48e3fc947b`，未移动任何旧标签。

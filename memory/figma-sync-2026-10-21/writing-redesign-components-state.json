@@ -1,0 +1,796 @@
+{
+  "updatedAt": "2026-10-25",
+  "status": "components-complete",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "sessionId": "5e821aa3-29e9-467e-97f8-fdd8c262e9ce",
+  "pageId": "332:28013",
+  "scope": "用户批准补齐写作改造所需 V1 组件；本轮不重设计页面、不改应用代码。",
+  "setCount": 12,
+  "variantCount": 50,
+  "iconCount": 18,
+  "sections": [
+    {
+      "id": "445:37991",
+      "name": "32 Writing · Editor Icons",
+      "sets": [],
+      "components": [
+        {
+          "id": "445:37992",
+          "name": "Icon / grip-vertical"
+        },
+        {
+          "id": "445:38000",
+          "name": "Icon / bold"
+        },
+        {
+          "id": "445:38003",
+          "name": "Icon / italic"
+        },
+        {
+          "id": "445:38008",
+          "name": "Icon / strikethrough"
+        },
+        {
+          "id": "445:38013",
+          "name": "Icon / link-2"
+        },
+        {
+          "id": "445:38018",
+          "name": "Icon / code"
+        },
+        {
+          "id": "445:38022",
+          "name": "Icon / heading-1"
+        },
+        {
+          "id": "445:38028",
+          "name": "Icon / heading-2"
+        },
+        {
+          "id": "445:38034",
+          "name": "Icon / heading-3"
+        },
+        {
+          "id": "445:38041",
+          "name": "Icon / list"
+        },
+        {
+          "id": "445:38049",
+          "name": "Icon / list-ordered"
+        },
+        {
+          "id": "445:38057",
+          "name": "Icon / quote"
+        },
+        {
+          "id": "445:38061",
+          "name": "Icon / network"
+        },
+        {
+          "id": "445:38068",
+          "name": "Icon / table"
+        },
+        {
+          "id": "445:38074",
+          "name": "Icon / git-branch"
+        },
+        {
+          "id": "445:38079",
+          "name": "Icon / chevron-right"
+        },
+        {
+          "id": "445:38082",
+          "name": "Icon / funnel"
+        },
+        {
+          "id": "445:38085",
+          "name": "Icon / pause"
+        }
+      ],
+      "previews": [
+        {
+          "id": "445:38089",
+          "name": "编辑图标 / Light",
+          "width": 1040,
+          "height": 400,
+          "childBottom": 335,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:1"
+          }
+        },
+        {
+          "id": "445:38228",
+          "name": "编辑图标 / Dark",
+          "width": 1040,
+          "height": 400,
+          "childBottom": 335,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:2"
+          }
+        }
+      ],
+      "fonts": [
+        "SF Pro"
+      ],
+      "unStyledText": [],
+      "imageFills": 0
+    },
+    {
+      "id": "445:38367",
+      "name": "29 Writing · Block Controls",
+      "sets": [
+        {
+          "id": "445:38493",
+          "name": "Writing Block Handle",
+          "description": "块操作。+ 在下方插入并打开命令面板；空块原位打开。句柄点击选整块、打开菜单；拖拽移动。default 仅示意待悬停，键盘聚焦显示。",
+          "properties": {
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "default",
+              "variantOptions": [
+                "default",
+                "hover",
+                "selected",
+                "dragging",
+                "focus"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "445:38368",
+              "name": "state=default"
+            },
+            {
+              "id": "445:38393",
+              "name": "state=hover"
+            },
+            {
+              "id": "445:38418",
+              "name": "state=selected"
+            },
+            {
+              "id": "445:38443",
+              "name": "state=dragging"
+            },
+            {
+              "id": "445:38468",
+              "name": "state=focus"
+            }
+          ]
+        },
+        {
+          "id": "445:38575",
+          "name": "Writing Block",
+          "description": "正文块的交互外壳。content 为正文示例；showHandle 控制行首。Agent 修改只更新缓冲区，不表示已保存。富内容块嵌入此容器。",
+          "properties": {
+            "showHandle#445:8": {
+              "type": "BOOLEAN",
+              "defaultValue": true
+            },
+            "content#445:9": {
+              "type": "TEXT",
+              "defaultValue": "把散落的记录，连接成下一次写作的线索。"
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "default",
+              "variantOptions": [
+                "default",
+                "hover",
+                "selected",
+                "agent-changed"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "445:38494",
+              "name": "state=default"
+            },
+            {
+              "id": "445:38514",
+              "name": "state=hover"
+            },
+            {
+              "id": "445:38534",
+              "name": "state=selected"
+            },
+            {
+              "id": "445:38554",
+              "name": "state=agent-changed"
+            }
+          ]
+        },
+        {
+          "id": "445:38580",
+          "name": "Writing Drop Indicator",
+          "description": "拖拽插入指示。蓝色表示可插入；危险色虚线表示不可插入，并以 Tooltip 说明原因。",
+          "properties": {
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "insert",
+              "variantOptions": [
+                "insert",
+                "invalid"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "445:38576",
+              "name": "state=insert"
+            },
+            {
+              "id": "445:38578",
+              "name": "state=invalid"
+            }
+          ]
+        },
+        {
+          "id": "445:38593",
+          "name": "Writing Outline Marker",
+          "description": "正文边缘大纲条。h1/h2/h3 用长度表达层级，active 表达当前章节。键盘聚焦应打开大纲列表。",
+          "properties": {
+            "level": {
+              "type": "VARIANT",
+              "defaultValue": "h1",
+              "variantOptions": [
+                "h1",
+                "h2",
+                "h3"
+              ]
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "default",
+              "variantOptions": [
+                "default",
+                "active"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "445:38581",
+              "name": "level=h1, state=default"
+            },
+            {
+              "id": "445:38583",
+              "name": "level=h1, state=active"
+            },
+            {
+              "id": "445:38585",
+              "name": "level=h2, state=default"
+            },
+            {
+              "id": "445:38587",
+              "name": "level=h2, state=active"
+            },
+            {
+              "id": "445:38589",
+              "name": "level=h3, state=default"
+            },
+            {
+              "id": "445:38591",
+              "name": "level=h3, state=active"
+            }
+          ]
+        },
+        {
+          "id": "445:38667",
+          "name": "Writing Outline",
+          "description": "collapsed 仅短横线；hover 或键盘 focus 展开章节导航。列表复用 Sidebar Item；不占用助手栏。",
+          "properties": {
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "collapsed",
+              "variantOptions": [
+                "collapsed",
+                "expanded"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "445:38594",
+              "name": "state=collapsed"
+            },
+            {
+              "id": "445:38607",
+              "name": "state=expanded"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "445:38668",
+          "name": "Writing Selection Toolbar"
+        },
+        {
+          "id": "445:38761",
+          "name": "Writing Slash Panel"
+        }
+      ],
+      "previews": [
+        {
+          "id": "445:38851",
+          "name": "块级编辑 / Light",
+          "width": 760,
+          "height": 1100,
+          "childBottom": 1039,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:1"
+          }
+        },
+        {
+          "id": "445:39111",
+          "name": "块级编辑 / Dark",
+          "width": 760,
+          "height": 1100,
+          "childBottom": 1039,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:2"
+          }
+        }
+      ],
+      "fonts": [
+        "SF Pro"
+      ],
+      "unStyledText": [],
+      "imageFills": 0
+    },
+    {
+      "id": "446:38821",
+      "name": "30 Writing · Rich Blocks",
+      "sets": [
+        {
+          "id": "446:38844",
+          "name": "Mind Map Node",
+          "description": "导图节点：根主题、普通、选中、编辑与折叠。双击进入编辑；Tab 子节点、Enter 同级；折叠数量不是丢失的内容。",
+          "properties": {
+            "label#446:4": {
+              "type": "TEXT",
+              "defaultValue": "点线成网"
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "root",
+              "variantOptions": [
+                "root",
+                "default",
+                "selected",
+                "editing",
+                "collapsed"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "446:38822",
+              "name": "state=root"
+            },
+            {
+              "id": "446:38824",
+              "name": "state=default"
+            },
+            {
+              "id": "446:38826",
+              "name": "state=selected"
+            },
+            {
+              "id": "446:38828",
+              "name": "state=editing"
+            },
+            {
+              "id": "446:38831",
+              "name": "state=collapsed"
+            }
+          ]
+        },
+        {
+          "id": "446:39636",
+          "name": "Writing Rich Block",
+          "description": "mindmap / mermaid 富内容外壳。preview、source、empty、error 四态；title/source/hint 可编辑。源码错误保留原文；预览与全屏编辑是设计状态，未实现渲染器。",
+          "properties": {
+            "mindmapSource#449:0": {
+              "type": "TEXT",
+              "defaultValue": "- 点线成网\n  - 捕捉碎片\n    - 记录想法\n  - 建立联系\n    - 回到写作"
+            },
+            "mermaidSource#449:9": {
+              "type": "TEXT",
+              "defaultValue": "flowchart LR\n  A[记录] --> B[关联]\n  B --> C[写作]"
+            },
+            "kind": {
+              "type": "VARIANT",
+              "defaultValue": "mindmap",
+              "variantOptions": [
+                "mindmap",
+                "mermaid"
+              ]
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "preview",
+              "variantOptions": [
+                "preview",
+                "source",
+                "empty",
+                "error"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "446:38847",
+              "name": "kind=mindmap, state=preview"
+            },
+            {
+              "id": "446:38931",
+              "name": "kind=mindmap, state=source"
+            },
+            {
+              "id": "446:38991",
+              "name": "kind=mindmap, state=empty"
+            },
+            {
+              "id": "446:39111",
+              "name": "kind=mindmap, state=error"
+            },
+            {
+              "id": "446:39256",
+              "name": "kind=mermaid, state=preview"
+            },
+            {
+              "id": "446:39325",
+              "name": "kind=mermaid, state=source"
+            },
+            {
+              "id": "446:39387",
+              "name": "kind=mermaid, state=empty"
+            },
+            {
+              "id": "446:39511",
+              "name": "kind=mermaid, state=error"
+            }
+          ]
+        }
+      ],
+      "components": [
+        {
+          "id": "446:38845",
+          "name": "Mind Map Branch"
+        }
+      ],
+      "previews": [
+        {
+          "id": "446:39637",
+          "name": "富内容块 / Light",
+          "width": 1380,
+          "height": 1760,
+          "childBottom": 1569,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:1"
+          }
+        },
+        {
+          "id": "446:40054",
+          "name": "富内容块 / Dark",
+          "width": 1380,
+          "height": 1760,
+          "childBottom": 1569,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:2"
+          }
+        }
+      ],
+      "fonts": [
+        "SF Pro"
+      ],
+      "unStyledText": [
+        "I446:38833;376:32444",
+        "I446:40048;446:38833;376:32444",
+        "I446:40465;446:38833;376:32444"
+      ],
+      "imageFills": 0
+    },
+    {
+      "id": "447:39889",
+      "name": "31 Writing · Dots Graph",
+      "sets": [
+        {
+          "id": "447:39945",
+          "name": "Dots Graph Node",
+          "description": "文件关系节点。active=当前文档，connected=有引用，isolated=无连接，candidate=AI 待确认，selected=交互选中。label/meta 文本和 icon 可覆盖；候选关系不自动写盘。",
+          "properties": {
+            "icon#447:15": {
+              "type": "INSTANCE_SWAP",
+              "defaultValue": "391:32679",
+              "preferredValues": []
+            },
+            "label#447:16": {
+              "type": "TEXT",
+              "defaultValue": "点线成网"
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "active",
+              "variantOptions": [
+                "active",
+                "connected",
+                "isolated",
+                "candidate",
+                "selected"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "447:39890",
+              "name": "state=active"
+            },
+            {
+              "id": "447:39901",
+              "name": "state=connected"
+            },
+            {
+              "id": "447:39912",
+              "name": "state=isolated"
+            },
+            {
+              "id": "447:39923",
+              "name": "state=candidate"
+            },
+            {
+              "id": "447:39934",
+              "name": "state=selected"
+            }
+          ]
+        },
+        {
+          "id": "447:39952",
+          "name": "Dots Graph Edge",
+          "description": "reference 实线=显式引用；topic 细线=标签关系；candidate 虚线=AI 候选。默认静态，动效尊重减少动态效果。",
+          "properties": {
+            "kind": {
+              "type": "VARIANT",
+              "defaultValue": "reference",
+              "variantOptions": [
+                "reference",
+                "topic",
+                "candidate"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "447:39946",
+              "name": "kind=reference"
+            },
+            {
+              "id": "447:39948",
+              "name": "kind=topic"
+            },
+            {
+              "id": "447:39950",
+              "name": "kind=candidate"
+            }
+          ]
+        },
+        {
+          "id": "447:40030",
+          "name": "Dots Timeline",
+          "description": "历史回放时间轴。range 可编辑；playing / paused / focus。仅在存在真实关系历史时使用，不用文件修改时间伪造历史。键盘左右调整，空格播放或暂停。",
+          "properties": {
+            "range#447:21": {
+              "type": "TEXT",
+              "defaultValue": "2026.10.01 — 2026.10.25"
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "paused",
+              "variantOptions": [
+                "paused",
+                "playing",
+                "focus"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "447:39953",
+              "name": "state=paused"
+            },
+            {
+              "id": "447:39981",
+              "name": "state=playing"
+            },
+            {
+              "id": "447:40006",
+              "name": "state=focus"
+            }
+          ]
+        },
+        {
+          "id": "447:40187",
+          "name": "Dots Connection Suggestion",
+          "description": "AI 关系推荐卡。确认前只是候选；确认建立连接须展示目标与写入范围。accepted 与 dismissed 是静态示例，不代表已执行文件操作。",
+          "properties": {
+            "title#447:28": {
+              "type": "TEXT",
+              "defaultValue": "一条旧记录，可能提供新的解法"
+            },
+            "reason#447:29": {
+              "type": "TEXT",
+              "defaultValue": "《系统设计笔记》讨论了相同的反馈循环，可作为本文的补充。"
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "pending",
+              "variantOptions": [
+                "pending",
+                "accepted",
+                "dismissed"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "447:40031",
+              "name": "state=pending"
+            },
+            {
+              "id": "447:40145",
+              "name": "state=accepted"
+            },
+            {
+              "id": "447:40168",
+              "name": "state=dismissed"
+            }
+          ]
+        },
+        {
+          "id": "447:40596",
+          "name": "Dots Graph",
+          "description": "mini 用于左侧栏，full 用于编辑区。ready / empty。节点与连线均为可编辑实例；图布局为示意，不执行力导向或后台检索。",
+          "properties": {
+            "size": {
+              "type": "VARIANT",
+              "defaultValue": "mini",
+              "variantOptions": [
+                "mini",
+                "full"
+              ]
+            },
+            "state": {
+              "type": "VARIANT",
+              "defaultValue": "ready",
+              "variantOptions": [
+                "ready",
+                "empty"
+              ]
+            }
+          },
+          "variants": [
+            {
+              "id": "447:40188",
+              "name": "size=mini, state=ready"
+            },
+            {
+              "id": "447:40276",
+              "name": "size=mini, state=empty"
+            },
+            {
+              "id": "447:40364",
+              "name": "size=full, state=ready"
+            },
+            {
+              "id": "447:40492",
+              "name": "size=full, state=empty"
+            }
+          ]
+        }
+      ],
+      "components": [],
+      "previews": [
+        {
+          "id": "447:40597",
+          "name": "星图与关系 / Light",
+          "width": 1380,
+          "height": 1900,
+          "childBottom": 1841,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:1"
+          }
+        },
+        {
+          "id": "447:40996",
+          "name": "星图与关系 / Dark",
+          "width": 1380,
+          "height": 1900,
+          "childBottom": 1841,
+          "mode": {
+            "VariableCollectionId:334:26740": "334:2"
+          }
+        }
+      ],
+      "fonts": [
+        "SF Pro"
+      ],
+      "unStyledText": [
+        "I447:39966;376:32444",
+        "I447:39995;376:32444",
+        "I447:40019;376:32444",
+        "I447:40040;376:32444",
+        "I447:40154;376:32458",
+        "I447:40177;376:32444",
+        "I447:40205;447:39899",
+        "I447:40205;447:39900",
+        "I447:40216;447:39910",
+        "I447:40216;447:39911",
+        "I447:40227;447:39932",
+        "I447:40227;447:39933",
+        "I447:40367;376:32444",
+        "I447:40446;376:32444",
+        "I447:40453;376:32444",
+        "I447:40460;376:32444",
+        "I447:40495;376:32444",
+        "I447:40550;376:32444",
+        "I447:40557;376:32444",
+        "I447:40564;376:32444",
+        "I447:40670;447:40367;376:32444",
+        "I447:40670;447:40446;376:32444",
+        "I447:40670;447:40453;376:32444",
+        "I447:40670;447:40460;376:32444",
+        "I447:40761;447:40205;447:39899",
+        "I447:40761;447:40205;447:39900",
+        "I447:40761;447:40216;447:39910",
+        "I447:40761;447:40216;447:39911",
+        "I447:40761;447:40227;447:39932",
+        "I447:40761;447:40227;447:39933",
+        "I447:40824;447:39966;376:32444",
+        "I447:40841;447:40040;376:32444",
+        "I447:40883;447:40154;376:32458",
+        "I447:40899;447:40495;376:32444",
+        "I447:40899;447:40550;376:32444",
+        "I447:40899;447:40557;376:32444",
+        "I447:40899;447:40564;376:32444",
+        "I450:41088;447:39995;376:32444",
+        "I450:41106;447:40019;376:32444",
+        "I450:41123;447:40177;376:32444",
+        "I447:41069;447:40367;376:32444",
+        "I447:41069;447:40446;376:32444",
+        "I447:41069;447:40453;376:32444",
+        "I447:41069;447:40460;376:32444",
+        "I447:41160;447:40205;447:39899",
+        "I447:41160;447:40205;447:39900",
+        "I447:41160;447:40216;447:39910",
+        "I447:41160;447:40216;447:39911",
+        "I447:41160;447:40227;447:39932",
+        "I447:41160;447:40227;447:39933",
+        "I447:41223;447:39966;376:32444",
+        "I447:41240;447:40040;376:32444",
+        "I447:41282;447:40154;376:32458",
+        "I447:41298;447:40495;376:32444",
+        "I447:41298;447:40550;376:32444",
+        "I447:41298;447:40557;376:32444",
+        "I447:41298;447:40564;376:32444",
+        "I450:41139;447:39995;376:32444",
+        "I450:41157;447:40019;376:32444",
+        "I450:41174;447:40177;376:32444"
+      ],
+      "imageFills": 0
+    }
+  ],
+  "validation": {
+    "visual": "四组浅深预览均已截图检查；修复共享属性默认文案、源码重叠、图标缩放、节点连线端点与插入状态顺序。",
+    "editable": true,
+    "imageFills": 0,
+    "fontFamily": "SF Pro",
+    "tokens": "沿用 V1 / Primitives、V1 / Semantic 的浅深模式、颜色、间距和圆角；复用 V1 基础控件与文字样式。",
+    "inheritedTypography": "unStyledText 计数来自既有 V1 Badge 内部 11px Semibold 数字和标签，继承原控件；新增直接文字均应用 V1 文字样式。",
+    "behaviors": "变体为设计状态，没有实现导图布局、Mermaid 渲染、文件修改、AI 检索或真实历史回放。"
+  },
+  "next": "使用已补齐 V1 实例重设计 V1-视觉换新中的写作空间；本轮尚未修改该页面。"
+}

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Spinner } from '@jarvis/ui/components/Spinner';
-import { Badge } from '@jarvis/ui/components/Badge';
 import { CircleAlert, Music, Play, Pause } from '@jarvis/ui/icons';
 import type { AssetData } from './types';
 import { mediaTime } from './node-actions-context';
@@ -90,7 +89,8 @@ export function UrlMedia({
           />
         ) : kind === 'video' ? (
           <video
-            className="generated-video"
+            className="generated-video nodrag nopan"
+            controls
             ref={(node) => {
               media.current = node;
             }}
@@ -99,10 +99,7 @@ export function UrlMedia({
             preload="metadata"
             draggable={false}
             onLoadedData={(e) => loaded(e.currentTarget)}
-            onLoadedMetadata={(e) => {
-              setDuration(e.currentTarget.duration);
-              onDimensions?.(e.currentTarget.videoWidth, e.currentTarget.videoHeight);
-            }}
+            onLoadedMetadata={(e) => loaded(e.currentTarget)}
             onDurationChange={(e) => setDuration(e.currentTarget.duration)}
             onError={onError}
             onPlay={() => setPlaying(true)}
@@ -136,9 +133,9 @@ export function UrlMedia({
           <span>正在加载媒体…</span>
         </div>
       )}
-      {ready && kind !== 'image' && (
-        <div className={kind === 'audio' ? 'node-audio-player' : 'node-video-control'}>
-          {kind === 'audio' && <Music size={24} className="text-fg-tertiary" />}
+      {ready && kind === 'audio' && (
+        <div className="node-audio-player">
+          <Music size={24} className="text-fg-tertiary" />
           <IconButton
             variant="secondary"
             shape="circle"
@@ -151,18 +148,11 @@ export function UrlMedia({
           >
             {playing ? <Pause /> : <Play />}
           </IconButton>
-          {kind === 'audio' && (
-            <span className="text-callout text-fg-secondary">
-              {playing ? `${mediaTime(time)} / ` : ''}
-              {durationLabel}
-            </span>
-          )}
+          <span className="text-callout text-fg-secondary">
+            {playing ? `${mediaTime(time)} / ` : ''}
+            {durationLabel}
+          </span>
         </div>
-      )}
-      {ready && kind === 'video' && (
-        <Badge tone="neutral" appearance="solid" className="node-duration">
-          {durationLabel}
-        </Badge>
       )}
     </div>
   );

@@ -299,12 +299,22 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     releaseSlow();
     await expect(node('loading').getByAltText('生成的图像')).toBeVisible();
     const v = node('video').getByLabel('生成的视频', { exact: true });
-    await expect(v).toHaveJSProperty('controls', false);
+    await expect(v).toHaveJSProperty('controls', true);
+    await expect(v).toHaveClass(/nodrag nopan/);
     await node('video').hover();
-    await node('video').getByRole('button', { name: '播放生成的视频' }).click();
+    await v.evaluate((e) => (e as HTMLVideoElement).play());
     await expect
       .poll(() => v.evaluate((e) => (e as HTMLVideoElement).currentTime))
       .toBeGreaterThan(0);
+    await v.evaluate((e) => {
+      const video = e as HTMLVideoElement;
+      video.pause();
+      video.currentTime = 0.2;
+    });
+    await expect(v).toHaveJSProperty('paused', true);
+    await expect
+      .poll(() => v.evaluate((e) => (e as HTMLVideoElement).currentTime))
+      .toBeCloseTo(0.2);
     await node('audio').getByRole('button', { name: '播放音频素材' }).click();
     await expect
       .poll(() =>
