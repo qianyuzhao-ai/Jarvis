@@ -210,39 +210,14 @@ test('skills import, slash selection, automatic activation, disablement and rest
     await page.getByRole('button', { name: '插件', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: '启用 manual-plan' })).not.toBeChecked();
     await expect(page.getByRole('checkbox', { name: '启用 shot-plan' })).toBeChecked();
-    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByRole('button', { name: '展开画布助手', exact: true }).click();
-    const sidebar = page.getByRole('complementary', { name: '画布助手' });
-    const canvasInput = sidebar.getByLabel('消息', { exact: true });
-    await canvasInput.fill('/shot');
-    await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
-    await page.emulateMedia({ colorScheme: 'dark' });
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.screenshot({
-      animations: 'disabled',
-      path: test.info().outputPath('skills-canvas-dark.png'),
-    });
-    await canvasInput.press('Enter');
-    await canvasInput.press('End');
-    await page.keyboard.insertText('为当前画布规划镜头');
-    await canvasInput.press('Enter');
-    await expect(
-      sidebar.locator(
-        '[data-testid="chat-message"][data-message-role="assistant"][data-status="succeeded"]',
-      ),
-    ).toContainText('已按技能');
-    expect(JSON.stringify(requests.at(-1)?.tools)).toContain('get_canvas_summary');
-    expect(JSON.stringify(requests.at(-1)?.tools)).toContain('load_skill');
-    await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
-    await canvasInput.fill('/');
-    await expect(sidebar.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
-    await expect(sidebar.getByRole('button', { name: '管理技能', exact: true })).toHaveCount(0);
-    await page.screenshot({
-      animations: 'disabled',
-      path: test.info().outputPath('skills-canvas-picker-dark.png'),
-    });
+    // After a restart the home picker still lists only enabled skills. The canvas assistant
+    // returns with batch 2 of the V1.0.0 Agent OS.
+    await page.getByRole('button', { name: '首页', exact: true }).click();
+    const homeInput = page.getByLabel('消息', { exact: true });
+    await homeInput.fill('/shot');
+    await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(1);
+    await homeInput.fill('/manual');
+    await expect(page.getByTestId('skill-picker').getByRole('option')).toHaveCount(0);
   } finally {
     await app.close();
     await new Promise<void>((r) => server.close(() => r()));

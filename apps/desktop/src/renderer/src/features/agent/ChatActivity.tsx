@@ -70,8 +70,8 @@ export function ChatActivity({
   async function undoFiles(transactionId: string) {
     setUndoing(true);
     try {
-      if (!window.desktop?.agent) throw new Error('Agent 桥接不可用');
-      agentValue(await window.desktop.agent.undo({ transactionId, files: true }));
+      if (!window.desktop?.os) throw new Error('Agent 桥接不可用');
+      agentValue(await window.desktop.os.undo(transactionId));
     } catch (error) {
       onError?.(error instanceof Error ? error.message : '撤销失败');
     } finally {

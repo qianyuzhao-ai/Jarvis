@@ -3,15 +3,12 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { JsonFile } from '../src/main/agent/json-file';
-import type { KeyCipher } from '../src/main/agent/key-cipher';
 import { Scheduler } from '../src/main/agent/kernel/scheduler';
-import { ModelStore } from '../src/main/agent/model-store';
 import { openAgent } from '../src/main/agent/runtime';
-import { AgentService } from '../src/main/agent/service';
-import { AgentStore } from '../src/main/agent/store';
 import { AgentSettingsStore } from '../src/main/agent/settings';
 import { writeFile } from 'node:fs/promises';
 import { relayModel } from './helpers/models';
+import { startOs } from './helpers/os';
 
 const chunk = (delta: unknown, finish: string | null = null, usage?: unknown) =>
   `data: ${JSON.stringify({ id: 'c', object: 'chat.completion.chunk', created: 1, model: 'mock', choices: [{ index: 0, delta, finish_reason: finish }], ...(usage ? { usage } : {}) })}\n\n`;
@@ -32,22 +29,9 @@ async function heldRelay() {
 }
 
 async function serviceWith(baseUrl: string) {
-  const cipher: KeyCipher = { available: () => true, encrypt: (t) => t, decrypt: (t) => t };
-  const root = test.info().outputPath('agent');
-  const models = new ModelStore(new JsonFile(join(root, 'connection.json')), cipher);
-  await models.initialize();
-  const store = new AgentStore(new JsonFile(join(root, 'index.json')));
-  const service = new AgentService(models, store, root);
-  const provider = await models.saveProvider({
-    kind: 'custom',
-    name: 'Relay',
-    baseUrl,
-    api: 'openai-completions',
-    apiKey: '',
-    clearKey: false,
-  });
-  await models.setProviderModels(provider, [{ modelId: 'mock' }]);
-  return { service, store };
+  const { os, coordinator } = await startOs(test.info().outputPath('agent'), baseUrl);
+  const other = os.registry.get(await os.createProject('第二个项目')).project.coordinatorId;
+  return { os, a: coordinator, b: other };
 }
 
 test('scheduler serves slots first come first served and stops waiting on abort', async () => {
@@ -86,63 +70,61 @@ test('scheduler serves slots first come first served and stops waiting on abort'
 
 test('conversations reply at the same time up to the limit, and the rest wait for a slot', async () => {
   const relay = await heldRelay();
-  const { service, store } = await serviceWith(relay.baseUrl);
+  const { os, a, b } = await serviceWith(relay.baseUrl);
   try {
-    service.scheduler.setLimit(1);
-    const a = await service.create();
-    const b = await service.create();
-    await service.send(a, randomUUID(), '甲', 1);
-    await service.send(b, randomUUID(), '乙', 1);
+    os.scheduler.setLimit(1);
+    await os.send(a, '甲');
+    await os.send(b, '乙');
     await expect.poll(() => relay.held.length).toBe(1);
     // B's round has started but its model request waits for the slot A holds.
     await expect
-      .poll(() => service.snapshot().snapshot.runs)
+      .poll(() => os.snapshot().snapshot.runs)
       .toEqual({ [a]: 'running', [b]: 'waiting' });
     await new Promise((r) => setTimeout(r, 200));
     expect(relay.held).toHaveLength(1);
     // Other conversations stay editable while these two reply.
-    const c = await service.create();
-    await service.setThinkingLevel(c, 'off');
-    await expect(service.setThinkingLevel(a, 'off')).rejects.toThrow('这个对话');
+    const c = os.registry.get(await os.createProject('第三个项目')).project.coordinatorId;
+    await os.setThinkingLevel(c, 'off');
+    await expect(os.setThinkingLevel(a, 'off')).rejects.toThrow('这个对话');
     relay.held.shift()?.('甲的回复');
     await expect.poll(() => relay.held.length).toBe(1);
-    expect(service.snapshot().snapshot.runs).toEqual({ [b]: 'running' });
+    expect(os.snapshot().snapshot.runs).toEqual({ [b]: 'running' });
     relay.held.shift()?.('乙的回复');
-    await expect.poll(() => Object.keys(service.snapshot().snapshot.runs).length).toBe(0);
-    expect(store.record(a).view.messages.at(-1)).toMatchObject({
+    await expect.poll(() => Object.keys(os.snapshot().snapshot.runs).length).toBe(0);
+    expect(os.session(a).session.messages.at(-1)).toMatchObject({
       text: '甲的回复',
       status: 'succeeded',
     });
-    expect(store.record(b).view.messages.at(-1)).toMatchObject({
+    expect(os.session(b).session.messages.at(-1)).toMatchObject({
       text: '乙的回复',
       status: 'succeeded',
     });
 
-    service.scheduler.setLimit(2);
-    await service.send(a, randomUUID(), '再问甲', 1);
-    await service.send(b, randomUUID(), '再问乙', 1);
+    os.scheduler.setLimit(2);
+    await os.send(a, '再问甲');
+    await os.send(b, '再问乙');
     await expect.poll(() => relay.held.length).toBe(2);
-    expect(service.snapshot().snapshot.runs).toEqual({ [a]: 'running', [b]: 'running' });
+    expect(os.snapshot().snapshot.runs).toEqual({ [a]: 'running', [b]: 'running' });
     for (const release of relay.held.splice(0)) release('好');
-    await expect.poll(() => Object.keys(service.snapshot().snapshot.runs).length).toBe(0);
+    await expect.poll(() => Object.keys(os.snapshot().snapshot.runs).length).toBe(0);
   } finally {
-    await service.shutdown();
+    await os.shutdown();
     relay.server.closeAllConnections();
     await new Promise<void>((r) => relay.server.close(() => r()));
   }
 });
 
-test('messages sent while replying queue in order, and stopping drops the queue', async () => {
+test('messages sent while replying queue in order, stopping drops them, and queued ones survive a restart', async () => {
   const relay = await heldRelay();
-  const { service, store } = await serviceWith(relay.baseUrl);
+  const { os, a: id } = await serviceWith(relay.baseUrl);
   try {
-    const id = await service.create();
-    await service.send(id, randomUUID(), '第一问', 1);
+    await os.setReplyMode('queue');
+    await os.send(id, '第一问');
     await expect.poll(() => relay.held.length).toBe(1);
-    await service.send(id, randomUUID(), '第二问', 1);
-    await service.send(id, randomUUID(), '第三问', 1);
+    await os.send(id, '第二问');
+    await os.send(id, '第三问');
     const statuses = () =>
-      store.record(id).view.messages.map((m) => `${m.role}:${m.text || '…'}:${m.status}`);
+      os.session(id).session.messages.map((m) => `${m.role}:${m.text || '…'}:${m.status}`);
     expect(statuses()).toEqual([
       'user:第一问:succeeded',
       'assistant:…:running',
@@ -158,9 +140,7 @@ test('messages sent while replying queue in order, and stopping drops the queue'
       'assistant:…:running',
       'user:第三问:queued',
     ]);
-    const runId = store.record(id).view.runId;
-    if (!runId) throw new Error('Missing run');
-    await service.cancel(runId, 1);
+    await os.cancel(id);
     expect(statuses()).toEqual([
       'user:第一问:succeeded',
       'assistant:第一答:succeeded',
@@ -168,26 +148,27 @@ test('messages sent while replying queue in order, and stopping drops the queue'
       'assistant:…:cancelled',
       'user:第三问:cancelled',
     ]);
-    expect(relay.held).toHaveLength(1);
-    expect(service.snapshot().snapshot.runs).toEqual({});
+    expect(os.snapshot().snapshot.runs).toEqual({});
 
-    // A queued message left over from a previous launch is not sent after a restart.
-    await service.send(id, randomUUID(), '第四问', 1);
+    // A message queued when the app stops is still waiting on the next start, and is answered.
+    await os.send(id, '第四问');
     await expect.poll(() => relay.held.length).toBe(2);
-    await service.send(id, randomUUID(), '第五问', 1);
-    await store.saveView(id);
-    const restarted = new AgentStore(
-      new JsonFile(join(test.info().outputPath('agent'), 'index.json')),
+    await os.send(id, '第五问');
+    const restarted = await startOs(test.info().outputPath('agent'), relay.baseUrl);
+    // The interrupted round runs its message again, then the queued one follows.
+    await expect.poll(() => relay.held.length).toBe(3);
+    relay.held.splice(2)[0]?.('重做第四问');
+    await expect.poll(() => relay.held.length).toBe(3);
+    relay.held.splice(2)[0]?.('重启后的回答');
+    await restarted.idle();
+    expect(restarted.os.session(id).session.messages.find((m) => m.text === '第五问')?.status).toBe(
+      'succeeded',
     );
-    await restarted.initialize();
-    expect(restarted.record(id).view.messages.at(-1)).toMatchObject({
-      text: '第五问',
-      status: 'cancelled',
-      error: expect.stringContaining('没有发送'),
-    });
+    expect(restarted.os.session(id).session.messages.at(-1)?.text).toBe('重启后的回答');
+    await restarted.os.shutdown();
   } finally {
     for (const release of relay.held.splice(0)) release('');
-    await service.shutdown();
+    await os.shutdown();
     relay.server.closeAllConnections();
     await new Promise<void>((r) => relay.server.close(() => r()));
   }
@@ -254,25 +235,22 @@ test('compaction summarizes long history without using up the round request limi
 
 test('the concurrency setting persists, rejects out-of-range values and applies to waiting rounds', async () => {
   const relay = await heldRelay();
-  const { service } = await serviceWith(relay.baseUrl);
+  const { os, a, b } = await serviceWith(relay.baseUrl);
   const root = test.info().outputPath('agent');
   try {
-    await service.loadSettings();
-    expect(service.settings.get().concurrency).toBe(3);
-    await expect(service.setConcurrency(0)).rejects.toThrow();
-    await expect(service.setConcurrency(7)).rejects.toThrow();
-    await service.setConcurrency(1);
-    const a = await service.create();
-    const b = await service.create();
-    await service.send(a, randomUUID(), '甲', 1);
-    await service.send(b, randomUUID(), '乙', 1);
-    await expect.poll(() => service.snapshot().snapshot.runs[b]).toBe('waiting');
+    expect(os.settings.get().concurrency).toBe(3);
+    await expect(os.setConcurrency(0)).rejects.toThrow();
+    await expect(os.setConcurrency(7)).rejects.toThrow();
+    await os.setConcurrency(1);
+    await os.send(a, '甲');
+    await os.send(b, '乙');
+    await expect.poll(() => os.snapshot().snapshot.runs[b]).toBe('waiting');
     // Raising the limit lets the waiting round start without stopping the first one.
-    await service.setConcurrency(2);
+    await os.setConcurrency(2);
     await expect.poll(() => relay.held.length).toBe(2);
-    expect(service.snapshot().snapshot.runs).toEqual({ [a]: 'running', [b]: 'running' });
+    expect(os.snapshot().snapshot.runs).toEqual({ [a]: 'running', [b]: 'running' });
     for (const release of relay.held.splice(0)) release('好');
-    await expect.poll(() => Object.keys(service.snapshot().snapshot.runs).length).toBe(0);
+    await expect.poll(() => Object.keys(os.snapshot().snapshot.runs).length).toBe(0);
 
     const restarted = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
     await restarted.initialize();
@@ -283,7 +261,7 @@ test('the concurrency setting persists, rejects out-of-range values and applies 
     expect(invalid.get().concurrency).toBe(3);
   } finally {
     for (const release of relay.held.splice(0)) release('');
-    await service.shutdown();
+    await os.shutdown();
     relay.server.closeAllConnections();
     await new Promise<void>((r) => relay.server.close(() => r()));
   }

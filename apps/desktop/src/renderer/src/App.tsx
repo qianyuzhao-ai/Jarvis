@@ -17,7 +17,7 @@ import {
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
-import { AgentApprovals } from './features/agent/AgentApprovals';
+import { AgentDecisions } from './features/agent/AgentDecisions';
 import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
@@ -153,7 +153,11 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       await writing.openDocument({ kind: 'file', path, name: path.split('/').at(-1) ?? path });
       if (key) focusConversation(key, session.id);
       await open({ kind: 'writing', ref: path, rootId, title: path.split('/').at(-1) ?? path });
-    } else return;
+    } else {
+      // A thread of the Agent OS opens as a conversation of its own.
+      await open({ kind: 'chat', ref: session.id, title: session.title });
+      return;
+    }
     change((s) => ({
       ...s,
       tabs: s.tabs.map((t) => (t.id === s.activeId ? { ...t, rightPanelOpen: true } : t)),
@@ -185,7 +189,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
   };
   useEffect(
     () =>
-      window.desktop?.agent.onNavigate((target) => {
+      window.desktop?.os.onNavigate((target) => {
         void navigate
           .current(target)
           .catch((error: unknown) =>
@@ -405,7 +409,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           activeProject={active.ref}
           onCreate={create}
           onOpenProject={(p, n) => void open(projectView(p), n)}
-          sessions={agent.snapshot.sessions}
+          sessions={agent.homeSessions}
           activeChat={active.ref}
           onChat={(id, title, n) => void open({ kind: 'chat', ref: id, title }, n)}
           onRenameProject={async (id, title) => {
@@ -720,7 +724,7 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <ConfirmProvider>
         <Workbench initial={initial} />
-        <AgentApprovals />
+        <AgentDecisions />
         <Toaster />
       </ConfirmProvider>
     </MotionConfig>

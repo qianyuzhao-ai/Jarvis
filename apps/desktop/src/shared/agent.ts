@@ -1,13 +1,6 @@
-import {
-  writingScopeSchema,
-  type WritingScope,
-  type WritingCommand,
-  type WritingReply,
-} from './writing-agent';
+import { writingScopeSchema, type WritingCommand, type WritingReply } from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
-import type { ApprovalRequest, ApprovalResponse } from './agent-approval';
-import type { UndoRequest } from './agent-ledger';
 import { resultCardSchema } from './agent-cards';
 import type { AgentSettings, ReplyMode } from './agent-settings';
 import type { AuthorizedFolder } from './agent-files';
@@ -15,12 +8,7 @@ import type { McpServerInput, McpServerView } from './agent-mcp';
 import type { CalendarEvent, CalendarStatus } from './agent-calendar';
 import type { OpenTargets } from './agent-targets';
 import { visionAssetInfoSchema, visionAssetSchema } from './canvas-vision';
-import {
-  baseUrlSchema,
-  thinkingLevelSchema,
-  type ModelSettingsView,
-  type ThinkingLevel,
-} from './models';
+import { baseUrlSchema, thinkingLevelSchema, type ModelSettingsView } from './models';
 import {
   canvasChangeSchema,
   canvasSnapshotSchema,
@@ -210,16 +198,19 @@ export interface SessionEvent {
   order?: string[];
 }
 export type AgentResult<T> = { ok: true; value: T } | { ok: false; error: string };
+/**
+ * Settings shared by every project, plus the window-side hosts the canvas and writing Agents will
+ * use again in batch 2. Conversations go through `desktop.os` (see agent-os.ts).
+ */
 export interface AgentBridge {
   listSkills(): Promise<AgentResult<SkillInfo[]>>;
   importSkill(): Promise<AgentResult<SkillInfo[] | null>>;
   setSkillEnabled(input: { id: string; enabled: boolean }): Promise<AgentResult<SkillInfo[]>>;
-  getSnapshot(): Promise<AgentResult<AgentEvent>>;
   getSettings(): Promise<AgentResult<AgentSettings>>;
   /** 1–6 model requests streaming at once across all conversations. */
   setConcurrency(value: number): Promise<AgentResult<AgentSettings>>;
   setReplyMode(value: ReplyMode): Promise<AgentResult<AgentSettings>>;
-  /** Folders the main Agent may read and change files in. */
+  /** Folders the current project may read and change files in. */
   listFolders(): Promise<AgentResult<AuthorizedFolder[]>>;
   /** Lets the user pick a folder to authorize; null when they cancel. */
   addFolder(): Promise<AgentResult<AuthorizedFolder[] | null>>;
@@ -237,38 +228,16 @@ export interface AgentBridge {
   reconnectMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
   /** Opens the server's sign-in page in the browser and connects once signed in. */
   signInMcpServer(id: string): Promise<AgentResult<McpServerView[]>>;
-  /** Hands a queued message to the running reply now instead of after it. */
-  steer(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
-  /** One conversation with its messages, as of `seq`. */
-  getSession(sessionId: string): Promise<AgentResult<{ seq: number; session: ChatSession }>>;
-  onSessionEvent(listener: (event: SessionEvent) => void): () => void;
-  createSession(): Promise<AgentResult<string>>;
-  createCanvasSession(projectId: string): Promise<AgentResult<string>>;
-  createWritingSession(scope: WritingScope): Promise<AgentResult<string>>;
   claimWritingCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeWritingCommand(reply: WritingReply): Promise<AgentResult<void>>;
   onWritingCommand(listener: (command: WritingCommand) => void): () => void;
-  /** Undoes one recorded Agent change; the window that owns its data applies it. */
-  undo(input: UndoRequest): Promise<AgentResult<void>>;
-  /** Tool calls in this window's rounds that wait for the user's decision. */
-  listApprovals(): Promise<AgentResult<ApprovalRequest[]>>;
-  respondApproval(input: ApprovalResponse): Promise<AgentResult<void>>;
-  onApprovals(listener: (requests: ApprovalRequest[]) => void): () => void;
-  /** Projects and documents this window can serve tool commands for; delegation targets these. */
+  /** Projects and documents this window can serve tool commands for. */
   setOpenTargets(targets: OpenTargets): Promise<AgentResult<void>>;
   claimCanvasCommand(requestId: string): Promise<AgentResult<boolean>>;
   completeCanvasCommand(reply: CanvasReply): Promise<AgentResult<void>>;
   onCanvasCommand(listener: (command: CanvasCommand) => void): () => void;
-  renameSession(input: { sessionId: string; title: string }): Promise<AgentResult<void>>;
-  deleteSession(sessionId: string): Promise<AgentResult<void>>;
-  setModel(input: { sessionId: string; model: string }): Promise<AgentResult<void>>;
-  setThinkingLevel(input: { sessionId: string; level: ThinkingLevel }): Promise<AgentResult<void>>;
-  send(input: z.infer<typeof agentSendSchema>): Promise<AgentResult<string>>;
-  cancel(runId: string): Promise<AgentResult<void>>;
-  copyReply(input: { sessionId: string; messageId: string }): Promise<AgentResult<void>>;
+  /** Legacy conversation snapshots; not sent until the canvas and writing Agents return. */
   onEvent(listener: (event: AgentEvent) => void): () => void;
-  /** The main Agent asks this window to open a project or document. */
-  onNavigate(listener: (target: NavigationTarget) => void): () => void;
 }
 export function agentValue<T>(result: AgentResult<T>): T {
   if (!result.ok) throw new Error(result.error);

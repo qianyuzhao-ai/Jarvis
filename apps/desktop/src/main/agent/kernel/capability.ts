@@ -3,10 +3,11 @@ import type { ChatMessage } from '../../../shared/agent';
 import type { LedgerEntry } from '../../../shared/agent-ledger';
 
 /**
- * How a tool affects state: `read` never changes anything, `reversible` changes state that the
- * round can undo, `confirm` needs the user's approval before it runs.
+ * How a tool affects state: `read` never changes anything, `reversible` changes state that can be
+ * undone (done first, told after), `confirm` is irreversible and waits for the user's approval on
+ * a decision card, `forbidden` never runs.
  */
-export type ToolRisk = 'read' | 'reversible' | 'confirm';
+export type ToolRisk = 'read' | 'reversible' | 'confirm' | 'forbidden';
 
 export type PackTool = ToolDefinition & {
   risk: ToolRisk;

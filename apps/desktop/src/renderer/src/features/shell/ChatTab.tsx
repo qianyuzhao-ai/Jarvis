@@ -10,7 +10,7 @@ export function ChatTab({
   onSession: (id: string, title: string) => void;
   onConfigure: () => void;
 }) {
-  const agent = useAgent(undefined, sessionId);
+  const agent = useAgent(sessionId);
   const id = agent.session?.id,
     title = agent.session?.title;
   useEffect(() => {

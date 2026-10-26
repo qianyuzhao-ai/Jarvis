@@ -255,8 +255,9 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
       .getByRole('button', { name: '初稿.md' })
       .click();
     await page.getByRole('button', { name: '展开右侧栏' }).click();
+    // The writing assistant returns with batch 2 of the V1.0.0 Agent OS.
     await expect(page.getByRole('complementary', { name: '写作助手' })).toContainText(
-      '读取当前文档',
+      '写作助手即将接入',
     );
     await page.getByRole('button', { name: '收起侧栏' }).click();
     await expect(page.getByRole('complementary', { name: '写作文件目录' })).toBeHidden();

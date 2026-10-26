@@ -308,13 +308,13 @@ export function ShellSidebar({
             新对话
           </SidebarItem>
           {cards.length > 0 && (
-            <section data-testid="space-cards" className="shell-chat-history" aria-label="空间任务">
-              <small>空间任务</small>
+            <section data-testid="space-cards" className="shell-chat-history" aria-label="线程">
+              <small>线程</small>
               {cards.slice(0, 5).map((s) => (
                 <SidebarItem
                   key={s.id}
                   data-testid="space-card"
-                  aria-label={`打开空间任务：${s.title}`}
+                  aria-label={`打开线程：${s.title}`}
                   icon={s.agent.kind === 'canvas' ? <LayoutGrid /> : <PenLine />}
                   meta={s.card ? cardStatus[s.card.status] : undefined}
                   title={s.card?.summary || undefined}

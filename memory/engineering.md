@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## V1.0.0 Agent OS 第一批（2026-10-26）
+
+- 分支 `claude/agent-logic-redesign-9irs9g`（基于 origin/develop `48d698e`）。用户授权 V1.0.0 推翻旧 Agent 逻辑、分批实现。决策、模块与验证详见 [agent-os-v1.md](agent-os-v1.md)。
+- 测试：新增 `tests/os-kernel.spec.ts`、`tests/os-flow.spec.ts`、`tests/helpers/os.ts`（Node 级 mock 模型）与 `tests/helpers/os-relay.ts`（实窗测试中同时扮演 Coordinator 与线程的 mock）。删除只覆盖已移除功能的用例：agent-approval、agent-cards(-ui)、agent-delegation(-ui)、agent-generation-ui、agent-migration、agent-store、canvas-agent、canvas-agent-vision、writing-agent（画布/写作 Agent 在第二批重写测试）。
+- Linux 容器复验 keyring 方案仍有效：apt 安装 gnome-keyring，`xvfb-run -a dbus-run-session -- <脚本>` 内用 `gnome-keyring-daemon --unlock` 并设 `XDG_CURRENT_DESKTOP=GNOME`，临时把 playwright-core 的 `lib/coreBundle.js` 与 `lib/server/electron/loader.js` 中 `--password-store=basic` 改为 `gnome-libsecret`，验证后已还原。结果 166/167，唯一失败 `agent.spec.ts:153`（首页建议区几何）在基线同样失败。
+
 ## 0.4.0 已发布（2026-10-26）
 
 - [v0.4.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.4.0) 已于北京时间 **2026-10-26 00:18:05** 发布，非草稿、按当前流程为预发布，12 个资产全部 uploaded。新标签注释对象 `050a88cfbee89b576bb065e8290ad55069a118b9`，保持指向 main 发布合并提交 `a804786b56a425161cd24921f2c153194aee8a04`，未移动任何旧标签。

@@ -1,27 +1,37 @@
-import { sameWritingScope, type WritingScope } from '../../../../shared/writing-agent';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChatSession, ChatSessionMeta } from '../../../../shared/agent';
+import type { ResultCard } from '../../../../shared/agent-cards';
 import {
-  agentValue,
-  type AgentSnapshot,
-  type AgentEvent,
-  type ChatMessage,
-  type ChatSession,
-  type SessionEvent,
-} from '../../../../shared/agent';
+  osValue,
+  type OsEvent,
+  type OsMessage,
+  type OsSessionEvent,
+  type OsSnapshot,
+  type ThreadState,
+} from '../../../../shared/agent-os';
 import {
   nearestThinkingLevel,
   type ModelSettingsView,
   type ThinkingLevel,
 } from '../../../../shared/models';
-import type { VisionAsset } from '../../../../shared/canvas-vision';
-import type { CanvasSnapshot } from '../../../../shared/canvas-agent';
-import { focusKey, onFocusRequest, takeFocus } from './conversation-focus';
 
 const EMPTY_MODELS: ModelSettingsView = { providers: [], models: [], defaultModelId: null };
-type MessageView = { id: string; seq: number; messages: ChatMessage[] };
+const STORAGE_KEY = 'jarvis:chat-session';
+type MessageView = { id: string; seq: number; messages: OsMessage[] };
+export type OsChatSession = ChatSession & { messages: OsMessage[] };
+/** How a thread shows in the interim home sidebar until the V1.0.0 thread UI lands. */
+const CARD_STATUS: Record<ThreadState, ResultCard['status']> = {
+  working: 'running',
+  idle: 'waiting',
+  blocked: 'needs_user',
+  review_ready: 'done',
+  done: 'done',
+  failed: 'failed',
+  stopped: 'failed',
+};
 
 /** Applies a session event: changed messages replace theirs, new ones are appended. */
-function applyEvent(view: MessageView, event: SessionEvent): MessageView {
+function applyEvent(view: MessageView, event: OsSessionEvent): MessageView {
   if (event.seq <= view.seq) return view;
   const messages = [...view.messages];
   for (const message of event.messages) {
@@ -36,23 +46,20 @@ function applyEvent(view: MessageView, event: SessionEvent): MessageView {
   return { ...view, seq: event.seq, messages };
 }
 
-export function useAgent(
-  projectId?: string,
-  initialSelection?: string | null,
-  writingScope?: WritingScope,
-) {
-  const storageKey = writingScope
-    ? null
-    : projectId
-      ? `jarvis:canvas-chat:${projectId}`
-      : 'jarvis:chat-session';
-  const [snapshot, setSnapshot] = useState<AgentSnapshot>({ sessions: [], runs: {} });
+/**
+ * Conversations of the Agent OS as the home page shows them for now: every project's Coordinator
+ * is one home conversation, its threads open from the sidebar. The V1.0.0 project and thread UI
+ * replaces this once its design is confirmed.
+ */
+export function useAgent(initialSelection?: string | null) {
+  const [snapshot, setSnapshot] = useState<OsSnapshot>({
+    projects: [],
+    currentProjectId: null,
+    threads: [],
+    runs: {},
+  });
   const [selected, setSelected] = useState<string | null>(() =>
-    initialSelection === undefined
-      ? storageKey
-        ? localStorage.getItem(storageKey)
-        : null
-      : initialSelection,
+    initialSelection === undefined ? localStorage.getItem(STORAGE_KEY) : initialSelection,
   );
   const [draftKey, setDraftKey] = useState(0);
   const [draftThinking, setDraftThinking] = useState<ThinkingLevel>();
@@ -61,36 +68,20 @@ export function useAgent(
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const seq = useRef(-1);
-  const select = useCallback(
-    (id: string | null) => {
-      setSelected(id);
-      if (storageKey) {
-        if (id) localStorage.setItem(storageKey, id);
-        else localStorage.removeItem(storageKey);
-      }
-    },
-    [storageKey],
-  );
-  // A card on the home page can ask this assistant to show one of its conversations.
-  const scopeKey = focusKey(projectId, writingScope);
+  const select = useCallback((id: string | null) => {
+    setSelected(id);
+    if (id) localStorage.setItem(STORAGE_KEY, id);
+    else localStorage.removeItem(STORAGE_KEY);
+  }, []);
   useEffect(() => {
-    if (!scopeKey) return;
-    const apply = () => {
-      const id = takeFocus(scopeKey);
-      if (id) select(id);
-    };
-    apply();
-    return onFocusRequest(apply);
-  }, [scopeKey, select]);
-  useEffect(() => {
-    const bridge = window.desktop?.agent;
+    const bridge = window.desktop?.os;
     if (!bridge) {
       setError('Agent 桥接不可用，请重新打开应用');
       setLoading(false);
       return;
     }
     let active = true;
-    const receive = (event: AgentEvent) => {
+    const receive = (event: OsEvent) => {
       if (active && event.seq >= seq.current) {
         seq.current = event.seq;
         setSnapshot(event.snapshot);
@@ -101,7 +92,7 @@ export function useAgent(
       .getSnapshot()
       .then((s) => {
         if (!active) return;
-        receive(agentValue(s));
+        receive(osValue(s));
         setLoading(false);
       })
       .catch((e: unknown) => {
@@ -116,22 +107,56 @@ export function useAgent(
     };
   }, []);
   const configuration: ModelSettingsView = snapshot.models ?? EMPTY_MODELS;
-  const sessions = snapshot.sessions.filter(
-    (s) => s.projectId === projectId && sameWritingScope(s.writingScope, writingScope),
-  );
-  const meta =
-    sessions.find((s) => s.id === selected) ??
-    (writingScope && !draftKey
-      ? ([...sessions].sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null)
-      : null);
+  const sessions = useMemo(() => {
+    const coordinators: ChatSessionMeta[] = snapshot.projects.map((p) => ({
+      id: p.coordinatorId,
+      title: p.title,
+      model: p.modelId ?? '',
+      ...(p.modelId ? { modelId: p.modelId } : {}),
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      runId: p.coordinatorId in snapshot.runs ? p.coordinatorId : null,
+      contextTokens: p.contextTokens,
+      contextWindow: p.contextWindow,
+      ...(p.thinkingLevel ? { thinkingLevel: p.thinkingLevel } : {}),
+      agent: { kind: 'main', origin: 'user' },
+    }));
+    const threads: ChatSessionMeta[] = snapshot.threads.map((t) => ({
+      id: t.id,
+      title: t.title,
+      model: t.modelId ?? '',
+      ...(t.modelId ? { modelId: t.modelId } : {}),
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      runId: t.id in snapshot.runs ? t.id : null,
+      contextTokens: t.contextTokens,
+      contextWindow: t.contextWindow,
+      ...(t.thinkingLevel ? { thinkingLevel: t.thinkingLevel } : {}),
+      agent: {
+        kind: 'main',
+        origin: 'delegated',
+        parentId: snapshot.projects.find((p) => p.id === t.projectId)?.coordinatorId,
+      },
+      card: {
+        status: CARD_STATUS[t.state],
+        summary: t.decisions[0]?.question ?? t.card?.summary ?? '',
+        artifacts: [],
+        source: 'agent',
+        updatedAt: t.updatedAt,
+      },
+    }));
+    return { coordinators, threads };
+  }, [snapshot]);
+  const all = [...sessions.coordinators, ...sessions.threads];
+  const meta = all.find((s) => s.id === selected) ?? null;
   const sessionId = meta?.id ?? null;
   // Only the open conversation's messages are loaded and kept up to date.
   const [view, setView] = useState<MessageView | null>(null);
   const wanted = useRef<string | null>(null);
   const loaded = useRef<string | null>(null);
-  const pending = useRef<SessionEvent[]>([]);
+  const pending = useRef<OsSessionEvent[]>([]);
   useEffect(() => {
-    const bridge = window.desktop?.agent;
+    const bridge = window.desktop?.os;
     if (!bridge) return;
     return bridge.onSessionEvent((event) => {
       if (event.sessionId !== wanted.current) return;
@@ -143,8 +168,10 @@ export function useAgent(
     wanted.current = sessionId;
     loaded.current = null;
     pending.current = [];
-    const bridge = window.desktop?.agent;
-    if (!sessionId || !bridge) {
+    const bridge = window.desktop?.os;
+    if (!bridge) return;
+    void bridge.setViewing(sessionId ? [sessionId] : []);
+    if (!sessionId) {
       setView(null);
       return;
     }
@@ -153,7 +180,7 @@ export function useAgent(
       .getSession(sessionId)
       .then((result) => {
         if (!active) return;
-        const { seq, session } = agentValue(result);
+        const { seq, session } = osValue(result);
         const start: MessageView = { id: sessionId, seq, messages: session.messages };
         const next = pending.current.reduce(applyEvent, start);
         pending.current = [];
@@ -167,53 +194,53 @@ export function useAgent(
       active = false;
     };
   }, [sessionId]);
-  const session: ChatSession | null = meta
+  const session: OsChatSession | null = meta
     ? { ...meta, messages: view?.id === meta.id ? view.messages : [] }
     : null;
-  async function send(
-    text: string,
-    model?: string,
-    canvas?: CanvasSnapshot,
-    images?: VisionAsset[],
-  ) {
-    const bridge = window.desktop?.agent;
-    if (!bridge || sendingRef.current) return false;
+  const bridge = () => {
+    const os = window.desktop?.os;
+    if (!os) throw new Error('Agent 桥接不可用');
+    return os;
+  };
+  async function send(text: string, model?: string) {
+    if (sendingRef.current) return false;
     sendingRef.current = true;
     setSending(true);
     setError('');
     try {
-      if (projectId && canvas?.projectId !== projectId) throw new Error('请选择当前画布上下文');
-      const id =
-        session?.id ??
-        agentValue(
-          await (writingScope
-            ? bridge.createWritingSession(writingScope)
-            : projectId
-              ? bridge.createCanvasSession(projectId)
-              : bridge.createSession()),
+      const os = bridge();
+      let id = session?.id;
+      if (!id) {
+        // A new home conversation is a new project, unless the current one has no messages yet
+        // (for example it was created by adding a folder in settings); its Coordinator answers.
+        const title = text.replace(/\s+/g, ' ').slice(0, 36) || '新项目';
+        const current = snapshot.projects.find((p) => p.id === snapshot.currentProjectId);
+        const empty =
+          current &&
+          osValue(await os.getSession(current.coordinatorId)).session.messages.length === 0;
+        const projectId =
+          current && empty
+            ? (osValue(await os.updateProject({ id: current.id, patch: { title } })), current.id)
+            : osValue(await os.createProject(title));
+        const created = osValue(await os.getSnapshot()).snapshot.projects.find(
+          (p) => p.id === projectId,
         );
-      if (!session && model && model !== configuration.defaultModelId)
-        agentValue(await bridge.setModel({ sessionId: id, model }));
-      const picked = configuration.models.find(
-        (m) => m.id === (model || configuration.defaultModelId),
-      );
-      if (!session && draftThinking && picked && picked.thinkingLevels.length > 1)
-        agentValue(
-          await bridge.setThinkingLevel({
-            sessionId: id,
-            level: nearestThinkingLevel(picked.thinkingLevels, draftThinking),
-          }),
+        if (!created) throw new Error('项目创建失败');
+        id = created.coordinatorId;
+        if (model && model !== configuration.defaultModelId)
+          osValue(await os.setModel({ sessionId: id, model }));
+        const picked = configuration.models.find(
+          (m) => m.id === (model || configuration.defaultModelId),
         );
-      agentValue(
-        await bridge.send({
-          sessionId: id,
-          requestId: crypto.randomUUID(),
-          text,
-          ...(canvas ? { canvas } : {}),
-          ...(writingScope ? { writing: writingScope } : {}),
-          ...(images?.length ? { images } : {}),
-        }),
-      );
+        if (draftThinking && picked && picked.thinkingLevels.length > 1)
+          osValue(
+            await os.setThinkingLevel({
+              sessionId: id,
+              level: nearestThinkingLevel(picked.thinkingLevels, draftThinking),
+            }),
+          );
+      }
+      osValue(await os.send({ sessionId: id, requestId: crypto.randomUUID(), text }));
       select(id);
       return true;
     } catch (e) {
@@ -224,101 +251,47 @@ export function useAgent(
       setSending(false);
     }
   }
-  async function cancel() {
-    if (!session?.runId || !window.desktop?.agent) return;
+  async function act(action: () => Promise<unknown>, failure: string) {
     try {
-      agentValue(await window.desktop.agent.cancel(session.runId));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '停止失败');
-    }
-  }
-  async function model(model: string) {
-    if (!session || !window.desktop?.agent) return;
-    try {
-      agentValue(await window.desktop.agent.setModel({ sessionId: session.id, model }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '切换模型失败');
-    }
-  }
-  async function thinking(level: ThinkingLevel) {
-    if (!session) {
-      setDraftThinking(level);
-      return;
-    }
-    if (!window.desktop?.agent) return;
-    try {
-      agentValue(await window.desktop.agent.setThinkingLevel({ sessionId: session.id, level }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '切换思考程度失败');
-    }
-  }
-  /** Undoes one recorded change in this hook's project or document; errors go to `error`. */
-  async function undoChange(transactionId: string) {
-    if (!window.desktop?.agent) return false;
-    try {
-      if (projectId) agentValue(await window.desktop.agent.undo({ transactionId, projectId }));
-      else if (writingScope)
-        agentValue(await window.desktop.agent.undo({ transactionId, writingScope }));
-      else return false;
+      await action();
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : '撤销失败');
+      setError(e instanceof Error ? e.message : failure);
       return false;
     }
   }
-  async function rename(title: string) {
-    if (!session || !window.desktop?.agent) return;
-    try {
-      agentValue(await window.desktop.agent.renameSession({ sessionId: session.id, title }));
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '重命名失败');
-      return false;
-    }
-  }
-  async function renameConversation(id: string, title: string) {
-    if (!window.desktop?.agent || !sessions.some((s) => s.id === id)) return false;
-    try {
-      agentValue(await window.desktop.agent.renameSession({ sessionId: id, title }));
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '重命名失败');
-      return false;
-    }
-  }
-  async function deleteConversation(id: string) {
-    if (!window.desktop?.agent || !sessions.some((s) => s.id === id)) return false;
-    try {
-      agentValue(await window.desktop.agent.deleteSession(id));
-      if (writingScope && session?.id === id) setDraftKey((v) => v + 1);
-      setSelected((current) => {
-        if (current !== id) return current;
-        if (storageKey) localStorage.removeItem(storageKey);
-        return null;
-      });
-      return true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '删除会话失败');
-      return false;
-    }
+  const projectOf = (id: string) => snapshot.projects.find((p) => p.coordinatorId === id);
+  async function rename(id: string, title: string) {
+    const project = projectOf(id);
+    return act(
+      async () =>
+        osValue(
+          project
+            ? await bridge().updateProject({ id: project.id, patch: { title } })
+            : await bridge().renameThread({ threadId: id, title }),
+        ),
+      '重命名失败',
+    );
   }
   return {
-    snapshot: { ...snapshot, sessions },
-    projectId,
-    writingScope,
+    snapshot: {
+      ...snapshot,
+      sessions: all,
+      skills: snapshot.skills,
+      mcp: snapshot.mcp,
+      replyMode: snapshot.replyMode,
+    },
+    /** Home conversations: one per project. */
+    homeSessions: sessions.coordinators,
     /** Any conversation is replying: settings that affect every conversation wait. */
     anyBusy: Object.keys(snapshot.runs).length > 0,
-    /** A conversation of this hook's project or document is replying. */
-    scopeBusy: sessions.some((s) => s.id in snapshot.runs),
     /** The open conversation's round waits for a free slot under the concurrency limit. */
     waiting: !!session && snapshot.runs[session.id] === 'waiting',
-    /** Space conversations with a result card, most recently updated first. */
-    cards: snapshot.sessions
-      .filter((s) => s.agent.kind !== 'main' && s.card)
-      .sort((a, b) => (b.card?.updatedAt ?? 0) - (a.card?.updatedAt ?? 0)),
-    busyProjectIds: snapshot.sessions.flatMap((s) =>
-      s.projectId && s.id in snapshot.runs ? [s.projectId] : [],
-    ),
+    /** Threads, most recently updated first. */
+    cards: [...sessions.threads]
+      .filter((t) => !snapshot.threads.find((x) => x.id === t.id)?.resolved)
+      .sort((a, b) => b.updatedAt - a.updatedAt),
+    busyProjectIds: [] as string[],
     configuration,
     configured: !!configuration.defaultModelId,
     session,
@@ -328,15 +301,34 @@ export function useAgent(
     sending,
     draftKey,
     draftThinking,
-    thinking,
     select,
     send,
-    cancel,
-    model,
-    undoChange,
-    rename,
-    renameConversation,
-    deleteConversation,
+    cancel: () =>
+      act(async () => session && osValue(await bridge().cancel(session.id)), '停止失败'),
+    model: (model: string) =>
+      act(
+        async () => session && osValue(await bridge().setModel({ sessionId: session.id, model })),
+        '切换模型失败',
+      ),
+    thinking: async (level: ThinkingLevel) => {
+      if (!session) return setDraftThinking(level);
+      await act(
+        async () => osValue(await bridge().setThinkingLevel({ sessionId: session.id, level })),
+        '切换思考程度失败',
+      );
+    },
+    undoChange: (transactionId: string) =>
+      act(async () => osValue(await bridge().undo(transactionId)), '撤销失败'),
+    rename: (title: string) => (session ? rename(session.id, title) : Promise.resolve(false)),
+    renameConversation: rename,
+    deleteConversation: (id: string) => {
+      const project = projectOf(id);
+      if (!project) return Promise.resolve(false);
+      return act(async () => {
+        osValue(await bridge().removeProject(project.id));
+        if (selected === id) select(null);
+      }, '删除失败');
+    },
     newChat: () => {
       select(null);
       setDraftThinking(undefined);

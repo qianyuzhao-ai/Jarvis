@@ -1,8 +1,8 @@
 import type { WritingCommand } from '../shared/writing-agent';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopInfo } from '../shared/desktop-info';
-import type { AgentEvent, NavigationTarget, SessionEvent } from '../shared/agent';
-import type { ApprovalRequest } from '../shared/agent-approval';
+import type { AgentEvent, NavigationTarget } from '../shared/agent';
+import type { OsEvent, OsSessionEvent } from '../shared/agent-os';
 import type { CanvasCommand } from '../shared/canvas-agent';
 import type { UpdateState } from '../shared/updates';
 import type { ProjectChange } from '../shared/project';
@@ -40,12 +40,12 @@ const desktop: DesktopInfo = {
     listSkills: () => ipcRenderer.invoke('agent:skills'),
     importSkill: () => ipcRenderer.invoke('agent:import-skill'),
     setSkillEnabled: (input) => ipcRenderer.invoke('agent:enable-skill', input),
-    getSnapshot: () => ipcRenderer.invoke('agent:snapshot'),
     getSettings: () => ipcRenderer.invoke('agent:settings'),
     setConcurrency: (value) => ipcRenderer.invoke('agent:set-concurrency', value),
     setReplyMode: (value) => ipcRenderer.invoke('agent:set-reply-mode', value),
-    steer: (input) => ipcRenderer.invoke('agent:steer', input),
     listFolders: () => ipcRenderer.invoke('agent:folders'),
+    addFolder: () => ipcRenderer.invoke('agent:add-folder'),
+    removeFolder: (id) => ipcRenderer.invoke('agent:remove-folder', id),
     calendarStatus: () => ipcRenderer.invoke('agent:calendar-status'),
     requestCalendarAccess: () => ipcRenderer.invoke('agent:calendar-request'),
     calendarEvents: (range) => ipcRenderer.invoke('agent:calendar-events', range),
@@ -54,17 +54,6 @@ const desktop: DesktopInfo = {
     setMcpServerEnabled: (input) => ipcRenderer.invoke('agent:mcp-enable', input),
     reconnectMcpServer: (id) => ipcRenderer.invoke('agent:mcp-reconnect', id),
     signInMcpServer: (id) => ipcRenderer.invoke('agent:mcp-sign-in', id),
-    addFolder: () => ipcRenderer.invoke('agent:add-folder'),
-    removeFolder: (id) => ipcRenderer.invoke('agent:remove-folder', id),
-    getSession: (id) => ipcRenderer.invoke('agent:session', id),
-    onSessionEvent: (listener) => {
-      const handle = (_event: Electron.IpcRendererEvent, value: SessionEvent) => listener(value);
-      ipcRenderer.on('agent:session-event', handle);
-      return () => ipcRenderer.removeListener('agent:session-event', handle);
-    },
-    createSession: () => ipcRenderer.invoke('agent:create'),
-    createCanvasSession: (projectId) => ipcRenderer.invoke('agent:create-canvas', projectId),
-    createWritingSession: (scope) => ipcRenderer.invoke('agent:create-writing', scope),
     claimWritingCommand: (id) => ipcRenderer.invoke('agent:claim-writing', id),
     completeWritingCommand: (reply) => ipcRenderer.invoke('agent:complete-writing', reply),
     onWritingCommand: (listener) => {
@@ -72,15 +61,6 @@ const desktop: DesktopInfo = {
         listener(command);
       ipcRenderer.on('agent:writing-command', handle);
       return () => ipcRenderer.removeListener('agent:writing-command', handle);
-    },
-    undo: (input) => ipcRenderer.invoke('agent:undo', input),
-    listApprovals: () => ipcRenderer.invoke('agent:approvals'),
-    respondApproval: (input) => ipcRenderer.invoke('agent:respond-approval', input),
-    onApprovals: (listener) => {
-      const handle = (_event: Electron.IpcRendererEvent, requests: ApprovalRequest[]) =>
-        listener(requests);
-      ipcRenderer.on('agent:approvals', handle);
-      return () => ipcRenderer.removeListener('agent:approvals', handle);
     },
     setOpenTargets: (targets) => ipcRenderer.invoke('agent:open-targets', targets),
     claimCanvasCommand: (id) => ipcRenderer.invoke('agent:claim-canvas', id),
@@ -91,25 +71,52 @@ const desktop: DesktopInfo = {
       ipcRenderer.on('agent:canvas-command', handle);
       return () => ipcRenderer.removeListener('agent:canvas-command', handle);
     },
-    renameSession: (input) => ipcRenderer.invoke('agent:rename', input),
-    deleteSession: (id) => ipcRenderer.invoke('agent:delete', id),
-    setModel: (input) => ipcRenderer.invoke('agent:model', input),
-    setThinkingLevel: (input) => ipcRenderer.invoke('agent:thinking', input),
-    send: (input) => ipcRenderer.invoke('agent:send', input),
-    cancel: (runId) => ipcRenderer.invoke('agent:cancel', runId),
-    copyReply: (input) => ipcRenderer.invoke('agent:copy-reply', input),
     onEvent: (listener) => {
-      const handle = (_event: Electron.IpcRendererEvent, value: AgentEvent) => listener(value);
+      const handle = (_event: Electron.IpcRendererEvent, event: AgentEvent) => listener(event);
       ipcRenderer.on('agent:event', handle);
       return () => {
         ipcRenderer.removeListener('agent:event', handle);
       };
     },
+  },
+  os: {
+    getSnapshot: () => ipcRenderer.invoke('os:snapshot'),
+    onEvent: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, event: OsEvent) => listener(event);
+      ipcRenderer.on('os:event', handle);
+      return () => ipcRenderer.removeListener('os:event', handle);
+    },
+    getSession: (id) => ipcRenderer.invoke('os:session', id),
+    onSessionEvent: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, event: OsSessionEvent) => listener(event);
+      ipcRenderer.on('os:session-event', handle);
+      return () => ipcRenderer.removeListener('os:session-event', handle);
+    },
+    setViewing: (ids) => ipcRenderer.invoke('os:viewing', ids),
+    send: (input) => ipcRenderer.invoke('os:send', input),
+    steer: (input) => ipcRenderer.invoke('os:steer', input),
+    cancel: (id) => ipcRenderer.invoke('os:cancel', id),
+    setModel: (input) => ipcRenderer.invoke('os:set-model', input),
+    setThinkingLevel: (input) => ipcRenderer.invoke('os:set-thinking', input),
+    copyReply: (input) => ipcRenderer.invoke('os:copy-reply', input),
+    undo: (id) => ipcRenderer.invoke('os:undo', id),
+    stopThread: (id) => ipcRenderer.invoke('os:stop-thread', id),
+    resolveThread: (input) => ipcRenderer.invoke('os:resolve-thread', input),
+    renameThread: (input) => ipcRenderer.invoke('os:rename-thread', input),
+    answerDecision: (input) => ipcRenderer.invoke('os:answer', input),
+    createProject: (title) => ipcRenderer.invoke('os:create-project', title),
+    updateProject: (input) => ipcRenderer.invoke('os:update-project', input),
+    removeProject: (id) => ipcRenderer.invoke('os:remove-project', id),
+    setCurrentProject: (id) => ipcRenderer.invoke('os:current-project', id),
+    addFolder: (id) => ipcRenderer.invoke('os:add-folder', id),
+    removeFolder: (input) => ipcRenderer.invoke('os:remove-folder', input),
+    listMemory: (id) => ipcRenderer.invoke('os:memory', id),
+    readMemory: (input) => ipcRenderer.invoke('os:memory-topic', input),
     onNavigate: (listener) => {
-      const handle = (_event: Electron.IpcRendererEvent, value: NavigationTarget) =>
-        listener(value);
-      ipcRenderer.on('agent:navigate', handle);
-      return () => ipcRenderer.removeListener('agent:navigate', handle);
+      const handle = (_event: Electron.IpcRendererEvent, target: NavigationTarget) =>
+        listener(target);
+      ipcRenderer.on('os:navigate', handle);
+      return () => ipcRenderer.removeListener('os:navigate', handle);
     },
   },
   models: {
