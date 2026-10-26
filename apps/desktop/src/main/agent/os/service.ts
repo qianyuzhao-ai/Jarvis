@@ -530,10 +530,9 @@ export class AgentOs {
       target.modelId = modelId;
       target.contextWindow = selected.contextWindow;
       target.contextTokens = null;
-      target.thinkingLevel = nearestThinkingLevel(
-        selected.thinkingLevels,
-        target.thinkingLevel ?? 'off',
-      );
+      // A conversation without its own level keeps following the model's last-used level.
+      target.thinkingLevel =
+        target.thinkingLevel && nearestThinkingLevel(selected.thinkingLevels, target.thinkingLevel);
       await (session.kind === 'coordinator' ? runtime.saveProject() : runtime.saveThreads());
       this.emit();
     });
@@ -991,7 +990,11 @@ export class AgentOs {
       const own = thread ?? runtime.project;
       const thinking = nearestThinkingLevel(
         model.thinkingLevels,
-        own.thinkingLevel ?? (thread ? EFFORT_THINKING[thread.brief.effortHint] : 'off'),
+        own.thinkingLevel ??
+          (thread
+            ? EFFORT_THINKING[thread.brief.effortHint]
+            : (this.config.view().models.find((m) => m.id === model.id)?.lastThinkingLevel ??
+              'off')),
       );
       const userText =
         wake.reason === 'user_message' && wake.messageId

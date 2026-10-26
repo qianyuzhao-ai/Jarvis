@@ -114,6 +114,8 @@ userData/agent/os/
 - U6：创作空间文案“项目”→“画布”（我的画布、新建画布、搜索/排序画布、N 个画布、删除/重命名画布、画布名称、未命名画布、创建画布）；Agent 侧继续叫“项目”。
 - 测试：新增 `tests/os-ui.spec.ts`（项目、线程卡与状态条、Overview 问题行 → 线程内回答、`os:open`、项目设置改名、第二个项目隔离）与 `tests/helpers/os-ui.ts`（`projectMenu` 等待上一个菜单关闭动画结束再开，否则其焦点归还会关掉新菜单；`newProject`；`approveInOverview`）。日历 / MCP / 文件实窗用例改为在 Overview 的决策卡上批准；文件用例改在项目设置添加/移除目录。
 - 已删除：`AgentDecisions.tsx`、`ChatTab.tsx`、`FileAccessSettings.tsx`、`CanvasConversations.tsx`（逐个删除）。
+- 思考档位：没有自己档位的协调对话跟随该模型上次用过的档位（界面显示与实际轮次一致，切换模型不再把它固定成“关”）；线程仍按任务书力度。
+- 验证（提交 `23e4b92` 及后续修正）：`pnpm check`、`pnpm build` 通过；完整实窗 168 项中 166 通过，`model-library` 用例（仍点旧“新对话”）修正后复跑通过；唯一失败仍是基线即存在的 `agent.spec.ts` 首页建议区几何断言（Linux 字体）。临时跳过该断言时 `agent.spec` 其余流程（项目设置改名、重启恢复）通过。
 
 ## 8. 变更记录
 

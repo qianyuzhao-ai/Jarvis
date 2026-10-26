@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { newProject } from './helpers/os-ui';
 
 test('model settings migrate legacy credentials, add providers in the dialog and switch one chat across models', async () => {
   test.setTimeout(60000);
@@ -152,7 +153,7 @@ test('model settings migrate legacy credentials, add providers in the dialog and
       expect(savedText).not.toContain(key);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
     const thinking = page.getByRole('combobox', { name: '思考程度' });
     await expect(thinking).toHaveValue('off');
@@ -255,10 +256,10 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText(
       '选择模型',
     );
+    // A new project's conversation starts from the level last used with the model it picks.
+    await newProject(page);
     await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);
     await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
-    // A new chat starts from the level last used with the model; a draft pick applies on send.
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
     const thinkingAgain = page.getByRole('combobox', { name: '思考程度' });
     await expect(thinkingAgain).toHaveValue('high');
     await thinkingAgain.selectOption('off');

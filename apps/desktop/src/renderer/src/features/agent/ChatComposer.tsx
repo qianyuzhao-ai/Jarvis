@@ -221,7 +221,12 @@ export function ChatComposer({
             model={selectedModel}
             value={thinkingFor(
               selectedModel,
-              agent.session ? (agent.session.thinkingLevel ?? 'off') : agent.draftThinking,
+              // Threads without a level of their own start off; a project conversation follows
+              // the level last used with its model, as its rounds do.
+              agent.session
+                ? (agent.session.thinkingLevel ??
+                    (agent.session.kind === 'thread' ? 'off' : undefined))
+                : agent.draftThinking,
             )}
             disabled={locked}
             onChange={(level) => void agent.thinking(level)}
