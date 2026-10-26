@@ -1,3 +1,4 @@
+import { LINK_LEDGER_SESSION } from '../writing/graph-links';
 import { writingScopeSchema, writingReplySchema } from '../../shared/writing-agent';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell, type WebContents } from 'electron';
 import { join } from 'node:path';
@@ -30,10 +31,11 @@ import { rangeSchema } from '../../shared/agent-calendar';
 import { mcpServerInputSchema } from '../../shared/agent-mcp';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
-import { writingFiles } from '../writing/bridge';
+import { writingFiles, writingGraph } from '../writing/bridge';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let service: AgentService;
+export const writingAgentService = () => service;
 export const isAgentBusy = () => service?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });
@@ -85,12 +87,13 @@ export async function registerAgent() {
     projects: projectStore(),
     generation: generationRunner(),
     files: writingFiles(),
+    graph: writingGraph(),
   });
   let initializationError = '';
   try {
     await config.initialize();
     await store.initialize();
-    await service.ledger.initialize(store.records.map((r) => r.view.id));
+    await service.ledger.initialize([...store.records.map((r) => r.view.id), LINK_LEDGER_SESSION]);
     await service.skills.initialize();
     await service.loadSettings();
     await folders.initialize();

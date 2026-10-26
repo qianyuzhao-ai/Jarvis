@@ -72,6 +72,22 @@ export class Ledger {
     entry.updatedAt = Date.now();
     this.save(entry.sessionId);
   }
+  renameWritingScope(rootId: string, from: string, to: string) {
+    for (const [sessionId, entries] of this.sessions) {
+      let changed = false;
+      for (const entry of entries) {
+        const scope = entry.writingScope;
+        if (
+          scope?.rootId === rootId &&
+          (scope.path === from || scope.path.startsWith(from + '/'))
+        ) {
+          scope.path = to + scope.path.slice(from.length);
+          changed = true;
+        }
+      }
+      if (changed) this.save(sessionId);
+    }
+  }
   markUndone(id: string) {
     const entry = this.find(id);
     if (!entry) return;

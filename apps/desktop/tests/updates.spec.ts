@@ -200,6 +200,7 @@ test('confirmed installation saves writing and closes the window before handing 
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '初稿.md', exact: true })
       .click();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await editor.fill('# 更新前必须保存');
     const installed = app.evaluate(

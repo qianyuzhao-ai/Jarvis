@@ -1,3 +1,4 @@
+import { resonanceSchema, type Resonance } from '../../../shared/writing-graph';
 import { z } from 'zod';
 import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
 import { resultCardSchema, type ResultCard } from '../../../shared/agent-cards';
@@ -11,10 +12,16 @@ const input = resultCardSchema
     artifacts: resultCardSchema.shape.artifacts.default([]),
   })
   .strict();
-export type ReportInput = Pick<ResultCard, 'status' | 'summary' | 'artifacts' | 'openQuestions'>;
+export type ReportInput = Pick<ResultCard, 'status' | 'summary' | 'artifacts' | 'openQuestions'> & {
+  resonance?: Resonance[];
+};
 
 /** Lets a space sub-agent write its result card, which the main Agent reads instead of the chat. */
-export function reportPack(report: (card: ReportInput) => void): CapabilityPack {
+export function reportPack(
+  report: (card: ReportInput) => void | Promise<void>,
+  writing = false,
+): CapabilityPack {
+  const schema = writing ? input.extend({ resonance: resonanceSchema.optional() }) : input;
   let calls = 0;
   const tool: PackTool = {
     name: 'report_result',
@@ -23,11 +30,11 @@ export function reportPack(report: (card: ReportInput) => void): CapabilityPack 
       '写入本对话的结果卡片：状态（done 完成 / failed 失败 / needs_user 需要用户决定）、一两句事实结论、产出（节点 ID 或文档路径）与待用户确认的问题。主 Agent 通过卡片了解进展。',
     risk: 'read',
     executionMode: 'sequential',
-    parameters: z.toJSONSchema(input, { io: 'input' }) as ToolDefinition['parameters'],
+    parameters: z.toJSONSchema(schema, { io: 'input' }) as ToolDefinition['parameters'],
     async execute(_id, raw, signal) {
       if (signal?.aborted || ++calls > 3) throw new Error('结果汇报已停止或达到上限');
-      const card = input.parse(raw);
-      report(card);
+      const card = schema.parse(raw);
+      await report(card);
       return { content: [{ type: 'text', text: JSON.stringify({ success: true }) }], details: {} };
     },
   };

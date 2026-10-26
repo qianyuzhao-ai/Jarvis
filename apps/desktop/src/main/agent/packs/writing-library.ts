@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { writingFileType } from '../../../shared/writing';
 import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
 import type { WritingFiles } from '../../writing/files';
 import type { CapabilityPack, PackTool, ToolContext, ToolRisk } from '../kernel/capability';
@@ -76,7 +77,11 @@ export function writingLibraryPack(
         'read',
         z.object({ rootId: root, path: path.default('') }).strict(),
         ({ rootId, path: dir }: { rootId: string; path: string }) =>
-          files.list(rootId, dir).then((entries) => ({ entries: entries.slice(0, 500) })),
+          files.list(rootId, dir).then((entries) => ({
+            entries: entries
+              .filter((e) => e.kind === 'directory' || writingFileType(e.name) === 'markdown')
+              .slice(0, 500),
+          })),
       ),
       tool(
         'search_documents',
@@ -84,7 +89,9 @@ export function writingLibraryPack(
         'read',
         z.object({ rootId: root, query: z.string().trim().min(1).max(200) }).strict(),
         ({ rootId, query }: { rootId: string; query: string }) =>
-          files.search(rootId, query).then((entries) => ({ entries })),
+          files.search(rootId, query).then((entries) => ({
+            entries: entries.filter((e) => writingFileType(e.name) === 'markdown'),
+          })),
       ),
       tool(
         'read_document',
@@ -100,6 +107,7 @@ export function writingLibraryPack(
           path: string;
           offset: number;
         }) => {
+          if (writingFileType(file) !== 'markdown') throw new Error('仅支持 Markdown 文档');
           const { content } = await files.read(rootId, file);
           const end = offset + PAGE;
           return {
@@ -134,7 +142,8 @@ export function writingLibraryPack(
           name: string;
           content: string;
         }) => {
-          const entry = await files.create(rootId, directory, name, 'file');
+          const markdownName = writingFileType(name) === 'markdown' ? name : name + '.md';
+          const entry = await files.create(rootId, directory, markdownName, 'file');
           const empty = await files.read(rootId, entry.path);
           await files.save(rootId, entry.path, content, empty.revision);
           output.activities ??= [];

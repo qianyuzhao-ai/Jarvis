@@ -36,7 +36,18 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     const read = results[0] ? JSON.parse(results[0].content) : null;
     let name = '',
       args: unknown = {};
-    if (step === 0) {
+    if (prompt.includes('resonance') && step === 0) {
+      name = 'find_related_documents';
+    } else if (prompt.includes('resonance') && step === 1) {
+      name = 'report_result';
+      args = {
+        status: 'done',
+        summary: '找到结构相关的文档',
+        resonance: [{ path: '乙.md', reason: '同样从问题出发组织解决步骤' }],
+      };
+    } else if (prompt.includes('resonance')) {
+      name = '';
+    } else if (step === 0) {
       name = prompt.includes('总结') ? 'read_document' : 'read_selection';
       args = {};
     } else if (step === 1 && !prompt.includes('总结')) {
@@ -84,7 +95,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Missing server');
   const directory = test.info().outputPath('notes'),
-    original = '# 甲🙂\n\n原始段落。\n';
+    original = '# 甲🙂\n\n原始段落。\n\n```mermaid\nflowchart LR\n  A --> B\n```\n';
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, '甲.md'), original);
   await writeFile(join(directory, '乙.md'), '# 乙\n\n独立文档。');
@@ -139,18 +150,26 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '甲.md', exact: true })
       .click();
-    const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
-    await editor.focus();
-    await editor.press('ControlOrMeta+Home');
-    await editor.press('ArrowDown');
-    await editor.press('ArrowDown');
-    await editor.press('Home');
-    await editor.press('Shift+End');
+    const editor = page.getByRole('textbox', { name: '块编辑器' });
+    await editor.evaluate((element) => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode())
+        if (node.textContent?.includes('原始段落。')) {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const selection = window.getSelection();
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          break;
+        }
+      (element as HTMLElement).focus();
+    });
     await page.getByRole('button', { name: '展开右侧栏', exact: true }).click();
     const panel = page.getByRole('complementary', { name: '写作助手' });
     await panel.getByLabel('消息', { exact: true }).fill('改写选中段落并修改两处');
     await panel.getByRole('button', { name: '发送消息' }).click();
     await expect(editor).toContainText('口语化段落。');
+    await expect(page.getByTestId('writing-agent-highlight').first()).toBeVisible();
     await expect(editor).toContainText('补充结尾。');
     await expect(editor).not.toContainText('原始段落。');
     await expect(panel.getByRole('button', { name: '撤销本次修改' })).toBeEnabled();
@@ -168,9 +187,91 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     await editor.press('ControlOrMeta+Shift+z');
     await expect(editor).toContainText('补充结尾。');
     await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['applied']);
+    const renameScope = await page.evaluate(async () => {
+      const roots = await window.desktop!.writing.getRoots();
+      if (!roots.ok || !roots.value[0]) throw new Error('missing root');
+      const rootId = roots.value[0].id;
+      const result = await window.desktop!.writing.rename({
+        rootId,
+        path: '甲.md',
+        name: '改名.md',
+      });
+      return { rootId, result };
+    });
+    expect(renameScope.result.ok).toBe(true);
+    await expect(page.getByRole('tab', { name: /^改名.md/ })).toBeVisible();
+    await expect(panel.getByRole('button', { name: '撤销本次修改' })).toBeEnabled();
     await panel.getByRole('button', { name: '撤销本次修改' }).click();
     await expect(editor).toContainText('原始段落。');
     await expect.poll(() => ledgerStatuses(test.info().outputPath('profile'))).toEqual(['undone']);
+    const restoredName = await page.evaluate(
+      (rootId) => window.desktop!.writing.rename({ rootId, path: '改名.md', name: '甲.md' }),
+      renameScope.rootId,
+    );
+    expect(restoredName.ok).toBe(true);
+    await expect(page.getByRole('tab', { name: '甲.md', exact: true })).toBeVisible();
+    for (const entrance of ['block', 'rich', 'bubble', 'slash']) {
+      await panel.getByRole('button', { name: '关闭写作助手' }).click();
+      const beforeRequests = requests.length;
+      if (entrance === 'block' || entrance === 'rich') {
+        if (entrance === 'rich') await page.getByTestId('writing-mermaid').hover();
+        else await editor.locator('p').filter({ hasText: '原始段落。' }).hover();
+        await page.getByRole('button', { name: '块菜单', exact: true }).click();
+        await page.getByRole('menuitem', { name: 'AI 编辑此块', exact: true }).click();
+      } else if (entrance === 'bubble') {
+        await editor.locator('p').filter({ hasText: '原始段落。' }).click();
+        await editor.evaluate((element) => {
+          const node = element.querySelector('p')!.firstChild!;
+          const range = document.createRange();
+          range.setStart(node, 0);
+          range.setEnd(node, 2);
+          window.getSelection()?.removeAllRanges();
+          window.getSelection()?.addRange(range);
+          (element as HTMLElement).focus();
+        });
+        await page.getByRole('button', { name: 'AI 润色', exact: true }).click();
+      } else {
+        await editor.locator('p').filter({ hasText: '原始段落。' }).click();
+        await editor.press('End');
+        await editor.press('Enter');
+        await page.keyboard.insertText('/');
+        await page.getByRole('option', { name: 'AI 续写', exact: true }).click();
+      }
+      await expect(panel).toBeVisible();
+      await expect(editor).toContainText('口语化段落。');
+      await expect(panel.getByRole('button', { name: '撤销本次修改' }).last()).toBeEnabled();
+      const turnRequests = requests.slice(beforeRequests);
+      const toolRequest = turnRequests.find((request) => {
+        const messages = request.messages as { role: string }[];
+        return messages.at(-1)?.role === 'tool';
+      });
+      const messages = toolRequest!.messages as { role: string; content: string }[];
+      const read = JSON.parse(messages.at(-1)!.content);
+      expect(read.block).toEqual({
+        type: entrance === 'rich' ? 'mermaid' : 'paragraph',
+        headingPath: ['甲🙂'],
+      });
+      expect(read.selection.text).toBe(
+        entrance === 'rich'
+          ? '```mermaid\nflowchart LR\n  A --> B\n```'
+          : entrance === 'block'
+            ? '原始段落。'
+            : entrance === 'bubble'
+              ? '原始'
+              : '',
+      );
+      expect(
+        turnRequests.filter(
+          (request) => (request.messages as { role: string }[]).at(-1)?.role === 'user',
+        ),
+      ).toHaveLength(1);
+      expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe(original);
+      await page.screenshot({ path: test.info().outputPath(`w4-${entrance}.png`) });
+      await panel.getByRole('button', { name: '撤销本次修改' }).last().click();
+      await expect(editor).toContainText('原始段落。');
+      await expect(editor).not.toContainText('口语化段落。');
+    }
+    expect(JSON.stringify(requests)).toContain('新增块用 insert_text');
     await editor.press('ControlOrMeta+a');
     await panel.getByLabel('消息', { exact: true }).fill('后台修改');
     await panel.getByRole('button', { name: '发送消息' }).click();
@@ -235,6 +336,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .map((t) => t.function.name)
       .sort();
     expect(toolNames).toEqual([
+      'find_related_documents',
       'handoff_to_main',
       'insert_text',
       'read_document',
@@ -242,6 +344,57 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       'replace_range',
       'report_result',
     ]);
+    await page.getByRole('tab', { name: '星图', exact: true }).click();
+    const mini = page.getByTestId('writing-graph-mini');
+    await mini.getByRole('button', { name: '寻找共鸣点', exact: true }).click();
+    await expect(page.getByText('同样从问题出发组织解决步骤')).toBeVisible();
+    expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe('人工修改保留');
+    await mini.getByRole('button', { name: '在编辑区展开全景' }).click();
+    const full = page.getByTestId('writing-graph-full');
+    await expect(full.locator('.is-candidate')).not.toHaveCount(0);
+    await page.evaluate(async () => {
+      await Promise.all(
+        document
+          .getAnimations()
+          .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      document.documentElement.dataset.theme = 'light';
+    });
+    await page.screenshot({
+      path: test.info().outputPath('w5-resonance-light.png'),
+      animations: 'disabled',
+    });
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = 'dark';
+    });
+    await page.screenshot({ path: test.info().outputPath('w5-resonance-dark.png') });
+    await full.getByRole('button', { name: '建立关联', exact: true }).click();
+    await expect(full.getByText('已关联', { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: '乙.md', exact: true }).click();
+    await page.getByRole('tab', { name: /^甲.md/ }).click();
+    await expect(full.getByText('已关联', { exact: true })).toBeVisible();
+    expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe('人工修改保留');
+    await full.getByRole('button', { name: '撤销', exact: true }).click();
+    await expect(full.getByRole('button', { name: '建立关联', exact: true })).toBeVisible();
+    await full.getByRole('button', { name: '忽略', exact: true }).click();
+    await expect(full.getByText('同样从问题出发组织解决步骤')).toHaveCount(0);
+    await page.getByRole('tab', { name: '乙.md', exact: true }).click();
+    await page.getByRole('tab', { name: /^甲.md/ }).click();
+    await expect(full.getByText('同样从问题出发组织解决步骤')).toHaveCount(0);
+    const metadata = requests
+      .flatMap((request) =>
+        (request.messages as { role: string; content: string }[])
+          .filter((message) => message.role === 'tool' && message.content.startsWith('['))
+          .map((message) => JSON.parse(message.content)),
+      )
+      .find(
+        (value) =>
+          Array.isArray(value) && value.some((item: { path?: string }) => item.path === '乙.md'),
+      );
+    expect(metadata).toHaveLength(1);
+    expect(Object.keys(metadata[0]).sort()).toEqual(['mtime', 'path', 'summary', 'tags', 'title']);
+    expect(metadata[0].summary.length).toBeLessThanOrEqual(200);
   } catch (error) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
     throw error;

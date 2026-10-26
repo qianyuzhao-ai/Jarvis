@@ -1,3 +1,6 @@
+import { GraphLinks } from '../writing/graph-links';
+import type { GraphIndex } from '../writing/graph-index';
+import type { WritingLinkRequest } from '../../shared/writing-graph';
 import { sameWritingScope, type WritingScope } from '../../shared/writing-agent';
 import { WritingBroker } from './writing-broker';
 import { writingPack } from './packs/writing';
@@ -114,6 +117,7 @@ export type AgentDeps = {
   generation?: GenerationRunner;
   /** The user's writing folders, for the main Agent's document tools. */
   files?: WritingFiles;
+  graph?: GraphIndex;
   /** Folders the user authorized for the main Agent's local file tools. */
   folders?: LocalFiles;
   /** The user's MCP servers, whose tools the main Agent may use. */
@@ -126,6 +130,8 @@ export class AgentService {
   readonly projects?: ProjectStore;
   readonly generation?: GenerationRunner;
   readonly files?: WritingFiles;
+  readonly graph?: GraphIndex;
+  private links?: GraphLinks;
   readonly folders?: LocalFiles;
   readonly mcp?: McpService;
   readonly calendar?: CalendarProvider;
@@ -166,6 +172,7 @@ export class AgentService {
     this.projects = deps.projects;
     this.generation = deps.generation;
     this.files = deps.files;
+    this.graph = deps.graph;
     this.folders = deps.folders;
     this.mcp = deps.mcp;
     this.calendar = deps.calendar;
@@ -173,12 +180,73 @@ export class AgentService {
     if (this.generation) this.generation.onFinished = (task) => this.taskFinished(task);
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
     this.ledger = new Ledger(join(root, 'ledger'));
+    if (deps.files && deps.graph)
+      this.links = new GraphLinks(deps.files, deps.graph, this.writing, this.ledger, (scope) =>
+        this.targetOwner(scope),
+      );
     this.settings = new AgentSettingsStore(new JsonFile(join(root, 'settings.json')));
     this.ledger.onError = () => {
       this.persistenceError = '操作记录保存失败，请重启应用后检查本地存储';
       this.emit();
     };
     this.scheduler.onChange = () => this.emit();
+  }
+  linkWriting(request: WritingLinkRequest) {
+    return this.exclusive(async () => {
+      if (!this.links || this.persistenceError)
+        throw new Error(this.persistenceError || '星图服务不可用');
+      const scope =
+        request.action === 'undo'
+          ? this.ledger.find(request.transactionId)?.writingScope
+          : { rootId: request.rootId, path: request.from };
+      if (
+        this.store.records.some(
+          (r) =>
+            sameWritingScope(r.view.writingScope, scope) &&
+            (this.runs.has(r.view.id) || this.queues.get(r.view.id)?.length),
+        )
+      )
+        throw new Error('请等待写作助手完成后再修改关联');
+      const result = await this.links.execute(request);
+      this.emit();
+      return result;
+    });
+  }
+  relocateWriting(
+    rootId: string,
+    from: string,
+    operation: () => Promise<import('../../shared/writing').WritingEntry>,
+  ) {
+    return this.exclusive(async () => {
+      const matches = (scope?: WritingScope) =>
+        scope?.rootId === rootId && (scope.path === from || scope.path.startsWith(from + '/'));
+      if (
+        this.store.records.some(
+          (r) =>
+            matches(r.view.writingScope) &&
+            (this.runs.has(r.view.id) || this.queues.get(r.view.id)?.length),
+        )
+      )
+        throw new Error('写作助手正在修改这个文档，请稍后再改名');
+      const entry = await operation();
+      for (const record of this.store.records) {
+        const scope = record.view.writingScope;
+        if (!scope || !matches(scope)) continue;
+        scope.path = entry.path + scope.path.slice(from.length);
+        for (const artifact of record.view.card?.artifacts ?? []) {
+          if (
+            artifact.kind === 'document' &&
+            (artifact.ref === from || artifact.ref.startsWith(from + '/'))
+          )
+            artifact.ref = entry.path + artifact.ref.slice(from.length);
+        }
+        await this.store.save(record.view.id);
+      }
+      this.ledger.renameWritingScope(rootId, from, entry.path);
+      await this.ledger.settled();
+      this.emit();
+      return entry;
+    });
   }
   snapshot(): AgentEvent {
     return {
@@ -436,6 +504,17 @@ export class AgentService {
         throw new Error('请先停止或等待正在修改这里的回复完成');
       const entry = this.ledger.find(request.transactionId);
       if (entry?.status === 'undone') throw new Error('这次修改已撤销');
+      if (entry?.pack === 'writing-link') {
+        if (
+          !this.links ||
+          !('writingScope' in request) ||
+          !sameWritingScope(entry.writingScope, request.writingScope)
+        )
+          throw new Error('关联撤销作用域不匹配');
+        await this.links.execute({ action: 'undo', transactionId: entry.id });
+        this.emit();
+        return;
+      }
       if ('projectId' in request && entry?.inverse && entry.afterRevision) {
         if (!this.projects) throw new Error('项目存储不可用，请重启应用');
         const { version, project } = this.projects.get(request.projectId);
@@ -1190,10 +1269,25 @@ export class AgentService {
       };
       const skill = skillsPack(context, skills, prompt ?? text);
       const role = this.store.record(run.sessionId).view.agent.kind;
-      const report = reportPack((card) => {
+      const report = reportPack(async ({ resonance, ...card }) => {
+        if (resonance?.length) {
+          if (!writing || !this.graph) throw new Error('当前会话不支持共鸣点');
+          const allowed = await this.graph.related(writing.rootId, writing.path);
+          if (resonance.some((item) => !allowed.some((d) => d.path === item.path)))
+            throw new Error('共鸣点必须来自当前文档同文件夹的其他 Markdown');
+          output.activities ??= [];
+          output.activities.push({
+            id: randomUUID(),
+            label: '发现共鸣点，等待确认',
+            files: [],
+            writingScope: writing,
+            resonance,
+          });
+          changed();
+        }
         reported = true;
         this.setCard(run.sessionId, { ...card, source: 'agent', updatedAt: Date.now() });
-      });
+      }, !!writing);
       const { projectId } = this.store.record(run.sessionId).view;
       const space = projectId
         ? canvasPack(
@@ -1206,7 +1300,7 @@ export class AgentService {
             },
           )
         : writing
-          ? writingPack(context, writing, this.writing)
+          ? writingPack(context, writing, this.writing, this.graph)
           : chatPack();
       const arm = () => {
         clearTimeout(timeout);

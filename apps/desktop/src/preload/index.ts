@@ -142,6 +142,43 @@ const desktop: DesktopInfo = {
     },
   },
   writing: {
+    graph: (request) => ipcRenderer.invoke('writing:graph', request),
+    backlinks: (request) => ipcRenderer.invoke('writing:backlinks', request),
+    link: (request) => ipcRenderer.invoke('writing:link', request),
+    onGraphChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: { rootId: string }) =>
+        listener(payload);
+      ipcRenderer.on('writing:graph-changed', handler);
+      return () => ipcRenderer.removeListener('writing:graph-changed', handler);
+    },
+    rename: (request) => ipcRenderer.invoke('writing:rename', request),
+    move: (request) => ipcRenderer.invoke('writing:move', request),
+    duplicate: (request) => ipcRenderer.invoke('writing:duplicate', request),
+    trash: (request) => ipcRenderer.invoke('writing:trash', request),
+    reveal: (request) => ipcRenderer.invoke('writing:reveal', request),
+    saveAsset: (request) => ipcRenderer.invoke('writing:save-asset', request),
+    watch: (request) => ipcRenderer.invoke('writing:watch', request),
+    unwatch: (request) => ipcRenderer.invoke('writing:unwatch', request),
+    onChanged: (listener) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        data: import('../shared/writing').WritingChanged,
+      ) => listener(data);
+      ipcRenderer.on('writing:changed', handler);
+      return () => {
+        ipcRenderer.removeListener('writing:changed', handler);
+      };
+    },
+    onRenamed: (listener) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        data: import('../shared/writing').WritingRenamed,
+      ) => listener(data);
+      ipcRenderer.on('writing:renamed', handler);
+      return () => {
+        ipcRenderer.removeListener('writing:renamed', handler);
+      };
+    },
     getRoots: () => ipcRenderer.invoke('writing:roots'),
     chooseDirectory: () => ipcRenderer.invoke('writing:choose'),
     listDirectory: (request) => ipcRenderer.invoke('writing:list', request),
