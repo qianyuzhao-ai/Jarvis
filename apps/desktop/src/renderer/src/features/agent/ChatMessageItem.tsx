@@ -5,6 +5,7 @@ import { agentValue, type ChatMessage } from '../../../../shared/agent';
 import type { OsMessage } from '../../../../shared/agent-os';
 import { CitedQuotes } from './AgentCards';
 import logo from '../../../../../resources/icon.png';
+import { ChatMarkdown } from './ChatMarkdown';
 import {
   ChatActivity,
   type CanvasActivityActions,
@@ -154,12 +155,16 @@ export function ChatMessageItem({
       )}
       <div className="chat-bubble">
         <div data-testid="chat-text" className="chat-text">
-          {m.text ||
+          {m.role === 'assistant' && m.text ? (
+            <ChatMarkdown text={m.text} />
+          ) : (
+            m.text ||
             (m.status === 'running'
               ? waiting
                 ? '等待中：同时回复的对话已达上限'
                 : '正在等待模型回复…'
-              : '未收到回复内容')}
+              : '未收到回复内容')
+          )}
           {m.status === 'running' && m.text && (
             <span className="chat-cursor" aria-hidden="true">
               {' '}

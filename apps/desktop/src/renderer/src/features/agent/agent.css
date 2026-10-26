@@ -77,6 +77,128 @@
     line-height: 25px;
     user-select: text;
   }
+  /* 助手回复的 Markdown：块间距 8px，标题克制放大，代码与表格可横向滚动。 */
+  .chat-md {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .chat-md :is(p, ul, ol, blockquote, pre, h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+  }
+  .chat-md :is(h1, h2, h3, h4, h5, h6) {
+    margin-top: 8px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .chat-md h1 {
+    font-size: 20px;
+  }
+  .chat-md h2 {
+    font-size: 17px;
+  }
+  .chat-md h3 {
+    font-size: 15px;
+  }
+  .chat-md :is(h4, h5, h6) {
+    font-size: 14px;
+  }
+  .chat-md > :first-child {
+    margin-top: 0;
+  }
+  .chat-md :is(ul, ol) {
+    padding-left: 22px;
+  }
+  .chat-md ul {
+    list-style: disc;
+  }
+  .chat-md ol {
+    list-style: decimal;
+  }
+  .chat-md li > :is(ul, ol) {
+    margin-top: 2px;
+  }
+  .chat-md li[data-checked] {
+    list-style: none;
+  }
+  .chat-md li > input[type='checkbox'] {
+    margin: 0 6px 0 -20px;
+    vertical-align: -2px;
+  }
+  .chat-md li > p {
+    display: inline;
+  }
+  .chat-md strong {
+    font-weight: 600;
+  }
+  .chat-md del {
+    color: var(--color-fg-secondary);
+  }
+  .chat-md blockquote {
+    padding-left: 12px;
+    border-left: 3px solid var(--color-separator);
+    color: var(--color-fg-secondary);
+  }
+  .chat-md code {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 13px;
+  }
+  .chat-md :not(pre) > code {
+    padding: 1px 5px;
+    border-radius: var(--radius-small);
+    background: var(--color-fill);
+  }
+  .chat-md pre {
+    padding: 10px 12px;
+    border-radius: var(--radius-control);
+    background: var(--color-fill);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 20px;
+  }
+  .chat-md .hljs-keyword,
+  .chat-md .hljs-built_in {
+    color: var(--color-accent);
+  }
+  .chat-md .hljs-string,
+  .chat-md .hljs-attr {
+    color: var(--color-success);
+  }
+  .chat-md .hljs-number,
+  .chat-md .hljs-literal {
+    color: var(--color-warning);
+  }
+  .chat-md .hljs-comment {
+    color: var(--color-fg-secondary);
+  }
+  .chat-md hr {
+    border: 0;
+    border-top: 1px solid var(--color-separator);
+  }
+  .chat-md-link {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .chat-md-table {
+    overflow-x: auto;
+  }
+  .chat-md table {
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 20px;
+    white-space: normal;
+  }
+  .chat-md :is(th, td) {
+    padding: 6px 10px;
+    border: 1px solid var(--color-separator);
+    text-align: left;
+    vertical-align: top;
+  }
+  .chat-md th {
+    font-weight: 600;
+    background: var(--color-fill);
+  }
   .chat-bubble small {
     display: block;
     color: var(--color-fg-secondary);
