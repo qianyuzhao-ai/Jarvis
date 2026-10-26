@@ -7,6 +7,7 @@
 - 用户要求画布顶栏「图像 / 视频 / 上传」改为圆形大尺寸按钮、去掉文字只留图标。`Canvas.tsx` 三者统一为 `IconButton variant="secondary" size="icon-lg" shape="circle"`（32px，项目最大控件尺寸），图标 18px，名称改由悬停提示显示（aria-label 仍为 图像 / 视频 / 导入素材，现有测试不变）；`pages.css` 中 `.window-shell .canvas-create` 间距 4 → 8px。未运行验证。
 - 居中与图标尺寸（同日）：用户要求这组按钮始终居中。`shell.css` 中 `.shell-panel .canvas-toolbar` 改为三列网格 `minmax(0,1fr) auto minmax(0,1fr)`（标题 / 新建按钮 / 导出靠右），按钮组不再随标题与导出宽度偏移；`pages.css` 原把该组 svg 压到 14px，改为 18px。
 - 回复底部一行（同日）：用户要求 chat 回复中的 logo 与复制、回复时间同一行且 logo 在最左。`ChatMessageItem` 把 logo 移入 `chat-reply-meta` 首位，回复中只显示呼吸 logo，完成后右侧接复制与时间；`.chat-reply-logo` 去掉上边距。未运行验证。
+- 等待回复一行与动效（同日）：用户要求等待中「正在等待模型回复…」与 logo 同一行并加动效。助手消息运行中且尚无正文时（`pending`）不渲染 `chat-text`，改在 `chat-reply-meta` 中 logo 右侧显示 `chat-pending`（并发上限时为「等待中：同时回复的对话已达上限」）；文字为渐变高光从左到右扫过（1.8s 循环），减少动态效果时为静态次要色。首个字到达后回到正文 + 光标的原样式。未运行验证。
 
 ## 工具调用折叠为「已运行 N 个命令」、去掉侧栏线程项目行（2026-10-26）
 

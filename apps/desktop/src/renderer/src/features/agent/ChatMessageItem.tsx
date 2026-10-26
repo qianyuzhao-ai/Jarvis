@@ -58,6 +58,8 @@ export function ChatMessageItem({
   waiting?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  // A reply that has not produced any text yet shows only its waiting line, beside the logo.
+  const pending = m.role === 'assistant' && m.status === 'running' && !m.text;
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 2000);
@@ -153,25 +155,23 @@ export function ChatMessageItem({
           onError={onError}
         />
       )}
+      {/* Before the first words arrive, the waiting line sits beside the logo below. */}
       <div className="chat-bubble">
-        <div data-testid="chat-text" className="chat-text">
-          {m.role === 'assistant' && m.text ? (
-            <ChatMarkdown text={m.text} />
-          ) : (
-            m.text ||
-            (m.status === 'running'
-              ? waiting
-                ? '等待中：同时回复的对话已达上限'
-                : '正在等待模型回复…'
-              : '未收到回复内容')
-          )}
-          {m.status === 'running' && m.text && (
-            <span className="chat-cursor" aria-hidden="true">
-              {' '}
-              ▍
-            </span>
-          )}
-        </div>
+        {!pending && (
+          <div data-testid="chat-text" className="chat-text">
+            {m.role === 'assistant' && m.text ? (
+              <ChatMarkdown text={m.text} />
+            ) : (
+              m.text || '未收到回复内容'
+            )}
+            {m.status === 'running' && m.text && (
+              <span className="chat-cursor" aria-hidden="true">
+                {' '}
+                ▍
+              </span>
+            )}
+          </div>
+        )}
         {!!m.cited?.length && <CitedQuotes cited={m.cited} />}
         {m.status === 'cancelled' && (
           <small>{m.role === 'user' ? '已取消，未发送' : '已停止，部分回复已保留'}</small>
@@ -208,6 +208,11 @@ export function ChatMessageItem({
             width={28}
             height={28}
           />
+          {pending && (
+            <span data-testid="chat-pending" className="chat-pending">
+              {waiting ? '等待中：同时回复的对话已达上限' : '正在等待模型回复…'}
+            </span>
+          )}
           {m.status !== 'running' && (
             <>
               {m.text && (

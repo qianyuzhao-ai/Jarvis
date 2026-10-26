@@ -589,3 +589,37 @@
 .chat-activity-list > .chat-activity > .ui-collapse-content {
   padding: 0 12px 10px 28px;
 }
+
+/* 等待首个字之前：与 logo 同行，文字有一道从左到右的高光扫过（减少动态效果时为静态灰字）。 */
+.chat-pending {
+  font-size: 14px;
+  line-height: 25px;
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--color-fg-tertiary) 0%,
+    var(--color-fg-tertiary) 35%,
+    var(--color-fg) 50%,
+    var(--color-fg-tertiary) 65%,
+    var(--color-fg-tertiary) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: chat-pending-shimmer 1.8s linear infinite;
+}
+@keyframes chat-pending-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-pending {
+    animation: none;
+    background: none;
+    color: var(--color-fg-secondary);
+  }
+}
