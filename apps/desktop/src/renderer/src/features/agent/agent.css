@@ -218,18 +218,21 @@
   .composer-model {
     min-width: 0;
   }
-  .composer-select {
-    max-width: 240px;
-    text-overflow: ellipsis;
+  /* 模型与思考程度合并为一个按钮：「模型名 档位」，过长时截断模型名。 */
+  .composer-model-trigger {
+    min-width: 0;
+    max-width: 280px;
   }
-  .composer-thinking {
-    max-width: 120px;
+  .composer-model-trigger > .ui-button-content {
+    min-width: 0;
+    gap: 6px;
   }
-  .ui-composer[data-layout='compact'] .composer-select {
-    max-width: 112px;
+  .ui-composer[data-layout='compact'] .composer-model-trigger {
+    max-width: 180px;
   }
-  .ui-composer[data-layout='compact'] .composer-thinking {
-    max-width: 92px;
+  .composer-model-menu {
+    min-width: 200px;
+    max-width: 320px;
   }
   .ui-composer[data-layout='compact'] {
     container: sidebar-composer / inline-size;
@@ -428,4 +431,10 @@
     max-height: min(var(--popover-width), 40vh);
     overflow-y: auto;
   }
+}
+
+/* 思考程度子菜单只放短档位名，不用菜单默认最小宽度（无层，覆盖 .ui-menu）。 */
+.composer-thinking-menu {
+  min-width: 120px;
+  width: max-content;
 }

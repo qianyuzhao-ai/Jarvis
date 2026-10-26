@@ -12,7 +12,7 @@ import { Composer } from '@jarvis/ui/components/Composer';
 import { IconButton } from '@jarvis/ui/components/Button';
 import type { useAgent } from './use-agent';
 import { ContextUsage } from './ContextUsage';
-import { ModelPicker, ThinkingPicker } from './ModelPicker';
+import { ModelPicker } from './ModelPicker';
 import { thinkingFor } from '../../../../shared/models';
 import { SkillPicker } from './SkillPicker';
 import type { SkillInfo } from '../../../../shared/agent-skills';
@@ -203,10 +203,7 @@ export function ChatComposer({
             disabled={locked}
             withImages={withImages}
             onChange={onModel}
-          />
-          <ThinkingPicker
-            model={selectedModel}
-            value={thinkingFor(
+            thinking={thinkingFor(
               selectedModel,
               // Threads without a level of their own start off; a project conversation follows
               // the level last used with its model, as its rounds do.
@@ -215,8 +212,7 @@ export function ChatComposer({
                     (agent.session.kind === 'thread' ? 'off' : undefined))
                 : agent.draftThinking,
             )}
-            disabled={locked}
-            onChange={(level) => void agent.thinking(level)}
+            onThinking={(level) => void agent.thinking(level)}
           />
           <ContextUsage
             used={agent.session?.contextTokens}

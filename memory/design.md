@@ -2,6 +2,14 @@
 
 最后更新：2026-10-26
 
+## 输入框模型与思考程度合并为一个菜单（2026-10-26）
+
+- 用户要求把模型选择与思考程度选择合并，参考其提供的截图布局（顶部模型列表、思考强度子菜单、更多模型子菜单），组件样式沿用项目。
+- 实现：`ModelPicker.tsx` 改为单个 ghost `sm` 按钮（`data-testid="model-trigger"`，aria「聊天模型」），显示「模型名 档位」，档位仅在模型可选思考档位 >1 时显示（`data-testid="thinking-value"`）。菜单用 `@jarvis/ui` DropdownMenu：当前服务商模型（RadioItem，多服务商时加服务商标签）→ 分隔 →「思考程度」子菜单（RadioItem，右侧显示当前档位）→ 分隔 →「更多模型」子菜单（其他服务商按标签分组）。已下线/图片不支持的模型禁用并在右侧注明原因。删除原 `ThinkingPicker` 与两个 NativeSelect 的宽度样式，新增 `.composer-model-trigger`（最宽 280px，侧栏 180px）与 `.composer-model-menu`。未加参考图中的数字快捷键、快速模式等项目没有的功能。
+- 选中标记（同日）：用户要求选中模型用对勾、放最右。`@jarvis/ui` 的 `DropdownMenuRadioItem` 新增 `indicator="trailing"`（默认 `leading` 圆点不变）：右侧 accent 色对勾，高亮时随前景色；菜单内仅有 trailing 单选项时不再为左侧指示留缩进。模型列表与思考程度子菜单都用 trailing。
+- 思考程度子菜单宽度（同日）：用户反馈过宽。原因是继承菜单默认最小宽 220px（`--menu-min-width`）；子菜单加 `composer-thinking-menu`（`agent.css` 末尾无层规则：最小 120px、按内容宽）。
+- 测试：新增 `tests/helpers/model-picker.ts`（pickModel / pickThinking / thinkingLevelCount），model-library 与 agent 两个用例改为通过菜单选择。按用户要求本分支暂缓 check/build/测试，仅对改动文件跑了 biome lint；未看截图。本轮未改 Figma。
+
 ## 首页项目切换按钮全宽（2026-10-26）
 
 - 用户要求项目切换按钮占满侧栏标题行，下拉箭头靠最右。`ProjectSidebar.tsx` 中按钮 `flex-1`，内部 `.ui-button-content` 撑满并两端对齐，项目名过长截断，箭头不收缩；共用的 `.shell-sidebar-title` 未改。
