@@ -105,6 +105,32 @@
     color: var(--color-success);
     flex-shrink: 0;
   }
+  /* 线程卡片可点：悬停加深底色、文字提亮，右箭头右移提示可打开。 */
+  .os-thread-notice {
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .os-thread-notice svg:last-child {
+    flex-shrink: 0;
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+  .os-thread-notice:hover {
+    background: var(--color-fill-hover);
+    color: var(--color-fg);
+  }
+  .os-thread-notice:hover svg:last-child {
+    transform: translateX(2px);
+  }
+  .os-thread-notice:active {
+    background: var(--color-fill-pressed);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .os-thread-notice,
+    .os-thread-notice svg:last-child {
+      transition: none;
+    }
+  }
   .os-thread-notice span {
     overflow: hidden;
     white-space: nowrap;

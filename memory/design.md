@@ -2,6 +2,10 @@
 
 最后更新：2026-10-26
 
+## 线程通知卡片悬停反馈（2026-10-26）
+
+- 用户要求 Jarvis Chat 中「线程「…」待你查看」卡片（`ThreadNotice`，`.os-thread-notice`）悬停有交互效果。`os.css` 新增：悬停底色 `--color-fill` → `--color-fill-hover`、文字提亮为 `--color-fg`、右箭头右移 2px；按下 `--color-fill-pressed`；120ms 过渡，减少动态效果时关闭过渡。未运行验证。
+
 ## 助手回复 Markdown 渲染（2026-10-26）
 
 - 背景：聊天回复原为 `.chat-text` 纯文本（pre-wrap），模型返回 Markdown 时符号原样显示；提示词未约束格式。用户确认按建议方案加渲染。
