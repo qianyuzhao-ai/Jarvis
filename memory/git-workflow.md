@@ -2,6 +2,10 @@
 
 最后更新：2026-10-26
 
+## 写作空间 W6 总验收（2026-10-26）
+
+用户明确开始 W6，沿用 feature/writing-space，授权范围仍是阶段提交与功能分支推送；不创建 PR、合并、标签或发布。原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+
 ## 写作空间 W5（2026-10-26）
 
 用户明确继续 W5，沿用 feature/writing-space，实现提交 `afbc2a6`，按阶段授权提交推送，不创建 PR、合并、标签或发布；原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。

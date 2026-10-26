@@ -2,6 +2,10 @@
 
 最后更新：2026-10-26
 
+## 写作空间 W6 总验收（2026-10-26）
+
+新增四类页面 Light/Dark 八张截图：块编辑、命令面板与反向链接、全景星图、PDF 预览。采用 reduced-motion 采集以稳定布局，普通动画仍由既有回归覆盖。PDF 内部查看器沿用 Chromium；Figma 节点与设计 token 未变。八图目录为 `apps/desktop/test-results/587fa947-f99a-4227-8c97-84ca7ca6784b/writing-acceptance-writing-36f2a-erves-an-actual-PDF-preview/`。Claude 视觉签收仍待进行。详情见 [写作实施记录](writing-space-implementation.md)。
+
 ## 写作空间 W5（2026-10-26）
 
 星图小窗、全景、共鸣点卡片、文末反向链接与逐个确认修复已实现，复用 V1 控件/tokens。只读核对 `473:39690`、`473:39554`、`466:39145`、`484:40061` / `484:41707`，Figma 未修改；修正初始缩放与连线端点，使用实际数据静态布局。浅深截图已检查，Claude 视觉签收待进行。详情见 [写作实施记录](writing-space-implementation.md)。

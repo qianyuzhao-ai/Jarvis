@@ -2,6 +2,10 @@
 
 最后更新：2026-10-26
 
+## 写作空间 W6 总验收（2026-10-26）
+
+本轮补齐写作总验收八页面截图及 Chromium PDF 独立 frame 的真实加载验证，没有新增生产依赖或 IPC。文件/资产接口、GraphIndex 缓存位置和 Agent 边界沿用 W1–W5；本轮只读诊断确认日历未授权、原生窗口未获得焦点。check/build 通过，完整回归 205/207（6.2m），仅既有日历和焦点失败；目录包 593 项依赖、ASAR 写作/富模块/星图/保存通过。W6 报告完成但整体验收未通过。详情见 [写作实施记录](writing-space-implementation.md)。
+
 ## 写作空间 W5（2026-10-26）
 
 新增主进程 GraphIndex 与 GraphLinks，缓存 userData/writing-index；四个限定写作通道、writing-link 账本、同目录元数据工具与结构化共鸣点。直接依赖 d3-force 3.0.0、开发类型 @types/d3-force 3.0.10。主进程 4/4、星图实窗 2/2、扩展 Agent 实窗 1/1，通过；最终完整回归 204/206（6.2m），仅既有日历未授权和窗口焦点失败；最终目录包 593 项依赖、富模块、星图全景与保存验证通过。详情见 [写作实施记录](writing-space-implementation.md)。

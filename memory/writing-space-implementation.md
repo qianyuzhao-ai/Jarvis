@@ -47,7 +47,7 @@
 ### 尚未验收与实现取舍
 
 - W1 交付时完整回归仍有一项失败，且尚无 Claude 的验收结论；用户随后明确继续 W2，见下方授权补充，未将旧失败改写为通过。
-- 文本文件目前使用 CodeMirror 纯文本源码模式，未新增各语言的语法高亮依赖。文件预览中图片与二进制面板已有实窗验证；PDF 内置查看器与音视频完整播放、Linux 监听降级、Windows 原生废纸篓/定位仍待目标环境验收。
+- 文本文件目前使用 CodeMirror 纯文本源码模式，未新增各语言的语法高亮依赖。文件预览中图片与二进制面板已有实窗验证；PDF 内置查看器已在 W6 补充实窗验证；音视频完整播放、Linux 监听降级、Windows 原生废纸篓/定位仍待目标环境验收。
 - 目录与预览复用现有 WritingSpace 宿主，目录行与预览独立为 `tree/FileTreeRow.tsx`、`viewers/FilePreview.tsx`；未另拆整份 WritingSidebar。范围与进程边界不变。
 - 无新增生产依赖；W6 打包与依赖总验收尚未执行。
 
@@ -180,6 +180,60 @@
 - link 通道增加明确的 repair/undo 动作，是为复用同一来源文档版本校验和账本，不新增通用编辑能力。已有“关联”段若不在最后，追加到该段结束处，避免把链接写入其他标题下；没有该段则在文末创建。
 - 真实模型服务、其他操作系统和 Claude 逐像素验收仍待进行；不将本轮模拟服务或未签名本地目录包称为发布。
 
-## W6
+## W6：检查与报告完成，验收未通过（2026-10-26）
 
-尚未开始。
+用户明确“开始 W6”。本轮保留 W1–W5 的实现与失败记录，补充四类页面的浅深八张截图和真实 PDF 验证，执行静态检查、构建、完整回归与新目录包验证。没有改动应用权限、日历提供者或外观实现，也没有通过跳过用例/放宽原断言取得绿色结果。
+
+### 阶段汇总
+
+| 阶段 | 实现 SHA | 已验证内容 | 阶段完整回归 |
+| --- | --- | --- | --- |
+| W1 | `631e6df` | 全格式目录、文件操作、资产协议、多根标签、文件边界 | 182/183，日历未授权 |
+| W2 | `47655e3` | 原文保留、双视图、选区与增量更新、19 样本（W3 扩为 24） | 最后 189/190，日历未授权 |
+| W3 | `d6a1bcb` | 命令面板与富模块、懒加载、安全渲染、高亮 | 197/199，日历与焦点 |
+| W4 | `5e9a3d6` | 三入口自动发送、块上下文、范围/版本/整轮撤销 | 最后 199/200，日历未授权 |
+| W5 | `afbc2a6` | 星图、元数据、确认关联、修复/撤销、2,000 点性能 | 最后 204/206，日历与焦点 |
+| W6 | 待提交 | 四类页面浅深截图、PDF 加载、最终门禁及报告 | 205/207，日历与焦点 |
+
+各阶段后续文档提交及完整失败/修复过程见前文；阶段数值是当时测试集结果，不合并成一个虚假的全绿结论。
+
+### 本轮诊断与验证
+
+- 焦点只读取证：隔离主窗口、第二个测试窗口及恢复后的 `BrowserWindow.isFocused()` / `webContents.isFocused()` 均为 false；恢复后 renderer `document.hasFocus()` 与 data-window-active 同为 false，没有漏掉已发生的原生激活。单独调用 webContents.focus 后 DOM 会变 true，但原生窗口仍 false，因此没有用这种方式替代“真实窗口焦点”断言。证据 `/private/tmp/jarvis-w6-focus-diagnostics.json`，脚本 `/private/tmp/jarvis-w6-diagnose.mjs`。
+- 日历同次只读状态仍为 `{ provider: apple, access: not_determined }`。本轮没有申请系统授权，也没有读取或写入个人日程。原日历 UI 用例的 7 天/审批/创建/周切换断言完整保留。
+- 新增 `writing-acceptance.spec.ts`：真实目录与 Markdown、块编辑/导图、命令面板/反向链接、全景星图、真实 PDF 协议响应及 Chromium 独立 PDF 查看器；四类页面 Light/Dark 共八图。截图以 reduced-motion 模式采集，避免原有布局弹簧影响静态对照；普通动态效果仍由原完整回归覆盖。
+- 初次采集命令面板用键盘 End/Enter 时未取得预期正文选区，改为既有已验证的块左侧 + 入口，未修改应用行为。PDF 初次定位按旧 embed 类型失败；实际已进入 Chromium 的独立扩展 frame。改为验证 pdf-viewer、loadProgress_=100、application/x-google-chrome-pdf 的 original-url 与工具栏，再截图。没有因测试修改 sandbox/contextIsolation 或启用额外通用能力。
+- 新截图/PDF 专项首轮成功 1/1（4.2s）；之后加上加载进度和插件来源断言纳入完整回归。最终命令结果如下：
+
+| 命令 | 结果 / 证据 |
+| --- | --- |
+| `pnpm check` | 通过；`/private/tmp/jarvis-writing-w6-check.log` |
+| `pnpm build` | 通过；`/private/tmp/jarvis-writing-w6-build.log` |
+| `pnpm test:smoke` | **205/207（6.2m）**；日历 `agent-calendar-ui.spec.ts:77` 和焦点 `appearance.spec.ts:121` 原断言失败，其余通过；`/private/tmp/jarvis-writing-w6-smoke.log` |
+| `pnpm package:dir` | 成功，未签名 arm64 目录包 `release/b0199fc3-ff58-4367-a1ef-4c1161455202` |
+| `verify-packaged-writing.mjs --rich --graph` | **593 项生产依赖**、ASAR 原生启动、块编辑保存、富模块与星图通过，无 pageerror；`/private/tmp/jarvis-writing-w6-package-verify.log` |
+
+目录包截图：`/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-NeNNX6/writing-blocks.png` 与同目录 writing-graph.png。完整回归之后仅调整新验收测试的示例为固定折叠语法、截图滚动位置，并保留所有断言；截图/PDF 专项 **1/1（3.6s）** 再次通过。应用生产代码没有变更。
+
+### 八张页面截图
+
+最终截图目录：`apps/desktop/test-results/587fa947-f99a-4227-8c97-84ca7ca6784b/writing-acceptance-writing-36f2a-erves-an-actual-PDF-preview/`。八图全部由上述专项生成；抽查覆盖四类页面，完整像素对照仍由 Claude 验收。
+
+| 页面 | Light | Dark | Figma 来源 |
+| --- | --- | --- | --- |
+| 块编辑 | `01-blocks-light.png` | `01-blocks-dark.png` | `482:37226` / `482:38315` |
+| 命令面板与反向链接 | `02-slash-backlinks-light.png` | `02-slash-backlinks-dark.png` | `483:54226` / `483:54935` |
+| 全景星图 | `03-graph-light.png` | `03-graph-dark.png` | `484:40061` / `484:41707` |
+| PDF 预览 | `04-pdf-preview-light.png` | `04-pdf-preview-dark.png` | `484:40856` / `484:42362` |
+
+关键状态的已有证据继续保留在 W3–W5 节：模块错误/源码、Agent 高亮与回执、共鸣点确认/撤销、2,000 点性能。新测试可用 `pnpm --filter @jarvis/desktop exec playwright test writing-acceptance.spec.ts` 独立重建八图。
+
+### 与计划的差异和待验收项
+
+- 已实现的取舍沿用前文：未知 Markdown 结构保留原文块；显示状态不落盘；标签按组连线；已有“关联”段在该段末尾追加；新增 repair/undo 为同一受限 link 通道的明确动作。没有新增长期数据库格式、私有文稿格式、其他文件全文读取、Shell 或云同步。
+- 八张截图使用原创短文档/单页 PDF，而非把 Figma 的样张正文或静态点坐标写入应用；布局、主题和组件状态供 Claude 复核。源码视图保持 CodeMirror；PDF 使用 Chromium 原生查看器，内部工具栏外观由 Chromium 控制。
+- macOS 日历授权环境、可原生激活的交互式桌面焦点验收、Windows/Intel 目标设备、真实模型/内网服务与 Claude 逐像素签收仍未完成。当前没有发布、PR 或合并授权，版本仍 0.4.0。
+
+### 验收结论
+
+**W6 检查与报告工作已完成，但 W6 及整个计划尚未验收通过。** 写作功能、边界、原文往返、模拟 Agent、截图/PDF 和本地目录包验证通过；完整回归仍有两个未通过项，不能按全绿交付或发布。后续需在隔离且已授权的日历环境、可获得原生窗口焦点的交互式桌面复验原断言，并由 Claude 完成设计签收。任何新结果应追加到本节，不能覆盖本轮失败事实。
