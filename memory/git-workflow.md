@@ -2,6 +2,22 @@
 
 最后更新：2026-10-26
 
+
+## 1.0.0 发布准备（2026-10-26）
+
+- 用户明确授权发布 v1.0.0。基线 develop `98d3418`，临时分支 `feature/prepare-v1.0.0`；通过 PR 完成版本准备 → develop → main，再在 main 合并提交创建新标签，不移动旧标签。
+- 根包与桌面包升级为 1.0.0，CHANGELOG/README 记录 Agent OS、目标线程与写作空间升级；旧 Agent 对话不迁移，旧文件保留。
+- 发布启动脚本仍检查已移除的 `createWritingSession`。改为检查现有写作命令桥和 Agent OS 桥，并在隔离 profile 实际创建项目、读取快照验证持久服务已接通；保留 ASAR、依赖、版本及更新桥接检查。
+- 两份原有未跟踪 Figma JSON 保留，不纳入发布。沿用 GitHub 预发布、macOS arm64/x64 签名公证、Windows x64 未签名的现有流程。
+- 本地 check/build、版本一致性、发布工具 13 项及 Apple 网络重试测试通过。完整回归 204/206（5.9m），保留日历周视图 0/7 与原生窗口焦点 false 两项既有环境失败，没有跳过或改断言。日志 `/private/tmp/jarvis-100-smoke.log`。
+- 本地 arm64 目录包 `release/ec28cbcc-a3d1-4ef9-a49c-6b08fc972fa8` 通过 593 项生产依赖检查、ASAR 原生启动、Agent OS 项目创建/快照、写作/更新桥接、块编辑保存、Mermaid/思维导图和星图验证。日志 `/private/tmp/jarvis-100-packaged-check.log`。云端签名、公证与发布尚未开始。
+
+## 本地分支清理与更新（2026-10-26）
+
+- 用户要求本地只保留 main 和 dev；沿用项目约定，dev 对应 `develop`。fetch 后将 develop 从 `48d698e` 快进到 `98d3418`，与 origin/develop 领先/落后均为 0。
+- 确认 `ccr-d35e3739-eyt9tu`（`85fc4cd`）和 `feature/writing-space`（`a461fde`）均已完整合入最新 develop，逐个通过 `git branch -d` 删除。本地仅剩 main、develop，当前为 develop。
+- 保留两份原有未跟踪 writing-redesign-components JSON；未改远端分支或标签。该操作记录随 1.0.0 发布准备提交。
+
 ## V1.0.0 Agent OS 合入 develop（2026-10-26）
 
 - 用户要求把 V1.0.0 Agent OS 分支 `claude/agent-logic-redesign-9irs9g` 提 PR 到 develop，检查之前的分支是否都已合入，并保持远端只剩 main 与 develop。

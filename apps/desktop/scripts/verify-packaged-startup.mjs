@@ -67,18 +67,27 @@ try {
   assert(page.url().includes('app.asar/out/renderer/index.html'));
   await expect(page.getByRole('tablist', { name: '窗口标签', exact: true })).toBeVisible();
   const writingBridge = await page.evaluate(() =>
-    [
-      'createWritingSession',
-      'claimWritingCommand',
-      'completeWritingCommand',
-      'onWritingCommand',
-    ].every((name) => typeof Reflect.get(window.desktop.agent, name) === 'function'),
+    ['claimWritingCommand', 'completeWritingCommand', 'onWritingCommand'].every(
+      (name) => typeof Reflect.get(window.desktop.agent, name) === 'function',
+    ),
   );
   assert(writingBridge, 'Packaged writing Agent bridge is missing');
   const claim = await page.evaluate(() =>
     window.desktop.agent.claimWritingCommand(crypto.randomUUID()),
   );
   assert.deepEqual(claim, { ok: true, value: false });
+
+  const osBridge = await page.evaluate(() =>
+    ['getSnapshot', 'createProject', 'startSpaceThread', 'send', 'answerDecision', 'undo'].every(
+      (name) => typeof Reflect.get(window.desktop.os, name) === 'function',
+    ),
+  );
+  assert(osBridge, 'Packaged Agent OS bridge is missing');
+  const project = await page.evaluate(() => window.desktop.os.createProject('打包启动验证'));
+  assert.equal(project.ok, true);
+  const snapshot = await page.evaluate(() => window.desktop.os.getSnapshot());
+  assert.equal(snapshot.ok, true);
+  assert(snapshot.value.snapshot.projects.some((item) => item.id === project.value));
 
   const state = await page.evaluate(() => window.desktop.updates.getState());
   assert.equal(state.ok, true);
@@ -89,7 +98,7 @@ try {
   await expect(page.getByRole('heading', { name: '关于 Jarvis', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '应用更新', exact: true })).toBeVisible();
   console.log(
-    `Verified packaged ${process.platform} startup, ASAR window tabs, writing Agent and updater bridges: ${version}`,
+    `Verified packaged ${process.platform} startup, ASAR window tabs, Agent OS project, writing and updater bridges: ${version}`,
   );
 } catch (error) {
   console.error(stderr);
