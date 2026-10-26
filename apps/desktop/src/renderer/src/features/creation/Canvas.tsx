@@ -12,7 +12,7 @@ import { Alert } from '@jarvis/ui/components/Alert';
 import { BadgeCount } from '@jarvis/ui/components/Badge';
 import { Toggle } from '@jarvis/ui/components/Toggle';
 import { Tooltip } from '@jarvis/ui/components/Tooltip';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { DownloadMedia } from '../../../../shared/generation';
 import {
@@ -32,11 +32,12 @@ import {
   type Connection,
   MarkerType,
   Position,
+  type XYPosition,
 } from '@xyflow/react';
 import {
   Download,
   Image,
-  Map,
+  Map as MapIcon,
   Maximize,
   Minus,
   Plus,
@@ -63,7 +64,18 @@ import {
   type MediaNode,
   type Project,
 } from './types';
-const nodeTypes = { media: MediaPlaceholder, asset: AssetNode };
+type ProjectNode = Project['nodes'][number];
+/** A rendered node with what it was built from, so it is rebuilt only when one of those changes. */
+type CachedNode = {
+  marquee: number;
+  source: ProjectNode;
+  position: XYPosition;
+  selected: boolean;
+  height: number;
+  node: CanvasNode;
+};
+// Memoized so a node re-renders only when its own node object or props change.
+const nodeTypes = { media: memo(MediaPlaceholder), asset: memo(AssetNode) };
 type Props = {
   shell: {
     active: boolean;
@@ -112,6 +124,12 @@ function CanvasContent({
   const [size, setSize] = useState({ width: 1000, height: 700 });
   const [editorHeight, setEditorHeight] = useState(231);
   const [heights, setHeights] = useState<Record<string, number>>({});
+  // Positions of nodes being dragged. They stay here, re-rendering only the canvas, and reach the
+  // project (and the whole workspace) once when the drag ends.
+  const [dragPositions, setDragPositions] = useState<ReadonlyMap<string, XYPosition> | null>(null);
+  // React Flow marks marquee candidates selected on its own; each marquee update rebuilds the
+  // nodes so the canvas's half-covered rule is applied over that.
+  const [marquee, setMarquee] = useState(0);
   const [details, setDetails] = useState<{ id: string; request: number } | null>(null);
   const measure = useCallback(
     (id: string, height: number) =>
@@ -119,6 +137,26 @@ function CanvasContent({
         previous[id] === height ? previous : { ...previous, [id]: height },
       ),
     [],
+  );
+  // Node actions read the latest render through a ref, so the context value never changes and
+  // does not re-render every node on each canvas update.
+  const latest = useRef<{
+    project: Project;
+    paste: (snapshot: ReturnType<typeof captureNodes>) => void;
+    onGenerate: (id: string) => void;
+  }>(null!);
+  const nodeActions = useMemo(
+    () => ({
+      measure,
+      generate: (id: string) => latest.current.onGenerate(id),
+      duplicate: (id: string) => latest.current.paste(captureNodes(latest.current.project, [id])),
+      details: (id: string) => {
+        setSelectedIds([id]);
+        setEditorId(id);
+        setDetails((previous) => ({ id, request: (previous?.request ?? 0) + 1 }));
+      },
+    }),
+    [measure],
   );
   const container = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -176,6 +214,7 @@ function CanvasContent({
         // React Flow mutates candidate selections before publishing the rectangle.
         // Reapply our area threshold even when the matching IDs have not changed.
         setSelectedIds(ids);
+        setMarquee((n) => n + 1);
         setEditorId(null);
         setSelectedEdge(null);
         setConnectingIds(null);
@@ -223,24 +262,45 @@ function CanvasContent({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const nodes = useMemo<CanvasNode[]>(
-    () =>
-      project.nodes.map((n) => ({
-        ...n,
-        selected: selectedIds.includes(n.id),
-        zIndex: 10,
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-        ariaLabel: `${{ image: '图像', video: '视频', audio: '音频' }[n.data.kind]}${n.type === 'asset' ? '资源' : ''}节点`,
-        width: 320,
-        height: heights[n.id] ?? 180,
-        measured: { width: 320, height: heights[n.id] ?? 180 },
-      })),
-    [project.nodes, selectedIds, heights],
-  );
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  // React Flow re-renders a node only when its object changes, so unchanged nodes keep theirs.
+  const nodeCache = useRef(new globalThis.Map<string, CachedNode>());
+  const nodes = useMemo<CanvasNode[]>(() => {
+    const cache = new globalThis.Map<string, CachedNode>();
+    const result = project.nodes.map((n) => {
+      const position = dragPositions?.get(n.id) ?? n.position;
+      const selected = selectedSet.has(n.id);
+      const height = heights[n.id] ?? 180;
+      const hit = nodeCache.current.get(n.id);
+      const node =
+        hit &&
+        hit.marquee === marquee &&
+        hit.source === n &&
+        hit.position === position &&
+        hit.selected === selected &&
+        hit.height === height
+          ? hit.node
+          : ({
+              ...n,
+              position,
+              selected,
+              zIndex: 10,
+              sourcePosition: Position.Right,
+              targetPosition: Position.Left,
+              ariaLabel: `${{ image: '图像', video: '视频', audio: '音频' }[n.data.kind]}${n.type === 'asset' ? '资源' : ''}节点`,
+              width: 320,
+              height,
+              measured: { width: 320, height },
+            } as CanvasNode);
+      cache.set(n.id, { marquee, source: n, position, selected, height, node });
+      return node;
+    });
+    nodeCache.current = cache;
+    return result;
+  }, [project.nodes, selectedSet, heights, dragPositions, marquee]);
   const active = nodes.find((n): n is MediaNode => n.id === editorId && n.type === 'media');
   const downloadable: DownloadMedia[] = project.nodes.flatMap((node): DownloadMedia[] => {
-    if (!selectedIds.includes(node.id)) return [];
+    if (!selectedSet.has(node.id)) return [];
     if (node.type === 'asset')
       return node.data.upload.status === 'ready'
         ? [{ url: node.data.upload.url, kind: node.data.kind, fileName: node.data.name }]
@@ -333,8 +393,19 @@ function CanvasContent({
     setEditorId(null);
   }
   function changes(items: NodeChange<CanvasNode>[]) {
+    // Mid-drag moves only update the local overlay; the final move of a drag is saved below.
+    const moving = items.filter(
+      (c): c is Extract<NodeChange<CanvasNode>, { type: 'position' }> =>
+        c.type === 'position' && c.dragging === true && !!c.position,
+    );
+    if (moving.length)
+      setDragPositions((previous) => {
+        const next = new globalThis.Map(previous ?? []);
+        for (const c of moving) next.set(c.id, c.position!);
+        return next;
+      });
     const persistent = items.filter((c) => {
-      if (c.type === 'position') return true;
+      if (c.type === 'position') return c.dragging !== true;
       if (c.type !== 'remove') return false;
       const node = project.nodes.find((n) => n.id === c.id);
       return node && !generationBusy(node.data);
@@ -362,12 +433,26 @@ function CanvasContent({
       setSelectedIds((previous) => previous.filter((id) => !removed.has(id)));
       if (editorId && removed.has(editorId)) setEditorId(null);
     }
+    const settled = persistent.flatMap((c) => (c.type === 'position' ? [c.id] : []));
+    if (settled.length)
+      setDragPositions((previous) => {
+        if (!previous) return previous;
+        const next = new globalThis.Map(previous);
+        for (const id of settled) next.delete(id);
+        return next.size ? next : null;
+      });
     onChange((p) => {
-      const next = applyNodeChanges(persistent, p.nodes).map(({ id, type, position, data }) =>
-        type === 'asset'
+      const before = new globalThis.Map(p.nodes.map((node) => [node.id, node]));
+      // Unchanged nodes keep their objects; only moved or removed ones are rebuilt.
+      const next = applyNodeChanges(persistent, p.nodes).map((node): ProjectNode => {
+        const original = before.get(node.id);
+        if (original === node) return original;
+        const { id, type, position, data } = node;
+        return type === 'asset'
           ? { id, type: 'asset' as const, position, data }
-          : { id, type: 'media' as const, position, data },
-      );
+          : { id, type: 'media' as const, position, data };
+      });
+      if (!persistent.some((c) => c.type === 'remove')) return { ...p, nodes: next };
       const ids = new Set(next.map((node) => node.id));
       return {
         ...p,
@@ -452,6 +537,7 @@ function CanvasContent({
   const below = active
     ? viewport.y + (active.position.y + (heights[active.id] ?? 180) + 28) * viewport.zoom + 16
     : 16;
+  latest.current = { project, paste, onGenerate };
   const above = active ? viewport.y + active.position.y * viewport.zoom - editorHeight - 16 : 16;
   const top = Math.max(
     16,
@@ -462,18 +548,7 @@ function CanvasContent({
         : Math.min(below, size.height - editorHeight - 16),
   );
   return (
-    <NodeActionsContext
-      value={{
-        measure,
-        generate: onGenerate,
-        duplicate: (id) => paste(captureNodes(project, [id])),
-        details: (id) => {
-          setSelectedIds([id]);
-          setEditorId(id);
-          setDetails((previous) => ({ id, request: (previous?.request ?? 0) + 1 }));
-        },
-      }}
-    >
+    <NodeActionsContext value={nodeActions}>
       <main className="canvas-page" data-testid="canvas-page">
         <header
           data-testid="canvas-toolbar"
@@ -726,15 +801,13 @@ function CanvasContent({
                 >
                   <Maximize size={18} />
                 </IconButton>
-              </Panel>
-              <Panel position="bottom-right" className="floating-controls">
                 <Tooltip content="缩略图显示">
                   <Toggle
                     aria-label="缩略图显示"
                     pressed={project.minimap}
                     onPressedChange={(pressed) => patch({ minimap: pressed })}
                   >
-                    <Map size={18} />
+                    <MapIcon size={18} />
                   </Toggle>
                 </Tooltip>
               </Panel>

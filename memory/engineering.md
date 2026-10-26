@@ -2,6 +2,15 @@
 
 最后更新：2026-10-26
 
+## 画布多节点拖动卡顿（2026-10-26，feature/interaction-polish）
+
+- 用户反馈节点变多后拖动卡顿。原因（每次鼠标移动）：① 位置变更经 `onChange` → App `changeProject` → `useWorkspace.commit`，整个 App 重渲染并两次切换保存状态（保存本身在拖动时已被 hold）；② `changes()` 中 `applyNodeChanges(...).map(...)` 与 `nodes` useMemo 为所有节点新建对象、`edges` 也被 filter 成新数组，React Flow 重渲染全部节点与连线；③ `NodeActionsContext` 每次渲染传新对象，所有节点组件随之重渲染。
+- 修复（`Canvas.tsx`）：拖动中（`dragging: true`）的位置只写入画布内 `dragPositions` 覆盖层，松手时的最终位置变更才走 `onChange` 保存一次；`nodes` 用按节点缓存（来源对象、位置、选中、高度都没变则复用旧对象）；`applyNodeChanges` 后未变节点保留原对象，无删除时保留原 `edges` 数组；`NodeActionsContext` 值用 ref 读取最新状态并 useMemo 固定；`MediaPlaceholder` / `AssetNode` 以 `memo` 注册；选中判断改用 Set。图标 `Map` 改名 `MapIcon` 以免遮蔽全局 Map。
+- 框选修正：节点对象复用后，React Flow 自行标记的框选候选不再被画布的「覆盖过半」规则覆盖（connections 框选用例失败）。新增 `marquee` 计数，框选矩形每次更新时使节点缓存失效、重新下发 selected。
+- 验证（用户要求对本改动单独验证）：`pnpm check` 通过；画布相关 15 个 spec 共 54 项全部通过（2.6m）。space-agent 中残留的「线程 · 我的项目」断言（上一轮已去掉该行）同步删除。canvas-copy-ui 曾间歇失败约 3/45（悬停工具条点击被节点 `.node-state` 拦截：节点不再无谓重渲染后，浏览器未刷新 :hover），旧代码 0/15；测试改为点击前在节点内两次移动指针（同真实鼠标），之后 30/30 通过。
+- 拖动压测（临时 spec，已删除；1600×1000 窗口，拖动 1 个节点 60 步）：100 节点 旧 2006ms / p95 帧间隔 32ms / 1 个长任务 → 新 1026ms / 18ms / 0；400 节点 旧 3918ms / p95 83ms / 最大 133ms / 37 个长任务共 2996ms → 新 1351ms / 18ms / 最大 33ms / 0 个长任务。两版松手后位置都正确保存。
+- 同轮另按用户要求：右下角「缩略图显示」开关并入左下角缩放按钮组末尾（缩略图本身仍在右下角）。
+
 ## 1.0.2 发布准备（2026-10-26）
 
 - 用户授权发布补丁版本 v1.0.2。PR #103 已合入 develop `6933736`，从该基线创建 `feature/prepare-v1.0.2`；包含画布节点复制粘贴、视频原生控件恢复及菜单/按钮/标签布局修复。版本与中文说明已更新。

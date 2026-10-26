@@ -72,7 +72,6 @@ test('the canvas sidebar is the thread bound to the canvas: edits, undo, a writt
     await expect(sidebar.getByText('改好了。')).toBeVisible();
     const header = page.getByTestId('space-thread-header');
     await expect(header).toContainText('把提示词改成暖色调');
-    await expect(sidebar).toContainText('线程 · 我的项目');
     await expect(sidebar).toContainText('已应用画布修改');
     await expect(nodes).toHaveCount(before + 1);
     // A question is answered on its compact card, here with the user's own words.
