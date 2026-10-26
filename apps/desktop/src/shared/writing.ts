@@ -1,3 +1,9 @@
+import type {
+  WritingGraph,
+  WritingBacklinks,
+  WritingLinkRequest,
+  WritingLinkReceipt,
+} from './writing-graph';
 import { z } from 'zod';
 
 export type WritingFileType = 'markdown' | 'text' | 'image' | 'pdf' | 'audio' | 'video' | 'binary';
@@ -68,6 +74,7 @@ export interface WritingEntry {
   fileType?: WritingFileType;
   size?: number;
   mtime?: number;
+  birthtime?: number;
 }
 export interface WritingFile {
   mtime?: number;
@@ -87,6 +94,10 @@ export interface WritingRenamed {
   to: string;
 }
 export interface WritingBridge {
+  graph(request: { rootId: string }): Promise<WritingResult<WritingGraph>>;
+  backlinks(request: { rootId: string; path: string }): Promise<WritingResult<WritingBacklinks>>;
+  link(request: WritingLinkRequest): Promise<WritingResult<WritingLinkReceipt>>;
+  onGraphChanged(listener: (event: { rootId: string }) => void): () => void;
   rename(request: z.infer<typeof writingRenameSchema>): Promise<WritingResult<WritingEntry>>;
   move(request: z.infer<typeof writingMoveSchema>): Promise<WritingResult<WritingEntry>>;
   duplicate(request: z.infer<typeof writingPathSchema>): Promise<WritingResult<WritingEntry>>;

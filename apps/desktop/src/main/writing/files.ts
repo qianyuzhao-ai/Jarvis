@@ -132,7 +132,12 @@ export class WritingFiles {
         path: itemPath,
         kind: info.isDirectory() ? 'directory' : 'file',
         ...(info.isFile()
-          ? { fileType: writingFileType(entry.name), size: info.size, mtime: info.mtimeMs }
+          ? {
+              fileType: writingFileType(entry.name),
+              size: info.size,
+              mtime: info.mtimeMs,
+              birthtime: info.birthtimeMs,
+            }
           : {}),
       });
     }
@@ -250,7 +255,12 @@ export class WritingFiles {
       path,
       kind: info.isDirectory() ? 'directory' : 'file',
       ...(info.isFile()
-        ? { fileType: writingFileType(path), size: info.size, mtime: info.mtimeMs }
+        ? {
+            fileType: writingFileType(path),
+            size: info.size,
+            mtime: info.mtimeMs,
+            birthtime: info.birthtimeMs,
+          }
         : {}),
     };
   }

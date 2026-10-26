@@ -1,0 +1,286 @@
+@layer utilities {
+  .writing-graph {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    color: var(--color-fg);
+  }
+  .writing-graph.is-mini {
+    width: 100%;
+  }
+  .writing-graph.is-panorama {
+    flex: 1;
+    height: 100%;
+    background: var(--color-surface);
+  }
+  .writing-graph-canvas {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    isolation: isolate;
+  }
+  .is-mini .writing-graph-canvas {
+    flex: none;
+    height: 260px;
+  }
+  .writing-graph-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-separator);
+    font-size: 11px;
+  }
+  .writing-graph-toolbar [data-ui='input'] {
+    width: 180px;
+  }
+  .writing-graph-toolbar > span {
+    margin-left: auto;
+    color: var(--color-fg-secondary);
+  }
+  .writing-dot {
+    position: relative;
+    width: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 0 0;
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--color-fg-secondary);
+  }
+  .writing-dot-circle {
+    display: block;
+    flex: none;
+    border-radius: 50%;
+    background: var(--color-fg-secondary);
+    border: 1px solid var(--color-fg-secondary);
+  }
+  .writing-dot.is-active .writing-dot-circle {
+    width: 22px !important;
+    height: 22px !important;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 18%, transparent);
+  }
+  .writing-dot.is-active {
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+  .writing-dot.is-isolated .writing-dot-circle {
+    background: var(--color-surface);
+    border-color: var(--color-fg-tertiary);
+  }
+  .writing-dot.is-candidate .writing-dot-circle {
+    background: var(--color-surface);
+    border: 1px dashed var(--color-accent);
+  }
+  .writing-dot-label {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .writing-dot .react-flow__handle {
+    width: 12px;
+    height: 12px;
+    background: var(--color-surface-raised);
+    border-color: var(--color-border);
+    opacity: 0;
+  }
+  .writing-dot:hover .react-flow__handle,
+  .react-flow__node:focus .react-flow__handle {
+    opacity: 1;
+  }
+  .writing-graph-edge .react-flow__edge-path {
+    stroke: var(--color-border);
+    stroke-width: 1;
+  }
+  .writing-graph-edge.is-tag .react-flow__edge-path {
+    stroke-dasharray: 2 4;
+    opacity: 0.5;
+  }
+  .writing-graph-edge.is-candidate .react-flow__edge-path {
+    stroke: var(--color-accent);
+    stroke-dasharray: 5 4;
+  }
+  .writing-graph-empty {
+    position: absolute;
+    top: 60%;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: var(--color-fg-secondary);
+    pointer-events: none;
+  }
+  .writing-graph-searching {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11px;
+    border-radius: var(--radius-panel);
+    padding: 4px 8px;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-control);
+  }
+  .writing-graph-legend {
+    display: flex;
+    gap: 10px;
+    padding: 10px 16px;
+    color: var(--color-fg-tertiary);
+    font-size: 10px;
+  }
+  .writing-graph-legend span:first-child {
+    color: var(--color-accent);
+  }
+  .writing-graph-mini-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .writing-graph-timeline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    font-size: 11px;
+    color: var(--color-fg-secondary);
+    border-top: 1px solid var(--color-separator);
+  }
+  .writing-graph-timeline input {
+    flex: 1;
+    accent-color: var(--color-accent);
+    min-width: 40px;
+  }
+  .writing-graph-note {
+    margin: 8px 16px;
+    color: var(--color-fg-secondary);
+    font-size: 12px;
+  }
+  .writing-resonances {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .writing-graph-canvas > .writing-resonances {
+    position: absolute;
+    left: 24px;
+    bottom: 24px;
+    width: 300px;
+    max-height: 65%;
+    overflow: auto;
+  }
+  .writing-resonance {
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-control);
+  }
+  .writing-resonance-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .writing-resonance-title button {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .writing-resonance p {
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--color-fg-secondary);
+  }
+  .writing-resonance-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .writing-resonance-actions span {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    color: var(--color-fg-secondary);
+    font-size: 11px;
+  }
+  .writing-backlinks {
+    width: min(680px, 100%);
+    margin: 32px auto;
+    padding: 16px 0;
+    border-top: 1px solid var(--color-separator);
+    font-size: 12px;
+    color: var(--color-fg-secondary);
+  }
+  .writing-backlinks summary {
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  .writing-backlinks .writing-resonances {
+    margin-top: 12px;
+  }
+  .writing-backlink {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  .writing-backlink p {
+    width: 100%;
+    margin: 0;
+    font-size: 11px;
+  }
+}
+@layer utilities {
+  .writing-main.is-graph > .writing-document-tools,
+  .writing-main.is-graph > .writing-status {
+    display: none;
+  }
+  .writing-graph.is-panorama {
+    position: relative;
+  }
+  .writing-graph-canvas > .writing-resonances {
+    left: auto;
+    bottom: auto;
+    top: 24px;
+    right: 24px;
+  }
+  .writing-graph-timeline {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(640px, calc(100% - 48px));
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-control);
+  }
+  .writing-dot .react-flow__handle {
+    top: 18px;
+    width: 8px;
+    height: 8px;
+  }
+  .writing-dot .react-flow__handle-left {
+    left: calc(50% - 5px);
+  }
+  .writing-dot .react-flow__handle-right {
+    right: calc(50% - 5px);
+  }
+}
+@layer utilities {
+  .writing-graph.is-mini .react-flow {
+    background: transparent;
+  }
+}

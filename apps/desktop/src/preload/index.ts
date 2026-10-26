@@ -142,6 +142,15 @@ const desktop: DesktopInfo = {
     },
   },
   writing: {
+    graph: (request) => ipcRenderer.invoke('writing:graph', request),
+    backlinks: (request) => ipcRenderer.invoke('writing:backlinks', request),
+    link: (request) => ipcRenderer.invoke('writing:link', request),
+    onGraphChanged: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: { rootId: string }) =>
+        listener(payload);
+      ipcRenderer.on('writing:graph-changed', handler);
+      return () => ipcRenderer.removeListener('writing:graph-changed', handler);
+    },
     rename: (request) => ipcRenderer.invoke('writing:rename', request),
     move: (request) => ipcRenderer.invoke('writing:move', request),
     duplicate: (request) => ipcRenderer.invoke('writing:duplicate', request),

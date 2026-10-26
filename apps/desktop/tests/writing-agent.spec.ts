@@ -36,7 +36,18 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
     const read = results[0] ? JSON.parse(results[0].content) : null;
     let name = '',
       args: unknown = {};
-    if (step === 0) {
+    if (prompt.includes('resonance') && step === 0) {
+      name = 'find_related_documents';
+    } else if (prompt.includes('resonance') && step === 1) {
+      name = 'report_result';
+      args = {
+        status: 'done',
+        summary: '找到结构相关的文档',
+        resonance: [{ path: '乙.md', reason: '同样从问题出发组织解决步骤' }],
+      };
+    } else if (prompt.includes('resonance')) {
+      name = '';
+    } else if (step === 0) {
       name = prompt.includes('总结') ? 'read_document' : 'read_selection';
       args = {};
     } else if (step === 1 && !prompt.includes('总结')) {
@@ -325,6 +336,7 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       .map((t) => t.function.name)
       .sort();
     expect(toolNames).toEqual([
+      'find_related_documents',
       'handoff_to_main',
       'insert_text',
       'read_document',
@@ -332,6 +344,57 @@ test('writing Agent edits only its document buffer, groups undo, survives tab sw
       'replace_range',
       'report_result',
     ]);
+    await page.getByRole('tab', { name: '星图', exact: true }).click();
+    const mini = page.getByTestId('writing-graph-mini');
+    await mini.getByRole('button', { name: '寻找共鸣点', exact: true }).click();
+    await expect(page.getByText('同样从问题出发组织解决步骤')).toBeVisible();
+    expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe('人工修改保留');
+    await mini.getByRole('button', { name: '在编辑区展开全景' }).click();
+    const full = page.getByTestId('writing-graph-full');
+    await expect(full.locator('.is-candidate')).not.toHaveCount(0);
+    await page.evaluate(async () => {
+      await Promise.all(
+        document
+          .getAnimations()
+          .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      document.documentElement.dataset.theme = 'light';
+    });
+    await page.screenshot({
+      path: test.info().outputPath('w5-resonance-light.png'),
+      animations: 'disabled',
+    });
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = 'dark';
+    });
+    await page.screenshot({ path: test.info().outputPath('w5-resonance-dark.png') });
+    await full.getByRole('button', { name: '建立关联', exact: true }).click();
+    await expect(full.getByText('已关联', { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: '乙.md', exact: true }).click();
+    await page.getByRole('tab', { name: /^甲.md/ }).click();
+    await expect(full.getByText('已关联', { exact: true })).toBeVisible();
+    expect(await readFile(join(directory, '甲.md'), 'utf8')).toBe('人工修改保留');
+    await full.getByRole('button', { name: '撤销', exact: true }).click();
+    await expect(full.getByRole('button', { name: '建立关联', exact: true })).toBeVisible();
+    await full.getByRole('button', { name: '忽略', exact: true }).click();
+    await expect(full.getByText('同样从问题出发组织解决步骤')).toHaveCount(0);
+    await page.getByRole('tab', { name: '乙.md', exact: true }).click();
+    await page.getByRole('tab', { name: /^甲.md/ }).click();
+    await expect(full.getByText('同样从问题出发组织解决步骤')).toHaveCount(0);
+    const metadata = requests
+      .flatMap((request) =>
+        (request.messages as { role: string; content: string }[])
+          .filter((message) => message.role === 'tool' && message.content.startsWith('['))
+          .map((message) => JSON.parse(message.content)),
+      )
+      .find(
+        (value) =>
+          Array.isArray(value) && value.some((item: { path?: string }) => item.path === '乙.md'),
+      );
+    expect(metadata).toHaveLength(1);
+    expect(Object.keys(metadata[0]).sort()).toEqual(['mtime', 'path', 'summary', 'tags', 'title']);
+    expect(metadata[0].summary.length).toBeLessThanOrEqual(200);
   } catch (error) {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
     throw error;

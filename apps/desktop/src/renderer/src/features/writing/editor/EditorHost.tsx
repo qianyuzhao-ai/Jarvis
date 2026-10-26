@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type MutableRefObject } from 'react';
 import type { EditorView } from '@codemirror/view';
 import { createPortal } from 'react-dom';
 import { Search } from '@jarvis/ui/icons';
@@ -25,7 +25,9 @@ export function EditorHost({
   onRename,
   onOpenLink,
   onAsk,
+  footer,
 }: {
+  footer?: ReactNode;
   document: DocumentSession;
   toolbarHost: HTMLElement | null;
   bufferRef: MutableRefObject<BufferView | null>;
@@ -275,6 +277,7 @@ export function EditorHost({
             onAsk={onAsk}
           />
         )}
+        {footer}
       </div>
       {!!outline.length && (
         <div

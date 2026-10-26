@@ -76,12 +76,22 @@ try {
   await expect.poll(() => readFile(join(folder, 'package.md'), 'utf8')).toContain('打包块编辑通过');
   const screenshot = join(profile, 'writing-blocks.png');
   await page.screenshot({ path: screenshot });
+  const graph = process.argv.includes('--graph');
+  if (graph) {
+    await page.getByRole('tab', { name: '星图', exact: true }).click();
+    const mini = page.getByTestId('writing-graph-mini');
+    await expect(mini.locator('.react-flow__node').first()).toBeVisible();
+    await mini.getByRole('button', { name: '在编辑区展开全景' }).click();
+    await expect(page.getByTestId('writing-graph-full')).toContainText('1 个点');
+    await page.screenshot({ path: join(profile, 'writing-graph.png') });
+  }
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify({
       version: await instance.evaluate(({ app }) => app.getVersion()),
       blockEditor: true,
       richPreviews: rich,
+      graph,
       persisted: true,
       screenshot,
     }),

@@ -1,3 +1,7 @@
+import { lazy, Suspense } from 'react';
+import { useWritingGraph } from './graph/use-writing-graph';
+import { Backlinks } from './graph/Backlinks';
+const GraphView = lazy(() => import('./graph/GraphView'));
 import { Tabs, TabsList, TabsTrigger } from '@jarvis/ui/components/Tabs';
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
@@ -128,6 +132,8 @@ export function WritingSpace({
 }) {
   const confirm = useConfirm();
   const [leftView, setLeftView] = useState('files');
+  const [panorama, setPanorama] = useState(false);
+  const restoreAssistant = useRef(false);
   const [moving, setMoving] = useState<WritingEntry | null>(null);
   const [moveTargets, setMoveTargets] = useState<string[]>([]);
   const [moveTarget, setMoveTarget] = useState('');
@@ -161,6 +167,39 @@ export function WritingSpace({
   }, [writing.documents]);
   const writingHost = useWritingHost(writing, view, editorCache);
   const active = writing.documents.find((d) => d.id === writing.activeId);
+  const graph = useWritingGraph(writing.root?.id, active, writing.documents);
+  function expandGraph() {
+    restoreAssistant.current = shell.rightOpen;
+    setPanorama(true);
+    shell.onClose();
+  }
+  function closeGraph() {
+    setPanorama(false);
+    if (restoreAssistant.current) shell.onAssistant();
+  }
+  async function openGraphDocument(path: string, newTab: boolean) {
+    const rootId = writing.root?.id;
+    const dot = graph.graph?.dots.find((item) => item.path === path);
+    if (!rootId || !dot) return;
+    try {
+      await writing.openDocument({ ...dot, kind: 'file' }, rootId);
+      shell.onOpen(path, newTab, rootId);
+      if (panorama) closeGraph();
+    } catch (e) {
+      writing.setNotice(e instanceof Error ? e.message : '打开文档失败');
+    }
+  }
+  const graphProps = {
+    workspace: graph,
+    rootId: writing.root?.id ?? '',
+    path: active?.rootId === writing.root?.id ? (active?.path ?? '') : '',
+    onOpen: (path: string, newTab: boolean) => void openGraphDocument(path, newTab),
+    onExpand: expandGraph,
+    onBack: closeGraph,
+  };
+  useEffect(() => {
+    if (panorama && shell.rightOpen) shell.onClose();
+  }, [panorama, shell.rightOpen, shell.onClose]);
   const preview = !!active && !isWritingText(active.path);
   useEffect(() => {
     if (active?.fileType === 'markdown' || (active && !active.fileType))
@@ -471,7 +510,9 @@ export function WritingSpace({
                   </TabsList>
                 </Tabs>
                 {leftView === 'graph' ? (
-                  <p className="p-4 text-fg-secondary">星图将在后续版本提供</p>
+                  <Suspense fallback={<p className="p-4 text-fg-secondary">正在加载星图…</p>}>
+                    <GraphView {...graphProps} mini />
+                  </Suspense>
                 ) : (
                   <nav className="writing-tree" aria-label="文件列表">
                     {query.trim() && searchOpen ? (
@@ -520,7 +561,7 @@ export function WritingSpace({
           </aside>,
           shell.leftHost,
         )}
-      <main data-testid="writing-main" className="writing-main">
+      <main data-testid="writing-main" className={`writing-main ${panorama ? 'is-graph' : ''}`}>
         <div className="writing-document-tools">
           <span>
             {writing.root
@@ -568,7 +609,11 @@ export function WritingSpace({
             {active.error}
           </Alert>
         )}
-        {active && preview ? (
+        {panorama ? (
+          <Suspense fallback={<p>正在加载星图…</p>}>
+            <GraphView {...graphProps} />
+          </Suspense>
+        ) : active && preview ? (
           <FilePreview
             key={active.id}
             document={active}
@@ -601,6 +646,16 @@ export function WritingSpace({
         ) : active ? (
           <EditorHost
             toolbarHost={editorToolbar}
+            footer={
+              active.fileType === 'markdown' && active.rootId === writing.root?.id ? (
+                <Backlinks
+                  workspace={graph}
+                  rootId={active.rootId}
+                  path={active.path}
+                  onOpen={graphProps.onOpen}
+                />
+              ) : undefined
+            }
             key={active.id}
             document={active}
             onChange={writing.change}

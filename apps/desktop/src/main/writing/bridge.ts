@@ -1,3 +1,5 @@
+import { GraphIndex } from './graph-index';
+import { graphRootSchema, writingLinkSchema } from '../../shared/writing-graph';
 import { app, BrowserWindow, dialog, ipcMain, shell, protocol, type WebContents } from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -19,6 +21,8 @@ const trusted = new Map<number, string>();
 let registered: WritingFiles | undefined;
 /** The writing folders, for the main Agent's document tools once registered. */
 export const writingFiles = () => registered;
+let graph: GraphIndex | undefined;
+export const writingGraph = () => graph;
 let watcher: WritingWatcher | undefined;
 let activeWrites = 0;
 export const isWritingBusy = () => activeWrites > 0;
@@ -41,6 +45,7 @@ export async function registerWriting() {
     initializationError = '写作目录记录无法读取，原记录已保留';
   }
   if (!initializationError) registered = files;
+  graph = new GraphIndex(files, join(app.getPath('userData'), 'writing-index'));
   function push(channel: string, payload: unknown, owners?: Set<number>) {
     for (const window of BrowserWindow.getAllWindows()) {
       const contents = window.webContents;
@@ -48,9 +53,10 @@ export async function registerWriting() {
         contents.send(channel, payload);
     }
   }
-  watcher = new WritingWatcher(files, (rootId, paths, owners) =>
-    push('writing:changed', { rootId, paths }, owners),
-  );
+  watcher = new WritingWatcher(files, (rootId, paths, owners) => {
+    push('writing:changed', { rootId, paths }, owners);
+    push('writing:graph-changed', { rootId });
+  });
   protocol.handle('jarvis-writing', (request) => writingAssetResponse(files, request));
   async function relocate(
     rootId: string,
@@ -64,6 +70,22 @@ export async function registerWriting() {
     return entry;
   }
   const handlers: Record<string, (request: unknown) => unknown> = {
+    'writing:graph': (request) => graph!.graph(graphRootSchema.parse(request).rootId),
+    'writing:backlinks': (request) => {
+      const r = writingPathSchema.strict().parse(request);
+      return graph!.backlinks(r.rootId, r.path);
+    },
+    'writing:link': async (request) => {
+      const input = writingLinkSchema.parse(request),
+        service = writingAgentService();
+      const rootId =
+        input.action === 'undo'
+          ? service.ledger.find(input.transactionId)?.writingScope?.rootId
+          : input.rootId;
+      const result = await service.linkWriting(input);
+      if (rootId) push('writing:graph-changed', { rootId });
+      return result;
+    },
     'writing:rename': (request) => {
       const r = writingRenameSchema.parse(request);
       return relocate(r.rootId, r.path, () => files.rename(r.rootId, r.path, r.name));
@@ -118,6 +140,7 @@ export async function registerWriting() {
   ]) {
     ipcMain.handle(channel, async (event, request): Promise<WritingResult<unknown>> => {
       const writing = [
+        'writing:link',
         'writing:save',
         'writing:create',
         'writing:choose',
@@ -162,7 +185,10 @@ export async function registerWriting() {
         }
         const handler = handlers[channel];
         if (!handler) throw new Error('不支持的写作操作');
-        return { ok: true, value: await handler(request) };
+        const value = await handler(request);
+        if (writing && request && typeof request === 'object' && 'rootId' in request)
+          push('writing:graph-changed', { rootId: request.rootId });
+        return { ok: true, value };
       } catch (error) {
         return {
           ok: false,

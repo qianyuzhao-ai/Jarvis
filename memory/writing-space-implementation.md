@@ -146,6 +146,38 @@
 - 最终 check/build/diff 检查通过。未签名 macOS arm64 目录包 `release/d2db49ab-3cef-4404-a678-4907112f6015` 经 `verify-packaged-writing.mjs --rich` 验证 **593 项生产依赖**、ASAR 启动、Mermaid/导图与实际编辑保存通过；截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-En9Jke/writing-blocks.png`。未改版本、未发布。
 - 截图：`apps/desktop/test-results/cf1ba2b9-c2c1-445f-ae30-6bc290666671/writing-agent-writing-Agen-c2325--and-rejects-stale-versions/` 的 w4-block/rich/bubble/slash.png。已查看选区修改、高亮和回执；沿用已有组件与样式，未修改 Figma 或 tokens，Claude 视觉签收仍待进行。只读核对 Figma Block Menu `470:38997`、Block Highlight `471:39798` 的上下文与截图，沿用既有实现。
 
-## W5–W6
+## W5：星图、关联与共鸣点（2026-10-26）
+
+用户明确“继续 W5”，继续保留既有日历环境失败及 Claude 待验收状态。步骤：索引解析 → 关联写入/撤销 → 元数据工具 → 星图布局 → 候选/反向链接 → 集成验收。
+
+### 实现
+
+- GraphIndex 使用既有授权路径检查，只枚举非隐藏普通文件，拒绝符号链接。按 mtime+size 缓存 Markdown 标题、标签、≤200 字摘要与引用，birthtime/首次索引时间作为 firstSeen；每 200 条让出事件循环，上限 20,000 条目和单文档 4 MiB，超限明确 truncated。缓存位于 userData/writing-index/<rootId>.json，使用 JsonFile 原子写；重启未变化文件不重读正文。标题限制 200 字。
+- 双链按同目录与最短路径解析，支持相对 Markdown 链接、图片及引用式链接；代码、Frontmatter 与 HTML 不参与双链/标签索引。标签按组下发，前端用星形边连接组内节点，避免全组合边。
+- 新增明确的 writing:graph / writing:backlinks / writing:graph-changed / writing:link；后者以 link / repair / undo 三个动作区分创建、逐个确认修复与撤销，没有通用文件或 IPC 接口。watch/save 等变化通知更新，渲染层 5 秒轮询兼容无法监听的环境。
+- 关联仅修改来源 Markdown 的“## 关联”段，不重复追加已解析为同目标的引用。重名目标写相对路径避免歧义。打开中的文档经所属窗口 WritingBroker 读取版本与修改缓冲区，不落盘；未打开文档走 WritingFiles.save 的版本校验。冲突与打开状态变化拒绝写入。
+- 新账本 pack=writing-link，独立内部账本会话保存插入/替换片段、偏移和写后版本；重启加载，源文档版本未变时可撤销。已打开和已关闭来源统一检查，后续改动会返回“文档已被修改，未撤销”。没有创建模型对话或扩大 Agent 写权限。
+- 写作工具新增只读 find_related_documents，严格同一父文件夹、排除自身、≤200 条，只返回 path/title/tags/summary/mtime。report_result 可选 resonance 活动最多 3 项，由主进程验证仍属于同目录候选；摘要明确按数据处理。确认才链接，忽略仅当前会话界面隐藏。
+- 左侧星图与全景复用 React Flow；d3-force 静态布局、双链/标签/孤岛过滤、搜索、只读时间轴、节点打开/新标签、拖线、候选虚线/确认卡片、文末反向链接与失效链接修复。全景收起助手，返回恢复此前侧栏状态。已打开缓冲区关联显示临时边，撤销或缓冲区移除文本后不再显示。
+- 新依赖精确版本 d3-force 3.0.0（2021-06-05）与开发类型 @types/d3-force 3.0.10（2024-06-17），从 npm registry 回读确认；后者为 TypeScript strict 所需，无新增生产库。星图布局组件按需加载，没有新增颜色变量或检查器例外。
+
+### 验证与设计
+
+- 主进程专项 4/4：范围/隐藏文件/符号链接、双链/相对链接/资产、同文件夹元数据、增量与缓存重启、反向链接/截断、代码与 Frontmatter 排除、超大文件重复扫描仍 truncated；磁盘写入与重启撤销、打开缓冲区不落盘、冲突与后续版本拒绝。
+- 星图实窗 2/2（首轮 8.8s）：真实拖线、未保存标记、来源与目标磁盘检查、链接修复确认、关闭文档关联与撤销、全景返回恢复助手；2,000 文件下小窗 ≤10 点、全景搜索/孤岛筛选/时间轴播放可交互。首轮耗时 mini 623ms、full 790ms（本机隔离 Electron，含 UI 首次可见等待，不是跨设备保证）。性能证据 `apps/desktop/test-results/da4ce31f-dfe5-47fc-8fae-f344409dc5fa/writing-graph-2000-file-gr-745a0-ew-and-interactive-panorama/performance.json`。
+- 写作 Agent 扩展实窗最终 1/1（9.4s）：元数据数组字段/长度断言、候选不写盘、确认/撤销/忽略与虚线边；原 W4 选区/高亮/整轮撤销/跨标签/冲突/权限断言保留。初次模拟服务按“共鸣点”匹配，但固定指令用 resonance 字段，已修正模拟分支；随后测试错误地 JSON 解析了原冲突错误文本，限定仅解析元数据数组，业务断言不变。
+- 只读核对 Figma Graph Mini Panel `473:39690`、Resonance Card `473:39554`、Backlinks `466:39145` 与全景页 `484:40061` / `484:41707` 的设计上下文和截图。反向链接整页 `483:54226` 返回稀疏元数据后改读组件。初图缩放过大、连线端点偏离圆点，已限制首次适配最大 1 倍、节点更新后重适配并调整端点；移除网格背景，卡片置右上、时间轴置底部中间。修正后的浅深截图在 `apps/desktop/test-results/90648cca-4971-47a0-a1ee-233fe5df6b74/writing-graph-graph-drag-l-a3953-panorama-restores-assistant/`。Figma 未修改，Claude 视觉签收仍待进行。
+- 复查补充候选状态按文档隔离，切换标签后确认/忽略状态保持；异步索引结果和临时边按 rootId 隔离，旧目录的延迟响应不会覆盖新目录。时间轴复用 React Flow 实例，避免每个时间步卸载全部节点。最终综合专项 **7/7（18.6s）**，check/build/diff 检查通过。
+- 首轮完整回归 **204/206（6.2m）**，仅既有日历未授权与真实窗口焦点恢复断言失败；原断言保留，未修改 appearance 或日历实现。日志 `/private/tmp/jarvis-writing-w5-smoke.log`。第二轮完整回归同为 **204/206（6.2m）**，仅上述两项；日志 `/private/tmp/jarvis-writing-w5-smoke-final.log`。随后补充链接修复保留 wiki 别名的回归，主进程专项 4/4（480ms）通过；空文档创建关联段不添加无意义的前导空行。最终完整回归 **204/206（6.2m）**，仅日历未授权和窗口焦点两项，W5 与全部写作用例通过；日志 `/private/tmp/jarvis-writing-w5-smoke-verified.log`。未跳过、删除或放宽这两条断言，不将完整门禁称为通过。
+- 最终 2,000 文件性能证据：`apps/desktop/test-results/5e5e071c-2aa4-4a5e-b783-a9d4507d7e3e/writing-graph-2000-file-gr-745a0-ew-and-interactive-panorama/performance.json`，mini 619ms / full 782ms。最终共鸣点浅深截图在 `apps/desktop/test-results/d17e10d4-4269-4f9e-8159-a27f658e90c2/writing-agent-writing-Agen-c2325--and-rejects-stale-versions/w5-resonance-light.png` / `w5-resonance-dark.png`，截图等待侧栏收起动画结束，专项再次 1/1（8.9s）通过；应用代码未再改动。
+- 未签名 macOS arm64 最终目录包 `release/01c6fca1-c6db-435b-80b1-204dc172c828`，`verify-packaged-writing.mjs --rich --graph` 验证 **593 项生产依赖**、ASAR 原生启动、富模块、星图动态加载/全景与实际编辑保存通过，无 pageerror。截图目录 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-GH7xhF/`（writing-blocks.png、writing-graph.png）。版本仍 0.4.0，未发布。
+
+### 边界与取舍
+
+- 排布由实际文件/引用计算，不照抄评审样张的静态坐标；时间轴依据文件 birthtime 和引用来源 mtime 近似，不宣称恢复历史正文。
+- link 通道增加明确的 repair/undo 动作，是为复用同一来源文档版本校验和账本，不新增通用编辑能力。已有“关联”段若不在最后，追加到该段结束处，避免把链接写入其他标题下；没有该段则在文末创建。
+- 真实模型服务、其他操作系统和 Claude 逐像素验收仍待进行；不将本轮模拟服务或未签名本地目录包称为发布。
+
+## W6
 
 尚未开始。
