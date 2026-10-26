@@ -53,7 +53,7 @@ export function ProjectSidebar({
     try {
       osValue(await osBridge().setCurrentProject(projectId));
       const project = snapshot.projects.find((p) => p.id === projectId);
-      if (project) onOpen(project.coordinatorId, '协调对话');
+      if (project) onOpen(project.coordinatorId, 'Jarvis Chat');
     } catch (error) {
       onError(error instanceof Error ? error.message : '切换项目失败');
     }
@@ -64,7 +64,7 @@ export function ProjectSidebar({
       const created = osValue(await osBridge().getSnapshot()).snapshot.projects.find(
         (p) => p.id === id,
       );
-      if (created) onOpen(created.coordinatorId, '协调对话');
+      if (created) onOpen(created.coordinatorId, 'Jarvis Chat');
     } catch (error) {
       onError(error instanceof Error ? error.message : '新建项目失败');
     }
@@ -121,6 +121,19 @@ export function ProjectSidebar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <SidebarItem
+        data-testid="side-link"
+        aria-label="打开 Jarvis Chat"
+        icon={<MessageCircle />}
+        meta={current ? relativeTime(current.updatedAt, now) : undefined}
+        selected={current ? selected(current.coordinatorId) : place?.kind === 'home'}
+        onClick={(e) =>
+          onOpen(current?.coordinatorId ?? null, 'Jarvis Chat', e.metaKey || e.ctrlKey)
+        }
+      >
+        Jarvis Chat
+        {current && current.coordinatorId in snapshot.runs && <span aria-label="回复中"> •</span>}
+      </SidebarItem>
       {current && (
         <SidebarItem
           data-testid="overview-link"
@@ -132,17 +145,6 @@ export function ProjectSidebar({
           Overview
         </SidebarItem>
       )}
-      <SidebarItem
-        data-testid="side-link"
-        aria-label="打开协调对话"
-        icon={<MessageCircle />}
-        meta={current ? relativeTime(current.updatedAt, now) : undefined}
-        selected={current ? selected(current.coordinatorId) : place?.kind === 'home'}
-        onClick={(e) => onOpen(current?.coordinatorId ?? null, '协调对话', e.metaKey || e.ctrlKey)}
-      >
-        协调对话
-        {current && current.coordinatorId in snapshot.runs && <span aria-label="回复中"> •</span>}
-      </SidebarItem>
       <div data-testid="thread-list" className="shell-chat-history" aria-label="线程">
         {active.length > 0 && (
           <section className="shell-chat-group" aria-label="线程">

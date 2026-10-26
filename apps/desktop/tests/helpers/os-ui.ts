@@ -26,5 +26,5 @@ export async function approveInOverview(page: Page, texts: string[], screenshot?
   if (screenshot) await page.screenshot({ path: screenshot });
   await card.getByRole('button', { name: '批准执行' }).click();
   await expect(card).toHaveCount(0);
-  await page.getByRole('button', { name: '打开协调对话' }).click();
+  await page.getByRole('button', { name: '打开 Jarvis Chat' }).click();
 }

@@ -60,7 +60,7 @@ test('a folder authorized in settings lets Jarvis overwrite a file after approva
     await expect(page.getByTestId('os-sidebar-foot')).toHaveText('2 个可访问目录');
     await page.screenshot({ path: test.info().outputPath('file-access.png') });
 
-    await page.getByRole('button', { name: '返回协调对话' }).click();
+    await page.getByRole('button', { name: '返回 Jarvis Chat' }).click();
     await page.getByLabel('消息', { exact: true }).fill('在待办里加上取快递');
     await page.getByRole('button', { name: '发送消息' }).click();
     await approveInOverview(

@@ -2,6 +2,11 @@
 
 最后更新：2026-10-26
 
+## 首页侧栏「Jarvis Chat」置顶（2026-10-26）
+
+- 用户要求首页项目侧栏两行互换并改名：原「协调对话」移到 Overview 上方，名称改为「Jarvis Chat」。`ProjectSidebar.tsx` 调整顺序；渲染层面向用户的名称同步改为 Jarvis Chat（侧栏行、标签标题、对话页标题、「打开/返回 Jarvis Chat」按钮、空线程提示、项目设置说明、写作右侧栏说明）。主进程给模型的提示词仍称「协调对话」，未改。本轮未修改 Figma。
+- 验证：check/build 通过；os-ui/agent/agent-files-ui/window-shell/smoke 9/9 通过（测试中按钮名同步更新）；深色真实窗口截图确认 Jarvis Chat 在上、Overview 在下，对话页标题为 Jarvis Chat。
+
 ## 左侧空间导航选中态恢复（2026-10-26）
 
 - 用户反馈左侧首页/AIGC/写作/日历/设置按钮在当前页面时没有选中高亮。原因：`Toggle` 外包 `Tooltip`（Radix asChild）时 `data-state` 被改写为提示状态 `closed`，`.ui-toggle[data-state='on']` 永不命中；标题栏右侧助手开关同样受影响。

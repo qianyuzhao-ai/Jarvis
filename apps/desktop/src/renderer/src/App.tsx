@@ -193,7 +193,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           : {
               kind,
               ref: kind === 'settings' ? 'general' : null,
-              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : '协调对话',
+              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : 'Jarvis Chat',
             },
       true,
     );
@@ -417,7 +417,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === 't') {
         e.preventDefault();
-        void shortcuts.current.open({ kind: 'chat', ref: null, title: '协调对话' }, true);
+        void shortcuts.current.open({ kind: 'chat', ref: null, title: 'Jarvis Chat' }, true);
       } else if (mod && e.key.toLowerCase() === 'w') {
         e.preventDefault();
         void shortcuts.current.close(s.activeId);
@@ -522,7 +522,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         }
         onActivate={(id) => void activate(id)}
         onClose={(id) => void close(id)}
-        onNew={() => void open({ kind: 'chat', ref: null, title: '协调对话' }, true)}
+        onNew={() => void open({ kind: 'chat', ref: null, title: 'Jarvis Chat' }, true)}
         onTravel={(n) => void travel(n)}
         onSpace={(kind) => void space(kind)}
       >

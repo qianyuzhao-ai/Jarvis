@@ -95,7 +95,7 @@ function ConversationTab({
   const os = useOsSnapshot();
   // With no session, the tab shows the current project's conversation.
   const id = sessionId ?? os.current?.coordinatorId ?? null;
-  const agent = useAgent(id, (created) => onPlace(created, '协调对话'));
+  const agent = useAgent(id, (created) => onPlace(created, 'Jarvis Chat'));
   if (agent.thread) return <ThreadPage agent={agent} onOpen={onOpen} onConfigure={onConfigure} />;
   return <CoordinatorPage agent={agent} onOpen={onOpen} onConfigure={onConfigure} />;
 }
@@ -117,7 +117,7 @@ function CoordinatorPage({
   const header = project && (
     <header className="os-view-header" data-testid="coordinator-header">
       <div>
-        <strong>协调对话</strong>
+        <strong>Jarvis Chat</strong>
         <span>{project.title} · Jarvis 理解你的话，把工作分给线程，并汇总结果</span>
       </div>
       <Button variant="ghost" size="sm" onClick={() => onOpen(overviewRef(project.id), 'Overview')}>
@@ -195,8 +195,8 @@ function ThreadPage({
       <IconButton
         variant="ghost"
         size="icon-sm"
-        aria-label="返回协调对话"
-        onClick={() => onOpen(project.coordinatorId, '协调对话')}
+        aria-label="返回 Jarvis Chat"
+        onClick={() => onOpen(project.coordinatorId, 'Jarvis Chat')}
       >
         <ChevronLeft size={16} />
       </IconButton>
@@ -243,7 +243,7 @@ function ThreadPage({
       agent={agent}
       onConfigure={onConfigure}
       header={header}
-      placeholder="直接对这个线程说（不经过协调对话）…"
+      placeholder="直接对这个线程说（不经过 Jarvis Chat）…"
       before={<Checklist items={thread.checklist} />}
       after={
         thread.decisions.length ? (
@@ -345,7 +345,7 @@ export function OverviewView({ projectId, onOpen }: { projectId: string; onOpen:
       <div className="os-page-scroll">
         <div className="os-page-body">
           {!threads.length && (
-            <p className="os-muted">还没有线程。在协调对话里说一件事，Jarvis 会开线程去做。</p>
+            <p className="os-muted">还没有线程。在 Jarvis Chat 里说一件事，Jarvis 会开线程去做。</p>
           )}
           {group(
             '等你',
@@ -474,14 +474,14 @@ export function ProjectSettingsView({
         <IconButton
           variant="ghost"
           size="icon-sm"
-          aria-label="返回协调对话"
-          onClick={() => onOpen(project.coordinatorId, '协调对话')}
+          aria-label="返回 Jarvis Chat"
+          onClick={() => onOpen(project.coordinatorId, 'Jarvis Chat')}
         >
           <ChevronLeft size={16} />
         </IconButton>
         <div>
           <strong>项目设置</strong>
-          <span>一个项目就是一个 Jarvis：自己的协调对话、线程、记忆和可访问目录</span>
+          <span>一个项目就是一个 Jarvis：自己的 Jarvis Chat、线程、记忆和可访问目录</span>
         </div>
         <span role="status" className="os-muted">
           {status}
@@ -643,7 +643,7 @@ export function ProjectSettingsView({
                     )
                       return;
                     await run(async () => osValue(await osBridge().removeProject(projectId)), '');
-                    onOpen(null, '协调对话');
+                    onOpen(null, 'Jarvis Chat');
                   })()
                 }
               >

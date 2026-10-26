@@ -111,7 +111,8 @@ export function WritingAgentSidebar({
         <div className="space-thread-note">
           <strong>文档没打开时</strong>
           <span>
-            协调对话开的线程也能改这篇文档：每次修改前核对版本，直接保存到文件，并留可撤销记录。文档打开时改动进编辑器，保持未保存。
+            Jarvis Chat
+            开的线程也能改这篇文档：每次修改前核对版本，直接保存到文件，并留可撤销记录。文档打开时改动进编辑器，保持未保存。
           </span>
         </div>
       }
