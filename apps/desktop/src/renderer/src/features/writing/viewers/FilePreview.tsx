@@ -50,8 +50,12 @@ export function FilePreview({
       </div>
       <footer>
         <span>
-          {dimensions}
-          {document.size !== undefined ? ` · ${(document.size / 1024).toFixed(1)} KB` : ''}
+          {[
+            dimensions,
+            document.size !== undefined ? `${(document.size / 1024).toFixed(1)} KB` : '',
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </span>
         {type === 'image' && (
           <>

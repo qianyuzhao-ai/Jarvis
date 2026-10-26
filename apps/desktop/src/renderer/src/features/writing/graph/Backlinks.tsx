@@ -1,10 +1,35 @@
 import { useState } from 'react';
+import { ChevronRight, FileText } from '@jarvis/ui/icons';
 import { Button } from '@jarvis/ui/components/Button';
 import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
 import { useConfirm } from '@jarvis/ui/components/AlertDialog';
 import { ResonanceCards } from './ResonanceCards';
 import type { GraphWorkspace } from './use-writing-graph';
+import type { GraphLink } from '../../../../../shared/writing-graph';
 import './graph.css';
+
+function plain(text: string) {
+  return text
+    .replace(
+      /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]+))?\]\]/g,
+      (_, target, alias) => alias ?? target,
+    )
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+)/gm, '')
+    .replace(/(\*\*|__|~~|`)/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function backlinkSnippet(link: Pick<GraphLink, 'from' | 'to' | 'context'>) {
+  const start = Math.max(0, link.from - 40);
+  const offset = link.from - start;
+  const end = Math.min(link.context.length, offset + link.to - link.from);
+  return {
+    before: `${start ? '…' : ''}${plain(link.context.slice(0, offset)).trimStart()}`,
+    mark: plain(link.context.slice(offset, end)),
+    after: plain(link.context.slice(end)).trimEnd(),
+  };
+}
 export function Backlinks({
   workspace,
   rootId,
@@ -24,25 +49,39 @@ export function Backlinks({
   return (
     <section className="writing-backlinks" aria-label="文档关联">
       <details>
-        <summary>连接到此文的点（{incoming.length}）</summary>
-        {incoming.map((link, index) => (
-          <div className="writing-backlink" key={`${link.source}:${index}`}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => onOpen(link.source, e.metaKey || e.ctrlKey)}
-            >
-              {link.source}
-            </Button>
-            <p>{link.context}</p>
-          </div>
-        ))}
+        <summary>
+          <ChevronRight aria-hidden className="writing-backlinks-chevron" />
+          连接到此文的点（{incoming.length}）
+        </summary>
+        {incoming.map((link, index) => {
+          const snippet = backlinkSnippet(link);
+          return (
+            <div className="writing-backlink" key={`${link.source}:${index}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => onOpen(link.source, e.metaKey || e.ctrlKey)}
+              >
+                <FileText aria-hidden />
+                {link.source}
+              </Button>
+              <p>
+                {snippet.before}
+                <mark>{snippet.mark}</mark>
+                {snippet.after}
+              </p>
+            </div>
+          );
+        })}
         {!incoming.length && <p>还没有文档链接到这里。</p>}
       </details>
       <ResonanceCards workspace={workspace} rootId={rootId} path={path} onOpen={onOpen} />
       {!!broken.length && (
         <details>
-          <summary>失效链接（{broken.length}）</summary>
+          <summary>
+            <ChevronRight aria-hidden className="writing-backlinks-chevron" />
+            失效链接（{broken.length}）
+          </summary>
           <NativeSelect
             aria-label="修复链接目标"
             value={target}

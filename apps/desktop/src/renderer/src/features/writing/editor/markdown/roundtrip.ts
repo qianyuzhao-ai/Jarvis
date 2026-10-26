@@ -122,6 +122,22 @@ export function parse(markdown: string) {
   });
   return { doc, blocks: blockRanges(doc) };
 }
+/**
+ * Keeps how the author wrote a list: tight or loose, per list and per item, taken from the
+ * block's previous source. Lists without a counterpart stay tight (see `toAst`).
+ */
+function keepSpread(next: Ast, previous?: Ast) {
+  if (
+    (next.type === 'list' || next.type === 'listItem') &&
+    previous?.type === next.type &&
+    typeof previous.spread === 'boolean'
+  )
+    next.spread = previous.spread;
+  next.children?.forEach((child, index) => {
+    const counterpart = previous?.children?.[index];
+    keepSpread(child, counterpart?.type === child.type ? counterpart : undefined);
+  });
+}
 export function blockText(node: PMNode): string {
   const json = node.toJSON() as JSONContent;
   if (typeof node.attrs.source === 'string' && node.attrs.sourceHash === fingerprint(json))
@@ -129,23 +145,31 @@ export function blockText(node: PMNode): string {
   if (node.type.name === 'rawBlock') return node.attrs.raw;
   const old: string = node.attrs.source ?? '';
   const bullet = /^\s*([*+-])\s/.exec(old)?.[1] as '*' | '+' | '-' | undefined;
+  const ordered = /^\s*\d+([.)])\s/.exec(old)?.[1] as '.' | ')' | undefined;
   const fence = /^\s*(~{3,}|`{3,})/.exec(old)?.[1];
   const ast = toAst(json);
+  if (ast.type === 'list') keepSpread(ast, (parser.parse(old) as Ast).children?.[0]);
+  const firstLine = old.split(/\r?\n/)[0] ?? '';
   const writer = unified()
     .use(remarkGfm)
     .use(remarkStringify, {
       handlers: { text: writingTextHandler },
       bullet: bullet ?? '-',
+      bulletOrdered: ordered ?? '.',
       emphasis: /(^|\W)\*[^*]/.test(old) ? '*' : '_',
       strong: old.includes('__') ? '_' : '*',
       fences: true,
       fence: fence?.[0] === '~' ? '~' : '`',
+      setext: ast.type === 'heading' && /^\s{0,3}(=+|-+)\s*$/m.test(old.split(/\r?\n/)[1] ?? ''),
+      closeAtx: ast.type === 'heading' && /^#{1,6}\s.*\s#+\s*$/.test(firstLine),
     });
   let result = writer
     .stringify({ type: 'root', children: [ast] } as Parameters<typeof writer.stringify>[0])
     .replace(/\n$/, '');
   if (fence && fence.length > 3 && ast.type === 'code')
     result = result.replace(/^(`{3,}|~{3,})/, fence).replace(/(`{3,}|~{3,})$/, fence);
+  if (/^\s*(?:[-*+]|\d+[.)])\s+\[X\]/m.test(old))
+    result = result.replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[x\]/gm, '$1[X]');
   if (old.includes('\r\n')) result = result.replace(/\n/g, '\r\n');
   return result;
 }

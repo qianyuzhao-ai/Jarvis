@@ -5,6 +5,7 @@ import {
   Position,
   useReactFlow,
   useNodesInitialized,
+  useStore,
   type NodeProps,
   type Node,
   type Edge,
@@ -41,12 +42,50 @@ function Dot({ data }: NodeProps<DotNode>) {
   );
 }
 const nodeTypes = { dot: Dot };
-function FitGraph({ signature }: { signature: string }) {
-  const { fitView } = useReactFlow();
+/** Labels stay readable in the sidebar (11px text at no less than this zoom). */
+const MINI_MIN_ZOOM = 0.9;
+const DOT_BOX = { width: 96, height: 52 };
+function FitGraph({ signature, center }: { signature: string; center?: string }) {
+  const { fitView, getEdges, getNode, setViewport } = useReactFlow();
   const initialized = useNodesInitialized();
+  const width = useStore((state) => state.width),
+    height = useStore((state) => state.height);
   useEffect(() => {
-    if (initialized) void fitView({ padding: 0.2, maxZoom: 1, duration: 0 });
-  }, [signature, initialized, fitView]);
+    if (!width || !height) return;
+    if (!center) {
+      if (initialized) void fitView({ padding: 0.2, maxZoom: 1, duration: 0 });
+      return;
+    }
+    // Sidebar: frame the current document and its 1–2 degree neighbours at a readable zoom.
+    // Off-screen nodes are never measured here, so the bounds use the fixed dot size.
+    const edges = getEdges();
+    const ids = new Set([center]);
+    for (let degree = 0; degree < 2; degree++) {
+      const reached = [...ids];
+      for (const edge of edges) {
+        if (reached.includes(edge.source)) ids.add(edge.target);
+        if (reached.includes(edge.target)) ids.add(edge.source);
+      }
+    }
+    const points = [...ids].flatMap((id) => getNode(id)?.position ?? []);
+    if (!points.length) return;
+    const left = Math.min(...points.map((p) => p.x)),
+      top = Math.min(...points.map((p) => p.y)),
+      right = Math.max(...points.map((p) => p.x)) + DOT_BOX.width,
+      bottom = Math.max(...points.map((p) => p.y)) + DOT_BOX.height;
+    const zoom = Math.min(
+      1,
+      Math.max(MINI_MIN_ZOOM, Math.min(width / (right - left + 32), height / (bottom - top + 32))),
+    );
+    void setViewport(
+      {
+        x: width / 2 - ((left + right) / 2) * zoom,
+        y: height / 2 - ((top + bottom) / 2) * zoom,
+        zoom,
+      },
+      { duration: 0 },
+    );
+  }, [signature, initialized, fitView, getEdges, getNode, setViewport, center, width, height]);
   return null;
 }
 export default function GraphView({
@@ -101,7 +140,14 @@ export default function GraphView({
       (link): link is typeof link & { target: string } =>
         !!link.target && all.has(link.source) && all.has(link.target),
     );
-    return { dots, positions: layoutGraph(dots, links, path) };
+    // Tag groups pull their members together in the sidebar view, as their edges show.
+    const tagLinks = mini
+      ? graph.tags.flatMap((group) => {
+          const members = group.paths.filter((item) => all.has(item));
+          return members.slice(1).map((target) => ({ source: members[0]!, target }));
+        })
+      : [];
+    return { dots, positions: layoutGraph(dots, [...links, ...tagLinks], path, mini) };
   }, [graph, path, mini, workspace.candidates]);
   const model = useMemo(() => {
     if (!graph) return { nodes: [] as DotNode[], edges: [] as Edge[] };
@@ -239,8 +285,8 @@ export default function GraphView({
             nodes={model.nodes}
             edges={model.edges}
             nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: mini ? 0.25 : 0.12, maxZoom: 1 }}
+            fitView={!mini}
+            fitViewOptions={{ padding: 0.12, maxZoom: 1 }}
             minZoom={0.05}
             maxZoom={2}
             nodesDraggable={false}
@@ -260,6 +306,7 @@ export default function GraphView({
             proOptions={{ hideAttribution: true }}
           >
             <FitGraph
+              center={mini ? path : undefined}
               signature={model.nodes
                 .map((node) => `${node.id}:${node.position.x}:${node.position.y}`)
                 .join('|')}

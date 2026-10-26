@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, symlink } from 'node:fs/promises';
+import { link, mkdir, readFile, writeFile, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { WritingFiles } from '../src/main/writing/files';
@@ -151,4 +151,23 @@ test('writing asset responses support bounded ranges and reject non-media and tr
       )
     ).status,
   ).toBe(405);
+});
+
+test('writing trash ignores system junk files and allows case-only renames', async () => {
+  const { files, root, directory, trashed } = await fixture();
+  await files.create(root.id, '', 'junk', 'directory');
+  await writeFile(join(directory, 'junk/.DS_Store'), '');
+  await writeFile(join(directory, 'junk/Thumbs.db'), '');
+  await files.create(root.id, '', 'hidden', 'directory');
+  await writeFile(join(directory, 'hidden/.notes'), 'keep');
+  await expect(files.trash(root.id, 'hidden')).rejects.toThrow('不为空');
+  await files.trash(root.id, 'junk');
+  expect(trashed).toEqual([join(directory, 'junk')]);
+  await files.create(root.id, '', 'note', 'file');
+  expect((await files.rename(root.id, 'note.md', 'Note.md')).path).toBe('Note.md');
+  if (process.platform !== 'win32') {
+    await files.create(root.id, '', 'other', 'file');
+    await link(join(directory, 'other.md'), join(directory, 'OTHER-copy.md'));
+    await expect(files.rename(root.id, 'other.md', 'OTHER-copy.md')).rejects.toThrow('同名');
+  }
 });

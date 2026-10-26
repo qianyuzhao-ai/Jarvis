@@ -28,6 +28,8 @@ const registrySchema = z.array(
   z.object({ id: z.string(), name: z.string(), directory: z.string() }),
 );
 const limit = 4 * 1024 * 1024;
+// 系统自动生成、目录树也不显示的文件，不阻止移除空文件夹。
+const SYSTEM_JUNK = /^(?:\.DS_Store|\.localized|\._.*|Thumbs\.db|desktop\.ini)$/i;
 const revision = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const normalize = (value: string) => value.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
 export class WritingConflict extends Error {}
@@ -264,12 +266,18 @@ export class WritingFiles {
         : {}),
     };
   }
-  private async absent(path: string) {
+  private async absent(path: string, source?: string) {
+    let existing: Awaited<ReturnType<typeof lstat>>;
     try {
-      await lstat(path);
+      existing = await lstat(path);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
       throw error;
+    }
+    // 大小写不敏感的文件系统上只改大小写时，目标就是来源本身。
+    if (source && source.toLowerCase() === path.toLowerCase()) {
+      const original = await lstat(source);
+      if (original.dev === existing.dev && original.ino === existing.ino) return;
     }
     throw new WritingConflict('已存在同名文件');
   }
@@ -280,7 +288,7 @@ export class WritingFiles {
     const target = join(parent, validateEntryName(name));
     if (target === source || target.startsWith(source + sep))
       throw new Error('不能移到自身或子目录');
-    await this.absent(target);
+    await this.absent(target, source);
     await rename(source, target);
     return this.entry(rootId, [directory, name].filter(Boolean).join('/'));
   }
@@ -318,7 +326,8 @@ export class WritingFiles {
       if (!path) throw new Error('不能移除授权文件夹本身');
       const target = await this.location(rootId, path);
       const info = await lstat(target);
-      if (info.isDirectory() && (await readdir(target)).length) throw new Error('文件夹不为空');
+      if (info.isDirectory() && (await readdir(target)).some((name) => !SYSTEM_JUNK.test(name)))
+        throw new Error('文件夹不为空');
       if (!info.isFile() && !info.isDirectory()) throw new Error('不支持这个文件类型');
       if (!this.native) throw new Error('废纸篓不可用');
       await this.native.trash(target);

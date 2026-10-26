@@ -12,6 +12,7 @@ export interface Ast {
   ordered?: boolean;
   start?: number | null;
   checked?: boolean | null;
+  spread?: boolean | null;
   lang?: string | null;
   url?: string;
   title?: string | null;
@@ -153,12 +154,14 @@ export function toAst(node: JSONContent): Ast {
         type: 'list',
         ordered: node.type === 'orderedList',
         start: node.attrs?.start ?? 1,
+        spread: false,
         children: children(),
       };
     case 'listItem':
     case 'taskItem':
       return {
         type: 'listItem',
+        spread: false,
         ...(node.type === 'taskItem' ? { checked: !!node.attrs?.checked } : {}),
         children: children(),
       };

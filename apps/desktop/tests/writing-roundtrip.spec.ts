@@ -69,3 +69,60 @@ test('editing a paragraph retains wiki syntax instead of escaping reference brac
   json.content[0].content[0].text += ' more';
   expect(serialize(writingSchema.nodeFromJSON(json))).toContain('[[note|alias]]');
 });
+
+test('an edited block keeps tight or loose lists, ordered delimiters, heading style and [X]', () => {
+  const edit = (source: string) => {
+    const { doc } = parse(source);
+    const json = doc.toJSON();
+    const walk = (node: { text?: string; content?: unknown[] }): boolean => {
+      if (typeof node.text === 'string') {
+        node.text += 'Z';
+        return true;
+      }
+      return ((node.content ?? []) as { text?: string; content?: unknown[] }[]).some(walk);
+    };
+    walk(json.content[0]);
+    return serialize(writingSchema.nodeFromJSON(json));
+  };
+  expect(edit('* a\n* b\n')).toBe('* aZ\n* b\n');
+  expect(edit('- a\n\n- b\n')).toBe('- aZ\n\n- b\n');
+  expect(edit('1) one\n2) two\n')).toBe('1) oneZ\n2) two\n');
+  expect(edit('7. seven\n8. eight\n')).toBe('7. sevenZ\n8. eight\n');
+  expect(edit('- a\n  - nested\n  - more\n- b\n')).toBe('- aZ\n  - nested\n  - more\n- b\n');
+  expect(edit('- [X] done\n- [ ] todo\n')).toBe('- [X] doneZ\n- [ ] todo\n');
+  expect(edit('Title\n=====\n')).toBe('TitleZ\n======\n');
+  expect(edit('## Head ##\n')).toBe('## HeadZ ##\n');
+});
+
+test('unusual CommonMark and GFM sources roundtrip byte-for-byte', () => {
+  const samples = [
+    'Title\n=====\n\nSub\n---\n\nbody\n',
+    'para\n\n    code line 1\n    code line 2\n\nafter\n',
+    '- item one\ncontinued lazily\n- item two\n  > quote in list\n',
+    'line one  \nline two\\\nline three\n',
+    '\\*not em\\* \\_x\\_ \\# not heading &amp; &nbsp; &copy;\n',
+    'See [docs][1] and [site].\n\n[1]: https://a.example/x "Title"\n[site]: <https://b.example>\n',
+    'Go <https://a.example> or https://b.example/path?q=1 now.\n',
+    '| a | b |\n|:--|--:|\n| `x|y` | c \\| d |\n',
+    'Text[^1].\n\n[^1]: The note\n    with continuation.\n',
+    '$$\nE = mc^2\n$$\n',
+    '<!-- hidden -->\n\nVisible\n',
+    '*a* _b_ ***c*** ~~d~~ ~e~ **中文**，后面\n',
+    '1) one\n2) two\n',
+    '***\n\n___\n\n- - -\n',
+    '# H\n\nlast line without newline',
+    'para\n\n\n\n',
+    '-\titem with tab\n\n\tcode by tab\n',
+    '## Title ##\n\n### Other ###   \n',
+    '````md\n```js\ninner\n```\n````\n',
+    '![alt text](img/a.png "A title") and [link](<a b.md>)\n',
+    '1. first\n    - nested a\n    - nested b\n2. second\n\n   continuation para\n',
+    'para one\n   \npara two\n',
+    'Text with <kbd>Ctrl</kbd> and <br> inline.\n',
+  ];
+  for (const source of samples) {
+    const { doc } = parse(source);
+    doc.check();
+    expect(serialize(doc), JSON.stringify(source)).toBe(source);
+  }
+});

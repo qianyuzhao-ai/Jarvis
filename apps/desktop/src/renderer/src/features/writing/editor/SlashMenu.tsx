@@ -161,9 +161,14 @@ export function SlashMenu({
     if (!visible) return;
     const place = () => {
       const box = editor.view.coordsAtPos(editor.state.selection.$from.start());
+      // Below the line when the menu's real height fits; above it only when it does not.
+      const height = host.current?.offsetHeight || 400;
       setPosition({
         left: Math.max(8, Math.min(window.innerWidth - 328, box.left)),
-        top: box.bottom + 408 <= window.innerHeight ? box.bottom + 8 : Math.max(8, box.top - 400),
+        top:
+          box.bottom + 8 + height <= window.innerHeight - 8
+            ? box.bottom + 8
+            : Math.max(8, box.top - 8 - height),
       });
     };
     place();

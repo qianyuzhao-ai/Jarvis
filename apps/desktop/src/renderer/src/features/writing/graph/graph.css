@@ -221,8 +221,23 @@
     color: var(--color-fg-secondary);
   }
   .writing-backlinks summary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     cursor: pointer;
     padding: 8px 0;
+    list-style: none;
+  }
+  .writing-backlinks summary::-webkit-details-marker {
+    display: none;
+  }
+  .writing-backlinks-chevron {
+    width: 14px;
+    height: 14px;
+    transition: transform 120ms ease;
+  }
+  .writing-backlinks details[open] > summary .writing-backlinks-chevron {
+    transform: rotate(90deg);
   }
   .writing-backlinks .writing-resonances {
     margin-top: 12px;
@@ -238,7 +253,14 @@
   .writing-backlink p {
     width: 100%;
     margin: 0;
+    padding-left: 8px;
     font-size: 11px;
+    line-height: 16px;
+  }
+  .writing-backlink mark {
+    background: transparent;
+    color: var(--color-accent);
+    font-weight: 600;
   }
 }
 @layer utilities {

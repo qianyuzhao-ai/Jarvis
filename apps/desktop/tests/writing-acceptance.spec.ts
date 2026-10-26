@@ -81,6 +81,8 @@ test('writing acceptance captures eight page states and serves an actual PDF pre
     await files.getByRole('button', { name: '周报草稿.md', exact: true }).click();
     await page.getByRole('button', { name: '展开右侧栏', exact: true }).click();
     await expect(page.getByTestId('writing-mindmap')).toContainText('写作空间');
+    await expect(page.getByLabel('文档标题')).toHaveCSS('font-weight', '700');
+    await expect(page.getByLabel('文档标题')).toHaveCSS('font-size', '32px');
     await screenshots(page, '01-blocks');
     expect(await readFile(join(folder, '周报草稿.md'), 'utf8')).toBe(blocks);
     await files.getByRole('button', { name: '命令与关联.md', exact: true }).click();
@@ -96,10 +98,28 @@ test('writing acceptance captures eight page states and serves an actual PDF pre
       .getByRole('region', { name: '文档关联' })
       .getByRole('button', { name: '十月复盘.md' })
       .scrollIntoViewIfNeeded();
+    // The menu sits right below the line that opened it (or right above when there is no room).
+    const line = (await editor.getByText('/导图', { exact: true }).boundingBox())!;
+    const menu = (await page.getByRole('listbox', { name: '插入块' }).boundingBox())!;
+    const gap =
+      menu.y >= line.y ? menu.y - (line.y + line.height) : line.y - (menu.y + menu.height);
+    expect(gap).toBeGreaterThanOrEqual(0);
+    expect(gap).toBeLessThanOrEqual(16);
     await screenshots(page, '02-slash-backlinks');
     await editor.press('Escape');
     await editor.press('ControlOrMeta+z');
     await page.getByRole('tab', { name: '星图', exact: true }).click();
+    const viewport = page.getByTestId('writing-graph-mini').locator('.react-flow__viewport');
+    await expect
+      .poll(async () =>
+        Number(/scale\(([\d.]+)\)/.exec((await viewport.getAttribute('style')) ?? '')?.[1] ?? 0),
+      )
+      .toBeGreaterThanOrEqual(0.9);
+    const mini = page.getByTestId('writing-graph-mini');
+    const pane = (await mini.locator('.react-flow').boundingBox())!;
+    const current = (await mini.locator('.writing-dot.is-active').boundingBox())!;
+    expect(Math.abs(current.x + current.width / 2 - (pane.x + pane.width / 2))).toBeLessThan(48);
+    expect(current.y).toBeGreaterThan(pane.y + 24);
     await page
       .getByTestId('writing-graph-mini')
       .getByRole('button', { name: '在编辑区展开全景' })

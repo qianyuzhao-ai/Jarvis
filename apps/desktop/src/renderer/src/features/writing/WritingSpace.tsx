@@ -742,7 +742,7 @@ export function WritingSpace({
                 ? '请选择文档'
                 : '尚未打开文件夹'}
           </span>
-          <span>已选 {selectedParagraphs} 段</span>
+          {!preview && <span>已选 {selectedParagraphs} 段</span>}
           <span>
             {active && !preview
               ? `${Array.from(active.content.replace(/\s/g, '')).length} 字 · ${active.fileType === 'text' ? '文本' : 'Markdown'} · UTF-8`
