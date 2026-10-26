@@ -1,0 +1,254 @@
+# 写作空间重新设计实施记录
+
+最后更新：2026-10-26
+
+## 授权与基线
+
+用户要求执行 `writing-space-plan.md`。按计划实施 W1–W6、分阶段验证与提交推送功能分支；不创建 PR、不合并、不打标签或发布。每阶段必须通过验证，Claude 负责最终阶段验收。
+
+- 从 fetch 后的 `origin/develop`（`48d698e`，0.4.0）创建 `feature/writing-space`。
+- 合入原会话分支的三条方案/设计记录，`memory/design.md` 顶部冲突保留两侧内容，合并提交 `b982f02`。
+- 两份已有未跟踪文件 `writing-redesign-components-state.json`、`writing-redesign-components-scripts.json` 保留，不作为本轮实现新增文件。
+
+## W1：实现已保存，阶段门禁未通过
+
+实现提交：`631e6df`（`feat ✨️: 实现写作空间W1文件能力与多目录标签`）。
+
+### 已实现
+
+- 全格式列表与文件类型、文件大小/修改时间；文本白名单、严格 UTF-8 解码、BOM/CRLF 保留和版本冲突保护。首页 Agent 文档库仍只访问 Markdown。
+- 同根目录改名、移动、单文件副本、移入废纸篓（文件/空目录）、系统文件管理器定位；名称与路径检查、拒绝符号链接。所有应用写入按根串行；错误从 IPC 返回时不带系统绝对路径。
+- 图片资产 MIME/魔数/10 MiB 校验、assets 保存与同名同内容复用；专用 IPC、mainFrame/可信 URL 校验与活跃写入计数。
+- 目录监听 300ms 合并推送、窗口销毁释放、不可监听时保留 2.5s 轮询；所有已打开文本缓冲区外部变更检测。
+- `jarvis-writing://` 只读媒体协议、GET/Range/格式校验；CSP 增加该媒体/框架来源，不开放网络或通用文件接口。
+- 多文件夹标签、全局标签恢复、旧键一次性迁移；目录切换与打开其他根的文档不裁剪已打开标签。
+- 改名迁移主进程 Agent 会话/卡片/账本作用域，运行中或排队回复拒绝改名；renderer 同步文档 ID、标签历史、编辑器缓存与本轮撤销事务。
+- 目录行（28px、12px 层级、类型图标、徽标、行内改名、菜单、键盘与文件拖放）、文件/星图分段（W1 星图为空状态）、图片/PDF/音视频/二进制预览。文本使用源码视图；类型标签图标复用 Lucide 1.60。
+
+### 设计核对
+
+读取 Figma 文件 `mIwnyR5nAlECFMam1NvmER` 的 File Tree Row `461:38163`、File Preview `464:38503` 的设计上下文与截图。基础控件复用 V1 Button/Input/Badge/DropdownMenu/Dialog/Tabs；只在业务层组合，无新增颜色变量或检查器白名单。图标使用同版本 Lucide 的对应图标，经 `@jarvis/ui/icons` 导出。
+
+### 验证进度
+
+- 文件主进程 4 组测试通过：全格式/文本/BOM/CRLF/冲突，文件操作边界，资产格式/大小/符号链接，媒体 GET/Range/越界。
+- 原写作实窗 6/6 通过（重启单目录恢复、冲突另存、主题与布局等）；跨目录用例增加双根重启恢复，并在完整回归通过。
+- 写作 Agent 实窗通过，包括新增的改名后同轮撤销、恢复原名后继续 Agent 编辑；保留原版本冲突与越界断言。
+- 新目录实窗通过：F2 改名、修改保存新路径、创建副本、图片真实加载、二进制预览、文本打开；旧键迁移测试在完整回归通过；新增移动、定位与废纸篓确认（原生操作替身）实窗测试随后通过。
+- `pnpm check`、`pnpm build` 最终通过。完整 `pnpm test:smoke` 为 **182/183 通过（5.6m）**，唯一失败为既有 `agent-calendar-ui.spec.ts:77`（期望 7 天，实际 0 天）。只读隔离进程回读状态为 `{provider: apple, access: not_determined}`；没有申请权限、读取或修改个人日程，也没有跳过或删除断言。日志 `/private/tmp/jarvis-writing-w1-smoke.log`。
+- 完整回归后仅补充文件菜单用例并调整目录头部内边距、选中行背景；最终 check/build、目录实窗 **3/3（8.2s）** 通过。没有把这次专项复验称为全套通过。
+- 初轮失败及修复：更多按钮文件名模糊匹配；跨根打开替换标签；另存副本提前裁剪旧标签；新协议遗漏 CSP；目录行默认按钮居中。均保留失败证据并复验相关流程。
+- 图片/目录初步截图：`apps/desktop/test-results/a98ffb2c-ac89-4704-9bd1-a3c173ecac56/writing-tree-writing-tree--35fe4-images-and-duplicates-files/`。这些截图早于最终样式。最终目录浅深、图片预览截图在 `apps/desktop/test-results/d31efede-520d-493e-ad53-d9f0bd9d8b4e/writing-tree-writing-tree--35fe4-images-and-duplicates-files/`（`tree-light.png`、`tree-dark.png`、`preview-light.png`），已检查对齐与裁切；不替代 Claude 的逐像素设计验收。
+
+### 与旧测试的冲突处理
+
+`writing.spec.ts` 原“switching writing folders clears obsolete tabs”预期切换目录关闭其他目录标签，与本计划 W1.4 的新行为相反。改为验证两个目录标签保留、切换可读，并增加重启恢复；未删除读取/写入/冲突业务断言。这是需求变化对应的断言替换，非为通过测试放宽行为。
+
+### 尚未验收与实现取舍
+
+- W1 交付时完整回归仍有一项失败，且尚无 Claude 的验收结论；用户随后明确继续 W2，见下方授权补充，未将旧失败改写为通过。
+- 文本文件目前使用 CodeMirror 纯文本源码模式，未新增各语言的语法高亮依赖。文件预览中图片与二进制面板已有实窗验证；PDF 内置查看器已在 W6 补充实窗验证；音视频完整播放、Linux 监听降级、Windows 原生废纸篓/定位仍待目标环境验收。
+- 目录与预览复用现有 WritingSpace 宿主，目录行与预览独立为 `tree/FileTreeRow.tsx`、`viewers/FilePreview.tsx`；未另拆整份 WritingSidebar。范围与进程边界不变。
+- 无新增生产依赖；W6 打包与依赖总验收尚未执行。
+
+## W2：已实现，阶段证据见下方
+
+实现提交：`47655e3`（`feat ✨️: 实现写作W2无损块编辑与双视图`）。
+
+2026-10-26 用户明确要求“继续执行 W2”，本轮据此进入 W2，覆盖此前等待 W1 验收的执行限制；W1 日历失败与外部验收状态不改写为通过。
+
+步骤：转换层与样本 → 块编辑与增量同步 → 视图无关 Agent → 文档框架/块交互 → 实窗回归与打包依赖检查。
+
+依赖选择：Tiptap 3.31.4（npm 发布时间 2026-09-30，3.32.0 的 2026-10-13 发布时间不足两周，不选）。计划列表外显式加入 `@tiptap/core` 同版本，原因是本项目直接使用 Node/Extension/getSchema 等 API，避免依赖 pnpm 间接可见性。
+
+### W2 实现
+
+- 固定 Tiptap 3.31.4 全家族与 remark/unified 精确版本，未使用整体 Markdown 序列化插件。新增 `editor/markdown` 的 mdast ↔ ProseMirror 转换；顶层原文、原空白、规范化指纹与块 ID 保留。未知 HTML/脚注/引用定义及 W3 扩展块以不可编辑原文块呈现，源码入口可编辑。
+- Markdown 默认块视图，文本文件保持源码模式；按文档记住视图。两种视图共用 `DocumentSession.content`，块编辑使用最小文本补丁；外部更新保留未变化前后块，同块数时分别更新变化块。块范围与源文本选区双向映射。
+- `BufferView` 隔离 CodeMirror/Tiptap，未显示文档的 Agent 修改只更新缓冲区并清理缓存。保留 SHA-256 校验、15 秒租约、未保存标志、同轮事务撤销；块视图用 ProseMirror 历史元数据合并一轮 Agent 修改。源码缓存重新配置当前监听器，避免旧组件闭包写回。
+- 文档头部使用独立文件标题、Frontmatter icon 选择、路径/修改时间/字数；标题不会改正文 H1。图标修改只替换 YAML scalar 范围或追加 icon 键，其他字节保持。现有 read/save 响应增加可选 mtime 元数据，无新增 IPC。
+- 正文 680px 居中，大纲短线/展开导航、块句柄/添加/拖放指示/基础转换菜单、划选 BubbleMenu（粗斜删除线、代码、链接）与 AI 润色请求预填。双链候选复用 CandidateList；共享 `writing-links.ts` 排除代码与 URL 片段，失效引用显示危险色；图片粘贴/拖入经既有 saveAsset 与只读协议显示。
+- 未新增颜色变量或 token 检查器白名单。Figma 只读核对 Document Header `466:38578`；布局沿用计划的 `482:37226` / `482:38315` 目标，Figma 未写入。
+
+### W2 验证与修复
+
+- 19 个原创往返 fixture，覆盖 README 格式、双链/标签、中英混排、三种列表符号/起始值、任务列表、GFM 表格对齐、两种围栏、HTML、脚注、Frontmatter、CRLF、BOM、emoji、扩展块、空行、图片、接近 4 MiB 与嵌套图片复杂结构。fixture 目录使用 `.gitattributes` 禁止换行转换，保证 Windows checkout 仍覆盖原始 LF/CRLF/BOM。逐字节往返、单块最小差异、未知结构、Frontmatter scalar 与双链保留测试通过。
+- 块视图实窗验证 20 次视图往返、文本选区往返、打开不写盘、单块编辑、外部更新保留未改动 DOM、基础块转换、引用候选/新标签跳转、图片粘贴实际保存与加载、图标与标题改名。Agent 原测试改为块视图选区定位，业务断言保留并通过。
+- 原源码输入测试显式选择“源码”，副本/新文档验证默认块视图；保留更新前保存、冲突、CRLF、重启与跨目录行为断言。
+- 发现并关闭 StarterKit 的 trailingNode 默认扩展：自动尾段会在反复切换后累计空行。发现 remark 默认转义双链，增加文本 handler 保留双括号。
+- 首轮完整回归 **188/190（5.8m）**：日历环境失败保留；旧标签迁移失败定位到 Tiptap 在 React 提交前读取尚未挂载的 view.dom。改为 `immediatelyRender: false` 并等待初始化后挂载块控件/缓冲区接口，独立 **5/5（10.0s）** 复验通过。首轮日志 `/private/tmp/jarvis-writing-w2-smoke.log`，最终全套日志 `/private/tmp/jarvis-writing-w2-smoke-final.log`。
+- 第二轮完整回归 187/190（6.3m）：旧标签迁移已通过；保留日历环境失败。开发模式模型对话用例一次超时，独立复验通过。新增块转换断言定位到 Radix pointerdown 打开菜单早于 click，原目标未捕获而误转换相邻列表；改为 onOpenChange 固定目标与选区，并只从编辑器正文追踪悬停，转换完整流程通过。
+- 最终源码 check/build、写作/Agent/转换/文件树专项 **10/10（21.6s）** 通过。19 样本的 schema 有效性也校验，无法表示的复杂结构明确显示原文块，不把非法 ProseMirror 节点交给编辑器。
+- 最后完整回归 **189/190（5.8m）**，唯一为 macOS 日历未授权环境用例；旧标签迁移、块转换、开发模式模型对话、Agent、写作、更新均通过。日志 `/private/tmp/jarvis-writing-w2-verified.log`。之后仅补充复杂 Markdown 节点合法性检查与第 19 份嵌套图片 fixture，转换专项 **5/5（2.8s）** 通过；不把整套回归称为全绿。最终 check/build 通过。未签名 macOS arm64 目录包 `release/bd29bd32-641d-4ad9-bb8e-7d8fb658d299` 经新脚本 `node apps/desktop/scripts/verify-packaged-writing.mjs release/bd29bd32-641d-4ad9-bb8e-7d8fb658d299` 验证：**487 项生产依赖**、ASAR 原生启动、0.4.0、打开块编辑器、实际修改与保存均通过，无 pageerror。截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-rp5dcM/writing-blocks.png`。脚本独立于现有旧标签启动验证，避免影响历史版本发布重试。
+- 浅深块编辑截图：`apps/desktop/test-results/4ba08b30-dd7e-4e32-bb1d-a1d2ad617287/writing-blocks-blocks-open-fe5f8-switches-and-edit-one-block/blocks-light.png`、`blocks-dark.png`。已检查单行工具栏、680px 正文、标题与 H1 独立、大纲位置；Figma 阶段签收仍待 Claude。
+
+### W2 边界
+
+- W2 交付时 `+` 为基础块菜单、扩展模块为原文块；现已由下方 W3 升级。W4 的 AI 自动发送仍未实施，当前入口预填到写作助手，由用户发送。
+- Frontmatter/特殊扩展保留为原文块，复杂 HTML 不执行。混合图片与正文的同一 Markdown 段落使用原文块，独立图片可预览/插入。
+- 原生历史属于挂载的编辑器视图；缓存代次保证卸载不会重新放回已经失效的历史，切换视图是历史边界，块视图切换文档时重建本地历史。Agent 事务账本与跨标签同轮撤销独立保留。
+- Claude 的阶段视觉验收、其他操作系统真机、真实模型服务尚未验证；不将模拟服务或未签名本地目录包称为发布。
+
+## W3：已实现，完整门禁仍有基线限制
+
+实现提交：`d6a1bcb`（`feat ✨️: 实现写作W3命令面板与富模块`）。
+
+2026-10-26 用户明确要求“继续 W3”。继续保留日历环境限制和 Claude 待验收状态，不改写既有结果。
+
+依赖：Mermaid 12.1.0（2026-10-02；12.2.0 发布时间不足两周）、pinyin-pro 3.29.5（2026-10-10）、lowlight 3.3.0、CodeBlockLowlight 3.31.4。额外显式声明 highlight.js 11.12.0，原因是直接导入常用语言模块，避免依赖传递可见性。Mermaid 动态加载，不进入写作首屏依赖。
+
+### W3 实现
+
+- `/` 与块左侧 `+` 打开 320px 命令面板，最大高 400px；三组共 21 项，中文、拼音全拼/首字母、英文关键字筛选，上下键/Enter/Esc、无结果状态与组合输入保护。已有文档里的斜杠不会在打开时自动触发；Esc 后继续输入不反复弹出。AI 项走统一 `assistant-bridge.ts` 入口，保持预填与打开助手，W4 再完成自动发送/块上下文。
+- 富模块 schema 与 React NodeView 分离：纯转换测试不依赖 TSX。Callout 六类及可编辑标题/嵌套内容；Toggle 固定 details/summary Markdown 与仅在视图内展开；代码语言选择、lowlight 常用六种语言与复制；表格增删行列/列对齐；图片图注、缩放手柄与对齐。
+- Mermaid 动态导入，strict、禁止自动启动，保留库默认 secure 键并锁定主题/CSS等初始化配置；外观取现有 tokens。流程/时序/状态模板、源码/预览、错误与行提示、展开/全宽。真实请求事件验证写作首屏不请求 Mermaid core，插入图表后才请求；内嵌指令不能弱化 securityLevel 或覆盖全局 CSS。
+- 思维导图复用 React Flow，前端水平树布局；两空格缩进列表为唯一持久格式，坐标不写盘。Tab 子节点、Enter 同级、Delete（根不可删）、方向键、双击编辑、适应/全屏/全宽；无效格式或超出 1000 节点时保留可编辑源码并提示。
+- 全宽、折叠展开、图片宽度/对齐均为视图状态；保存仍为 UTF-8 Markdown。Agent 修改高亮为 info-subtle + accent 左条，1.2s 透明度淡出，并提供 reduced-motion 静态提示；原同轮撤销和不自动落盘继续保留。
+- 新增 5 份富模块 fixture，往返库共 24 份，增加嵌套 Toggle/双链、代码中的关闭标签、Callout 与图表语法覆盖；没有私有 JSON/侧车文件，没有新增 IPC/权限或颜色变量。
+
+### W3 验证与修复
+
+- check/build 已通过；转换与往返首轮 8/8，综合写作专项 16/16（22.8s）通过。富模块插入/编辑/保存/重开、导图键盘、Mermaid 懒加载与安全指令隔离、代码高亮/正文复制、图片显示状态不落盘均有实窗覆盖。
+- 修复命令项可访问名称包含描述而无法精确定位；修正 Esc 的关闭状态。保留此前失败日志，未删除行为断言。
+- Mermaid 实际渲染已成功（首张 SVG 约 130ms），最初失败是本地 file 资源未进入 PerformanceResourceTiming 的观测方式；改用真实 request 事件。测试异常清理只销毁隔离窗口，应用未保存保护不变。
+- 新图片 NodeView 下暴露初始化首帧粘贴被忽略，改为等待编辑器/缓冲区接口就绪；原块编辑/图片回归连续 3/3（20.8s）通过。
+- 截图检查发现 NativeSelect 外层占满宽度，挤压标题/图表 Tabs；修正 wrapper 的 flex 宽度。`+` 后立即输入曾污染前一段落，增加同步 DOM 焦点写回；新增断言验证查询词不落入正文，连续 3/3（6.5s）通过。
+- 富模块浅深截图与 slash 筛选截图最初在 `apps/desktop/test-results/1b42e847-1b2f-4000-a8ea-6c5aca78e6b3/`；布局与加号修复后的 Callout/Toggle 截图在 `apps/desktop/test-results/0c77106c-d94b-4451-82b6-a3a0503eafc8/writing-rich-blocks-slash--6c780-itable-callouts-and-toggles-repeat2/`。完整 `pnpm test:smoke` 为 **197/199（5.9m）**，W3/写作及其余业务通过；保留日历未授权失败与 `appearance.spec.ts:121` 的真实窗口焦点恢复失败（期望 true，实际 false）。没有跳过或放宽断言。日志 `/private/tmp/jarvis-writing-w3-smoke.log`。
+- 焦点用例单独三次均复现；在 `/private/tmp/jarvis-w3-focus-baseline` 用 `26d2f2f` 的 W2 源码副本、复用当前已装依赖构建后，同一断言仍失败，日志 `/private/tmp/jarvis-w3-focus-baseline.log`。当前未改 appearance 实现；未进一步归因，不称整套通过。
+- 最后补充 Toggle 内双链序列化 handler 复用与第 24 个 fixture，避免编辑摘要后把内部双链转义；转换与往返 **9/9（2.8s）** 通过。随后最终 check/build 通过。
+- `pnpm package:dir` 生成未签名 macOS arm64 目录包 `release/70c95829-75a3-40cd-b95c-990a57adbf53`；`node apps/desktop/scripts/verify-packaged-writing.mjs release/70c95829-75a3-40cd-b95c-990a57adbf53 --rich` 验证 **593 项生产依赖**、ASAR 原生启动、Mermaid 动态加载、导图预览与实际编辑保存通过，无 pageerror。截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-fnBIwv/writing-blocks.png`。版本仍 0.4.0，未发布。
+
+### W3 设计与边界
+
+- 只读读取 Figma 文件 `mIwnyR5nAlECFMam1NvmER`：Slash Menu `470:39640`、Callout `471:39165`、Mermaid `471:39499`、Mind Map `471:39677` 的设计上下文与截图；沿用 V1 Button/Input/NativeSelect/Tabs/CandidateList/Dialog/Alert，不写 Figma。
+- 导图使用按文字长度约束的节点宽度与水平布局，数据变化时重新布局；普通图与全屏图共享 Markdown，展开/缩放不落盘。未将静态评审样张坐标写入内容。
+- W4 的自动发送、块类型/headingPath 上下文与富模块系统提示词尚未实施；W5 星图未实施。Claude 阶段视觉验收、Windows/macOS 目标设备与真实模型服务仍未由本轮替代。
+
+## W4：块级 Agent 联动（2026-10-26）
+
+实现提交：`5e9a3d6`（`feat ✨️: 实现写作W4块级Agent联动`）。
+
+用户明确“继续 W4”，沿用 feature/writing-space，不把 W3 的回归失败或 Claude 待验收状态改写为通过。
+
+### 实现
+
+- 统一入口设置 Markdown 选区并展开当前文档侧栏；/ AI 项、块菜单“AI 编辑此块”、BubbleMenu“AI 润色”直接发送指令。侧栏等待 Agent 加载完成再消费请求，消费即移除且提交互斥；发送失败保留指令和错误供重试。
+- 整块选择保留完整 Markdown 范围（含围栏），原子块以 NodeSelection 表示，普通块使用文本选区；局部选区保留源码偏移，后续用户选择或内容修改时清除精确范围。覆盖没有文本子节点的 Mermaid 等原子块。
+- 快照新增可选 block.type / headingPath，旧快照仍可解析；源码与块视图共用从当前缓冲区生成的上下文。系统提示增加 Callout、Mermaid、mindmap 两空格列表示例，要求新增块用 insert_text、润色限制选区、保留块类型。
+- 沿用 W2 增量更新及 W3 高亮、修改卡片与整轮撤销。没有新增依赖、IPC、工具或磁盘权限；版本与账本语义不变。
+
+### 验证
+
+- 命令/事务专项 4/4，通过旧快照兼容、富块类型/标题层级、工具无文件操作、范围/版本/租约、UTF-16 与同轮撤销。
+- 扩展原写作 Agent 实窗：三个入口（另加 Mermaid 整块）关闭侧栏后自动打开并发送，逐项验证一次请求、精确 selection.text、block 元数据、不落盘和撤销；原手动两处编辑、高亮、原生撤销/重做、改名、跨标签修改、冲突和作用域拒绝断言均保留。最终专项 1/1（7.7s）通过。
+- 初轮新增测试因正文未聚焦而未显示 BubbleMenu，修正为先聚焦正文；加入 Mermaid 后其 SVG 的 p 标签使测试定位不唯一，限定正文文本定位。没有放宽业务断言。
+- check/build 通过。首轮完整回归 198/200（6.0m）：日历未授权失败保留，新增整段 NodeSelection 导致视图往返后选中文本多出换行。修正为仅原子块使用 NodeSelection，普通块恢复文本选区；保留原断言，修复后写作/Agent/命令专项 **6/6（15.1s）** 通过。首轮日志 `/private/tmp/jarvis-writing-w4-smoke.log`；最终完整回归 **199/200（6.0m）**，唯一失败为既有 macOS 日历未授权；窗口焦点和写作选区回归通过，日志 `/private/tmp/jarvis-writing-w4-smoke-final.log`。不把完整门禁标为全绿。
+- 最终 check/build/diff 检查通过。未签名 macOS arm64 目录包 `release/d2db49ab-3cef-4404-a678-4907112f6015` 经 `verify-packaged-writing.mjs --rich` 验证 **593 项生产依赖**、ASAR 启动、Mermaid/导图与实际编辑保存通过；截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-En9Jke/writing-blocks.png`。未改版本、未发布。
+- 截图：`apps/desktop/test-results/cf1ba2b9-c2c1-445f-ae30-6bc290666671/writing-agent-writing-Agen-c2325--and-rejects-stale-versions/` 的 w4-block/rich/bubble/slash.png。已查看选区修改、高亮和回执；沿用已有组件与样式，未修改 Figma 或 tokens，Claude 视觉签收仍待进行。只读核对 Figma Block Menu `470:38997`、Block Highlight `471:39798` 的上下文与截图，沿用既有实现。
+
+## W5：星图、关联与共鸣点（2026-10-26）
+
+实现提交：`afbc2a6`（`feat ✨️: 实现写作W5星图关联与共鸣点`）。
+
+用户明确“继续 W5”，继续保留既有日历环境失败及 Claude 待验收状态。步骤：索引解析 → 关联写入/撤销 → 元数据工具 → 星图布局 → 候选/反向链接 → 集成验收。
+
+### 实现
+
+- GraphIndex 使用既有授权路径检查，只枚举非隐藏普通文件，拒绝符号链接。按 mtime+size 缓存 Markdown 标题、标签、≤200 字摘要与引用，birthtime/首次索引时间作为 firstSeen；每 200 条让出事件循环，上限 20,000 条目和单文档 4 MiB，超限明确 truncated。缓存位于 userData/writing-index/<rootId>.json，使用 JsonFile 原子写；重启未变化文件不重读正文。标题限制 200 字。
+- 双链按同目录与最短路径解析，支持相对 Markdown 链接、图片及引用式链接；代码、Frontmatter 与 HTML 不参与双链/标签索引。标签按组下发，前端用星形边连接组内节点，避免全组合边。
+- 新增明确的 writing:graph / writing:backlinks / writing:graph-changed / writing:link；后者以 link / repair / undo 三个动作区分创建、逐个确认修复与撤销，没有通用文件或 IPC 接口。watch/save 等变化通知更新，渲染层 5 秒轮询兼容无法监听的环境。
+- 关联仅修改来源 Markdown 的“## 关联”段，不重复追加已解析为同目标的引用。重名目标写相对路径避免歧义。打开中的文档经所属窗口 WritingBroker 读取版本与修改缓冲区，不落盘；未打开文档走 WritingFiles.save 的版本校验。冲突与打开状态变化拒绝写入。
+- 新账本 pack=writing-link，独立内部账本会话保存插入/替换片段、偏移和写后版本；重启加载，源文档版本未变时可撤销。已打开和已关闭来源统一检查，后续改动会返回“文档已被修改，未撤销”。没有创建模型对话或扩大 Agent 写权限。
+- 写作工具新增只读 find_related_documents，严格同一父文件夹、排除自身、≤200 条，只返回 path/title/tags/summary/mtime。report_result 可选 resonance 活动最多 3 项，由主进程验证仍属于同目录候选；摘要明确按数据处理。确认才链接，忽略仅当前会话界面隐藏。
+- 左侧星图与全景复用 React Flow；d3-force 静态布局、双链/标签/孤岛过滤、搜索、只读时间轴、节点打开/新标签、拖线、候选虚线/确认卡片、文末反向链接与失效链接修复。全景收起助手，返回恢复此前侧栏状态。已打开缓冲区关联显示临时边，撤销或缓冲区移除文本后不再显示。
+- 新依赖精确版本 d3-force 3.0.0（2021-06-05）与开发类型 @types/d3-force 3.0.10（2024-06-17），从 npm registry 回读确认；后者为 TypeScript strict 所需，无新增生产库。星图布局组件按需加载，没有新增颜色变量或检查器例外。
+
+### 验证与设计
+
+- 主进程专项 4/4：范围/隐藏文件/符号链接、双链/相对链接/资产、同文件夹元数据、增量与缓存重启、反向链接/截断、代码与 Frontmatter 排除、超大文件重复扫描仍 truncated；磁盘写入与重启撤销、打开缓冲区不落盘、冲突与后续版本拒绝。
+- 星图实窗 2/2（首轮 8.8s）：真实拖线、未保存标记、来源与目标磁盘检查、链接修复确认、关闭文档关联与撤销、全景返回恢复助手；2,000 文件下小窗 ≤10 点、全景搜索/孤岛筛选/时间轴播放可交互。首轮耗时 mini 623ms、full 790ms（本机隔离 Electron，含 UI 首次可见等待，不是跨设备保证）。性能证据 `apps/desktop/test-results/da4ce31f-dfe5-47fc-8fae-f344409dc5fa/writing-graph-2000-file-gr-745a0-ew-and-interactive-panorama/performance.json`。
+- 写作 Agent 扩展实窗最终 1/1（9.4s）：元数据数组字段/长度断言、候选不写盘、确认/撤销/忽略与虚线边；原 W4 选区/高亮/整轮撤销/跨标签/冲突/权限断言保留。初次模拟服务按“共鸣点”匹配，但固定指令用 resonance 字段，已修正模拟分支；随后测试错误地 JSON 解析了原冲突错误文本，限定仅解析元数据数组，业务断言不变。
+- 只读核对 Figma Graph Mini Panel `473:39690`、Resonance Card `473:39554`、Backlinks `466:39145` 与全景页 `484:40061` / `484:41707` 的设计上下文和截图。反向链接整页 `483:54226` 返回稀疏元数据后改读组件。初图缩放过大、连线端点偏离圆点，已限制首次适配最大 1 倍、节点更新后重适配并调整端点；移除网格背景，卡片置右上、时间轴置底部中间。修正后的浅深截图在 `apps/desktop/test-results/90648cca-4971-47a0-a1ee-233fe5df6b74/writing-graph-graph-drag-l-a3953-panorama-restores-assistant/`。Figma 未修改，Claude 视觉签收仍待进行。
+- 复查补充候选状态按文档隔离，切换标签后确认/忽略状态保持；异步索引结果和临时边按 rootId 隔离，旧目录的延迟响应不会覆盖新目录。时间轴复用 React Flow 实例，避免每个时间步卸载全部节点。最终综合专项 **7/7（18.6s）**，check/build/diff 检查通过。
+- 首轮完整回归 **204/206（6.2m）**，仅既有日历未授权与真实窗口焦点恢复断言失败；原断言保留，未修改 appearance 或日历实现。日志 `/private/tmp/jarvis-writing-w5-smoke.log`。第二轮完整回归同为 **204/206（6.2m）**，仅上述两项；日志 `/private/tmp/jarvis-writing-w5-smoke-final.log`。随后补充链接修复保留 wiki 别名的回归，主进程专项 4/4（480ms）通过；空文档创建关联段不添加无意义的前导空行。最终完整回归 **204/206（6.2m）**，仅日历未授权和窗口焦点两项，W5 与全部写作用例通过；日志 `/private/tmp/jarvis-writing-w5-smoke-verified.log`。未跳过、删除或放宽这两条断言，不将完整门禁称为通过。
+- 最终 2,000 文件性能证据：`apps/desktop/test-results/5e5e071c-2aa4-4a5e-b783-a9d4507d7e3e/writing-graph-2000-file-gr-745a0-ew-and-interactive-panorama/performance.json`，mini 619ms / full 782ms。最终共鸣点浅深截图在 `apps/desktop/test-results/d17e10d4-4269-4f9e-8159-a27f658e90c2/writing-agent-writing-Agen-c2325--and-rejects-stale-versions/w5-resonance-light.png` / `w5-resonance-dark.png`，截图等待侧栏收起动画结束，专项再次 1/1（8.9s）通过；应用代码未再改动。
+- 未签名 macOS arm64 最终目录包 `release/01c6fca1-c6db-435b-80b1-204dc172c828`，`verify-packaged-writing.mjs --rich --graph` 验证 **593 项生产依赖**、ASAR 原生启动、富模块、星图动态加载/全景与实际编辑保存通过，无 pageerror。截图目录 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-GH7xhF/`（writing-blocks.png、writing-graph.png）。版本仍 0.4.0，未发布。
+
+### 边界与取舍
+
+- 排布由实际文件/引用计算，不照抄评审样张的静态坐标；时间轴依据文件 birthtime 和引用来源 mtime 近似，不宣称恢复历史正文。
+- link 通道增加明确的 repair/undo 动作，是为复用同一来源文档版本校验和账本，不新增通用编辑能力。已有“关联”段若不在最后，追加到该段结束处，避免把链接写入其他标题下；没有该段则在文末创建。
+- 真实模型服务、其他操作系统和 Claude 逐像素验收仍待进行；不将本轮模拟服务或未签名本地目录包称为发布。
+
+## W6：检查与报告完成，验收未通过（2026-10-26）
+
+用户明确“开始 W6”。本轮保留 W1–W5 的实现与失败记录，补充四类页面的浅深八张截图和真实 PDF 验证，执行静态检查、构建、完整回归与新目录包验证。没有改动应用权限、日历提供者或外观实现，也没有通过跳过用例/放宽原断言取得绿色结果。
+
+### 阶段汇总
+
+| 阶段 | 实现 SHA | 已验证内容 | 阶段完整回归 |
+| --- | --- | --- | --- |
+| W1 | `631e6df` | 全格式目录、文件操作、资产协议、多根标签、文件边界 | 182/183，日历未授权 |
+| W2 | `47655e3` | 原文保留、双视图、选区与增量更新、19 样本（W3 扩为 24） | 最后 189/190，日历未授权 |
+| W3 | `d6a1bcb` | 命令面板与富模块、懒加载、安全渲染、高亮 | 197/199，日历与焦点 |
+| W4 | `5e9a3d6` | 三入口自动发送、块上下文、范围/版本/整轮撤销 | 最后 199/200，日历未授权 |
+| W5 | `afbc2a6` | 星图、元数据、确认关联、修复/撤销、2,000 点性能 | 最后 204/206，日历与焦点 |
+| W6 | `f851825` | 四类页面浅深截图、PDF 加载、最终门禁及报告 | 205/207，日历与焦点 |
+
+各阶段后续文档提交及完整失败/修复过程见前文；阶段数值是当时测试集结果，不合并成一个虚假的全绿结论。
+
+### 本轮诊断与验证
+
+- 焦点只读取证：隔离主窗口、第二个测试窗口及恢复后的 `BrowserWindow.isFocused()` / `webContents.isFocused()` 均为 false；恢复后 renderer `document.hasFocus()` 与 data-window-active 同为 false，没有漏掉已发生的原生激活。单独调用 webContents.focus 后 DOM 会变 true，但原生窗口仍 false，因此没有用这种方式替代“真实窗口焦点”断言。证据 `/private/tmp/jarvis-w6-focus-diagnostics.json`，脚本 `/private/tmp/jarvis-w6-diagnose.mjs`。
+- 日历同次只读状态仍为 `{ provider: apple, access: not_determined }`。本轮没有申请系统授权，也没有读取或写入个人日程。原日历 UI 用例的 7 天/审批/创建/周切换断言完整保留。
+- 新增 `writing-acceptance.spec.ts`：真实目录与 Markdown、块编辑/导图、命令面板/反向链接、全景星图、真实 PDF 协议响应及 Chromium 独立 PDF 查看器；四类页面 Light/Dark 共八图。截图以 reduced-motion 模式采集，避免原有布局弹簧影响静态对照；普通动态效果仍由原完整回归覆盖。
+- 初次采集命令面板用键盘 End/Enter 时未取得预期正文选区，改为既有已验证的块左侧 + 入口，未修改应用行为。PDF 初次定位按旧 embed 类型失败；实际已进入 Chromium 的独立扩展 frame。改为验证 pdf-viewer、loadProgress_=100、application/x-google-chrome-pdf 的 original-url 与工具栏，再截图。没有因测试修改 sandbox/contextIsolation 或启用额外通用能力。
+- 新截图/PDF 专项首轮成功 1/1（4.2s）；之后加上加载进度和插件来源断言纳入完整回归。最终命令结果如下：
+
+| 命令 | 结果 / 证据 |
+| --- | --- |
+| `pnpm check` | 通过；`/private/tmp/jarvis-writing-w6-check.log` |
+| `pnpm build` | 通过；`/private/tmp/jarvis-writing-w6-build.log` |
+| `pnpm test:smoke` | **205/207（6.2m）**；日历 `agent-calendar-ui.spec.ts:77` 和焦点 `appearance.spec.ts:121` 原断言失败，其余通过；`/private/tmp/jarvis-writing-w6-smoke.log` |
+| `pnpm package:dir` | 成功，未签名 arm64 目录包 `release/b0199fc3-ff58-4367-a1ef-4c1161455202` |
+| `verify-packaged-writing.mjs --rich --graph` | **593 项生产依赖**、ASAR 原生启动、块编辑保存、富模块与星图通过，无 pageerror；`/private/tmp/jarvis-writing-w6-package-verify.log` |
+
+目录包截图：`/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-NeNNX6/writing-blocks.png` 与同目录 writing-graph.png。完整回归之后仅调整新验收测试的示例为固定折叠语法、截图滚动位置，并保留所有断言；截图/PDF 专项 **1/1（3.6s）** 再次通过。应用生产代码没有变更。
+
+### 八张页面截图
+
+最终截图目录：`apps/desktop/test-results/587fa947-f99a-4227-8c97-84ca7ca6784b/writing-acceptance-writing-36f2a-erves-an-actual-PDF-preview/`。八图全部由上述专项生成；抽查覆盖四类页面，完整像素对照仍由 Claude 验收。
+
+| 页面 | Light | Dark | Figma 来源 |
+| --- | --- | --- | --- |
+| 块编辑 | `01-blocks-light.png` | `01-blocks-dark.png` | `482:37226` / `482:38315` |
+| 命令面板与反向链接 | `02-slash-backlinks-light.png` | `02-slash-backlinks-dark.png` | `483:54226` / `483:54935` |
+| 全景星图 | `03-graph-light.png` | `03-graph-dark.png` | `484:40061` / `484:41707` |
+| PDF 预览 | `04-pdf-preview-light.png` | `04-pdf-preview-dark.png` | `484:40856` / `484:42362` |
+
+关键状态的已有证据继续保留在 W3–W5 节：模块错误/源码、Agent 高亮与回执、共鸣点确认/撤销、2,000 点性能。新测试可用 `pnpm --filter @jarvis/desktop exec playwright test writing-acceptance.spec.ts` 独立重建八图。
+
+### 与计划的差异和待验收项
+
+- 已实现的取舍沿用前文：未知 Markdown 结构保留原文块；显示状态不落盘；标签按组连线；已有“关联”段在该段末尾追加；新增 repair/undo 为同一受限 link 通道的明确动作。没有新增长期数据库格式、私有文稿格式、其他文件全文读取、Shell 或云同步。
+- 八张截图使用原创短文档/单页 PDF，而非把 Figma 的样张正文或静态点坐标写入应用；布局、主题和组件状态供 Claude 复核。源码视图保持 CodeMirror；PDF 使用 Chromium 原生查看器，内部工具栏外观由 Chromium 控制。
+- macOS 日历授权环境、可原生激活的交互式桌面焦点验收、Windows/Intel 目标设备、真实模型/内网服务与 Claude 逐像素签收仍未完成。当前没有发布、PR 或合并授权，版本仍 0.4.0。
+
+### 验收结论
+
+**W6 检查与报告工作已完成，但 W6 及整个计划尚未验收通过。** 写作功能、边界、原文往返、模拟 Agent、截图/PDF 和本地目录包验证通过；完整回归仍有两个未通过项，不能按全绿交付或发布。后续需在隔离且已授权的日历环境、可获得原生窗口焦点的交互式桌面复验原断言，并由 Claude 完成设计签收。任何新结果应追加到本节，不能覆盖本轮失败事实。
+
+## 验收退回项修复（Claude，2026-10-26）
+
+对应 `memory/writing-space-acceptance.md` 第 1–9 项，由 Claude 直接修复：
+
+1. 列表编辑：`blockText` 按原块保留 mdast `spread`（紧凑/松散）、有序分隔符 `1)`、Setext 标题、闭合 ATX 和 `[X]`；新增往返用例与 23 个少见 CommonMark/GFM 逐字节样本。
+2. `/` 面板按实测高度定位：默认在触发行下方，空间不足才翻到上方；验收用例断言与触发行间距 0–16px。
+3. 左栏星图：只模拟当前点及其关联点，孤岛点放外圈；小窗以当前点和 1–2 度邻居为范围，按节点位置计算视口（小窗只渲染可见节点，未测量节点会让 `fitView` 失效），最小缩放 0.9；用例断言缩放 ≥ 0.9 且当前点居中。
+4. 大标题在 utilities 层设为 32/40 Bold，用例断言计算样式。
+5. 反向链接：文件图标、清理 Markdown 语法的上下文、链接文字高亮，折叠箭头改用图标。
+6. 文件预览元信息去掉多余分隔点；非文本标签不显示“已选 N 段”。
+7. 移到废纸篓：只含 `.DS_Store`、`._*`、`Thumbs.db`、`desktop.ini`、`.localized` 的文件夹视为空；其他隐藏文件仍阻止。
+8. 只改大小写的重命名：目标与来源路径忽略大小写相同且为同一 inode 时放行；硬链接到其他名称仍报重名。
+
+验证（Linux + xvfb）：`pnpm check`、`pnpm build` 通过；写作相关 43 项全部通过。

@@ -1,3 +1,15 @@
+import { lazy, Suspense } from 'react';
+import { useWritingGraph } from './graph/use-writing-graph';
+import { ResonanceCards } from './graph/ResonanceCards';
+import { useSpaceThread } from '../agent/use-space-thread';
+import { Backlinks } from './graph/Backlinks';
+const GraphView = lazy(() => import('./graph/GraphView'));
+import { Tabs, TabsList, TabsTrigger } from '@jarvis/ui/components/Tabs';
+import { useConfirm } from '@jarvis/ui/components/AlertDialog';
+import { NativeSelect } from '@jarvis/ui/components/NativeSelect';
+import { FileTreeRow } from './tree/FileTreeRow';
+import { FilePreview } from './viewers/FilePreview';
+import { isWritingText } from '../../../../shared/writing';
 import { WritingAgentSidebar } from './WritingAgentSidebar';
 import { useWritingHost } from './use-writing-host';
 import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
@@ -31,16 +43,15 @@ import {
   FilePlus,
   FileText,
   Folder,
-  FolderOpen,
   FolderPlus,
   MoreHorizontal,
   Search,
   X,
 } from '@jarvis/ui/icons';
-import type { EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
 import type { WritingEntry } from '../../../../shared/writing';
-import { MarkdownEditor } from './MarkdownEditor';
+import { EditorHost } from './editor/EditorHost';
+import { createViewCache, type BufferView } from './editor/buffer-view';
+import { askWritingAssistant } from './assistant-bridge';
 import { unwrap, useWriting } from './useWriting';
 
 function ResizeHandle({
@@ -116,12 +127,21 @@ export function WritingSpace({
     rightWidth: number;
     onWidth: (width: number) => void;
     onClose: () => void;
+    onAssistant: () => void;
     configure: () => void;
-    onOpen: (path: string, newTab: boolean) => void;
+    onOpen: (path: string, newTab: boolean, rootId?: string) => void;
   };
 }) {
+  const confirm = useConfirm();
+  const [leftView, setLeftView] = useState('files');
+  const [panorama, setPanorama] = useState(false);
+  const restoreAssistant = useRef(false);
+  const [moving, setMoving] = useState<WritingEntry | null>(null);
+  const [moveTargets, setMoveTargets] = useState<string[]>([]);
+  const [moveTarget, setMoveTarget] = useState('');
+  const lastMarkdown = useRef('');
+  const [editorToolbar, setEditorToolbar] = useState<HTMLDivElement | null>(null);
   const [selectedParagraphs, setSelectedParagraphs] = useState(0);
-  const [source, setSource] = useState(false);
   const [folderMenu, setFolderMenu] = useState(false);
   const [moreMenu, setMoreMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -135,16 +155,130 @@ export function WritingSpace({
   const creationInput = useRef<HTMLInputElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const searchToggle = useRef<HTMLButtonElement>(null);
-  const view = useRef<EditorView | null>(null);
-  const editorCache = useRef(new Map<string, { state: EditorState; scroll: number }>());
+  const view = useRef<BufferView | null>(null);
+  const editorCache = useRef(createViewCache());
   useEffect(() => {
     const ids = new Set(writing.documents.map((d) => d.id));
-    for (const id of editorCache.current.keys()) if (!ids.has(id)) editorCache.current.delete(id);
+    for (const values of [
+      editorCache.current.source,
+      editorCache.current.blocks,
+      editorCache.current.selections,
+      editorCache.current.generations,
+    ])
+      for (const id of values.keys()) if (!ids.has(id)) values.delete(id);
   }, [writing.documents]);
   const writingHost = useWritingHost(writing, view, editorCache);
-  const active = writing.documents.find(
-    (d) => d.id === writing.activeId && d.rootId === writing.root?.id,
+  const active = writing.documents.find((d) => d.id === writing.activeId);
+  // The active Markdown document's thread: the sidebar talks to it, the graph asks it for resonance.
+  const documentThread = useSpaceThread(
+    active && active.fileType !== 'text' && isWritingText(active.path)
+      ? { kind: 'document', rootId: active.rootId, path: active.path }
+      : null,
   );
+  const graph = useWritingGraph(writing.root?.id, active, writing.documents, documentThread);
+  function expandGraph() {
+    restoreAssistant.current = shell.rightOpen;
+    setPanorama(true);
+    shell.onClose();
+  }
+  function closeGraph() {
+    setPanorama(false);
+    if (restoreAssistant.current) shell.onAssistant();
+  }
+  async function openGraphDocument(path: string, newTab: boolean) {
+    const rootId = writing.root?.id;
+    const dot = graph.graph?.dots.find((item) => item.path === path);
+    if (!rootId || !dot) return;
+    try {
+      await writing.openDocument({ ...dot, kind: 'file' }, rootId);
+      shell.onOpen(path, newTab, rootId);
+      if (panorama) closeGraph();
+    } catch (e) {
+      writing.setNotice(e instanceof Error ? e.message : '打开文档失败');
+    }
+  }
+  const graphProps = {
+    workspace: graph,
+    rootId: writing.root?.id ?? '',
+    path: active?.rootId === writing.root?.id ? (active?.path ?? '') : '',
+    onOpen: (path: string, newTab: boolean) => void openGraphDocument(path, newTab),
+    onExpand: expandGraph,
+    onBack: closeGraph,
+  };
+  useEffect(() => {
+    if (panorama && shell.rightOpen) shell.onClose();
+  }, [panorama, shell.rightOpen, shell.onClose]);
+  const preview = !!active && !isWritingText(active.path);
+  useEffect(() => {
+    if (active?.fileType === 'markdown' || (active && !active.fileType))
+      lastMarkdown.current = active.id;
+  }, [active]);
+  useEffect(() => {
+    try {
+      setLeftView(
+        localStorage.getItem('jarvis:writing-left-view:' + writing.root?.id) === 'graph'
+          ? 'graph'
+          : 'files',
+      );
+    } catch {
+      setLeftView('files');
+    }
+  }, [writing.root?.id]);
+  useEffect(() => {
+    if (preview && shell.rightOpen) shell.onClose();
+  }, [preview, shell.rightOpen, shell.onClose]);
+  async function fileAction(
+    entry: WritingEntry,
+    action: 'duplicate' | 'trash' | 'reveal' | 'move' | 'new-file' | 'new-directory',
+  ) {
+    const rootId = writing.root?.id,
+      api = window.desktop?.writing;
+    if (!rootId || !api) return;
+    try {
+      if (action === 'new-file' || action === 'new-directory') {
+        writing.setSelectedDirectory(entry.path);
+        setName('');
+        setCreation(action === 'new-file' ? 'file' : 'directory');
+        return;
+      }
+      if (action === 'move') {
+        const targets = [''];
+        for (let i = 0; i < targets.length && i < 2000; i++) {
+          for (const dir of unwrap(await api.listDirectory({ rootId, path: targets[i]! })))
+            if (dir.kind === 'directory') targets.push(dir.path);
+        }
+        setMoveTargets(targets);
+        setMoveTarget('');
+        setMoving(entry);
+        return;
+      }
+      if (action === 'trash') {
+        if (!(await confirm({ title: '移到废纸篓？', message: `将“${entry.name}”移到废纸篓。` })))
+          return;
+        const doc = writing.documents.find((d) => d.rootId === rootId && d.path === entry.path);
+        if (doc && !(await writing.closeDocument(doc.id))) return;
+        unwrap(await api.trash({ rootId, path: entry.path }));
+      } else if (action === 'duplicate') {
+        const result = unwrap(await api.duplicate({ rootId, path: entry.path }));
+        await writing.openDocument(result);
+        shell.onOpen(result.path, true);
+      } else unwrap(await api.reveal({ rootId, path: entry.path }));
+      await writing.refresh(entry.path.split('/').slice(0, -1).join('/'));
+    } catch (error) {
+      writing.setNotice(error instanceof Error ? error.message : '文件操作失败');
+    }
+  }
+  async function moveFile(path: string, targetDir: string) {
+    if (!writing.root || !window.desktop) return;
+    if (!(await writing.flush())) return writing.setNotice('请先处理未保存文档');
+    try {
+      unwrap(await window.desktop.writing.move({ rootId: writing.root.id, path, targetDir }));
+      setMoving(null);
+    } catch (error) {
+      writing.setNotice(error instanceof Error ? error.message : '移动失败');
+    }
+  }
+
   useEffect(() => {
     if (!searchOpen || !query.trim() || !writing.root) {
       setResults(null);
@@ -210,40 +344,33 @@ export function WritingSpace({
   function fileTree(path: string, depth = 0): React.ReactNode {
     return (writing.directories[path] ?? []).map((entry) => (
       <div key={entry.path}>
-        <SidebarItem
+        <FileTreeRow
+          entry={entry}
           depth={depth}
-          icon={
-            entry.kind === 'directory' ? (
-              writing.expanded.has(entry.path) ? (
-                <FolderOpen size={16} />
-              ) : (
-                <Folder size={16} />
-              )
-            ) : (
-              <FileText size={16} />
-            )
+          expanded={writing.expanded.has(entry.path)}
+          selected={active?.rootId === writing.root?.id && active?.path === entry.path}
+          empty={writing.directories[entry.path]?.length === 0}
+          onToggle={() => void writing.toggleDirectory(entry.path)}
+          onOpen={(newTab) =>
+            void writing.openDocument(entry).then(() => shell.onOpen(entry.path, newTab))
           }
-          selected={entry.kind === 'file' && active?.path === entry.path}
-          aria-current={entry.kind === 'file' && active?.path === entry.path ? 'page' : undefined}
-          className={`writing-file ${entry.kind === 'file' && active?.path === entry.path ? 'selected' : ''} ${entry.kind === 'directory' && writing.selectedDirectory === entry.path ? 'current-folder' : ''}`}
-          title={entry.path}
-          aria-expanded={entry.kind === 'directory' ? writing.expanded.has(entry.path) : undefined}
-          onAuxClick={(event) => {
-            if (event.button === 1 && entry.kind === 'file') {
-              event.preventDefault();
-              void writing.openDocument(entry).then(() => shell.onOpen(entry.path, true));
+          onRename={async (name) => {
+            if (!writing.root || !window.desktop || !(await writing.flush())) return;
+            try {
+              unwrap(
+                await window.desktop.writing.rename({
+                  rootId: writing.root.id,
+                  path: entry.path,
+                  name,
+                }),
+              );
+            } catch (error) {
+              writing.setNotice(error instanceof Error ? error.message : '改名失败');
             }
           }}
-          onClick={(event) => {
-            if (entry.kind === 'directory') void writing.toggleDirectory(entry.path);
-            else
-              void writing
-                .openDocument(entry)
-                .then(() => shell.onOpen(entry.path, event.metaKey || event.ctrlKey));
-          }}
-        >
-          <span>{entry.name}</span>
-        </SidebarItem>
+          onAction={(action) => void fileAction(entry, action)}
+          onDrop={(path) => void moveFile(path, entry.path)}
+        />
         {entry.kind === 'directory' &&
           writing.expanded.has(entry.path) &&
           fileTree(entry.path, depth + 1)}
@@ -301,8 +428,18 @@ export function WritingSpace({
             {writing.root && (
               <>
                 <div className="writing-file-tools">
-                  <span>文件</span>
                   <div>
+                    <IconButton
+                      variant="ghost"
+                      size="icon-sm"
+                      ref={searchToggle}
+                      aria-label="搜索文件"
+                      aria-expanded={searchOpen}
+                      onClick={toggleSearch}
+                    >
+                      <Search size={18} />
+                    </IconButton>
+
                     <IconButton
                       variant="ghost"
                       size="icon-sm"
@@ -360,42 +497,70 @@ export function WritingSpace({
                     />
                   </div>
                 )}
-                <nav className="writing-tree" aria-label="文件列表">
-                  {query.trim() && searchOpen ? (
-                    <>
-                      {searching && <p role="status">正在搜索…</p>}
-                      {results?.map((entry) => (
-                        <SidebarItem
-                          icon={<FileText />}
-                          className="writing-file"
-                          key={entry.path}
-                          title={entry.path}
-                          onClick={(event) =>
-                            void writing
-                              .openDocument(entry)
-                              .then(() => shell.onOpen(entry.path, event.metaKey || event.ctrlKey))
-                          }
-                          onAuxClick={(event) => {
-                            if (event.button === 1) {
-                              event.preventDefault();
+                <Tabs
+                  value={leftView}
+                  onValueChange={(value) => {
+                    setLeftView(value);
+                    try {
+                      localStorage.setItem('jarvis:writing-left-view:' + writing.root?.id, value);
+                    } catch {
+                      writing.setNotice('无法保存左栏视图偏好');
+                    }
+                  }}
+                >
+                  <TabsList aria-label="写作目录视图" className="writing-left-tabs">
+                    <TabsTrigger value="files" className="flex-1">
+                      文件
+                    </TabsTrigger>
+                    <TabsTrigger value="graph" className="flex-1">
+                      星图
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                {leftView === 'graph' ? (
+                  <Suspense fallback={<p className="p-4 text-fg-secondary">正在加载星图…</p>}>
+                    <GraphView {...graphProps} mini />
+                  </Suspense>
+                ) : (
+                  <nav className="writing-tree" aria-label="文件列表">
+                    {query.trim() && searchOpen ? (
+                      <>
+                        {searching && <p role="status">正在搜索…</p>}
+                        {results?.map((entry) => (
+                          <SidebarItem
+                            icon={<FileText />}
+                            className="writing-file"
+                            key={entry.path}
+                            title={entry.path}
+                            onClick={(event) =>
                               void writing
                                 .openDocument(entry)
-                                .then(() => shell.onOpen(entry.path, true));
+                                .then(() =>
+                                  shell.onOpen(entry.path, event.metaKey || event.ctrlKey),
+                                )
                             }
-                          }}
-                        >
-                          {entry.path}
-                        </SidebarItem>
-                      ))}
-                      {results?.length === 0 && <p>没有匹配的文件</p>}
-                    </>
-                  ) : (
-                    fileTree('')
-                  )}
-                  {!query && writing.directories['']?.length === 0 && (
-                    <p>文件夹为空，新建一篇文档吧。</p>
-                  )}
-                </nav>
+                            onAuxClick={(event) => {
+                              if (event.button === 1) {
+                                event.preventDefault();
+                                void writing
+                                  .openDocument(entry)
+                                  .then(() => shell.onOpen(entry.path, true));
+                              }
+                            }}
+                          >
+                            {entry.path}
+                          </SidebarItem>
+                        ))}
+                        {results?.length === 0 && <p>没有匹配的文件</p>}
+                      </>
+                    ) : (
+                      fileTree('')
+                    )}
+                    {!query && writing.directories['']?.length === 0 && (
+                      <p>文件夹为空，新建一篇文档吧。</p>
+                    )}
+                  </nav>
+                )}
               </>
             )}
             <footer className="writing-root-path" title={writing.root?.directory}>
@@ -404,36 +569,14 @@ export function WritingSpace({
           </aside>,
           shell.leftHost,
         )}
-      <main data-testid="writing-main" className="writing-main">
+      <main data-testid="writing-main" className={`writing-main ${panorama ? 'is-graph' : ''}`}>
         <div className="writing-document-tools">
           <span>
             {writing.root
-              ? `${writing.root.name}${active ? ' / ' + active.path.replaceAll('/', ' / ') : ''}`
+              ? `${writing.roots.find((r) => r.id === active?.rootId)?.name ?? writing.root.name}${active ? ' / ' + active.path.replaceAll('/', ' / ') : ''}`
               : '本地 Markdown 工作区'}
           </span>
-          {active && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSource((s) => !s)}
-              title="切换 Markdown 源码与实时预览"
-            >
-              {source ? '源码模式' : '实时预览'}
-              <ChevronDown size={12} />
-            </Button>
-          )}
-          {writing.root && (
-            <IconButton
-              variant="ghost"
-              size="icon-sm"
-              ref={searchToggle}
-              aria-label="搜索文件"
-              aria-expanded={searchOpen}
-              onClick={toggleSearch}
-            >
-              <Search size={18} />
-            </IconButton>
-          )}
+          <div ref={setEditorToolbar} className="writing-editor-toolbar-slot" />
         </div>
         {writing.notice && (
           <Alert tone="error" onDismiss={() => writing.setNotice('')}>
@@ -474,23 +617,101 @@ export function WritingSpace({
             {active.error}
           </Alert>
         )}
-        {active ? (
-          <MarkdownEditor
+        {panorama ? (
+          <Suspense fallback={<p>正在加载星图…</p>}>
+            <GraphView {...graphProps} />
+          </Suspense>
+        ) : active && preview ? (
+          <FilePreview
+            key={active.id}
+            document={active}
+            onError={writing.setNotice}
+            onInsert={
+              writing.documents.some(
+                (d) =>
+                  d.id === lastMarkdown.current &&
+                  d.rootId === active.rootId &&
+                  !['conflict', 'error'].includes(d.status),
+              )
+                ? () => {
+                    const target = writing.documents.find((d) => d.id === lastMarkdown.current);
+                    if (!target) return;
+                    const from = target.path.split('/').slice(0, -1),
+                      to = active.path.split('/');
+                    while (from.length && to.length && from[0] === to[0]) {
+                      from.shift();
+                      to.shift();
+                    }
+                    const relative = [...from.map(() => '..'), ...to]
+                      .map(encodeURIComponent)
+                      .join('/');
+                    writing.change(target.id, target.content + `\n\n![](${relative})\n`, true);
+                    writing.setNotice('已插入到 ' + target.path + '（未保存）');
+                  }
+                : undefined
+            }
+          />
+        ) : active ? (
+          <EditorHost
+            toolbarHost={editorToolbar}
+            footer={
+              active.fileType === 'markdown' && active.rootId === writing.root?.id ? (
+                <Backlinks
+                  workspace={graph}
+                  rootId={active.rootId}
+                  path={active.path}
+                  onOpen={graphProps.onOpen}
+                />
+              ) : undefined
+            }
+            key={active.id}
             document={active}
             onChange={writing.change}
             onPosition={() => {
-              const editor = view.current;
-              const range = editor?.state.selection.main;
-              const selected =
-                editor && range && !range.empty ? editor.state.sliceDoc(range.from, range.to) : '';
+              const range = view.current?.getSelection();
+              const selected = range ? active.content.slice(range.from, range.to) : '';
               setSelectedParagraphs(
                 selected ? selected.split(/\n\s*\n/).filter((p) => p.trim()).length : 0,
               );
             }}
             onSave={() => void writing.save(active.id)}
-            source={source}
-            viewRef={view}
-            cache={editorCache}
+            bufferRef={view}
+            cache={editorCache.current}
+            onRename={async (name) => {
+              if (!window.desktop) throw new Error('写作接口不可用');
+              if (!(await writing.flush())) throw new Error('请先处理未保存文档');
+              unwrap(
+                await window.desktop.writing.rename({
+                  rootId: active.rootId,
+                  path: active.path,
+                  name,
+                }),
+              );
+            }}
+            onOpenLink={(target, newTab) => {
+              void (async () => {
+                if (!window.desktop) return;
+                const entries = unwrap(
+                  await window.desktop.writing.searchFiles({
+                    rootId: active.rootId,
+                    query: target.split('/').at(-1) ?? target,
+                  }),
+                );
+                const entry = entries.find(
+                  (e) =>
+                    e.path.replace(/\.(md|markdown)$/i, '') === target ||
+                    e.name.replace(/\.(md|markdown)$/i, '') === target,
+                );
+                if (!entry) return writing.setNotice('引用的文档不存在：' + target);
+                await writing.openDocument(entry, active.rootId);
+                shell.onOpen(entry.path, newTab, active.rootId);
+              })().catch((e: unknown) =>
+                writing.setNotice(e instanceof Error ? e.message : '无法打开文档'),
+              );
+            }}
+            onAsk={(prompt = '润色所选内容，保持原意', range) => {
+              askWritingAssistant(active.id, prompt, shell.onAssistant, view.current, range);
+            }}
           />
         ) : (
           <div className="writing-empty">
@@ -529,10 +750,11 @@ export function WritingSpace({
                 ? '请选择文档'
                 : '尚未打开文件夹'}
           </span>
-          <span>已选 {selectedParagraphs} 段</span>
+          {!preview && <span>已选 {selectedParagraphs} 段</span>}
           <span>
-            {active ? `${Array.from(active.content.replace(/\s/g, '')).length} 字 · ` : ''}Markdown
-            · UTF-8
+            {active && !preview
+              ? `${Array.from(active.content.replace(/\s/g, '')).length} 字 · ${active.fileType === 'text' ? '文本' : 'Markdown'} · UTF-8`
+              : active?.path.split('.').at(-1)?.toUpperCase()}
           </span>
         </footer>
       </main>
@@ -541,10 +763,21 @@ export function WritingSpace({
         shell.rightOpen &&
         createPortal(
           <div className="writing-assistant-host" style={{ width: shell.rightWidth }}>
-            {active ? (
+            {active && !preview ? (
               <WritingAgentSidebar
                 key={active.id}
                 document={active}
+                space={documentThread}
+                after={
+                  graph.candidates.length ? (
+                    <ResonanceCards
+                      workspace={graph}
+                      rootId={active.rootId}
+                      path={active.path}
+                      onOpen={graphProps.onOpen}
+                    />
+                  ) : undefined
+                }
                 host={writingHost}
                 selectedParagraphs={selectedParagraphs}
                 configure={shell.configure}
@@ -579,6 +812,33 @@ export function WritingSpace({
           </div>,
           shell.rightHost,
         )}
+      <Dialog open={!!moving} onOpenChange={(open) => !open && setMoving(null)}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>移动到文件夹</DialogTitle>
+            <DialogDescription>{moving?.name}</DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <NativeSelect
+              aria-label="目标文件夹"
+              value={moveTarget}
+              onChange={(e) => setMoveTarget(e.target.value)}
+            >
+              {moveTargets.map((path) => (
+                <option key={path} value={path}>
+                  {path || '根目录'}
+                </option>
+              ))}
+            </NativeSelect>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setMoving(null)}>
+              取消
+            </Button>
+            <Button onClick={() => moving && void moveFile(moving.path, moveTarget)}>移动</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!creation} onOpenChange={(open) => !open && !creating && setCreation(null)}>
         <DialogContent
           size="sm"

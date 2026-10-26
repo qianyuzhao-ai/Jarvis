@@ -2,6 +2,7 @@ import type { AppearanceBridge } from './appearance';
 import type { GenerationBridge } from './generation';
 import type { WritingBridge } from './writing';
 import type { AgentBridge } from './agent';
+import type { OsBridge } from './agent-os';
 import type { ModelsBridge } from './models';
 import type { UpdateBridge } from './updates';
 import type { ProjectsBridge } from './project';
@@ -12,6 +13,7 @@ export interface DesktopInfo {
   readonly writing: WritingBridge;
   readonly projects: ProjectsBridge;
   readonly agent: AgentBridge;
+  readonly os: OsBridge;
   readonly models: ModelsBridge;
   readonly updates: UpdateBridge;
   readonly versions: {

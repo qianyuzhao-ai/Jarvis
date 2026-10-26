@@ -22,7 +22,7 @@ test('desktop navigation and isolation', async () => {
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await expect(page.getByRole('heading', { name: '我的项目' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的画布' })).toBeVisible();
     const renderer = await page.evaluate(() => ({
       bridge: window.desktop,
       require: 'require' in window,
@@ -53,8 +53,8 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     page.on('console', (message) => {
       if (message.text().includes('[React Flow]')) errors.push(message.text());
     });
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('画布交互测试');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('画布交互测试');
     await expect(page.locator('.react-flow__attribution')).toHaveCount(0);
     await page.getByRole('button', { name: '图像', exact: true }).click();
     const nodes = page.locator('.react-flow__node-media');
@@ -200,7 +200,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
       .click();
     await expect(nodes).toHaveCount(2);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await expect(nodes).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally {
@@ -325,7 +325,7 @@ test('references stay stacked in compact mode and enforce per-kind limits', asyn
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page.locator('.react-flow__node-media').first().click();
     await page.getByLabel('图像提示词').fill('专注编辑提示词');

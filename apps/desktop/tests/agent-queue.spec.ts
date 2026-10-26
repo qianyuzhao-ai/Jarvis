@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { newProject, projectMenu } from './helpers/os-ui';
 
 test('mid-reply messages steer by default; in queue mode they wait, can be steered once, and do not block other conversations', async () => {
   const held: { prompt: string; finish: (text: string) => void }[] = [];
@@ -65,7 +66,7 @@ test('mid-reply messages steer by default; in queue mode they wait, can be steer
     await page.getByRole('combobox', { name: '回复中发送消息' }).selectOption('queue');
     await expect(page.getByRole('status').filter({ hasText: /^已保存$/ })).toBeVisible();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
 
     await input.fill('甲的问题');
     await page.getByRole('button', { name: '发送消息' }).click();
@@ -79,7 +80,7 @@ test('mid-reply messages steer by default; in queue mode they wait, can be steer
     await expect(messages).toHaveCount(4);
 
     // A second conversation is not blocked by the first one replying.
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await input.fill('丙的问题');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect.poll(() => held.length).toBe(2);
@@ -87,7 +88,7 @@ test('mid-reply messages steer by default; in queue mode they wait, can be steer
     await expect(messages.last()).toContainText('丙的回答');
 
     // The first queued message is steered in by hand; the second keeps waiting.
-    await page.getByRole('button', { name: '打开对话：甲的问题' }).click();
+    await projectMenu(page, '甲的问题');
     await messages.nth(2).getByRole('button', { name: '引导' }).click();
     await expect(messages.nth(2)).toContainText('将在当前步骤结束后引导回复');
     await expect(messages.nth(3)).toContainText('排队中，当前回复结束后发送');

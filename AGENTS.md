@@ -2,7 +2,11 @@
 
 ## 当前范围
 
-Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按项目存于主进程 ProjectStore，偏好存 IndexedDB，旧 IndexedDB 工作区首启一次性迁移并保留原记录）、Markdown 写作、Pi 首页文字 Chat 和画布右侧 Agent。画布 Agent 使用项目独立会话，在主进程直接读写所属项目（无需打开），只能读取节点、创建/修改/移动/连接/定位节点，支持同轮撤销（账本逆操作）；支持所选图片与视频代表帧输入，不包含完整音视频理解。Agent 支持 Jarvis 独立导入的 SKILL.md 技能包，首页/画布/写作共用 / 选择与按规则自动加载；仅能读取已启用技能包的说明和文本参考，不执行包内脚本。所有 Agent 工具调用先经主进程策略引擎：不在会话能力包内的工具被拦截，声明需确认的工具弹窗询问用户（5 分钟未答视为拒绝）。首页主 Agent 可查看空间子 Agent 的结果卡片与对话记录，并委派、发消息或停止子 Agent，画布项目无需打开即可委派，写作文档只限已打开的；子 Agent 可把越界请求转交主 Agent，委派任务结束后向来源对话发送状态通知。画布与写作的可撤销修改记入主进程操作账本，撤销经主进程转给持有数据的窗口执行。画布 Agent 可对所属项目节点发起生成（主进程执行并写回，完成后自动续跑）；首页主 Agent 可新建/打开项目、打开文档，并跨文档列出、按名搜索、读取已保存内容和新建文档（不覆盖）。首页主 Agent 可在“设置 - 文件与权限”授权的文件夹内列出、搜索、读取、新建、移动文件，覆盖与删除需确认，本轮文件修改可凭快照撤销，授权文件夹外一律拦截。首页主 Agent 可使用“设置 - 插件 - MCP”接入的 MCP 服务（stdio / Streamable HTTP + OAuth，凭据存系统钥匙串，Google 与邮件经 MCP 接入）：只读工具直接执行，其余（发送、写入、删除等）每次确认，结果按外部数据处理。首页主 Agent 可查看与增改删日程（macOS 经 osascript/JXA 桥接 EventKit 访问系统日历，待真机联调；其他系统为 Jarvis 本地日历），写日历每次确认，左侧栏“日历”为周视图。回复中再次发送默认引导当前回复，可在设置 - 常规改为排队。不提供 Shell 工具，不扫描个人 Pi 或其他 Agent 技能目录；写作助手已接入，按当前文件夹与文档隔离会话，只能读取/修改当前标签文档的编辑器缓冲区，带版本校验与同轮撤销；修改保持未保存，保存仍走现有流程，不允许访问其他文件或直接写磁盘。Agent 模型配置为“服务商 → 模型”两层：Pi SDK 内置服务商（第一期仅 API Key 类，不含 OAuth 订阅登录、Bedrock/Vertex/Azure/Cloudflare）与多个自定义中转站，各自一份加密 Key、多选启用模型，全局一个默认模型，首页/画布/写作共用；输入框可切换模型和思考程度，只有图片能力为“支持”的模型接收图片。AIGC 空间生成服务仍只用“内网地址”配置。生成协议与 Agent 已有模拟服务和真实窗口验证，真实服务仍需联调；不要因旧方案规划而扩展实现。
+V1.0.0 改造进行中（见 [memory/agent-os-v1.md](memory/agent-os-v1.md)，与下文冲突时以它为准）：Agent 改为 Agent OS——项目 = 一个协调者（Coordinator，只读小工具集）+ 线程（满配只读、写能力按需挂载），不可逆操作改为决策卡批准（不再 5 分钟超时拒绝），新增项目记忆、定时/周期/订阅唤醒与崩溃续跑；对话数据存 `userData/agent/os/`，旧记录不迁移。第一批只做首页，画布与写作右侧栏 Agent 暂时下线，第二批作为能力包接回：右侧栏 = 绑定画布 / 文档的线程（已确认）；已完成：线程 targets、画布/生成/写作能力包、未打开文档版本校验写盘且可撤销、生成完成唤醒，以及画布/写作右侧栏的紧凑线程界面（历史、在首页查看、置顶进度、紧凑决策卡，侧栏不显示技能按钮）。决策卡可选给出的选项，也可自己输入其他答案（批准类除外）。首页已按确认的 Figma 实现：项目切换菜单（新建项目、项目设置，无“新对话”）、Overview、协调对话、线程视图与内联决策卡；决策卡与线程卡住发系统通知（普通问题可在 macOS 通知里直接选，不可逆的只能点开批准）；目录授权改在项目设置。创作空间界面里的“项目”改称“画布”。以下为 0.4.0 的范围描述。
+
+Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按项目存于主进程 ProjectStore，偏好存 IndexedDB，旧 IndexedDB 工作区首启一次性迁移并保留原记录）、Markdown 块编辑/源码双视图写作（未编辑块原文保留、文档图标、双链引用、/ 命令面板、Callout/折叠/代码高亮、Mermaid/思维导图/表格与图片，未知结构保留原文块）、Pi 首页文字 Chat 和画布右侧 Agent。画布 Agent 使用项目独立会话，在主进程直接读写所属项目（无需打开），只能读取节点、创建/修改/移动/连接/定位节点，支持同轮撤销（账本逆操作）；支持所选图片与视频代表帧输入，不包含完整音视频理解。Agent 支持 Jarvis 独立导入的 SKILL.md 技能包，首页/画布/写作共用 / 选择与按规则自动加载；仅能读取已启用技能包的说明和文本参考，不执行包内脚本。所有 Agent 工具调用先经主进程策略引擎：不在会话能力包内的工具被拦截，声明需确认的工具弹窗询问用户（5 分钟未答视为拒绝）。首页主 Agent 可查看空间子 Agent 的结果卡片与对话记录，并委派、发消息或停止子 Agent，画布项目无需打开即可委派，写作文档只限已打开的；子 Agent 可把越界请求转交主 Agent，委派任务结束后向来源对话发送状态通知。画布与写作的可撤销修改记入主进程操作账本，撤销经主进程转给持有数据的窗口执行。画布 Agent 可对所属项目节点发起生成（主进程执行并写回，完成后自动续跑）；首页主 Agent 可新建/打开项目、打开文档，并跨文档列出、按名搜索、读取已保存内容和新建文档（不覆盖）。首页主 Agent 可在“设置 - 文件与权限”授权的文件夹内列出、搜索、读取、新建、移动文件，覆盖与删除需确认，本轮文件修改可凭快照撤销，授权文件夹外一律拦截。首页主 Agent 可使用“设置 - 插件 - MCP”接入的 MCP 服务（stdio / Streamable HTTP + OAuth，凭据存系统钥匙串，Google 与邮件经 MCP 接入）：只读工具直接执行，其余（发送、写入、删除等）每次确认，结果按外部数据处理。首页主 Agent 可查看与增改删日程（macOS 经 osascript/JXA 桥接 EventKit 访问系统日历，待真机联调；其他系统为 Jarvis 本地日历），写日历每次确认，左侧栏“日历”为周视图。回复中再次发送默认引导当前回复，可在设置 - 常规改为排队。不提供 Shell 工具，不扫描个人 Pi 或其他 Agent 技能目录；写作助手已接入，/ AI 条目、块菜单与选区润色会自动打开当前文档助手并发送指令，读取选区包含块类型与标题路径；按当前文件夹与文档隔离会话，只能读取/修改当前标签文档的编辑器缓冲区，带版本校验与同轮撤销；星图索引授权目录内的文件与引用，写作 Agent 可只读同文件夹其他 Markdown 的标题、标签、200 字摘要和修改时间，不能读其全文；共鸣点候选需确认才建立关联，拖线只改来源文档，打开中文档走缓冲区、未打开文档版本校验写盘，操作可经账本撤销；助手正文修改保持未保存，保存仍走现有流程，写作助手不允许读取其他文件全文或直接写磁盘。Agent 模型配置为“服务商 → 模型”两层：Pi SDK 内置服务商（第一期仅 API Key 类，不含 OAuth 订阅登录、Bedrock/Vertex/Azure/Cloudflare）与多个自定义中转站，各自一份加密 Key、多选启用模型，全局一个默认模型，首页/画布/写作共用；输入框可切换模型和思考程度，只有图片能力为“支持”的模型接收图片。AIGC 空间生成服务仍只用“内网地址”配置。生成协议与 Agent 已有模拟服务和真实窗口验证，真实服务仍需联调；不要因旧方案规划而扩展实现。
+
+写作文件区支持全格式目录、跨文件夹标签，以及重命名、移动、创建副本、单文件/空文件夹移入废纸篓；文本限受支持格式和严格 UTF-8，保留 BOM/CRLF 并校验版本。图片、PDF、音视频通过 `jarvis-writing://` 只读资产协议预览，不暴露任意磁盘路径读取。W1–W6 实施与当前验收结论集中在 `memory/writing-space-implementation.md`；尚未通过的门禁和真实环境待验项不可按已通过处理。
 
 ## 命令
 
@@ -34,9 +38,13 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 
 - [memory/ui-v1-implementation.md](memory/ui-v1-implementation.md)：UI V1 基础组件分阶段实施、设计来源与验收证据。
 - [memory/ui-v1-shell-plan.md](memory/ui-v1-shell-plan.md)：UI V1 第三阶段执行计划书（窗口外壳、跨空间标签页、空间 Agent 右边栏、画布节点），交给实现方按阶段执行。
+- [memory/writing-space-plan.md](memory/writing-space-plan.md)：写作空间重新设计执行计划书（全格式目录、Tiptap 块编辑与无损往返、/ 面板与富模块、Agent 块级联动、星图），交给 Codex 按 W1–W6 实现，Claude 负责验收。
+- [memory/writing-space-implementation.md](memory/writing-space-implementation.md)：写作空间 W1–W6 的实施进度、验证证据、失败与差异记录。
+- [memory/writing-space-acceptance.md](memory/writing-space-acceptance.md)：Claude 对 `feature/writing-space` 的验收记录（命令结果、自加样本复测、退回项与复验结论）。
 
 - [memory/git-workflow.md](memory/git-workflow.md)：本项目采用的 Gitflow 分支、合并与发布规则。开始开发或进行 Git 操作前先读此文件。
 - [memory/engineering.md](memory/engineering.md)：本地基础工程、运行命令、进程边界与验证状态。开发任务先读此文件。
+- [memory/agent-os-v1.md](memory/agent-os-v1.md)：V1.0.0 Agent OS（项目 = OS = Coordinator + 线程）改造的已确认决策、存储布局、模块结构与分批进度；取代 agent-architecture.md 的主/子 Agent 方案。
 - [memory/agent-architecture.md](memory/agent-architecture.md)：主 Agent + 空间子 Agent 方案的代码差距分析、已确认决策、详细改造方案所在的文档标签页与实施进度（A0–A6 全部完成，A6 的 macOS EventKit 路径待真机联调）。
 - [memory/design.md](memory/design.md)：设计要求、Figma 页面和组件位置、设计变更、验证结果、环境限制及未决事项。
 - [memory/figma-sync-2026-10-21/state.json](memory/figma-sync-2026-10-21/state.json)：本轮 Figma 同步的已返回节点 ID、验证结果与中断续传状态；页面脚本位于同目录。
@@ -44,6 +52,7 @@ Electron + React 桌面工作台，已接入 React Flow 创作空间（项目按
 
 - [memory/figma-sync-2026-10-21/agent-skills-state.json](memory/figma-sync-2026-10-21/agent-skills-state.json)：Skills 导入、斜杠选择、自动加载的组件/页面与验证记录。
 - [memory/figma-sync-2026-10-21/model-settings-v1-state.json](memory/figma-sync-2026-10-21/model-settings-v1-state.json)：模型配置改造（服务商 → 模型、添加服务商流程、分组模型选择器）的 V1 画面与本地组件节点、验证记录。
+- [memory/figma-sync-2026-10-21/writing-space-components-state.json](memory/figma-sync-2026-10-21/writing-space-components-state.json)：写作空间重新设计的 V1 组件初稿（分区 29–33、新增图标、评审样张）节点 ID、属性与验证记录。
 
 ### 开始任务前
 
@@ -68,6 +77,7 @@ Prompt 引用交互最近同步记录：[memory/figma-sync-2026-10-21/prompt-ref
 ### 维护方式
 
 - `AGENTS.md` 保存协作流程；具体设计内容集中在 `memory/design.md`，避免维护两份相同信息。
+- 根目录 `CLAUDE.md` 只有一行 `@AGENTS.md`，供 Claude Code 自动加载本文件；协作规则只在 `AGENTS.md` 中维护。
 - 本项目记忆直接维护在 `memory/`，不要擅自写入用户全局记忆目录。
 - 如需增加其他主题的记忆文件，使用明确的主题文件名，并在本文件的记忆索引中登记。
 - 引用的本地路径、外部链接和节点 ID 必须来自实际读取或工具结果，不得编造。

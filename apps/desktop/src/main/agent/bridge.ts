@@ -1,8 +1,23 @@
-import { writingScopeSchema, writingReplySchema } from '../../shared/writing-agent';
-import { app, BrowserWindow, clipboard, dialog, ipcMain, shell, type WebContents } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  Notification,
+  shell,
+  type WebContents,
+} from 'electron';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { agentId, agentSendSchema, type AgentResult } from '../../shared/agent';
+import { agentId, type AgentResult } from '../../shared/agent';
+import {
+  decisionAnswerSchema,
+  osId,
+  osSendSchema,
+  projectPatchSchema,
+  spaceThreadSchema,
+} from '../../shared/agent-os';
 import {
   providerInputSchema,
   providerTestSchema,
@@ -14,45 +29,64 @@ import { providerCatalog } from './catalog';
 import { JsonFile } from './json-file';
 import { systemKeyCipher } from './key-cipher';
 import { ModelStore } from './model-store';
-import { AgentService } from './service';
-import { AgentStore } from './store';
-import { canvasReplySchema } from '../../shared/canvas-agent';
-import { approvalResponseSchema } from '../../shared/agent-approval';
-import { undoRequestSchema } from '../../shared/agent-ledger';
 import { concurrencySchema, replyModeSchema } from '../../shared/agent-settings';
-import { openTargetsSchema } from '../../shared/agent-targets';
 import { folderId } from '../../shared/agent-files';
-import { LocalFiles } from './local-files';
 import { McpService } from './mcp/service';
 import { AppleCalendar } from './calendar/apple';
 import { LocalCalendar } from './calendar/local';
 import { rangeSchema } from '../../shared/agent-calendar';
 import { mcpServerInputSchema } from '../../shared/agent-mcp';
+import { memoryName } from './kernel/memory';
+import { openTargetsSchema } from '../../shared/agent-targets';
+import { canvasReplySchema } from '../../shared/canvas-agent';
+import { writingReplySchema } from '../../shared/writing-agent';
 import { projectStore } from '../projects/bridge';
 import { generationRunner } from '../generation/bridge';
-import { writingFiles } from '../writing/bridge';
+import { writingFiles, writingGraph } from '../writing/bridge';
+import { AgentOs } from './os/service';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
-let service: AgentService;
-export const isAgentBusy = () => service?.isBusy ?? false;
+let os: AgentOs;
+/** The Agent OS, for the writing space's link and rename operations. */
+export const writingAgentService = () => os;
+export const isAgentBusy = () => os?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });
   contents.on('did-start-navigation', (_event, _url, _inPlace, main) => {
-    if (!main) return;
-    service.dropTargets(contents.id);
-    void service.cancelOwner(contents.id);
+    if (main) os?.dropWindow(contents.id);
   });
   contents.once('destroyed', () => {
     trusted.delete(contents.id);
-    service.dropTargets(contents.id);
-    void service.cancelOwner(contents.id);
+    os?.dropWindow(contents.id);
   });
 }
+const open = () =>
+  [...trusted.values()].filter(
+    ({ contents, url }) => !contents.isDestroyed() && contents.getURL() === url,
+  );
+const broadcast = (channel: string, payload: unknown) => {
+  for (const { contents } of open()) contents.send(channel, payload);
+};
+async function pickFolder(owner: number, title: string) {
+  const contents = trusted.get(owner)?.contents;
+  const window = contents && BrowserWindow.fromWebContents(contents);
+  if (!window) throw new Error('当前窗口不可用');
+  const result = await dialog.showOpenDialog(window, {
+    title,
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  return result.canceled ? null : (result.filePaths[0] ?? null);
+}
+
+/**
+ * The Agent OS in the main process and its IPC. Rounds belong to no window: any trusted window
+ * may watch, steer or stop them, and they go on when windows close. Decision cards are answered
+ * by `os:answer` (a click in a trusted window) or, for questions that are not irreversible, by a
+ * button on their macOS notification.
+ */
 export async function registerAgent() {
   const root = join(app.getPath('userData'), 'agent');
   const config = new ModelStore(new JsonFile(join(root, 'connection.json')), systemKeyCipher);
-  const store = new AgentStore(new JsonFile(join(root, 'index.json')));
-  const folders = new LocalFiles(join(root, 'folders.json'), join(root, 'file-snapshots'));
   const mcp = new McpService(join(root, 'mcp.json'), join(root, 'mcp-oauth'), systemKeyCipher, {
     openExternal: (url) => void shell.openExternal(url),
     // A local command runs only after the user agrees in a native dialog, not in the renderer.
@@ -78,64 +112,181 @@ export async function registerAgent() {
     process.platform === 'darwin'
       ? new AppleCalendar()
       : new LocalCalendar(join(root, 'calendar.json'));
-  service = new AgentService(config, store, root, {
+  os = new AgentOs(config, root, {
     calendar,
-    folders,
     mcp,
     projects: projectStore(),
     generation: generationRunner(),
     files: writingFiles(),
+    graph: writingGraph(),
   });
   let initializationError = '';
   try {
     await config.initialize();
-    await store.initialize();
-    await service.ledger.initialize(store.records.map((r) => r.view.id));
-    await service.skills.initialize();
-    await service.loadSettings();
-    await folders.initialize();
     await mcp.initialize();
+    await os.initialize();
   } catch {
     initializationError = 'Agent 本地记录无法读取，原文件已保留';
   }
-  service.onChange = (event) => {
-    for (const { contents, url } of trusted.values())
-      if (!contents.isDestroyed() && contents.getURL() === url) contents.send('agent:event', event);
-  };
-  service.onSessionChange = (event) => {
-    for (const { contents, url } of trusted.values())
-      if (!contents.isDestroyed() && contents.getURL() === url)
-        contents.send('agent:session-event', event);
-  };
-  service.canvas.dispatch = (owner, command) => {
+  os.onChange = (event) => broadcast('os:event', event);
+  os.onSessionChange = (event) => broadcast('os:session-event', event);
+  // The focused window if there is one, else any open window.
+  // Tool commands for a canvas or document go to the window that has it open.
+  const host = (owner: number, closed: string) => {
     const target = trusted.get(owner);
     if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
-      throw new Error('画布窗口已关闭');
-    target.contents.send('agent:canvas-command', command);
+      throw new Error(closed);
+    return target.contents;
   };
-  // The window the round came from if it is still open, else any open window.
-  service.onNavigate = (owner, target) => {
-    const open = [...trusted.values()].filter(
-      ({ contents, url }) => !contents.isDestroyed() && contents.getURL() === url,
-    );
-    const chosen = open.find((w) => w === trusted.get(owner)) ?? open[0];
-    chosen?.contents.send('agent:navigate', target);
+  os.spaces.canvas.dispatch = (owner, command) =>
+    host(owner, '画布窗口已关闭').send('agent:canvas-command', command);
+  os.spaces.writing.dispatch = (owner, command) =>
+    host(owner, '写作窗口已关闭').send('agent:writing-command', command);
+  os.onNavigate = (target) => {
+    const windows = open();
+    const focused = windows.find(({ contents }) => contents.isFocused());
+    (focused ?? windows[0])?.contents.send('os:navigate', target);
   };
-  service.approvals.onChange = (owner) => {
-    const target = trusted.get(owner);
-    if (target && !target.contents.isDestroyed() && target.contents.getURL() === target.url)
-      target.contents.send('agent:approvals', service.approvals.list(owner));
+  // A notification click shows the conversation, in the window already showing it if any.
+  const reveal = (sessionId: string) => {
+    const windows = open();
+    const target =
+      windows.find(({ contents }) => os.viewedBy(contents.id, sessionId)) ??
+      windows.find(({ contents }) => contents.isFocused()) ??
+      windows[0];
+    const window = target && BrowserWindow.fromWebContents(target.contents);
+    if (!target || !window) return;
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+    target.contents.send('os:open', sessionId);
   };
-  service.writing.dispatch = (owner, command) => {
-    const target = trusted.get(owner);
-    if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
-      throw new Error('写作窗口已关闭');
-    target.contents.send('agent:writing-command', command);
+  // Kept until closed: a collected notification loses its click and button handlers.
+  const shown = new Set<Notification>();
+  os.onNotify = (notice) => {
+    if (!Notification.isSupported()) return;
+    // Nothing to announce for a conversation the user is looking at.
+    if (
+      open().some(
+        ({ contents }) => contents.isFocused() && os.viewedBy(contents.id, notice.sessionId),
+      )
+    )
+      return;
+    // Notification buttons exist only on macOS. A question may be answered there; approvals and
+    // other irreversible steps only offer “查看”, and the user approves on the card itself.
+    const buttons = process.platform === 'darwin' ? (notice.answer?.options ?? ['查看']) : [];
+    const notification = new Notification({
+      title: notice.title,
+      body: notice.body,
+      silent: false,
+      actions: buttons.map((text) => ({ type: 'button' as const, text })),
+    });
+    const done = () => shown.delete(notification);
+    notification.on('close', done);
+    notification.on('click', () => {
+      done();
+      reveal(notice.sessionId);
+    });
+    notification.on('action', (_event, index) => {
+      done();
+      if (!notice.answer) return reveal(notice.sessionId);
+      // An answer that no longer applies (answered in a window, thread stopped) shows the thread.
+      os.answerDecision(notice.answer.decisionId, index).catch(() => reveal(notice.sessionId));
+    });
+    shown.add(notification);
+    notification.show();
   };
+  // Settings pages act on the current project; adding a folder before any chat creates one.
+  const current = async () => os.registry.currentId ?? (await os.createProject('我的项目'));
+  const sent = new Map<string, string>();
   const handlers: Record<string, (request: unknown, owner: number) => unknown> = {
-    'agent:skills': () => service.skills.list(),
+    // Agent OS
+    'os:snapshot': () => os.snapshot(),
+    'os:session': (r) => os.session(osId.parse(r)),
+    'os:viewing': (r, owner) => os.setViewing(owner, z.array(osId).max(20).parse(r)),
+    'os:send': async (r) => {
+      const v = osSendSchema.parse(r);
+      const prior = sent.get(v.requestId);
+      if (prior) return prior;
+      const id = await os.send(v.sessionId, v.text, v.canvas);
+      sent.set(v.requestId, id);
+      if (sent.size > 500) sent.delete(sent.keys().next().value as string);
+      return id;
+    },
+    'os:start-space-thread': (r) => os.startSpaceThread(spaceThreadSchema.parse(r)),
+    'os:steer': (r) => {
+      const v = z.object({ sessionId: osId, messageId: osId }).strict().parse(r);
+      return os.steer(v.sessionId, v.messageId);
+    },
+    'os:cancel': (r) => os.cancel(osId.parse(r)),
+    'os:set-model': (r) => {
+      const v = z
+        .object({ sessionId: osId, model: z.string().trim().min(1).max(200) })
+        .strict()
+        .parse(r);
+      return os.setModel(v.sessionId, v.model);
+    },
+    'os:set-thinking': (r) => {
+      const v = thinkingInputSchema.parse(r);
+      return os.setThinkingLevel(v.sessionId, v.level);
+    },
+    'os:copy-reply': (r) => {
+      const v = z.object({ sessionId: osId, messageId: osId }).strict().parse(r);
+      const message = os.session(v.sessionId).session.messages.find((m) => m.id === v.messageId);
+      if (!message || message.role !== 'assistant' || message.status === 'running' || !message.text)
+        throw new Error('没有可复制的回复');
+      clipboard.writeText(message.text);
+    },
+    'os:undo': (r) => os.undo(osId.parse(r)),
+    'os:stop-thread': (r) => os.stopThread(osId.parse(r)),
+    'os:resolve-thread': (r) => {
+      const v = z.object({ threadId: osId, resolved: z.boolean() }).strict().parse(r);
+      return os.resolveThread(v.threadId, v.resolved);
+    },
+    'os:rename-thread': (r) => {
+      const v = z
+        .object({ threadId: osId, title: z.string().trim().min(1).max(100) })
+        .strict()
+        .parse(r);
+      return os.renameThread(v.threadId, v.title);
+    },
+    'os:answer': (r) => {
+      const v = decisionAnswerSchema.parse(r);
+      return os.answerDecision(v.decisionId, v.option, v.text);
+    },
+    'os:create-project': (r) => os.createProject(z.string().trim().min(1).max(100).parse(r)),
+    'os:update-project': (r) => {
+      const v = z.object({ id: osId, patch: projectPatchSchema }).strict().parse(r);
+      return os.updateProject(v.id, v.patch);
+    },
+    'os:remove-project': (r) => os.removeProject(osId.parse(r)),
+    'os:current-project': (r) => os.setCurrentProject(osId.parse(r)),
+    'os:add-folder': async (r, owner) => {
+      const projectId = osId.parse(r);
+      const directory = await pickFolder(owner, '选择这个项目可以访问的文件夹');
+      return directory ? os.addFolder(projectId, directory) : null;
+    },
+    'os:remove-folder': (r) => {
+      const v = z.object({ projectId: osId, folderId }).strict().parse(r);
+      return os.removeFolder(v.projectId, v.folderId);
+    },
+    'os:memory': (r) => os.listMemory(osId.parse(r)),
+    'os:memory-topic': (r) => {
+      const v = z.object({ projectId: osId, name: memoryName }).strict().parse(r);
+      return os.readMemory(v.projectId, v.name);
+    },
+    // Canvas and writing hosts: what each window has open, and its replies to tool commands.
+    'agent:open-targets': (r, owner) => os.spaces.setTargets(owner, openTargetsSchema.parse(r)),
+    'agent:claim-canvas': (r, owner) => os.spaces.canvas.claim(owner, agentId.parse(r)),
+    'agent:complete-canvas': (r, owner) =>
+      os.spaces.canvas.complete(owner, canvasReplySchema.parse(r)),
+    'agent:claim-writing': (r, owner) => os.spaces.writing.claim(owner, agentId.parse(r)),
+    'agent:complete-writing': (r, owner) =>
+      os.spaces.writing.complete(owner, writingReplySchema.parse(r)),
+    // Settings shared by every project
+    'agent:skills': () => os.skills.list(),
     'agent:import-skill': async (_r, owner) => {
-      if (service.isBusy) throw new Error('请先停止或等待当前请求完成');
+      if (os.isBusy) throw new Error('请先停止或等待当前请求完成');
       const contents = trusted.get(owner)?.contents;
       const window = contents && BrowserWindow.fromWebContents(contents);
       if (!window) throw new Error('当前窗口不可用');
@@ -144,50 +295,25 @@ export async function registerAgent() {
         properties: ['openDirectory'],
       });
       if (result.canceled || !result.filePaths[0]) return null;
-      return service.importSkill(result.filePaths[0]);
+      return os.importSkill(result.filePaths[0]);
     },
     'agent:enable-skill': (r) => {
       const v = z.object({ id: agentId, enabled: z.boolean() }).strict().parse(r);
-      return service.setSkillEnabled(v.id, v.enabled);
+      return os.setSkillEnabled(v.id, v.enabled);
     },
-    'models:settings': () => config.view(),
-    'models:catalog': () => providerCatalog(),
-    'models:save-provider': (r) => service.saveProvider(providerInputSchema.parse(r)),
-    'models:test-provider': (r, owner) => {
-      const v = providerTestSchema.parse(r);
-      return service.testProvider(v.provider, owner, v.modelId);
+    'agent:settings': () => os.settings.get(),
+    'agent:set-concurrency': (r) => os.setConcurrency(concurrencySchema.parse(r)),
+    'agent:set-reply-mode': (r) => os.setReplyMode(replyModeSchema.parse(r)),
+    // The current project's folders, for the settings page until projects get their own UI.
+    'agent:folders': () => {
+      const id = os.registry.currentId;
+      return id ? os.registry.get(id).files.list() : [];
     },
-    'models:candidates': (r) => service.fetchProviderModels(providerInputSchema.parse(r)),
-    'models:set-provider-models': (r) => {
-      const v = setProviderModelsSchema.parse(r);
-      return service.setProviderModels(v.providerId, v.models);
-    },
-    'models:update': (r) => service.updateModel(updateModelSchema.parse(r)),
-    'models:remove': (id) => service.removeModel(agentId.parse(id)),
-    'models:remove-provider': (id) => service.removeProvider(agentId.parse(id)),
-    'models:default': (id) => service.setDefaultModel(agentId.parse(id)),
-    'models:probe-vision': (id, owner) => service.probeVision(agentId.parse(id), owner),
-    'agent:thinking': (r) => {
-      const v = thinkingInputSchema.parse(r);
-      return service.setThinkingLevel(v.sessionId, v.level);
-    },
-    'agent:snapshot': () => service.snapshot(),
-    'agent:settings': () => service.settings.get(),
-    'agent:set-concurrency': (r) => service.setConcurrency(concurrencySchema.parse(r)),
-    'agent:set-reply-mode': (r) => service.setReplyMode(replyModeSchema.parse(r)),
-    'agent:folders': () => folders.list(),
     'agent:add-folder': async (_r, owner) => {
-      const contents = trusted.get(owner)?.contents;
-      const window = contents && BrowserWindow.fromWebContents(contents);
-      if (!window) throw new Error('当前窗口不可用');
-      const result = await dialog.showOpenDialog(window, {
-        title: '授权 Jarvis 访问的文件夹',
-        properties: ['openDirectory', 'createDirectory'],
-      });
-      if (result.canceled || !result.filePaths[0]) return null;
-      return folders.add(result.filePaths[0]);
+      const directory = await pickFolder(owner, '授权 Jarvis 访问的文件夹');
+      return directory ? os.addFolder(await current(), directory) : null;
     },
-    'agent:remove-folder': (r) => folders.remove(folderId.parse(r)),
+    'agent:remove-folder': async (r) => os.removeFolder(await current(), folderId.parse(r)),
     'agent:calendar-status': () => calendar.status(),
     'agent:calendar-request': () => calendar.requestAccess(),
     'agent:calendar-events': async (r) => {
@@ -204,57 +330,32 @@ export async function registerAgent() {
     },
     'agent:mcp-reconnect': (r) => mcp.reconnect(agentId.parse(r)),
     'agent:mcp-sign-in': (r) => mcp.signIn(agentId.parse(r)),
-    'agent:steer': (r, owner) => {
-      const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
-      return service.steer(v.sessionId, v.messageId, owner);
+    'models:settings': () => config.view(),
+    'models:catalog': () => providerCatalog(),
+    'models:save-provider': (r) => os.models.saveProvider(providerInputSchema.parse(r)),
+    'models:test-provider': (r) => {
+      const v = providerTestSchema.parse(r);
+      return os.models.testProvider(v.provider, v.modelId);
     },
-    'agent:session': (r) => service.session(agentId.parse(r)),
-    'agent:create': () => service.create(),
-    'agent:create-canvas': (r) => service.create(agentId.parse(r)),
-    'agent:create-writing': (r) => service.create(undefined, writingScopeSchema.parse(r)),
-    'agent:claim-writing': (r, owner) => service.writing.claim(owner, agentId.parse(r)),
-    'agent:complete-writing': (r, owner) =>
-      service.writing.complete(owner, writingReplySchema.parse(r)),
-    'agent:undo': (r, owner) => service.undo(owner, undoRequestSchema.parse(r)),
-    'agent:approvals': (_r, owner) => service.approvals.list(owner),
-    'agent:respond-approval': (r, owner) => {
-      const v = approvalResponseSchema.parse(r);
-      service.approvals.respond(owner, v.id, v.approved);
+    'models:candidates': (r) => os.models.fetchProviderModels(providerInputSchema.parse(r)),
+    'models:set-provider-models': (r) => {
+      const v = setProviderModelsSchema.parse(r);
+      return os.models.setProviderModels(v.providerId, v.models);
     },
-    'agent:open-targets': (r, owner) => service.setTargets(owner, openTargetsSchema.parse(r)),
-    'agent:claim-canvas': (r, owner) => service.canvas.claim(owner, agentId.parse(r)),
-    'agent:complete-canvas': (r, owner) =>
-      service.canvas.complete(owner, canvasReplySchema.parse(r)),
-    'agent:rename': (r) => {
-      const v = z.object({ sessionId: agentId, title: z.string().trim().min(1).max(100) }).parse(r);
-      return service.rename(v.sessionId, v.title);
-    },
-    'agent:delete': (r) => service.deleteSession(agentId.parse(r)),
-    'agent:model': (r) => {
-      const v = z.object({ sessionId: agentId, model: z.string().trim().min(1).max(200) }).parse(r);
-      return service.setModel(v.sessionId, v.model);
-    },
-    'agent:send': (r, owner) => {
-      const v = agentSendSchema.parse(r);
-      return service.send(v.sessionId, v.requestId, v.text, owner, v.canvas, v.images, v.writing);
-    },
-    'agent:cancel': (r, owner) => service.cancel(agentId.parse(r), owner),
-    'agent:copy-reply': (r) => {
-      const v = z.object({ sessionId: agentId, messageId: agentId }).strict().parse(r);
-      const message = store.record(v.sessionId).view.messages.find((m) => m.id === v.messageId);
-      if (!message || message.role !== 'assistant' || message.status === 'running' || !message.text)
-        throw new Error('没有可复制的回复');
-      clipboard.writeText(message.text);
-    },
+    'models:update': (r) => os.models.updateModel(updateModelSchema.parse(r)),
+    'models:remove': (id) => os.models.removeModel(agentId.parse(id)),
+    'models:remove-provider': (id) => os.models.removeProvider(agentId.parse(id)),
+    'models:default': (id) => os.models.setDefaultModel(agentId.parse(id)),
+    'models:probe-vision': (id) => os.models.probeVision(agentId.parse(id)),
   };
   let quitting = false;
   // Local MCP servers are child processes; stop them with the app.
   app.on('will-quit', () => void mcp.dispose());
   app.on('before-quit', (event) => {
-    if (quitting || !service.isBusy) return;
+    if (quitting) return;
     event.preventDefault();
     quitting = true;
-    void Promise.all([service.shutdown(), mcp.dispose()]).finally(() => app.quit());
+    void Promise.all([os.shutdown(), mcp.dispose()]).finally(() => app.quit());
   });
   for (const [channel, handler] of Object.entries(handlers))
     ipcMain.handle(channel, async (event, request): Promise<AgentResult<unknown>> => {
@@ -274,7 +375,7 @@ export async function registerAgent() {
               ? 'Agent 请求格式不正确，请检查输入'
               : error instanceof Error && !('code' in error)
                 ? error.message
-                : 'Agent 操作失败，请检查本地存储或中转站连接',
+                : 'Agent 操作失败，请检查本地存储或模型服务连接',
         };
       }
     });

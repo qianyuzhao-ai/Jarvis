@@ -24,8 +24,8 @@ test('window shell opens, deduplicates, travels, closes and restores cross-space
     await expect(page.getByRole('button', { name: '日历', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: '展开画布助手' })).toHaveCount(0);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('第一画布');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('第一画布');
     await page
       .getByTestId('project-row')
       .filter({ hasText: '第一画布' })
@@ -35,15 +35,15 @@ test('window shell opens, deduplicates, travels, closes and restores cross-space
     await page.getByRole('menuitem', { name: '重命名', exact: true }).click();
     await page.getByLabel('新名称', { exact: true }).fill('侧栏重命名');
     await page.getByRole('button', { name: '保存名称', exact: true }).click();
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('侧栏重命名');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('侧栏重命名');
     await expect(tabs().getByRole('tab', { name: '侧栏重命名', exact: true })).toBeVisible();
-    await page.getByLabel('项目名称', { exact: true }).fill('第一画布');
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('第二画布');
+    await page.getByLabel('画布名称', { exact: true }).fill('第一画布');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('第二画布');
     await page.getByRole('button', { name: '后退', exact: true }).click();
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('第一画布');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('第一画布');
     await page.getByRole('button', { name: '前进', exact: true }).click();
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('第二画布');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('第二画布');
     await page
       .getByTestId('project-row')
       .filter({ hasText: '第一画布' })
@@ -105,25 +105,25 @@ test('project sidebar preserves name sorting and search without replacing the ac
     const page = await app.firstWindow();
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     for (const name of ['Zulu', 'Alpha']) {
-      await page.getByRole('button', { name: '新建项目', exact: true }).click();
-      await page.getByLabel('项目名称', { exact: true }).fill(name);
+      await page.getByRole('button', { name: '新建画布', exact: true }).click();
+      await page.getByLabel('画布名称', { exact: true }).fill(name);
     }
-    await page.getByLabel('项目排序').selectOption('name');
+    await page.getByLabel('画布排序').selectOption('name');
     const rows = page.getByTestId('project-row');
     await expect(rows.nth(0)).toContainText('Alpha');
     await expect(rows.nth(1)).toContainText('Zulu');
-    await page.getByRole('button', { name: '展开项目搜索' }).click();
-    await page.getByRole('textbox', { name: '搜索项目', exact: true }).fill('Zu');
+    await page.getByRole('button', { name: '展开画布搜索' }).click();
+    await page.getByRole('textbox', { name: '搜索画布', exact: true }).fill('Zu');
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText('Zulu');
-    await expect(page.getByLabel('项目名称', { exact: true })).toHaveValue('Alpha');
-    await page.getByRole('textbox', { name: '搜索项目', exact: true }).fill('missing');
+    await expect(page.getByLabel('画布名称', { exact: true })).toHaveValue('Alpha');
+    await page.getByRole('textbox', { name: '搜索画布', exact: true }).fill('missing');
     await expect(rows).toHaveCount(0);
-    await expect(page.getByText('没有找到匹配的项目')).toBeVisible();
-    await page.getByRole('textbox', { name: '搜索项目', exact: true }).press('Escape');
+    await expect(page.getByText('没有找到匹配的画布')).toBeVisible();
+    await page.getByRole('textbox', { name: '搜索画布', exact: true }).press('Escape');
     await expect(rows).toHaveCount(2);
-    await expect(page.getByRole('button', { name: '展开项目搜索' })).toBeFocused();
-    await expect(page.getByRole('textbox', { name: '搜索项目', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '展开画布搜索' })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: '搜索画布', exact: true })).toHaveCount(0);
   } finally {
     await app.close();
   }

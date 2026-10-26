@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
+import { newProject } from './helpers/os-ui';
 
 test('the concurrency setting in General persists and makes extra conversations wait', async () => {
   const held: (() => void)[] = [];
@@ -51,7 +52,7 @@ test('the concurrency setting in General persists and makes extra conversations 
     await input.fill('第一个对话');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect.poll(() => held.length).toBe(1);
-    await page.getByRole('button', { name: '新对话', exact: true }).click();
+    await newProject(page);
     await input.fill('第二个对话');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(page.getByText('等待中：同时回复的对话已达上限')).toBeVisible();

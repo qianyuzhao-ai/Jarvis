@@ -1,8 +1,11 @@
+import { blockContext } from './editor/markdown/block-context';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
-import type { EditorState, TransactionSpec } from '@codemirror/state';
-import { Transaction } from '@codemirror/state';
-import type { EditorView } from '@codemirror/view';
-import { isolateHistory } from '@codemirror/commands';
+import {
+  clearViewCache,
+  type BufferView,
+  type ViewCache,
+  type ExternalEdit,
+} from './editor/buffer-view';
 import { agentValue } from '../../../../shared/agent';
 import {
   writingCommandSchema,
@@ -12,13 +15,12 @@ import {
   type WritingReply,
 } from '../../../../shared/writing-agent';
 import { bufferVersion, textSliceEnd, WritingTransactions } from './writing-transactions';
-import { agentHistoryAnnotations, finishWritingAgent, lastAgentRun } from './writing-history';
 import type { useWriting } from './useWriting';
 import { setOpenDocuments } from '../agent/open-targets';
 export function useWritingHost(
   writing: ReturnType<typeof useWriting>,
-  view: MutableRefObject<EditorView | null>,
-  cache: MutableRefObject<Map<string, { state: EditorState; scroll: number }>>,
+  view: MutableRefObject<BufferView | null>,
+  cache: MutableRefObject<ViewCache>,
 ) {
   const transactions = useRef(new WritingTransactions());
   const [, refresh] = useState(0);
@@ -27,34 +29,46 @@ export function useWritingHost(
   // Documents of the open folder are delegation targets while this space is mounted.
   const openKey = JSON.stringify(
     writing.documents
-      .filter((d) => d.rootId === writing.root?.id)
+      .filter((d) => !d.fileType || ['markdown', 'text'].includes(d.fileType))
       .map((d) => ({ rootId: d.rootId, path: d.path, name: d.path.split('/').at(-1) ?? d.path })),
   );
   useEffect(() => {
     setOpenDocuments(JSON.parse(openKey));
     return () => setOpenDocuments([]);
   }, [openKey]);
+  useEffect(
+    () =>
+      window.desktop?.writing.onRenamed(({ rootId, from, to }) => {
+        transactions.current.rename(rootId, from, to);
+        for (const values of [
+          cache.current.source,
+          cache.current.blocks,
+          cache.current.selections,
+          cache.current.generations,
+        ]) {
+          for (const key of [...values.keys()]) {
+            const prefix = rootId + ':' + from;
+            if (key === prefix || key.startsWith(prefix + '/')) values.delete(key);
+          }
+        }
+      }),
+    [cache],
+  );
   const find = useCallback((scope: WritingScope) => {
     const w = latest.current;
-    if (w.root?.id !== scope.rootId) throw new Error('文档不在当前打开的文件夹中');
     const d = w.getDocuments().find((d) => sameWritingScope(d, scope));
     if (!d) throw new Error('文档已关闭');
     if (['conflict', 'error'].includes(d.status))
       throw new Error('文档存在外部修改或读取冲突，请先处理');
     return d;
   }, []);
-  const stateFor = useCallback(
-    (id: string) =>
-      latest.current.activeId === id && view.current
-        ? view.current.state
-        : cache.current.get(id)?.state,
-    [view, cache],
-  );
   const snapshot = useCallback(
     async (scope: WritingScope, from = 0, limit = 16000, selectionOnly = false) => {
       const doc = find(scope),
-        state = stateFor(doc.id),
-        range = state?.selection.main ?? { from: 0, to: 0 };
+        range =
+          view.current?.id === doc.id
+            ? view.current.getSelection()
+            : (cache.current.selections.get(doc.id) ?? { from: 0, to: 0 });
       const start = selectionOnly ? range.from : Math.min(from, doc.content.length),
         end = selectionOnly
           ? textSliceEnd(doc.content, start, Math.min(range.to - start, limit))
@@ -71,6 +85,7 @@ export function useWritingHost(
         from: start,
         text: doc.content.slice(start, end),
         next: !selectionOnly && end < doc.content.length ? end : null,
+        block: blockContext(doc.content, range.from),
         selection: {
           from: range.from,
           to: range.to,
@@ -79,30 +94,21 @@ export function useWritingHost(
         },
       };
     },
-    [find, stateFor],
+    [find, view, cache],
   );
   const changeBuffer = useCallback(
-    (id: string, content: string, annotations: TransactionSpec['annotations']) => {
+    (id: string, content: string, meta: ExternalEdit) => {
       const w = latest.current,
         doc = w.getDocuments().find((d) => d.id === id);
       if (!doc) throw new Error('文档已关闭');
-      const state = stateFor(id);
-      if (!state || state.doc.toString() !== doc.content)
-        throw new Error('编辑器尚未就绪或正在同步，请重新打开文档');
-      // Only this document's state is dispatched; inactive documents keep their cached history.
-      const tr = state.update({
-        changes: { from: 0, to: state.doc.length, insert: content },
-        annotations,
-      });
+      if (view.current?.id === id) {
+        if (view.current.content() !== doc.content) throw new Error('编辑器正在同步，请重试');
+        view.current.applyExternal(content, meta);
+      } else clearViewCache(cache.current, id);
       w.change(id, content, true);
-      if (w.activeId === id && view.current) view.current.dispatch(tr);
-      else {
-        const saved = cache.current.get(id);
-        cache.current.set(id, { state: tr.state, scroll: saved?.scroll ?? 0 });
-      }
       refresh((n) => n + 1);
     },
-    [stateFor, view, cache],
+    [view, cache],
   );
   useEffect(() => {
     const bridge = window.desktop?.agent;
@@ -131,10 +137,7 @@ export function useWritingHost(
           );
         else if (command.command.type === 'undo') {
           const entry = transactions.current.undo(doc, command.command.transactionId);
-          changeBuffer(doc.id, entry.before, [
-            isolateHistory.of('full'),
-            Transaction.userEvent.of('undo.agent'),
-          ]);
+          changeBuffer(doc.id, entry.before, { undo: true });
           transactions.current.remove(entry);
         } else {
           const edit = await transactions.current.prepare(doc, command);
@@ -144,10 +147,11 @@ export function useWritingHost(
             command.expiresAt < Date.now()
           )
             throw new Error('文档版本已变化，请重新读取后修改');
-          changeBuffer(doc.id, edit.transaction.after, [
-            ...agentHistoryAnnotations(command.runId, edit.transaction.startedAt),
-            ...(edit.first ? [isolateHistory.of('before')] : []),
-          ]);
+          changeBuffer(doc.id, edit.transaction.after, {
+            runId: command.runId,
+            startedAt: edit.transaction.startedAt,
+            first: edit.first,
+          });
           transactions.current.accept(edit.transaction);
           reply.transactionId = edit.transaction.id;
           reply.summary = `已修改：${edit.transaction.replaced ? `替换 ${edit.transaction.replaced} 段` : ''}${edit.transaction.inserted ? ` 插入 ${edit.transaction.inserted} 段` : ''} · ${doc.path.split('/').at(-1)}（未保存）`;
@@ -169,39 +173,35 @@ export function useWritingHost(
           latest.current.setNotice(error instanceof Error ? error.message : '写作回执失败'),
         );
     });
-    const offEvents = bridge.onEvent(({ snapshot }) => {
-      for (const doc of latest.current.getDocuments()) {
-        const state = stateFor(doc.id),
-          run = state?.field(lastAgentRun, false);
+    // A thread's edits form one undo step in the editor until no thread works on the document.
+    const offEvents =
+      window.desktop?.os.onEvent(({ snapshot }) => {
+        const current = view.current,
+          run = current?.agentRun();
+        const doc = latest.current.getDocuments().find((d) => d.id === current?.id);
         if (
-          !state ||
-          !run ||
-          snapshot.sessions.some((s) => sameWritingScope(s.writingScope, doc) && s.runId === run)
+          current &&
+          run &&
+          doc &&
+          !snapshot.threads.some(
+            (t) =>
+              t.id in snapshot.runs &&
+              t.targets.some((x) => x.kind === 'document' && sameWritingScope(x, doc)),
+          )
         )
-          continue;
-        const tr = state.update({
-          effects: finishWritingAgent.of(null),
-          annotations: isolateHistory.of('after'),
-        });
-        if (latest.current.activeId === doc.id && view.current) view.current.dispatch(tr);
-        else {
-          const saved = cache.current.get(doc.id);
-          cache.current.set(doc.id, { state: tr.state, scroll: saved?.scroll ?? 0 });
-        }
-      }
-    });
+          current.finishAgent();
+      }) ?? (() => {});
     return () => {
       mounted = false;
       off();
       offEvents();
     };
-  }, [find, snapshot, changeBuffer, stateFor, view, cache]);
+  }, [find, snapshot, changeBuffer, view]);
   const canUndo = (scope: WritingScope, id: string) => {
     const doc = latest.current.getDocuments().find((d) => sameWritingScope(d, scope)),
       entry = transactions.current.latest(scope);
     return (
       !!doc &&
-      doc.rootId === latest.current.root?.id &&
       entry?.id === id &&
       entry.after === doc.content &&
       !['conflict', 'error'].includes(doc.status)

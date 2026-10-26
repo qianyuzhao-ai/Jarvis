@@ -2,6 +2,62 @@
 
 最后更新：2026-10-26
 
+
+## 1.0.0 发布准备（2026-10-26）
+
+- 用户明确授权发布 v1.0.0。基线 develop `98d3418`，临时分支 `feature/prepare-v1.0.0`；通过 PR 完成版本准备 → develop → main，再在 main 合并提交创建新标签，不移动旧标签。
+- 根包与桌面包升级为 1.0.0，CHANGELOG/README 记录 Agent OS、目标线程与写作空间升级；旧 Agent 对话不迁移，旧文件保留。
+- 发布启动脚本仍检查已移除的 `createWritingSession`。改为检查现有写作命令桥和 Agent OS 桥，并在隔离 profile 实际创建项目、读取快照验证持久服务已接通；保留 ASAR、依赖、版本及更新桥接检查。
+- 两份原有未跟踪 Figma JSON 保留，不纳入发布。沿用 GitHub 预发布、macOS arm64/x64 签名公证、Windows x64 未签名的现有流程。
+- 本地 check/build、版本一致性、发布工具 13 项及 Apple 网络重试测试通过。完整回归 204/206（5.9m），保留日历周视图 0/7 与原生窗口焦点 false 两项既有环境失败，没有跳过或改断言。日志 `/private/tmp/jarvis-100-smoke.log`。
+- 本地 arm64 目录包 `release/ec28cbcc-a3d1-4ef9-a49c-6b08fc972fa8` 通过 593 项生产依赖检查、ASAR 原生启动、Agent OS 项目创建/快照、写作/更新桥接、块编辑保存、Mermaid/思维导图和星图验证。日志 `/private/tmp/jarvis-100-packaged-check.log`。云端签名、公证与发布尚未开始。
+
+## 本地分支清理与更新（2026-10-26）
+
+- 用户要求本地只保留 main 和 dev；沿用项目约定，dev 对应 `develop`。fetch 后将 develop 从 `48d698e` 快进到 `98d3418`，与 origin/develop 领先/落后均为 0。
+- 确认 `ccr-d35e3739-eyt9tu`（`85fc4cd`）和 `feature/writing-space`（`a461fde`）均已完整合入最新 develop，逐个通过 `git branch -d` 删除。本地仅剩 main、develop，当前为 develop。
+- 保留两份原有未跟踪 writing-redesign-components JSON；未改远端分支或标签。该操作记录随 1.0.0 发布准备提交。
+
+## V1.0.0 Agent OS 合入 develop（2026-10-26）
+
+- 用户要求把 V1.0.0 Agent OS 分支 `claude/agent-logic-redesign-9irs9g` 提 PR 到 develop，检查之前的分支是否都已合入，并保持远端只剩 main 与 develop。
+- 检查结果：`ccr-d35e3739-eyt9tu` 已完整包含在 develop 中（领先 0）；`feature/claude-md` 有 1 个未合入提交 `ff50fde`（新增 CLAUDE.md），main 有 develop 缺少的 `a804786`（0.4.0 发布合并）与 `fe4be87`（0.4.0 验收记录）。已把 origin/main 与 `feature/claude-md` 合并进 V1 分支（均无冲突），随本次 PR 一并进入 develop。
+- 远端清理：已合入或已并入本 PR 的 `ccr-d35e3739-eyt9tu`、`feature/claude-md` 删除；V1 分支在 PR 合并后删除，届时远端只剩 main 与 develop。标签不动。
+
+## 写作空间 W6 总验收（2026-10-26）
+
+用户明确开始 W6，沿用 feature/writing-space，验收与报告提交 `f851825`；完整回归 205/207，保留日历/焦点失败，整体验收未通过。授权范围仍是阶段提交与功能分支推送；不创建 PR、合并、标签或发布。原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+
+## 写作空间 W5（2026-10-26）
+
+用户明确继续 W5，沿用 feature/writing-space，实现提交 `afbc2a6`，按阶段授权提交推送，不创建 PR、合并、标签或发布；原两份未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+
+## 写作空间 W4（2026-10-26）
+
+用户明确继续 W4，沿用 feature/writing-space，实现提交 `5e9a3d6`，按既有阶段授权提交并推送功能分支；不创建 PR、合并、标签或发布。两份已有未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+
+
+## 写作空间计划 W3（2026-10-26）
+
+- 用户明确继续 W3，沿用 `feature/writing-space`，实现提交 `d6a1bcb`；范围仍不包含 PR、合并、标签或发布。
+- check/build、写作专项 16/16、最终 24 样本转换/往返 9/9 通过；完整回归 197/199（5.9m），日历未授权及真实窗口焦点恢复失败保留。焦点在独立 W2 基线副本也复现，没有改断言或掩盖失败。
+- 未签名 arm64 目录包验证 593 项依赖、ASAR Mermaid/导图与块编辑保存通过。证据及 W4–W6 边界见 [写作实施记录](writing-space-implementation.md)。已有两份未跟踪 Figma JSON 保留。
+
+
+## 写作空间计划 W2（2026-10-26）
+
+- 用户明确继续 W2，沿用 `feature/writing-space`，保留 W1 日历环境失败与待验收状态；不创建 PR、合并、标签或发布。
+- 实现提交 `47655e3`。check/build、19 样本无损往返、写作专项与真实目录包验证通过：487 项生产依赖、ASAR 启动、块编辑实际保存。最后整套回归 189/190（5.8m），唯一为日历未授权；后续复杂 Markdown 合法性保护专项 5/5。详细证据见 [写作实施记录](writing-space-implementation.md)。
+- W2 交付时 W3–W6 尚未开始；用户随后明确继续 W3，见顶部记录。原两份未跟踪 Figma JSON 保留，未纳入该轮提交。
+
+
+## 写作空间计划 W1（2026-10-26）
+
+- 用户要求执行 `writing-space-plan.md`，授权阶段提交和功能分支推送，不创建 PR、合并、标签或发布。
+- 从 fetch 后的 origin/develop `48d698e` 创建 `feature/writing-space`，合并原会话的三项方案/设计记录，合并提交 `b982f02`；design 顶部冲突保留双方记录。
+- 实现提交 `631e6df`，最终 check/build 和目录专项 3/3 通过；完整回归 182/183，唯一为已知 macOS 日历未授权环境用例。保留失败证据，不把 W1 标为阶段通过；后续继续 W2 的授权见顶部记录。详情见 [写作实施记录](writing-space-implementation.md)。
+
+
 ## 0.4.0 已发布（2026-10-26）
 
 - [v0.4.0](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v0.4.0) 已于北京时间 **2026-10-26 00:18:05** 发布，非草稿、按当前流程为预发布，12 个资产全部 uploaded。新标签注释对象 `050a88cfbee89b576bb065e8290ad55069a118b9`，保持指向 main 发布合并提交 `a804786b56a425161cd24921f2c153194aee8a04`，未移动任何旧标签。

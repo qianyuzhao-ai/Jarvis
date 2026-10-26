@@ -46,6 +46,17 @@ export function editBuffer(content: string, edit: WritingEdit) {
 }
 export class WritingTransactions {
   private entries = new Map<string, WritingTransaction[]>();
+  rename(rootId: string, from: string, to: string) {
+    for (const [key, entries] of [...this.entries]) {
+      const scope = entries[0]?.scope;
+      if (scope?.rootId !== rootId || !(scope.path === from || scope.path.startsWith(from + '/')))
+        continue;
+      this.entries.delete(key);
+      for (const entry of entries)
+        entry.scope = { rootId, path: to + entry.scope.path.slice(from.length) };
+      this.entries.set(writingScopeKey(entries[0]!.scope), entries);
+    }
+  }
   latest(scope: WritingScope) {
     return this.entries.get(writingScopeKey(scope))?.at(-1);
   }

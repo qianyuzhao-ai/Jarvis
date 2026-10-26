@@ -1,194 +1,146 @@
 import { useEffect, useRef, useState } from 'react';
-import { AssistantPanel, AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
-import { Alert } from '@jarvis/ui/components/Alert';
-import { Button, IconButton } from '@jarvis/ui/components/Button';
-import { Sparkles, History, SquarePen, X, ChevronLeft, FileText } from '@jarvis/ui/icons';
-import { useAgent } from '../agent/use-agent';
+import { AssistantEmpty } from '@jarvis/ui/components/AssistantPanel';
+import { Button } from '@jarvis/ui/components/Button';
+import { FileText, Sparkles } from '@jarvis/ui/icons';
+import { osValue } from '../../../../shared/agent-os';
 import { ChatComposer } from '../agent/ChatComposer';
-import { ChatMessageItem } from '../agent/ChatMessageItem';
-import { CanvasConversations } from '../creation/CanvasConversations';
+import { SpaceThreadPanel } from '../agent/SpaceThreadPanel';
+import { osBridge } from '../agent/use-agent';
+import type { useSpaceThread } from '../agent/use-space-thread';
+import { takeWritingAssistantRequest } from './assistant-request';
 import type { DocumentSession } from './useWriting';
 import type { useWritingHost } from './use-writing-host';
+
+/**
+ * The writing sidebar: the thread bound to this document. Edits go into the open editor and stay
+ * unsaved, with one undo per round. Block menus and the / panel send their requests here.
+ */
 export function WritingAgentSidebar({
   document,
+  space,
   host,
   selectedParagraphs,
   configure,
   close,
+  after,
 }: {
   document: DocumentSession;
+  /** The document's thread; the writing space shares it with the graph's resonance search. */
+  space: ReturnType<typeof useSpaceThread>;
   host: ReturnType<typeof useWritingHost>;
   selectedParagraphs: number;
   configure: () => void;
   close: () => void;
+  after?: React.ReactNode;
 }) {
   const scope = { rootId: document.rootId, path: document.path };
-  const agent = useAgent(undefined, undefined, scope);
-  const [text, setText] = useState(''),
-    [model, setModel] = useState(''),
-    [history, setHistory] = useState(false);
-  const input = useRef<HTMLTextAreaElement>(null),
-    pending = useRef(false),
-    viewport = useRef<HTMLDivElement>(null);
-  const following = useRef(true);
-  const last = agent.session?.messages.at(-1);
-  useEffect(() => {
-    const node = viewport.current;
-    if (node && following.current) node.scrollTop = node.scrollHeight;
-  }, [last?.text, last?.status, agent.session?.messages.length]);
+  const [text, setText] = useState('');
+  const [model, setModel] = useState('');
+  const input = useRef<HTMLTextAreaElement>(null);
+  const pending = useRef(false);
   const name = document.path.split('/').at(-1) ?? document.path;
-  async function submit() {
-    if (pending.current || !text.trim()) return;
+  async function submit(prompt = text) {
+    if (pending.current || !prompt.trim()) return;
     pending.current = true;
     try {
+      // The editor must answer before the thread starts reading it.
       await host.snapshot(scope);
-      if (await agent.send(text.trim(), model || undefined)) setText('');
+      if (await space.send(prompt.trim(), model || undefined)) setText('');
+      else setText(prompt);
     } catch (e) {
-      agent.setError(e instanceof Error ? e.message : '读取文档失败');
+      setText(prompt);
+      space.setError(e instanceof Error ? e.message : '读取文档失败');
     } finally {
       pending.current = false;
     }
   }
-  async function undo(id: string) {
-    if (agent.scopeBusy) return;
-    await agent.undoChange(id);
-  }
+  // Requests from block menus and the / panel arrive while the panel is open or as it opens.
+  useEffect(() => {
+    const consume = () => {
+      if (space.loading || pending.current) return;
+      const prompt = takeWritingAssistantRequest(document.id);
+      if (prompt) void submit(prompt);
+    };
+    consume();
+    window.addEventListener('jarvis:writing-assistant-request', consume);
+    return () => window.removeEventListener('jarvis:writing-assistant-request', consume);
+  });
   return (
-    <AssistantPanel
+    <SpaceThreadPanel
       aria-label="写作助手"
       className="writing-agent-panel"
-      title="写作助手"
-      actions={
-        <>
-          {history && (
-            <IconButton variant="ghost" aria-label="返回写作对话" onClick={() => setHistory(false)}>
-              <ChevronLeft />
-            </IconButton>
-          )}
-          <IconButton variant="ghost" aria-label="写作对话历史" onClick={() => setHistory(true)}>
-            <History />
-          </IconButton>
-          <IconButton
-            variant="ghost"
-            aria-label="新建写作对话"
-            onClick={() => {
-              agent.newChat();
-              setText('');
-              setHistory(false);
-            }}
-          >
-            <SquarePen />
-          </IconButton>
-          <IconButton variant="ghost" aria-label="关闭写作助手" onClick={close}>
-            <X />
-          </IconButton>
-        </>
+      space={space}
+      label="写作助手"
+      closeLabel="关闭写作助手"
+      onClose={close}
+      writing={{
+        undo: (id) => void space.act(async () => osValue(await osBridge().undo(id)), '撤销失败'),
+        canUndo: (id) => !space.busy && host.canUndo(scope, id),
+      }}
+      after={after}
+      empty={
+        <AssistantEmpty
+          title="写作助手"
+          icon={<Sparkles size={24} />}
+          suggestions={
+            space.configured ? (
+              ['把选中段落改得更口语', '为全文写一段摘要', '续写下一段'].map((s) => (
+                <Button
+                  key={s}
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setText(s);
+                    input.current?.focus();
+                  }}
+                >
+                  {s}
+                </Button>
+              ))
+            ) : (
+              <Button variant="secondary" size="sm" onClick={configure}>
+                前往模型设置
+              </Button>
+            )
+          }
+        >
+          对这篇文档说要做什么，会开一个线程来做：改写、续写、总结；修改进编辑器，尚未保存，每次都可以撤销。
+        </AssistantEmpty>
+      }
+      historyNote={
+        <div className="space-thread-note">
+          <strong>文档没打开时</strong>
+          <span>
+            协调对话开的线程也能改这篇文档：每次修改前核对版本，直接保存到文件，并留可撤销记录。文档打开时改动进编辑器，保持未保存。
+          </span>
+        </div>
       }
       composer={
-        !history && (
-          <ChatComposer
-            compact
-            context={
-              <span data-testid="writing-agent-context">
-                <FileText size={14} />
-                {name} · {selectedParagraphs ? `已选 ${selectedParagraphs} 段` : '全文'}
-              </span>
-            }
-            agent={agent}
-            text={text}
-            setText={setText}
-            input={input}
-            model={
-              agent.session
-                ? (agent.session.modelId ?? '')
-                : model || agent.configuration.defaultModelId || ''
-            }
-            onModel={(value) => {
-              if (agent.session) void agent.model(value);
-              else setModel(value);
-            }}
-            onSubmit={submit}
-          />
-        )
-      }
-    >
-      {agent.error && (
-        <Alert tone="error" onDismiss={() => agent.setError('')}>
-          {agent.error}
-        </Alert>
-      )}
-      {history ? (
-        <CanvasConversations
-          scope="writing"
-          sessions={agent.snapshot.sessions}
-          currentId={agent.session?.id}
-          busy={agent.scopeBusy}
-          select={(id) => {
-            agent.select(id);
-            setText('');
-            setHistory(false);
+        <ChatComposer
+          compact
+          placeholder="对这个线程说…（只改这篇文档）"
+          context={
+            <span data-testid="writing-agent-context">
+              <FileText size={14} />
+              {name} · {selectedParagraphs ? `已选 ${selectedParagraphs} 段` : '全文'}
+            </span>
+          }
+          agent={space}
+          text={text}
+          setText={setText}
+          input={input}
+          model={
+            space.session
+              ? (space.session.modelId ?? '')
+              : model || space.configuration.defaultModelId || ''
+          }
+          onModel={(value) => {
+            if (space.session) void space.model(value);
+            else setModel(value);
           }}
-          rename={agent.renameConversation}
-          remove={agent.deleteConversation}
+          onSubmit={() => submit()}
         />
-      ) : (
-        <div
-          ref={viewport}
-          className="writing-agent-messages"
-          onScroll={() => {
-            const node = viewport.current;
-            if (node)
-              following.current = node.scrollHeight - node.scrollTop - node.clientHeight < 64;
-          }}
-          role="log"
-          aria-label="写作对话消息"
-        >
-          {agent.session?.messages.length ? (
-            agent.session.messages.map((message) => (
-              <ChatMessageItem
-                key={message.id}
-                message={message}
-                waiting={agent.waiting}
-                sessionId={agent.session!.id}
-                now={Date.now()}
-                onError={agent.setError}
-                writing={{
-                  undo: (id) => void undo(id),
-                  canUndo: (id) => !agent.scopeBusy && host.canUndo(scope, id),
-                }}
-              />
-            ))
-          ) : (
-            <AssistantEmpty
-              title="写作助手"
-              icon={<Sparkles size={24} />}
-              suggestions={
-                agent.configured ? (
-                  ['把选中段落改得更口语', '为全文写一段摘要', '续写下一段'].map((s) => (
-                    <Button
-                      key={s}
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setText(s);
-                        input.current?.focus();
-                      }}
-                    >
-                      {s}
-                    </Button>
-                  ))
-                ) : (
-                  <Button variant="secondary" size="sm" onClick={configure}>
-                    前往模型设置
-                  </Button>
-                )
-              }
-            >
-              读取当前文档，帮你改写、续写、总结；每次修改都可以撤销。
-            </AssistantEmpty>
-          )}
-        </div>
-      )}
-    </AssistantPanel>
+      }
+    />
   );
 }

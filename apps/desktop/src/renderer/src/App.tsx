@@ -13,17 +13,16 @@ import {
   openTabView,
   travelTab,
   pruneTabs,
+  serializeTabs,
   type TabView,
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
 import { GeneralSettings } from './features/settings/GeneralSettings';
-import { AgentApprovals } from './features/agent/AgentApprovals';
 import { AboutSettings } from './features/settings/AboutSettings';
 import { useResolvedTheme } from './features/settings/theme';
 import { Canvas } from './features/creation/Canvas';
 import { ServiceSettings } from './features/creation/ServiceSettings';
 import { CalendarSpace } from './features/calendar/CalendarSpace';
-import { FileAccessSettings } from './features/settings/FileAccessSettings';
 import { loadWorkspace } from './features/creation/workspace-load';
 import type { ProjectRecord } from '../../shared/project';
 import type { NavigationTarget } from '../../shared/agent';
@@ -32,10 +31,11 @@ import { useWorkspace } from './features/creation/useWorkspace';
 import { useGeneration } from './features/creation/useGeneration';
 import { GenerationNotice } from './features/creation/GenerationNotice';
 import { useAssetUpload } from './features/creation/useAssetUpload';
-import { useAgent } from './features/agent/use-agent';
-import { focusConversation, focusKey } from './features/agent/conversation-focus';
-import type { ChatSessionMeta } from '../../shared/agent';
-import { ChatTab } from './features/shell/ChatTab';
+import { useOsSnapshot } from './features/agent/use-agent';
+import { AgentTab } from './features/agent/AgentViews';
+import { ProjectSidebar } from './features/agent/ProjectSidebar';
+import { placeExists, placeOf, placeTitle } from './features/agent/os-view';
+import { setThreadOpener } from './features/agent/open-thread';
 import { ModelSettings } from './features/settings/ModelSettings';
 import { PluginSettings } from './features/settings/PluginSettings';
 import { useAppUpdates } from './features/updates/use-app-updates';
@@ -45,14 +45,14 @@ import { useWriting } from './features/writing/useWriting';
 const WritingSpace = lazy(() =>
   import('./features/writing/WritingSpace').then((m) => ({ default: m.WritingSpace })),
 );
-type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'files' | 'about';
+type SettingsSection = 'general' | 'services' | 'models' | 'plugins' | 'about';
 function Workbench({ initial }: { initial: { data: WorkspaceData; records: ProjectRecord[] } }) {
   const confirm = useConfirm();
   const updates = useAppUpdates();
   const { data, update, commit, hold, getCurrent, status, saveError } = useWorkspace(initial);
   const { generate, notice, dismissNotice } = useGeneration(data, commit, getCurrent);
   const importAssets = useAssetUpload(commit, getCurrent);
-  const agent = useAgent();
+  const agent = useOsSnapshot();
   const writing = useWriting();
   const shell = useWindowTabs();
   const { state, change } = shell;
@@ -96,11 +96,8 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
     }
   }
   function syncView(view: TabView) {
-    if (view.kind === 'chat') agent.select(view.ref);
     if (view.kind === 'writing') {
-      const doc = writing.documents.find(
-        (d) => d.path === view.ref && d.rootId === writing.root?.id,
-      );
+      const doc = writing.documents.find((d) => d.path === view.ref && d.rootId === view.rootId);
       if (doc) writing.setActiveId(doc.id);
     }
   }
@@ -138,27 +135,6 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
     syncView(shell.current.current.tabs.find((t) => t.id === shell.current.current.activeId)!);
   }
   const projectView = (p: Project): TabView => ({ kind: 'canvas', ref: p.id, title: p.name });
-  /** Opens the space and conversation behind a home-page result card, with its assistant shown. */
-  async function openCard(session: ChatSessionMeta) {
-    const key = focusKey(session.projectId, session.writingScope);
-    if (session.projectId) {
-      const project = data.projects.find((p) => p.id === session.projectId);
-      if (!project) return agent.setError('这个任务所在的项目已删除');
-      if (key) focusConversation(key, session.id);
-      await open(projectView(project));
-    } else if (session.writingScope) {
-      const { rootId, path } = session.writingScope;
-      if (writing.root?.id !== rootId)
-        return agent.setError('请先在写作空间打开这个文档所在的文件夹');
-      await writing.openDocument({ kind: 'file', path, name: path.split('/').at(-1) ?? path });
-      if (key) focusConversation(key, session.id);
-      await open({ kind: 'writing', ref: path, rootId, title: path.split('/').at(-1) ?? path });
-    } else return;
-    change((s) => ({
-      ...s,
-      tabs: s.tabs.map((t) => (t.id === s.activeId ? { ...t, rightPanelOpen: true } : t)),
-    }));
-  }
   /**
    * Opens what the main Agent asked for, a project (possibly just created) or a document, in a new
    * tab so the conversation's tab stays where it is.
@@ -172,7 +148,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         await new Promise((resolve) => setTimeout(resolve, 100));
         project = getCurrent().projects.find((p) => p.id === target.projectId);
       }
-      if (!project) return agent.setError('要打开的项目还没有同步到窗口，请稍后从项目列表打开');
+      if (!project) return agent.setError('要打开的项目还没有同步到窗口，请稍后从画布列表打开');
       await open(projectView(project), true);
       return;
     }
@@ -185,7 +161,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
   };
   useEffect(
     () =>
-      window.desktop?.agent.onNavigate((target) => {
+      window.desktop?.os.onNavigate((target) => {
         void navigate
           .current(target)
           .catch((error: unknown) =>
@@ -210,13 +186,13 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           ? {
               kind,
               ref: doc?.path ?? null,
-              rootId: writing.root?.id,
+              rootId: doc?.rootId ?? writing.root?.id,
               title: doc?.path.split('/').at(-1) ?? '写作空间',
             }
           : {
               kind,
               ref: kind === 'settings' ? 'general' : null,
-              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : '新对话',
+              title: kind === 'settings' ? '设置' : kind === 'calendar' ? '日历' : '协调对话',
             },
       true,
     );
@@ -240,13 +216,42 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
   );
   useEffect(() => {
     if (!agent.loading)
-      change((s) =>
-        pruneTabs(
-          s,
-          (t) => t.kind !== 'chat' || !t.ref || agent.snapshot.sessions.some((c) => c.id === t.ref),
-        ),
-      );
-  }, [agent.loading, agent.snapshot.sessions, change]);
+      change((s) => pruneTabs(s, (t) => t.kind !== 'chat' || placeExists(agent.snapshot, t.ref)));
+  }, [agent.loading, agent.snapshot, change]);
+  // The conversation on screen: its rounds go first and it raises no system notification.
+  const viewing =
+    route === 'chat'
+      ? ((placeOf(active.ref).kind === 'session'
+          ? active.ref
+          : active.ref
+            ? null
+            : agent.current?.coordinatorId) ?? null)
+      : null;
+  useEffect(() => {
+    void window.desktop?.os.setViewing(viewing ? [viewing] : []);
+  }, [viewing]);
+  // A clicked system notification shows its conversation, reusing a tab that already has it.
+  const reveal = useRef<(sessionId: string) => void>(() => {});
+  reveal.current = (sessionId) => {
+    const tab = shell.current.current.tabs.find((t) => t.kind === 'chat' && t.ref === sessionId);
+    if (tab) return void activate(tab.id);
+    void open(
+      { kind: 'chat', ref: sessionId, title: placeTitle(agent.snapshot, sessionId) ?? '线程' },
+      true,
+    );
+  };
+  useEffect(() => window.desktop?.os.onOpen((sessionId) => reveal.current(sessionId)), []);
+  useEffect(() => setThreadOpener((sessionId) => reveal.current(sessionId)), []);
+  useEffect(() => {
+    if (agent.loading) return;
+    change((s) => {
+      const titled = s.tabs.map((t) => {
+        const title = t.kind === 'chat' ? placeTitle(agent.snapshot, t.ref) : undefined;
+        return title && title !== t.title ? { ...t, title } : t;
+      });
+      return titled.some((t, i) => t !== s.tabs[i]) ? { ...s, tabs: titled } : s;
+    });
+  }, [agent.loading, agent.snapshot, change]);
   useEffect(() => {
     change((s) =>
       pruneTabs(
@@ -294,49 +299,74 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       })),
     }));
   }, [data.projects, change]);
-  const validatedWritingRoot = useRef<string | null>(null);
+  const restoredWriting = useRef(false);
   useEffect(() => {
-    const rootId = writing.root?.id ?? '';
-    if (!writing.ready || writing.loading || validatedWritingRoot.current === rootId) return;
-    const changedRoot = validatedWritingRoot.current !== null;
-    validatedWritingRoot.current = rootId;
-    change((s) => {
-      const current = s.tabs.find((t) => t.id === s.activeId);
-      const next = pruneTabs(
-        s,
+    if (!writing.ready || restoredWriting.current) return;
+    restoredWriting.current = true;
+    change((state) => {
+      let next = pruneTabs(
+        state,
         (t) =>
           t.kind !== 'writing' ||
           !t.ref ||
-          (t.rootId === writing.root?.id &&
-            writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref)),
+          writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref),
       );
-      if (
-        changedRoot &&
-        current?.kind === 'writing' &&
-        !next.tabs.some((t) => t.id === current.id)
-      ) {
-        const doc = writing.documents.find((d) => d.id === writing.activeId && d.rootId === rootId);
-        return openTabView(
-          next,
-          {
-            kind: 'writing',
-            rootId: rootId || undefined,
-            ref: doc?.path ?? null,
-            title: doc?.path.split('/').at(-1) ?? '写作空间',
-          },
-          true,
-        );
+      const activeId = next.activeId;
+      for (const doc of writing.documents) {
+        if (
+          !next.tabs.some(
+            (t) => t.kind === 'writing' && t.rootId === doc.rootId && t.ref === doc.path,
+          )
+        )
+          next = openTabView(
+            next,
+            {
+              kind: 'writing',
+              rootId: doc.rootId,
+              ref: doc.path,
+              title: doc.path.split('/').at(-1)!,
+              fileType: doc.fileType,
+            },
+            true,
+          );
       }
-      return next;
+      return { ...next, activeId };
     });
+    try {
+      localStorage.setItem('jarvis:window-tabs', serializeTabs(shell.current.current));
+      for (const key of writing.legacyKeys) localStorage.removeItem(key);
+    } catch {
+      writing.setNotice('标签迁移未能保存，旧记录已保留');
+    }
   }, [
     writing.ready,
-    writing.loading,
-    writing.root?.id,
     writing.documents,
-    writing.activeId,
+    writing.legacyKeys,
+    writing.setNotice,
     change,
+    shell.current,
   ]);
+  useEffect(
+    () =>
+      window.desktop?.writing.onRenamed(({ rootId, from, to }) => {
+        const rename = (v: TabView) =>
+          v.kind === 'writing' &&
+          v.rootId === rootId &&
+          v.ref &&
+          (v.ref === from || v.ref.startsWith(from + '/'))
+            ? {
+                ...v,
+                ref: to + v.ref.slice(from.length),
+                title: (to + v.ref.slice(from.length)).split('/').at(-1)!,
+              }
+            : v;
+        change((s) => ({
+          ...s,
+          tabs: s.tabs.map((t) => ({ ...t, ...rename(t), history: t.history.map(rename) })),
+        }));
+      }),
+    [change],
+  );
   const lastDocument = useRef('');
   useEffect(() => {
     if (!writing.ready || !writing.activeId || lastDocument.current === writing.activeId) return;
@@ -360,6 +390,18 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       ),
     );
   }, [writing.ready, writing.activeId, writing.documents, change, shell.current]);
+  useEffect(() => {
+    if (!writing.ready) return;
+    change((s) =>
+      pruneTabs(
+        s,
+        (t) =>
+          t.kind !== 'writing' ||
+          !t.ref ||
+          writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref),
+      ),
+    );
+  }, [writing.ready, writing.documents, change]);
   const shortcuts = useRef({ close, activate, open });
   shortcuts.current = { close, activate, open };
   useEffect(() => {
@@ -374,7 +416,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         mod = e.metaKey || e.ctrlKey;
       if (mod && e.key.toLowerCase() === 't') {
         e.preventDefault();
-        void shortcuts.current.open({ kind: 'chat', ref: null, title: '新对话' }, true);
+        void shortcuts.current.open({ kind: 'chat', ref: null, title: '协调对话' }, true);
       } else if (mod && e.key.toLowerCase() === 'w') {
         e.preventDefault();
         void shortcuts.current.close(s.activeId);
@@ -405,9 +447,14 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           activeProject={active.ref}
           onCreate={create}
           onOpenProject={(p, n) => void open(projectView(p), n)}
-          sessions={agent.snapshot.sessions}
-          activeChat={active.ref}
-          onChat={(id, title, n) => void open({ kind: 'chat', ref: id, title }, n)}
+          home={
+            <ProjectSidebar
+              snapshot={agent.snapshot}
+              activeRef={route === 'chat' ? active.ref : undefined}
+              onOpen={(ref, title, newTab) => void open({ kind: 'chat', ref, title }, newTab)}
+              onError={agent.setError}
+            />
+          }
           onRenameProject={async (id, title) => {
             await commit((s) => ({
               ...s,
@@ -417,15 +464,11 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
             }));
             return true;
           }}
-          onRenameChat={agent.renameConversation}
           onDeleteProject={async (id) => {
             await commit((s) => ({ ...s, projects: s.projects.filter((p) => p.id !== id) }), true);
             return true;
           }}
-          onDeleteChat={agent.deleteConversation}
           busy={agent.anyBusy}
-          cards={agent.cards}
-          onOpenCard={(session) => void openCard(session)}
           onSettings={openSettings}
         />
       )}
@@ -478,7 +521,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
         }
         onActivate={(id) => void activate(id)}
         onClose={(id) => void close(id)}
-        onNew={() => void open({ kind: 'chat', ref: null, title: '新对话' }, true)}
+        onNew={() => void open({ kind: 'chat', ref: null, title: '协调对话' }, true)}
         onTravel={(n) => void travel(n)}
         onSpace={(kind) => void space(kind)}
       >
@@ -486,10 +529,11 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           .filter((t) => t.kind === 'chat')
           .map((tab) => (
             <div key={tab.id} className="shell-view" hidden={state.activeId !== tab.id}>
-              <ChatTab
+              <AgentTab
                 key={tab.ref ?? 'draft'}
-                sessionId={tab.ref}
-                onSession={(id, title) => recordSession(tab.id, id, title)}
+                tabRef={tab.ref}
+                onOpen={(ref, title, newTab) => void open({ kind: 'chat', ref, title }, newTab)}
+                onPlace={(id, title) => recordSession(tab.id, id, title)}
                 onConfigure={() => void openSettings('models')}
               />
             </div>
@@ -507,7 +551,6 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     models: '模型',
                     services: '内网地址',
                     plugins: '插件',
-                    files: '文件与权限',
                     about: '关于 Jarvis',
                   }[settingsSection]
                 }
@@ -518,7 +561,6 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                 hidden={
                   settingsSection === 'models' ||
                   settingsSection === 'plugins' ||
-                  settingsSection === 'files' ||
                   settingsSection === 'about'
                 }
               >
@@ -531,8 +573,6 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
               value={data.theme}
               onChange={(theme) => update((p) => ({ ...p, theme }))}
             />
-          ) : route === 'settings' && settingsSection === 'files' ? (
-            <FileAccessSettings />
           ) : route === 'settings' && settingsSection === 'about' ? (
             <AboutSettings updates={updates} />
           ) : route === 'settings' && settingsSection === 'models' ? (
@@ -589,7 +629,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                 }
                 onConfigureAgent={() => void openSettings('models')}
                 onHold={(held) => hold(project.id, held)}
-                agentBusy={agent.busyProjectIds.includes(project.id)}
+                agentBusy={false}
                 theme={theme}
                 status={status}
                 shell={{
@@ -621,9 +661,9 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           ))}
         {route === 'canvas' && !active.ref && (
           <div className="empty-projects">
-            <h1>开始你的第一个创作项目</h1>
+            <h1>开始你的第一个画布</h1>
             <Button variant="secondary" onClick={create}>
-              创建项目
+              创建画布
             </Button>
             <span data-testid="save-status">{status}</span>
           </div>
@@ -657,16 +697,26 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     document.querySelector<HTMLButtonElement>('[aria-label="展开右侧栏"]')?.focus(),
                   );
                 },
-                onOpen: (path, newTab) => {
+                onAssistant: () =>
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelOpen: true } : t,
+                    ),
+                  })),
+                onOpen: (path, newTab, rootId) => {
                   if (writing.root)
                     void open(
                       {
                         kind: 'writing',
                         ref: path,
-                        rootId: writing.root.id,
+                        rootId: rootId ?? writing.root.id,
                         title: path.split('/').at(-1)!,
                       },
-                      newTab,
+                      newTab ||
+                        (active.kind === 'writing' &&
+                          !!active.ref &&
+                          active.rootId !== writing.root.id),
                     );
                 },
               }}
@@ -720,7 +770,6 @@ export function App() {
     <MotionConfig reducedMotion="user">
       <ConfirmProvider>
         <Workbench initial={initial} />
-        <AgentApprovals />
         <Toaster />
       </ConfirmProvider>
     </MotionConfig>

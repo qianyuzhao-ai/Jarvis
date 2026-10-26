@@ -13,6 +13,10 @@ export { createElectronBackend } from './updates/backend';
 
 protocol.registerSchemesAsPrivileged([
   {
+    scheme: 'jarvis-writing',
+    privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true },
+  },
+  {
     scheme: 'jarvis-media',
     privileges: {
       standard: true,

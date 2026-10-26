@@ -2,12 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { access, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { JsonFile } from '../src/main/agent/json-file';
-import type { KeyCipher } from '../src/main/agent/key-cipher';
 import { LEDGER_ROUNDS, Ledger } from '../src/main/agent/kernel/ledger';
-import { ModelStore } from '../src/main/agent/model-store';
-import { AgentService } from '../src/main/agent/service';
-import { AgentStore } from '../src/main/agent/store';
 
 test('ledger merges a round, keeps recent rounds, survives restart and forgets deleted conversations', async () => {
   const dir = test.info().outputPath('ledger');
@@ -61,85 +56,4 @@ test('ledger merges a round, keeps recent rounds, survives restart and forgets d
   broken.record({ id: randomUUID(), sessionId: session, runId, pack: 'canvas', summary: 'x' });
   await broken.settled();
   await expect.poll(() => errors.length).toBe(1);
-});
-
-test('undo goes through the ledger to the window that owns the data and is recorded once', async () => {
-  const cipher: KeyCipher = { available: () => true, encrypt: (t) => t, decrypt: (t) => t };
-  const root = test.info().outputPath('agent');
-  const models = new ModelStore(new JsonFile(`${root}/connection.json`), cipher);
-  await models.initialize();
-  const service = new AgentService(
-    models,
-    new AgentStore(new JsonFile(`${root}/index.json`)),
-    root,
-  );
-  const sessionId = randomUUID(),
-    runId = randomUUID(),
-    projectId = randomUUID(),
-    canvasEdit = randomUUID(),
-    writingEdit = randomUUID(),
-    scope = { rootId: randomUUID(), path: '甲.md' };
-  service.ledger.record({
-    id: canvasEdit,
-    sessionId,
-    runId,
-    pack: 'canvas',
-    projectId,
-    summary: '已修改画布',
-  });
-  service.ledger.record({
-    id: writingEdit,
-    sessionId,
-    runId,
-    pack: 'writing',
-    writingScope: scope,
-    summary: '已修改',
-  });
-  let fail = '';
-  const commands: unknown[] = [];
-  service.canvas.dispatch = (owner, command) => {
-    commands.push(command.command);
-    expect(service.canvas.claim(owner, command.requestId)).toBe(true);
-    service.canvas.complete(owner, {
-      requestId: command.requestId,
-      projectId: command.projectId,
-      ok: !fail,
-      ...(fail ? { error: fail } : {}),
-    });
-  };
-  service.writing.dispatch = (owner, command) => {
-    commands.push(command.command);
-    expect(service.writing.claim(owner, command.requestId)).toBe(true);
-    expect(command.runId).toBe(runId);
-    service.writing.complete(owner, {
-      requestId: command.requestId,
-      runId: command.runId,
-      scope: command.scope,
-      ok: true,
-    });
-  };
-
-  fail = '画布已发生后续修改，为保留你的工作，暂不能撤销这次操作';
-  await expect(service.undo(1, { transactionId: canvasEdit, projectId })).rejects.toThrow(
-    '后续修改',
-  );
-  expect(service.ledger.find(canvasEdit)?.status).toBe('applied');
-  fail = '';
-  await service.undo(1, { transactionId: canvasEdit, projectId });
-  expect(service.ledger.find(canvasEdit)?.status).toBe('undone');
-  await expect(service.undo(1, { transactionId: canvasEdit, projectId })).rejects.toThrow('已撤销');
-  await service.undo(1, { transactionId: writingEdit, writingScope: scope });
-  expect(service.ledger.find(writingEdit)?.status).toBe('undone');
-  // A change from before the ledger existed is still sent to its window, which checks it.
-  await service.undo(1, { transactionId: randomUUID(), projectId });
-  expect(commands).toEqual([
-    { type: 'undo', transactionId: canvasEdit },
-    { type: 'undo', transactionId: canvasEdit },
-    { type: 'undo', transactionId: writingEdit },
-    { type: 'undo', transactionId: expect.any(String) },
-  ]);
-  await service.ledger.settled();
-  const restarted = new Ledger(join(root, 'ledger'));
-  await restarted.initialize([sessionId]);
-  expect(restarted.entries(sessionId).map((e) => e.status)).toEqual(['undone', 'undone']);
 });

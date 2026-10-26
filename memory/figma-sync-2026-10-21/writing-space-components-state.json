@@ -1,0 +1,423 @@
+{
+  "updatedAt": "2026-10-25",
+  "fileKey": "mIwnyR5nAlECFMam1NvmER",
+  "page": {
+    "id": "332:28013",
+    "name": "V1-Components"
+  },
+  "status": "组件初稿完成；V1-视觉换新 已拼接 4 个页面（浅深各一），待用户确认",
+  "plan": "https://docs.google.com/document/d/1g_eXz9PgoO5-4QvWC77TR4ZxMlXU30oPZv7xV1R0m5g/edit",
+  "icons": {
+    "grid": "391:32607",
+    "added": 35,
+    "total": 95,
+    "names": [
+      "bold",
+      "check-check",
+      "chevron-right",
+      "code",
+      "corner-down-left",
+      "file-archive",
+      "file-code",
+      "file-image",
+      "file-music",
+      "file-video-camera",
+      "folder-input",
+      "funnel",
+      "grip-vertical",
+      "heading-1",
+      "heading-2",
+      "heading-3",
+      "history",
+      "italic",
+      "link",
+      "list-collapse",
+      "list-ordered",
+      "list-todo",
+      "list",
+      "network",
+      "orbit",
+      "pencil",
+      "pilcrow",
+      "quote",
+      "refresh-cw",
+      "smile-plus",
+      "strikethrough",
+      "table",
+      "triangle-alert",
+      "wand-sparkles",
+      "workflow"
+    ],
+    "idRange": "457:37993 – 457:38191",
+    "source": "lucide-static 1.60.0，与 lucide-react 1.60.0 一致；线宽 1.75，描边绑定 color/fg/default"
+  },
+  "sections": {
+    "29 Writing · File Tree": {
+      "id": "461:37991",
+      "components": {
+        "File Tree Row": {
+          "id": "461:38163",
+          "variants": [
+            "state=default",
+            "state=hover",
+            "state=selected",
+            "state=renaming",
+            "state=drop-target"
+          ],
+          "props": [
+            "label",
+            "icon",
+            "showChevron",
+            "chevron",
+            "indent1",
+            "indent2",
+            "showBadge"
+          ]
+        },
+        "File Tree Menu": {
+          "id": "461:38395",
+          "variants": [
+            "target=file",
+            "target=folder"
+          ]
+        },
+        "Writing Left Header": {
+          "id": "461:38649",
+          "variants": [
+            "view=files",
+            "view=graph"
+          ]
+        },
+        "File Preview": {
+          "id": "464:38503",
+          "variants": [
+            "kind=image",
+            "kind=pdf",
+            "kind=media",
+            "kind=binary"
+          ]
+        }
+      },
+      "review": "475:39445"
+    },
+    "30 Writing · Document": {
+      "id": "466:38295",
+      "components": {
+        "Document Header": {
+          "id": "466:38578",
+          "variants": [
+            "state=default",
+            "state=hover",
+            "state=editing",
+            "state=conflict"
+          ],
+          "props": [
+            "title",
+            "emoji",
+            "meta",
+            "showIcon"
+          ]
+        },
+        "Document Toolbar": {
+          "id": "466:38725",
+          "variants": [
+            "mode=blocks",
+            "mode=source"
+          ],
+          "props": [
+            "path",
+            "fileName",
+            "status"
+          ]
+        },
+        "Outline Rail": {
+          "id": "466:38761",
+          "variants": [
+            "state=collapsed",
+            "state=expanded"
+          ]
+        },
+        "Inline Reference": {
+          "id": "466:38804",
+          "variants": [
+            "kind=wiki-link|tag|broken × state=default|hover"
+          ],
+          "props": [
+            "label"
+          ]
+        },
+        "Backlink Item": {
+          "id": "466:38994",
+          "variants": [
+            "kind=backlink|resonance × state=default|hover"
+          ],
+          "props": [
+            "title",
+            "meta",
+            "snippet"
+          ]
+        },
+        "Backlinks": {
+          "id": "466:39145",
+          "variants": [
+            "open=false",
+            "open=true"
+          ]
+        }
+      },
+      "review": "476:40223"
+    },
+    "31 Writing · Block Editor": {
+      "id": "470:38586",
+      "components": {
+        "Block Handle": {
+          "id": "470:38652",
+          "variants": [
+            "state=default",
+            "state=hover-add",
+            "state=hover-grip",
+            "state=dragging"
+          ]
+        },
+        "Drop Indicator": {
+          "id": "470:38656"
+        },
+        "Block Menu": {
+          "id": "470:38997",
+          "variants": [
+            "block=text",
+            "block=module"
+          ]
+        },
+        "Turn Into Menu": {
+          "id": "470:39233"
+        },
+        "Bubble Menu": {
+          "id": "470:39376",
+          "variants": [
+            "state=default",
+            "state=link"
+          ]
+        },
+        "Slash Command Item": {
+          "id": "470:39403",
+          "variants": [
+            "state=default",
+            "state=active"
+          ],
+          "props": [
+            "title",
+            "description",
+            "showDescription",
+            "shortcut",
+            "showShortcut",
+            "icon"
+          ]
+        },
+        "Slash Menu": {
+          "id": "470:39640",
+          "variants": [
+            "content=default",
+            "content=filtered",
+            "content=empty"
+          ]
+        }
+      },
+      "review": "477:40705"
+    },
+    "32 Writing · Rich Blocks": {
+      "id": "471:39101",
+      "components": {
+        "Callout Block": {
+          "id": "471:39165",
+          "variants": [
+            "tone=note",
+            "tone=tip",
+            "tone=important",
+            "tone=warning",
+            "tone=caution",
+            "tone=custom"
+          ],
+          "props": [
+            "body"
+          ]
+        },
+        "Toggle Block": {
+          "id": "471:39184",
+          "variants": [
+            "open=false",
+            "open=true"
+          ],
+          "props": [
+            "summary"
+          ]
+        },
+        "Code Block": {
+          "id": "471:39284",
+          "variants": [
+            "state=default",
+            "state=hover"
+          ]
+        },
+        "Mermaid Block": {
+          "id": "471:39499",
+          "variants": [
+            "mode=preview",
+            "mode=source",
+            "mode=error"
+          ]
+        },
+        "Mind Map Node": {
+          "id": "471:39530",
+          "variants": [
+            "level=root|branch|leaf × state=default|selected|editing"
+          ],
+          "props": [
+            "label"
+          ]
+        },
+        "Mind Map Block": {
+          "id": "471:39677",
+          "variants": [
+            "state=default",
+            "state=selected"
+          ]
+        },
+        "Image Block": {
+          "id": "471:39730",
+          "variants": [
+            "state=default",
+            "state=selected",
+            "state=uploading",
+            "state=error"
+          ],
+          "props": [
+            "caption"
+          ]
+        },
+        "Table Block": {
+          "id": "471:39791",
+          "variants": [
+            "state=default",
+            "state=selected"
+          ]
+        },
+        "Block Highlight": {
+          "id": "471:39798",
+          "variants": [
+            "tone=agent",
+            "tone=selected"
+          ]
+        }
+      },
+      "review": "477:52159"
+    },
+    "33 Writing · Dots Graph": {
+      "id": "473:39285",
+      "components": {
+        "Dot": {
+          "id": "473:39350",
+          "variants": [
+            "role=active|connected|isolated|candidate × size=sm|md|lg"
+          ],
+          "props": [
+            "label",
+            "showLabel"
+          ]
+        },
+        "Graph Edge": {
+          "id": "473:39360",
+          "variants": [
+            "kind=link",
+            "kind=tag",
+            "kind=candidate"
+          ]
+        },
+        "Resonance Card": {
+          "id": "473:39554",
+          "variants": [
+            "state=default",
+            "state=confirmed"
+          ],
+          "props": [
+            "docName",
+            "reason"
+          ]
+        },
+        "Graph Mini Panel": {
+          "id": "473:39690",
+          "variants": [
+            "state=default",
+            "state=searching",
+            "state=empty"
+          ]
+        },
+        "Graph Toolbar": {
+          "id": "473:39797"
+        },
+        "Timeline Slider": {
+          "id": "473:39856",
+          "variants": [
+            "state=paused",
+            "state=playing"
+          ]
+        }
+      },
+      "review": "478:41889"
+    }
+  },
+  "overviewRows": [
+    "479:42365",
+    "479:42370",
+    "479:42375",
+    "479:42380",
+    "479:42385"
+  ],
+  "verification": [
+    "每个分区组件集与 Light / Dark 评审样张均截图检查：浅深两套颜色正确、无裁切或重叠",
+    "复用 V1 组件实例：Button、Icon Button、Badge、Badge Count、DropdownMenu Item / Separator / Label、Tabs List / Trigger、Toggle、Separator、Spinner、Progress",
+    "颜色、圆角绑定 V1 / Semantic 与 V1 / Primitives 变量；文字使用 V1 文字样式；浮层使用 V1/shadow-popover"
+  ],
+  "notes": [
+    "脚本创建的变量绑定颜色在无界面渲染时可能保留黑色占位值；本轮已改为创建时写入 Light 解析值作为底色（绑定不变），后续脚本沿用",
+    "变量绑定会把颜色的透明度重置为变量本身的 alpha，需要弱化的线条改用图层不透明度",
+    "代码字体用 Roboto Mono（JetBrains Mono 会把 --> 连写成箭头）",
+    "已有 Badge tone=accent appearance=subtle 渲染为实心蓝底蓝字（既有问题，本轮未改），写作组件改用 tone=info subtle",
+    "执行期间用户重新排列了 V1-Components 页所有分区的位置，写作分区位置以 Figma 实际为准",
+    "Mind Map Block 树已压缩（叶子 x 332），可放进 500px 正文列"
+  ],
+  "decisions": {
+    "confirmedAt": "2026-10-25",
+    "agentReadOtherDocs": "可以读取（只读，限当前文件夹，标题/标签/摘要）",
+    "dragLink": "只在来源文档末尾「关联」段追加双链",
+    "titleVsH1": "大标题与正文 H1 独立",
+    "phaseOrder": "按方案顺序（目录与标签先行，星图最后）"
+  },
+  "screens": {
+    "section": {
+      "id": "482:37225",
+      "name": "写作空间 · 重新设计",
+      "page": "319:27345 V1-视觉换新"
+    },
+    "Writing · Blocks": {
+      "light": "482:37226",
+      "dark": "482:38315",
+      "content": "块编辑：文档头部、BubbleMenu、行首句柄、Callout、思维导图块、大纲条；右侧写作助手"
+    },
+    "Writing · Slash & Backlinks": {
+      "light": "483:54226",
+      "dark": "483:54935",
+      "content": "Agent 修改高亮、折叠块、/ 面板过滤结果、反向链接与共鸣点"
+    },
+    "Writing · Dots Graph": {
+      "light": "484:40061",
+      "dark": "484:41707",
+      "content": "左栏星图小窗 + 编辑区全景星图（工具栏、共鸣点卡片、时间轴），右边栏关闭"
+    },
+    "Writing · File Preview": {
+      "light": "484:40856",
+      "dark": "484:42362",
+      "content": "PDF 标签页预览，右边栏关闭"
+    }
+  }
+}

@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ThinkingLevel } from '../../shared/models';
 import type { CapabilityPack } from './kernel/capability';
-import { createPolicy, type Approver } from './kernel/policy';
+import { createPolicy, type PolicyOptions } from './kernel/policy';
 import type { ResolvedModel } from './model-store';
 import { chatPack } from './packs/chat';
 
@@ -14,12 +14,16 @@ const AUTO_MAX_TOKENS = 32_768;
 const ANTHROPIC_AUTO_MAX_TOKENS = 8192;
 
 export interface AgentOptions {
-  /** Keeps the history in memory only (connection tests and probes). */
+  /** Keeps the history in memory only (Coordinator rounds, connection tests and probes). */
   transient?: boolean;
+  /** Where a persistent session keeps its model context, `<dir>/<id>.jsonl`. */
+  sessionDir?: string;
   packs?: CapabilityPack[];
+  /** Extra system prompt text after the packs' prompts (project instructions, memory index). */
+  context?: string;
   thinkingLevel?: ThinkingLevel;
-  /** Asks the user about `confirm` tools; without it they are blocked. */
-  approve?: Approver;
+  /** How tool calls are decided; without `confirm`, irreversible tools are blocked. */
+  policy?: Omit<PolicyOptions, 'maxCalls'>;
   /** Waits for a concurrency slot before each model request; the returned function frees it. */
   slot?: (signal?: AbortSignal) => Promise<() => void>;
   /** Model requests allowed in one round with tools; a round without tools makes one. */
@@ -40,9 +44,11 @@ export async function openAgent(
   model: ResolvedModel,
   {
     transient = false,
+    sessionDir,
     packs = [chatPack()],
+    context = '',
     thinkingLevel = 'off',
-    approve,
+    policy,
     slot,
     maxRequests = 8,
     maxToolCalls,
@@ -54,7 +60,7 @@ export async function openAgent(
     '@earendil-works/pi-ai'
   );
   const cwd = join(root, 'workspace');
-  const dir = join(root, 'sessions');
+  const dir = sessionDir ?? join(root, 'sessions');
   await mkdir(cwd, { recursive: true, mode: 0o700 });
   await mkdir(dir, { recursive: true, mode: 0o700 });
   const models = await sdk.ModelRuntime.create({
@@ -113,7 +119,7 @@ export async function openAgent(
     extensionFactories: [
       {
         name: 'jarvis-policy',
-        factory: createPolicy(packs, approve, maxToolCalls).factory,
+        factory: createPolicy(packs, { ...policy, maxCalls: maxToolCalls }).factory,
         hidden: true,
       },
     ],
@@ -122,7 +128,7 @@ export async function openAgent(
     noPromptTemplates: true,
     noThemes: true,
     noContextFiles: true,
-    systemPrompt: packs.map((pack) => pack.prompt).join(''),
+    systemPrompt: packs.map((pack) => pack.prompt).join('') + context,
   });
   await loader.reload();
   const manager = transient

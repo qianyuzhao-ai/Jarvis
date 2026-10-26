@@ -329,8 +329,8 @@ test('Electron uploads references, generates image and video, and restores resul
     await page.getByRole('button', { name: '保存更改' }).click();
     await expect(page.getByTestId('form-actions')).toContainText('已保存到本机');
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
-    await page.getByRole('button', { name: '新建项目', exact: true }).click();
-    await page.getByLabel('项目名称', { exact: true }).fill('生成联调测试');
+    await page.getByRole('button', { name: '新建画布', exact: true }).click();
+    await page.getByLabel('画布名称', { exact: true }).fill('生成联调测试');
     await page.getByRole('button', { name: '图像', exact: true }).click();
     await page
       .locator('.react-flow__node-media')
