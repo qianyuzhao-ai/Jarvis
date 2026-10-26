@@ -2,6 +2,14 @@
 
 最后更新：2026-10-26
 
+### V1.0.0 设置「用量与统计」评审稿（2026-10-26，待评审）
+
+- 用户确认方案（`memory/agent-os-v1.md` 第 7.4 节 S1–S4）并要求先出 Figma。文件 `mIwnyR5nAlECFMam1NvmER`，页「V1-视觉换新」`319:27345` 新增 Section `524:45539`「V1.0.0 · 用量与统计（待评审）」，由 `Settings · Models` 浅 `428:29687` / 深 `431:43867` 复制改造：`Settings · Usage / Light` `524:45540`、`Settings · Usage / Dark` `524:46104`（1440 × 1431，窗口加高以显示整页）。
+- 侧栏在「插件」后加 Sidebar Item「用量与统计」（selected，隐藏 Action），图标为新增组件 `Icon / chart-column` `523:42370`（V1-Components 页 Icon grid，Lucide chart-column，描边 1.75 绑定 `color/fg/default`）；「模型」改回 default。
+- 页面（宽 620）：标题 + 说明（主 Agent = 协调者，子 Agent = 线程含右侧栏，从本版本开始记录）；筛选行 ToggleGroup segmented（今天 / 近 7 天 / 近 30 天 / 全部，选中近 7 天）+ 右侧 NativeSelect「全部项目」；三张统计卡（总消耗 1.28M · $0.58 · 2 个模型无价格；主 Agent · 协调者 312.4K · 24% · $0.17；子 Agent · 线程 968.1K · 76% · $0.41）；「每日消耗」堆叠柱状图（7 天，Y 轴 300K / 150K / 0，图例）；「按模型」表（模型 + 服务商 / 输入 / 输出 / 缓存 / 合计加粗 / 费用，自定义中转站为 —）；「主 Agent · 按项目」行内占比条；「子 Agent · 消耗最多的线程」前 5（标题、项目 · 状态、token、费用、chevron 进入线程）；页脚说明“合计含缓存读写。费用按服务商公开价格估算（美元）；自定义中转站没有价格，显示 —。”
+- 颜色：主 Agent `color/accent/default`，子 Agent 同变量 40% 透明度（`color/info/default` 与 accent 同色，无法区分，已弃用）；卡片描边 `color/separator`、圆角 `radius/panel`；文字用 V1 文本样式（title-1 / title-2 / headline / body / callout / footnote）。
+- 验证：两帧各 351 个节点，0 图片填充，文字全部 SF Pro；浅深截图检查，修正了筛选行占位间隔默认 100px 高、统计卡无边界、侧栏图标未随实例缩放（组件内层改为 SCALE 约束）、子 Agent 色与主 Agent 同色。
+
 ### V1.0.0 空间线程右侧栏实现（2026-10-26）
 
 - 用户评审通过（U10），补充两点并已同步 Figma：侧栏输入框不显示“技能”按钮（四个侧栏 Composer 实例关闭 showSkill）；决策卡加“其他答案”自填行（侧栏 `513:44691` / `514:45121` 与首页线程卡 `501:26883` / `501:27397`，Input sm + secondary “回答”）。
