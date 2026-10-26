@@ -302,6 +302,12 @@
     height: 32px;
     border-radius: var(--radius-control);
   }
+  .editor-generation-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
   .editor-generation-hint {
     display: flex;
     align-items: center;

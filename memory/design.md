@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## 节点编辑面板生成按钮靠右（2026-10-26）
+
+- 用户要求生成按钮与左侧参数控件分开，靠面板右侧。`MediaEditor.tsx` 将提示与生成按钮合为操作组，`nodes.css` 通过自动左边距右对齐；图像、视频和放大面板共用，空间不足时操作组整体换行。本轮未修改 Figma。
+- 根因：旧 `.node-editor-bottom > .editor-spacer` 隐藏了间距元素，新参数区又不再 flex 占满剩余空间。
+- 验证：check/build 通过；真实 Electron 中图像/视频 × 1280/900 窗宽 × 空/已填提示词 × 普通/放大共 16 种状态右边距断言通过，并检查窄窗截图。Windows 实机尚未验证。
+
 ## Windows 顶部原生菜单栏（2026-10-26）
 
 - 用户要求 Windows 不显示 File / Edit / View / Window 菜单栏。主进程在 win32 上通过 `Menu.setApplicationMenu(null)` 移除应用菜单，保留系统标题栏和窗口控制按钮；macOS 与 Linux 沿用现有菜单。本轮未修改 Figma。
