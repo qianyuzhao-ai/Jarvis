@@ -101,3 +101,38 @@ export const Workflow = /* @__PURE__ */ icon(Lucide.Workflow);
 export const X = /* @__PURE__ */ icon(Lucide.X);
 
 export const Pause = /* @__PURE__ */ icon(Lucide.Pause);
+
+export const FileCode = /* @__PURE__ */ icon(Lucide.FileCode);
+
+export const FileImage = /* @__PURE__ */ icon(Lucide.FileImage);
+
+export const FileMusic = /* @__PURE__ */ icon(Lucide.FileMusic);
+
+export const FileVideoCamera = /* @__PURE__ */ icon(Lucide.FileVideoCamera);
+
+export const FileArchive = /* @__PURE__ */ icon(Lucide.FileArchive);
+
+export const Bold = /* @__PURE__ */ icon(Lucide.Bold);
+
+export const Italic = /* @__PURE__ */ icon(Lucide.Italic);
+
+export const Strikethrough = /* @__PURE__ */ icon(Lucide.Strikethrough);
+
+export const Link = /* @__PURE__ */ icon(Lucide.Link);
+
+export const GripVertical = /* @__PURE__ */ icon(Lucide.GripVertical);
+export const Code = /* @__PURE__ */ icon(Lucide.Code);
+
+export const Network = /* @__PURE__ */ icon(Lucide.Network);
+
+export const Pilcrow = /* @__PURE__ */ icon(Lucide.Pilcrow);
+
+export const Heading1 = /* @__PURE__ */ icon(Lucide.Heading1);
+
+export const Heading2 = /* @__PURE__ */ icon(Lucide.Heading2);
+
+export const Heading3 = /* @__PURE__ */ icon(Lucide.Heading3);
+
+export const ListOrdered = /* @__PURE__ */ icon(Lucide.ListOrdered);
+
+export const Table = /* @__PURE__ */ icon(Lucide.Table);

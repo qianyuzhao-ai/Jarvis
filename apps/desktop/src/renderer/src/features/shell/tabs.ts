@@ -4,6 +4,7 @@ export const tabViewSchema = z.object({
   ref: z.string().max(4096).nullable(),
   title: z.string().max(500),
   rootId: z.string().optional(),
+  fileType: z.enum(['markdown', 'text', 'image', 'pdf', 'audio', 'video', 'binary']).optional(),
 });
 export type TabView = z.infer<typeof tabViewSchema>;
 export type WindowTab = TabView & {

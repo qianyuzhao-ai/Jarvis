@@ -41,11 +41,16 @@ import { navigationPack } from '../packs/navigation';
 import type { McpService } from '../mcp/service';
 import type { CalendarProvider } from '../calendar/provider';
 import type { WritingFiles } from '../../writing/files';
+import type { WritingEntry } from '../../../shared/writing';
+import type { WritingLinkRequest } from '../../../shared/writing-graph';
+import type { GraphIndex } from '../../writing/graph-index';
+import type { GenerationRunner } from '../../generation/agent-runner';
 import type { ProjectStore } from '../../projects/project-store';
 import { AgentSettingsStore } from '../settings';
 import { JsonFile } from '../json-file';
 import { ProjectRegistry, type ProjectRuntime } from './projects';
 import { ModelAdmin } from './model-admin';
+import { SpaceHosts } from './spaces';
 import { memoryPack } from './memory-pack';
 import { coordinatorPack, type Coordination, type SpawnInput } from './coordinator-pack';
 import { threadPack, type ThreadControl } from './thread-pack';
@@ -124,7 +129,9 @@ type Delivery = {
 
 export type OsDeps = {
   projects?: ProjectStore;
+  generation?: GenerationRunner;
   files?: WritingFiles;
+  graph?: GraphIndex;
   mcp?: McpService;
   calendar?: CalendarProvider;
 };
@@ -157,6 +164,7 @@ export class AgentOs {
   onChange: (event: OsEvent) => void = () => {};
   onSessionChange: (event: OsSessionEvent) => void = () => {};
   onNotify: (notice: OsNotice) => void = () => {};
+  readonly spaces: SpaceHosts;
   onNavigate: (target: NavigationTarget) => void = () => {};
   private sessions = new Map<string, Session>();
   private seq = 0;
@@ -177,6 +185,7 @@ export class AgentOs {
     private deps: OsDeps = {},
   ) {
     this.registry = new ProjectRegistry(join(root, 'os'));
+    this.spaces = new SpaceHosts(join(root, 'os'), deps);
     this.models = new ModelAdmin(config, root, () => this.isBusy);
     this.models.onChange = () => this.emit();
     this.skills = new SkillStore(new JsonFile(join(root, 'skills.json')));
@@ -194,6 +203,7 @@ export class AgentOs {
 
   async initialize() {
     await this.skills.initialize();
+    await this.spaces.initialize();
     await this.settings.initialize();
     this.scheduler.setLimit(this.settings.get().concurrency);
     await this.registry.load();
@@ -414,6 +424,7 @@ export class AgentOs {
   }
   dropWindow(owner: number) {
     this.viewing.delete(owner);
+    this.spaces.dropTargets(owner);
   }
   private priority(session: Session, wake: QueuedWake): SlotPriority {
     for (const ids of this.viewing.values()) if (ids.has(session.id)) return 0;
@@ -556,6 +567,35 @@ export class AgentOs {
   }
 
   // ---------------------------------------------------------------- user actions
+
+  /** The folder a link edit belongs to, so its graph can refresh after an undo. */
+  linkRoot(transactionId: string) {
+    return this.spaces.linkLedger.find(transactionId)?.writingScope?.rootId;
+  }
+  /** Adds, changes or undoes a link the user drew in the writing space's graph. */
+  linkWriting(request: WritingLinkRequest) {
+    return this.exclusive(async () => {
+      if (!this.spaces.links) throw new Error('星图服务不可用');
+      const result = await this.spaces.links.execute(request);
+      this.emit();
+      return result;
+    });
+  }
+  /** Renames or moves a document or folder; undo records follow the new path. */
+  relocateWriting(rootId: string, from: string, operation: () => Promise<WritingEntry>) {
+    return this.exclusive(async () => {
+      const entry = await operation();
+      for (const ledger of [
+        this.spaces.linkLedger,
+        ...this.registry.list().map((runtime) => runtime.ledger),
+      ]) {
+        ledger.renameWritingScope(rootId, from, entry.path);
+        await ledger.settled();
+      }
+      this.emit();
+      return entry;
+    });
+  }
 
   /**
    * A user message to a Coordinator or a thread. It is the only way principal text enters a

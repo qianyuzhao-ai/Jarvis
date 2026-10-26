@@ -48,6 +48,7 @@ test('writing reads real directories, edits, creates, searches and restores tabs
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '初稿.md', exact: true })
       .click();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await expect(editor).toContainText('写下');
     await editor.focus();
@@ -194,6 +195,7 @@ test('writing boundaries, exclusive creation, CRLF and conflict protection', asy
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '文档.md' })
       .click();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await editor.press('ControlOrMeta+a');
     await page.keyboard.insertText('# 已保存\n\n中文。');
@@ -220,6 +222,7 @@ test('writing retains a conflicted buffer and saves a separate copy', async () =
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '初稿.md' })
       .click();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await expect(editor).toContainText('初稿');
     await writeFile(join(directory, '初稿.md'), '# 外部版本\n');
@@ -233,7 +236,7 @@ test('writing retains a conflicted buffer and saves a separate copy', async () =
     await expect(page.getByRole('tab', { name: /初稿.md/ })).toBeVisible();
     await page.getByRole('button', { name: '另存副本' }).click();
     await expect(page.getByRole('tab', { name: /初稿-副本-/ })).toBeVisible();
-    await expect(editor).toContainText('本地未保存的内容');
+    await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText('本地未保存的内容');
     expect(await readFile(join(directory, '初稿.md'), 'utf8')).toBe('# 外部版本\n');
     await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible();
   } finally {
@@ -269,6 +272,7 @@ test('writing sidebar combinations, native chrome, assistant tab and dark mode',
         Math.abs(((await page.getByTestId('writing-main').boundingBox())?.width ?? 0) - 1385),
       )
       .toBeLessThanOrEqual(1);
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const documentWidth = await page.locator('.cm-content').boundingBox();
     expect(documentWidth?.width).toBe(560);
     await page.screenshot({ path: test.info().outputPath('writing-both-collapsed.png') });
@@ -315,6 +319,7 @@ test('writing reload preserves a conflicted buffer on cancel and reads disk on c
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '确认.md' })
       .click();
+    await page.getByRole('tab', { name: '源码', exact: true }).click();
     const editor = page.getByRole('textbox', { name: 'Markdown 编辑器' });
     await expect(editor).toContainText('初稿');
     await writeFile(join(directory, '确认.md'), '# 外部版本\n');
@@ -334,14 +339,14 @@ test('writing reload preserves a conflicted buffer on cancel and reads disk on c
   }
 });
 
-test('switching writing folders clears obsolete tabs and keeps the new document space active', async () => {
+test('switching writing folders preserves documents from both folders', async () => {
   const first = test.info().outputPath('第一目录'),
     second = test.info().outputPath('第二目录');
   await mkdir(first, { recursive: true });
   await mkdir(second, { recursive: true });
   await writeFile(join(first, '第一.md'), '# 第一个目录的内容');
   await writeFile(join(second, '第二.md'), '# 第二个目录的内容');
-  const app = await launch(test.info().outputPath('profile'));
+  let app = await launch(test.info().outputPath('profile'));
   try {
     const page = await app.firstWindow();
     await choose(app, page, first);
@@ -349,9 +354,7 @@ test('switching writing folders clears obsolete tabs and keeps the new document 
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '第一.md', exact: true })
       .click();
-    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
-      '第一个目录',
-    );
+    await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText('第一个目录');
     await app.evaluate(({ dialog }, directory) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [directory] });
     }, second);
@@ -361,20 +364,24 @@ test('switching writing folders clears obsolete tabs and keeps the new document 
       'aria-pressed',
       'true',
     );
-    await expect(page.getByRole('tab', { name: '第一.md', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: '第一.md', exact: true })).toBeVisible();
     await page
       .getByRole('navigation', { name: '文件列表' })
       .getByRole('button', { name: '第二.md', exact: true })
       .click();
-    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
-      '第二个目录',
-    );
+    await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText('第二个目录');
     await page.getByRole('button', { name: '第二目录', exact: true }).click();
     await page.getByRole('menuitem', { name: '第一目录', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'Markdown 编辑器' })).toContainText(
-      '第一个目录',
-    );
-    await expect(page.getByRole('tab', { name: '第二.md', exact: true })).toHaveCount(0);
+    await page.getByRole('tab', { name: '第一.md', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: '块编辑器' })).toContainText('第一个目录');
+    await expect(page.getByRole('tab', { name: '第二.md', exact: true })).toBeVisible();
+    await app.close();
+    app = await launch(test.info().outputPath('profile'));
+    const restored = await app.firstWindow();
+    await expect(restored.getByRole('tab', { name: '第一.md', exact: true })).toBeVisible();
+    await expect(restored.getByRole('tab', { name: '第二.md', exact: true })).toBeVisible();
+    await restored.getByRole('tab', { name: '第二.md', exact: true }).click();
+    await expect(restored.getByRole('textbox', { name: '块编辑器' })).toContainText('第二个目录');
   } finally {
     await app.close();
   }

@@ -36,12 +36,18 @@ import { LocalCalendar } from './calendar/local';
 import { rangeSchema } from '../../shared/agent-calendar';
 import { mcpServerInputSchema } from '../../shared/agent-mcp';
 import { memoryName } from './kernel/memory';
+import { openTargetsSchema } from '../../shared/agent-targets';
+import { canvasReplySchema } from '../../shared/canvas-agent';
+import { writingReplySchema } from '../../shared/writing-agent';
 import { projectStore } from '../projects/bridge';
-import { writingFiles } from '../writing/bridge';
+import { generationRunner } from '../generation/bridge';
+import { writingFiles, writingGraph } from '../writing/bridge';
 import { AgentOs } from './os/service';
 
 const trusted = new Map<number, { contents: WebContents; url: string }>();
 let os: AgentOs;
+/** The Agent OS, for the writing space's link and rename operations. */
+export const writingAgentService = () => os;
 export const isAgentBusy = () => os?.isBusy ?? false;
 export function trustAgentWindow(contents: WebContents, url: string) {
   trusted.set(contents.id, { contents, url: new URL(url).href });
@@ -109,7 +115,9 @@ export async function registerAgent() {
     calendar,
     mcp,
     projects: projectStore(),
+    generation: generationRunner(),
     files: writingFiles(),
+    graph: writingGraph(),
   });
   let initializationError = '';
   try {
@@ -122,6 +130,17 @@ export async function registerAgent() {
   os.onChange = (event) => broadcast('os:event', event);
   os.onSessionChange = (event) => broadcast('os:session-event', event);
   // The focused window if there is one, else any open window.
+  // Tool commands for a canvas or document go to the window that has it open.
+  const host = (owner: number, closed: string) => {
+    const target = trusted.get(owner);
+    if (!target || target.contents.isDestroyed() || target.contents.getURL() !== target.url)
+      throw new Error(closed);
+    return target.contents;
+  };
+  os.spaces.canvas.dispatch = (owner, command) =>
+    host(owner, '画布窗口已关闭').send('agent:canvas-command', command);
+  os.spaces.writing.dispatch = (owner, command) =>
+    host(owner, '写作窗口已关闭').send('agent:writing-command', command);
   os.onNavigate = (target) => {
     const windows = open();
     const focused = windows.find(({ contents }) => contents.isFocused());
@@ -254,8 +273,14 @@ export async function registerAgent() {
       const v = z.object({ projectId: osId, name: memoryName }).strict().parse(r);
       return os.readMemory(v.projectId, v.name);
     },
-    // Canvas and writing hosts still report what they have open; their Agents return in batch 2.
-    'agent:open-targets': () => undefined,
+    // Canvas and writing hosts: what each window has open, and its replies to tool commands.
+    'agent:open-targets': (r, owner) => os.spaces.setTargets(owner, openTargetsSchema.parse(r)),
+    'agent:claim-canvas': (r, owner) => os.spaces.canvas.claim(owner, agentId.parse(r)),
+    'agent:complete-canvas': (r, owner) =>
+      os.spaces.canvas.complete(owner, canvasReplySchema.parse(r)),
+    'agent:claim-writing': (r, owner) => os.spaces.writing.claim(owner, agentId.parse(r)),
+    'agent:complete-writing': (r, owner) =>
+      os.spaces.writing.complete(owner, writingReplySchema.parse(r)),
     // Settings shared by every project
     'agent:skills': () => os.skills.list(),
     'agent:import-skill': async (_r, owner) => {

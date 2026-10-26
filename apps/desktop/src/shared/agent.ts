@@ -1,3 +1,4 @@
+import { resonanceSchema } from './writing-graph';
 import { writingScopeSchema, type WritingCommand, type WritingReply } from './writing-agent';
 import { z } from 'zod';
 import type { SkillInfo } from './agent-skills';
@@ -84,6 +85,7 @@ export const agentStatus = z.enum([
   'queued',
 ]);
 export const chatActivitySchema = z.object({
+  resonance: resonanceSchema.optional(),
   id: z.string().min(1).max(200),
   label: z.string().max(500),
   nodeIds: z.array(z.string().max(100)).max(200).optional(),

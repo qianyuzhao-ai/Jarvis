@@ -57,6 +57,10 @@ export const writingSnapshotSchema = z
     from: offset,
     text: z.string().max(32000),
     next: offset.nullable(),
+    block: z
+      .object({ type: z.string().max(100), headingPath: z.array(z.string()) })
+      .strict()
+      .optional(),
     selection: z
       .object({ from: offset, to: offset, text: z.string().max(32000), truncated: z.boolean() })
       .strict(),

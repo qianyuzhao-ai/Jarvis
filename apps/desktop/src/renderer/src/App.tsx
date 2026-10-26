@@ -13,6 +13,7 @@ import {
   openTabView,
   travelTab,
   pruneTabs,
+  serializeTabs,
   type TabView,
 } from './features/shell/tabs';
 import { useWindowTabs } from './features/shell/use-window-tabs';
@@ -95,9 +96,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
   }
   function syncView(view: TabView) {
     if (view.kind === 'writing') {
-      const doc = writing.documents.find(
-        (d) => d.path === view.ref && d.rootId === writing.root?.id,
-      );
+      const doc = writing.documents.find((d) => d.path === view.ref && d.rootId === view.rootId);
       if (doc) writing.setActiveId(doc.id);
     }
   }
@@ -186,7 +185,7 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
           ? {
               kind,
               ref: doc?.path ?? null,
-              rootId: writing.root?.id,
+              rootId: doc?.rootId ?? writing.root?.id,
               title: doc?.path.split('/').at(-1) ?? '写作空间',
             }
           : {
@@ -298,49 +297,74 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       })),
     }));
   }, [data.projects, change]);
-  const validatedWritingRoot = useRef<string | null>(null);
+  const restoredWriting = useRef(false);
   useEffect(() => {
-    const rootId = writing.root?.id ?? '';
-    if (!writing.ready || writing.loading || validatedWritingRoot.current === rootId) return;
-    const changedRoot = validatedWritingRoot.current !== null;
-    validatedWritingRoot.current = rootId;
-    change((s) => {
-      const current = s.tabs.find((t) => t.id === s.activeId);
-      const next = pruneTabs(
-        s,
+    if (!writing.ready || restoredWriting.current) return;
+    restoredWriting.current = true;
+    change((state) => {
+      let next = pruneTabs(
+        state,
         (t) =>
           t.kind !== 'writing' ||
           !t.ref ||
-          (t.rootId === writing.root?.id &&
-            writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref)),
+          writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref),
       );
-      if (
-        changedRoot &&
-        current?.kind === 'writing' &&
-        !next.tabs.some((t) => t.id === current.id)
-      ) {
-        const doc = writing.documents.find((d) => d.id === writing.activeId && d.rootId === rootId);
-        return openTabView(
-          next,
-          {
-            kind: 'writing',
-            rootId: rootId || undefined,
-            ref: doc?.path ?? null,
-            title: doc?.path.split('/').at(-1) ?? '写作空间',
-          },
-          true,
-        );
+      const activeId = next.activeId;
+      for (const doc of writing.documents) {
+        if (
+          !next.tabs.some(
+            (t) => t.kind === 'writing' && t.rootId === doc.rootId && t.ref === doc.path,
+          )
+        )
+          next = openTabView(
+            next,
+            {
+              kind: 'writing',
+              rootId: doc.rootId,
+              ref: doc.path,
+              title: doc.path.split('/').at(-1)!,
+              fileType: doc.fileType,
+            },
+            true,
+          );
       }
-      return next;
+      return { ...next, activeId };
     });
+    try {
+      localStorage.setItem('jarvis:window-tabs', serializeTabs(shell.current.current));
+      for (const key of writing.legacyKeys) localStorage.removeItem(key);
+    } catch {
+      writing.setNotice('标签迁移未能保存，旧记录已保留');
+    }
   }, [
     writing.ready,
-    writing.loading,
-    writing.root?.id,
     writing.documents,
-    writing.activeId,
+    writing.legacyKeys,
+    writing.setNotice,
     change,
+    shell.current,
   ]);
+  useEffect(
+    () =>
+      window.desktop?.writing.onRenamed(({ rootId, from, to }) => {
+        const rename = (v: TabView) =>
+          v.kind === 'writing' &&
+          v.rootId === rootId &&
+          v.ref &&
+          (v.ref === from || v.ref.startsWith(from + '/'))
+            ? {
+                ...v,
+                ref: to + v.ref.slice(from.length),
+                title: (to + v.ref.slice(from.length)).split('/').at(-1)!,
+              }
+            : v;
+        change((s) => ({
+          ...s,
+          tabs: s.tabs.map((t) => ({ ...t, ...rename(t), history: t.history.map(rename) })),
+        }));
+      }),
+    [change],
+  );
   const lastDocument = useRef('');
   useEffect(() => {
     if (!writing.ready || !writing.activeId || lastDocument.current === writing.activeId) return;
@@ -364,6 +388,18 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
       ),
     );
   }, [writing.ready, writing.activeId, writing.documents, change, shell.current]);
+  useEffect(() => {
+    if (!writing.ready) return;
+    change((s) =>
+      pruneTabs(
+        s,
+        (t) =>
+          t.kind !== 'writing' ||
+          !t.ref ||
+          writing.documents.some((d) => d.rootId === t.rootId && d.path === t.ref),
+      ),
+    );
+  }, [writing.ready, writing.documents, change]);
   const shortcuts = useRef({ close, activate, open });
   shortcuts.current = { close, activate, open };
   useEffect(() => {
@@ -659,16 +695,26 @@ function Workbench({ initial }: { initial: { data: WorkspaceData; records: Proje
                     document.querySelector<HTMLButtonElement>('[aria-label="展开右侧栏"]')?.focus(),
                   );
                 },
-                onOpen: (path, newTab) => {
+                onAssistant: () =>
+                  change((s) => ({
+                    ...s,
+                    tabs: s.tabs.map((t) =>
+                      t.id === s.activeId ? { ...t, rightPanelOpen: true } : t,
+                    ),
+                  })),
+                onOpen: (path, newTab, rootId) => {
                   if (writing.root)
                     void open(
                       {
                         kind: 'writing',
                         ref: path,
-                        rootId: writing.root.id,
+                        rootId: rootId ?? writing.root.id,
                         title: path.split('/').at(-1)!,
                       },
-                      newTab,
+                      newTab ||
+                        (active.kind === 'writing' &&
+                          !!active.ref &&
+                          active.rootId !== writing.root.id),
                     );
                 },
               }}
