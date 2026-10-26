@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## 画布顶栏「更多」菜单（2026-10-26）
+
+- 用户要求收起顶栏「导出 Excel」，原位置换成「更多」按钮，内含：导出 Excel、画布磁性吸附、显示背景圆点。
+- 实现：`CanvasExport.tsx` 更名为 `CanvasMoreMenu.tsx`：ghost 图标按钮（MoreHorizontal，aria「更多」，`data-testid="canvas-more"`）+ DropdownMenu：「导出 Excel」（按用户要求不带图标；导出中显示「正在导出…」并禁用，导出逻辑与提示不变）、分隔、两个勾选项分别读写项目原有 `snap` / `dots`。原右下角「背景点阵显示」「磁力吸附」两个开关移入菜单（不再重复显示），右下角保留「缩略图显示」。删除不再使用的 `.canvas-export-button` 样式。菜单宽度随内容、最宽 240px（`nodes.css` 末尾 `.canvas-more-menu`，无层）。
+- 测试：新增 `tests/helpers/canvas-menu.ts`（canvasMenu / canvasOption），smoke 与 project-export 改为通过菜单操作。按用户要求暂缓 check/build/测试，仅 biome lint；未看截图。
+
 ## Overview 分组排版统一（2026-10-26）
 
 - 用户指出 Overview 排版有问题。原因：「等你 / 待你查看 / 进行中」为 h2 标题 + 紧跟计数、卡片不缩进；「已完成 / 已解决」用默认 Collapsible：箭头在前、计数被推到最右、卡片缩进 20px 且卡片之间无间距，两种分组左缘与标题样式不一致。

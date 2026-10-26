@@ -278,18 +278,6 @@
     font-size: 11px;
     color: var(--color-fg-secondary);
   }
-  .canvas-export-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 36px;
-    padding: 0 12px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    color: var(--color-fg);
-    background: var(--color-surface-raised);
-  }
   .canvas-body {
     flex: 1;
     position: relative;

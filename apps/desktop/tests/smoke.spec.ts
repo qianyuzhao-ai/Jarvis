@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { canvasMenu, canvasOption } from './helpers/canvas-menu';
 
 async function launch() {
   const environment = Object.fromEntries(
@@ -164,16 +165,11 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await expect(page.getByLabel('视频时长')).toHaveValue('15');
     await page.getByRole('button', { name: '关闭编辑面板' }).click();
     await expect(nodes).toHaveCount(2);
-    await expect(page.getByRole('button', { name: '磁力吸附', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await page.getByRole('button', { name: '磁力吸附', exact: true }).click();
-    await page.getByRole('button', { name: '磁力吸附', exact: true }).click();
-    await expect(page.getByRole('button', { name: '磁力吸附', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(await canvasOption(page, '画布磁性吸附')).toBe(true);
+    await canvasMenu(page, '画布磁性吸附');
+    expect(await canvasOption(page, '画布磁性吸附')).toBe(false);
+    await canvasMenu(page, '画布磁性吸附');
+    expect(await canvasOption(page, '画布磁性吸附')).toBe(true);
     const bounds = await nodes.last().boundingBox();
     if (!bounds) throw new Error('Missing node');
     await page.mouse.move(bounds.x + 100, bounds.y + 60);
@@ -187,9 +183,9 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     expect(Number(position?.[2]) % 24).toBe(0);
     await page.getByRole('button', { name: '缩略图显示' }).click();
     await expect(page.locator('.react-flow__minimap')).toBeVisible();
-    await page.getByRole('button', { name: '背景点阵显示' }).click();
+    await canvasMenu(page, '显示背景圆点');
     await expect(page.locator('.react-flow__background')).toHaveCount(0);
-    await page.getByRole('button', { name: '背景点阵显示' }).click();
+    await canvasMenu(page, '显示背景圆点');
     await page.getByRole('button', { name: '适应视图' }).click();
     await nodes.last().click();
     await page.screenshot({ path: test.info().outputPath('canvas-light.png') });
@@ -206,10 +202,7 @@ test('canvas editing, model constraints, references, toggles and persistence', a
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByTestId('project-row').filter({ hasText: '画布交互测试' }).click();
     await expect(nodes).toHaveCount(2);
-    await expect(page.getByRole('button', { name: '磁力吸附' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(await canvasOption(page, '画布磁性吸附')).toBe(true);
     await nodes.first().click();
     await expect(page.getByLabel('图像提示词')).toHaveText('窗边的橘猫，温暖自然光');
     await expect(page.getByAltText('reference.png')).toBeVisible();

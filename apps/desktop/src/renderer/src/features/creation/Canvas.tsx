@@ -36,8 +36,6 @@ import {
 import {
   Download,
   Image,
-  LayoutGrid,
-  Magnet,
   Map,
   Maximize,
   Minus,
@@ -50,7 +48,7 @@ import { MediaPlaceholder } from './MediaPlaceholder';
 import { MediaEditor } from './MediaEditor';
 import { AssetNode } from './AssetNode';
 import { NodeRenameContext } from './node-rename-context';
-import { CanvasExport } from './CanvasExport';
+import { CanvasMoreMenu } from './CanvasMoreMenu';
 import { CanvasAgentSidebar } from './CanvasAgentSidebar';
 import { useCanvasHost } from './use-canvas-host';
 import { promptMentions } from './prompt-mentions';
@@ -540,11 +538,15 @@ function CanvasContent({
               }}
             />
           </div>
-          <CanvasExport
+          <CanvasMoreMenu
             key={project.id}
             projectId={project.id}
             projectName={project.name}
             status={status}
+            snap={project.snap}
+            dots={project.dots}
+            onSnap={(snap) => patch({ snap })}
+            onDots={(dots) => patch({ dots })}
           />
         </header>
         <div className="canvas-workspace">
@@ -733,24 +735,6 @@ function CanvasContent({
                     onPressedChange={(pressed) => patch({ minimap: pressed })}
                   >
                     <Map size={18} />
-                  </Toggle>
-                </Tooltip>
-                <Tooltip content="背景点阵显示">
-                  <Toggle
-                    aria-label="背景点阵显示"
-                    pressed={project.dots}
-                    onPressedChange={(pressed) => patch({ dots: pressed })}
-                  >
-                    <LayoutGrid size={18} />
-                  </Toggle>
-                </Tooltip>
-                <Tooltip content="磁力吸附">
-                  <Toggle
-                    aria-label="磁力吸附"
-                    pressed={project.snap}
-                    onPressedChange={(pressed) => patch({ snap: pressed })}
-                  >
-                    <Magnet size={18} />
                   </Toggle>
                 </Tooltip>
               </Panel>
