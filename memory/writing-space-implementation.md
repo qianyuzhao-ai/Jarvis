@@ -126,6 +126,8 @@
 
 ## W4：块级 Agent 联动（2026-10-26）
 
+实现提交：`5e9a3d6`（`feat ✨️: 实现写作W4块级Agent联动`）。
+
 用户明确“继续 W4”，沿用 feature/writing-space，不把 W3 的回归失败或 Claude 待验收状态改写为通过。
 
 ### 实现
