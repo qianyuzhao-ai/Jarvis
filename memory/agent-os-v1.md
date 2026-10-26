@@ -59,9 +59,9 @@ userData/agent/os/
 
 ## 3. 模块结构（`apps/desktop/src/main/agent/`）
 
-- `kernel/`（纯代码，无 LLM）：`event-log` 事件日志、`mailbox` 邮箱与限流、`wakes` 唤醒调度、`decisions` 决策卡与批准凭据、`memory` 项目记忆、`policy` 策略流水线、`scheduler` 带优先级的并发槽、`ledger` 账本、`capability` 能力包接口。
-- `os/`：`projects` 项目与线程元数据、`harness` 会话运行器（一轮处理一个唤醒）、`coordinator` 协调者提示词与工具、`thread` 线程提示词与工具、`service` 对外门面、`bridge` IPC。
-- `packs/`：沿用 files、calendar、mcp、writing-library、navigation、skills；画布/写作/生成能力包保留文件，第二批接回线程。
+- `kernel/`（纯代码，无 LLM）：`event-log` 事件日志、`mailbox` 邮箱与限流、`wakes` 唤醒调度、`decisions` 决策卡与批准凭据、`memory` 项目记忆、`policy` 策略流水线、`scheduler` 带优先级的并发槽、`ledger` 账本、`capability` / `tool` 能力包接口。
+- `os/`：`service`（AgentOs 门面：项目、会话、轮次、唤醒、决策、撤销）、`projects`（项目与线程元数据）、`prompts`（协调者 / 线程提示词与信任信封）、`coordinator-pack`、`thread-pack`、`memory-pack`、`model-admin`、`spaces`（画布 / 写作命令中转与窗口打开目标、关联账本）、`target-packs`（按线程目标挂画布 / 生成 / 写作包）、`disk-writing`（未打开文档的写盘与撤销）。IPC 在 `agent/bridge.ts`。
+- `packs/`：files、calendar、mcp、writing-library、navigation、skills，以及画布、生成、写作包（第二批接回线程）。
 
 ## 4. 关键机制
 
@@ -138,6 +138,7 @@ userData/agent/os/
 - `features/agent/SpaceThreadPanel.tsx`：画布与写作共用的紧凑线程视图——头部线程标题 + 状态 Badge + 线程历史 / 新线程 / 关闭；“线程 · 项目名 / 在首页查看”（经 `open-thread.ts` 打开首页线程标签）；置顶一行进度（可展开为完整清单）；消息后接紧凑决策卡；历史页按进行中 / 已完成列出本目标线程，写作历史附“文档没打开时”说明。样式在 `os.css`。
 - 画布侧栏：选中节点与添加的图片 / 视频帧随消息发送；撤销按钮经 `desktop.os.undo`，仅最近一次画布修改可撤；保留宽度拖拽。写作侧栏：发送前确认编辑器可读；块菜单与 / 面板的 AI 指令照旧自动发送；撤销经主进程转给编辑器；星图共鸣点卡片在侧栏消息后显示。写作空间里文档线程只建一个钩子，侧栏和星图“寻找共鸣点”共用；编辑器的 Agent 撤销分组改按“没有线程在改这篇文档”结束。
 - 紧凑输入框不显示“技能”按钮（U10）。决策卡新增“其他答案”输入（U11）：`decisionAnswerSchema` 增加 `text`（option 为 `OTHER_ANSWER = -1`），线程以 `<user_answer trust="principal">` 收到；批准与预算卡拒绝自填。Figma：Section `511:42965` 四个侧栏输入框关闭技能、两张侧栏决策卡和首页线程决策卡（`501:26883` / `501:27397`）加“其他答案”行。
+- 验证（`07569b2`）：`pnpm check`、`pnpm build` 通过；完整回归 206 项中 205 通过，唯一失败为基线即存在的 `agent.spec.ts` 首页建议区几何断言（Linux 字体）。
 - 测试：新增 `tests/space-agent.spec.ts`（画布侧栏：开线程、改画布、紧凑决策卡自填答案、撤销、历史 / 新线程、在首页查看；写作侧栏：改编辑器不落盘、撤销、历史说明）；`writing.spec` 改为检查侧栏空状态文案。
 
 ## 8. 变更记录
