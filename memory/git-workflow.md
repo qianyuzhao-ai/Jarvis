@@ -2,6 +2,13 @@
 
 最后更新：2026-10-26
 
+## 1.0.2 发布准备（2026-10-26）
+
+- 用户授权发布补丁版本 v1.0.2。PR #103 已合入 develop `6933736`，从该基线创建 `feature/prepare-v1.0.2`；包含画布节点复制粘贴、视频原生控件恢复及菜单/按钮/标签布局修复。版本与中文说明已更新。
+- check/build、版本一致性、发布工具 10 项与 Apple 网络重试测试通过。完整 Electron 回归 212/213（6.1m），唯一失败为既有日历周视图 0/7；原生焦点本次通过。保留失败，未改断言。日志 `/private/tmp/jarvis-102-smoke.log`。
+- 本地 arm64 目录包 `release/b99478e7-3297-4480-b7c5-abe5306af7b8` 通过 593 项生产依赖和 ASAR 实际启动、Agent OS 项目、写作与更新桥接验证。日志 `/private/tmp/jarvis-102-packaged-check.log`。
+- 沿用三平台统一预发布；Windows 实机操作、内网媒体反复放大后加载卡住和真实升级待验证。云端发布结果尚待回读。
+
 ## 界面细节与画布复制粘贴 PR（2026-10-26）
 
 - 用户要求当前分支提 PR 到 dev（develop），已推送 `feature/style-polish-2026-10-26` 并创建 [PR #103](https://github.com/qianyuzhao-ai/Jarvis/pull/103)。包含菜单/按钮/标签布局修复、节点复制粘贴，以及用户指定提交的两份 Figma JSON。
