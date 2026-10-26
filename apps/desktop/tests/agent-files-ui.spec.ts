@@ -57,7 +57,6 @@ test('a folder authorized in settings lets Jarvis overwrite a file after approva
     await page.getByRole('button', { name: '添加文件夹' }).click();
     await expect(page.getByTestId('folder-row').filter({ hasText: '素材' })).toHaveCount(1);
     await expect(page.getByTestId('folder-row').filter({ hasText: '项目文件' })).toHaveCount(1);
-    await expect(page.getByTestId('os-sidebar-foot')).toHaveText('2 个可访问目录');
     await page.screenshot({ path: test.info().outputPath('file-access.png') });
 
     await page.getByRole('button', { name: '返回 Jarvis Chat' }).click();

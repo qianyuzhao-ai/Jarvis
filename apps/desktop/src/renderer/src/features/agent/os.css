@@ -363,13 +363,6 @@
     display: flex;
     justify-content: flex-end;
   }
-  .os-sidebar-foot {
-    margin: auto 8px 0;
-    padding-top: 12px;
-    font-size: 12px;
-    line-height: 18px;
-    color: var(--color-fg-tertiary);
-  }
   @media (max-width: 1050px) {
     .os-view-header,
     .os-page-scroll {
@@ -497,4 +490,14 @@
     color: var(--color-fg);
     font-weight: 600;
   }
+}
+
+/* 项目切换：菜单与按钮同宽，菜单打开时按钮保持选中底色。 */
+.os-project-switcher[data-state='open'] {
+  background: var(--color-fill);
+}
+.os-project-menu {
+  width: var(--radix-dropdown-menu-trigger-width);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

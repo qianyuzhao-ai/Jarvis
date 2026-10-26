@@ -381,8 +381,8 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     expect(latestBounds).not.toBeNull();
     expect(dockBounds).not.toBeNull();
     if (latestBounds && dockBounds) {
-      expect(dockBounds.x + dockBounds.width - latestBounds.x - latestBounds.width).toBeCloseTo(
-        24,
+      expect(latestBounds.x + latestBounds.width / 2).toBeCloseTo(
+        dockBounds.x + dockBounds.width / 2,
         0,
       );
       expect(dockBounds.y - latestBounds.y - latestBounds.height).toBeCloseTo(8, 0);

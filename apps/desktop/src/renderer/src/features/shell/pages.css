@@ -2,6 +2,13 @@
   .window-shell .chat-dock {
     padding: 12px 24px 24px;
   }
+  /* 消息区与输入框（.ui-composer-wide）同宽、同侧边距。 */
+  .window-shell .chat-scroll {
+    padding-inline: 24px;
+  }
+  .window-shell .chat-messages {
+    max-width: 720px;
+  }
   .window-shell .chat-welcome {
     text-align: center;
     margin: auto;

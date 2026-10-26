@@ -2,6 +2,17 @@
 
 最后更新：2026-10-26
 
+## 首页项目切换按钮全宽（2026-10-26）
+
+- 用户要求项目切换按钮占满侧栏标题行，下拉箭头靠最右。`ProjectSidebar.tsx` 中按钮 `flex-1`，内部 `.ui-button-content` 撑满并两端对齐，项目名过长截断，箭头不收缩；共用的 `.shell-sidebar-title` 未改。
+- 对齐修正（同日）：用户反馈按钮与下方行不齐。原因是标题行自带左右 8/4px 外边距叠加按钮 8px 内边距，按钮框比行背景内缩、文字比行图标右移 8px。该行加 `mx-0`，按钮 `pl-2 pr-1` 与 `.ui-sidebar-item` 内边距一致：框与行背景同宽，项目名与行图标左对齐，箭头与行右侧时间右对齐。
+- 高度与间距（同日）：用户要求切换按钮与下方行等高、Jarvis Chat 与 Overview 间距 4px。按钮加 `h-8`（32px，同 `.ui-sidebar-row`）；两行包进 `flex flex-col gap-1`（SidebarItem 的 className 落在固定 32px 行内的按钮上，不能用外边距）。未运行验证。
+- 菜单全宽与打开态（同日）：项目菜单改用 `os-project-menu`（宽度 = `--radix-dropdown-menu-trigger-width`，`align="start"`），不再用通用 `shell-row-menu`；按钮加 `os-project-switcher`，`data-state='open'` 时保持 `--color-fill` 底色，悬停菜单项不丢选中态。样式在 `os.css` 末尾（无层，覆盖 ghost 悬停规则）。未运行验证。
+- 去掉侧栏底部「N 个可访问目录」（同日）：删除 `ProjectSidebar.tsx` 的 `os-sidebar-foot` 与其样式，os-ui/agent-files-ui 中读取该字样的两条断言同步删除（目录数量仍由项目设置的 folder-row 断言覆盖）。项目设置里的「可访问目录」区块保留。未运行验证。
+- 聊天内容与输入框同宽（同日）：输入框为 `.ui-composer-wide`（`min(720px, 100%)`，dock 左右 24px），消息区原为 880px + 左右 48px。`pages.css` 中 `.window-shell .chat-messages` 改 720px、`.window-shell .chat-scroll` 左右 24px，宽窄窗口下两者等宽对齐；侧栏线程视图同样受 720 上限影响（本就更窄，无变化）。未运行验证。
+- 输入区三项（同日）：①首页「回到最新」由右侧改为在 dock 上方水平居中（`left-1/2 -translate-x-1/2`），agent.spec 位置断言改为中心对齐；侧栏线程的回到最新原本就居中。②输入框去掉「技能」按钮（含容器查询隐藏规则），输入 `/` 仍可打开技能列表。③上下文占用由横条改为 `@jarvis/ui` 现有 `ProgressRing`（16px 圆环，按钮 `icon-sm`），≥90% 显示 danger 色，未知时只显示轨道；点击弹出的用量面板不变。本轮未改 Figma，未运行验证。
+- 验证：用户要求本分支暂停 check/build/Electron 测试，PR 时统一跑；本项未运行验证、未看截图。
+
 ## 首页侧栏「Jarvis Chat」置顶（2026-10-26）
 
 - 用户要求首页项目侧栏两行互换并改名：原「协调对话」移到 Overview 上方，名称改为「Jarvis Chat」。`ProjectSidebar.tsx` 调整顺序；渲染层面向用户的名称同步改为 Jarvis Chat（侧栏行、标签标题、对话页标题、「打开/返回 Jarvis Chat」按钮、空线程提示、项目设置说明、写作右侧栏说明）。主进程给模型的提示词仍称「协调对话」，未改。本轮未修改 Figma。

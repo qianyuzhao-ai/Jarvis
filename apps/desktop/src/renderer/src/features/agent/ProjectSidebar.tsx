@@ -92,15 +92,21 @@ export function ProjectSidebar({
   );
   return (
     <>
-      <div className="shell-sidebar-title">
+      <div className="shell-sidebar-title mx-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label="切换项目" data-testid="project-switcher">
-              {current?.title ?? 'Jarvis'}
-              <ChevronDown size={14} />
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="切换项目"
+              data-testid="project-switcher"
+              className="os-project-switcher h-8 min-w-0 flex-1 pr-1 pl-2 [&>.ui-button-content]:min-w-0 [&>.ui-button-content]:flex-1 [&>.ui-button-content]:justify-between"
+            >
+              <span className="min-w-0 truncate">{current?.title ?? 'Jarvis'}</span>
+              <ChevronDown size={14} className="shrink-0" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="shell-row-menu">
+          <DropdownMenuContent align="start" className="os-project-menu">
             {snapshot.projects.map((p) => (
               <DropdownMenuItem key={p.id} onSelect={() => void switchTo(p.id)}>
                 <span className="flex-1">{p.title}</span>
@@ -121,30 +127,32 @@ export function ProjectSidebar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <SidebarItem
-        data-testid="side-link"
-        aria-label="打开 Jarvis Chat"
-        icon={<MessageCircle />}
-        meta={current ? relativeTime(current.updatedAt, now) : undefined}
-        selected={current ? selected(current.coordinatorId) : place?.kind === 'home'}
-        onClick={(e) =>
-          onOpen(current?.coordinatorId ?? null, 'Jarvis Chat', e.metaKey || e.ctrlKey)
-        }
-      >
-        Jarvis Chat
-        {current && current.coordinatorId in snapshot.runs && <span aria-label="回复中"> •</span>}
-      </SidebarItem>
-      {current && (
+      <div className="flex flex-col gap-1">
         <SidebarItem
-          data-testid="overview-link"
-          icon={<ListTodo />}
-          meta={waiting ? `${waiting} 件等你` : undefined}
-          selected={place?.kind === 'overview' && place.projectId === current.id}
-          onClick={(e) => onOpen(`overview:${current.id}`, 'Overview', e.metaKey || e.ctrlKey)}
+          data-testid="side-link"
+          aria-label="打开 Jarvis Chat"
+          icon={<MessageCircle />}
+          meta={current ? relativeTime(current.updatedAt, now) : undefined}
+          selected={current ? selected(current.coordinatorId) : place?.kind === 'home'}
+          onClick={(e) =>
+            onOpen(current?.coordinatorId ?? null, 'Jarvis Chat', e.metaKey || e.ctrlKey)
+          }
         >
-          Overview
+          Jarvis Chat
+          {current && current.coordinatorId in snapshot.runs && <span aria-label="回复中"> •</span>}
         </SidebarItem>
-      )}
+        {current && (
+          <SidebarItem
+            data-testid="overview-link"
+            icon={<ListTodo />}
+            meta={waiting ? `${waiting} 件等你` : undefined}
+            selected={place?.kind === 'overview' && place.projectId === current.id}
+            onClick={(e) => onOpen(`overview:${current.id}`, 'Overview', e.metaKey || e.ctrlKey)}
+          >
+            Overview
+          </SidebarItem>
+        )}
+      </div>
       <div data-testid="thread-list" className="shell-chat-history" aria-label="线程">
         {active.length > 0 && (
           <section className="shell-chat-group" aria-label="线程">
@@ -159,11 +167,6 @@ export function ProjectSidebar({
           </section>
         )}
       </div>
-      {current && (
-        <p className="os-sidebar-foot" data-testid="os-sidebar-foot">
-          {current.folders.length} 个可访问目录
-        </p>
-      )}
     </>
   );
 }

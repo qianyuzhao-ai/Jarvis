@@ -429,11 +429,3 @@
     overflow-y: auto;
   }
 }
-
-@layer utilities {
-  @container sidebar-composer (max-width: 400px) {
-    .ui-button.composer-skills {
-      display: none;
-    }
-  }
-}

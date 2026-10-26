@@ -7,9 +7,9 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { ArrowUp, Plus, Square, Sparkles } from '@jarvis/ui/icons';
+import { ArrowUp, Plus, Square } from '@jarvis/ui/icons';
 import { Composer } from '@jarvis/ui/components/Composer';
-import { Button, IconButton } from '@jarvis/ui/components/Button';
+import { IconButton } from '@jarvis/ui/components/Button';
 import type { useAgent } from './use-agent';
 import { ContextUsage } from './ContextUsage';
 import { ModelPicker, ThinkingPicker } from './ModelPicker';
@@ -196,22 +196,6 @@ export function ChatComposer({
           >
             <Plus size={20} />
           </IconButton>
-          {/* Sidebars are too narrow for it; / still opens the skill list there. */}
-          {!compact && (
-            <Button
-              className="composer-skills"
-              variant="ghost"
-              size="sm"
-              aria-label="选择技能"
-              onClick={() => {
-                setText('/');
-                setDismissed(null);
-                input.current?.focus();
-              }}
-            >
-              <Sparkles /> 技能
-            </Button>
-          )}
           <div className="composer-spacer" />
           <ModelPicker
             settings={agent.configuration}
