@@ -2,6 +2,14 @@
 
 最后更新：2026-10-26
 
+## 1.0.2 发布受 ARM64 容量阻塞（2026-10-26）
+
+- 版本准备 [PR #104](https://github.com/qianyuzhao-ai/Jarvis/pull/104) 合入 develop `a319dd8`，发布 [PR #105](https://github.com/qianyuzhao-ai/Jarvis/pull/105) 合入 main `4c40dda0711da7afccadafa844bb12fc125dd9c9`，源码树核对一致。新标签 v1.0.2 指向该 main 提交，未移动旧标签。
+- 唯一运行 [40328778235](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40328778235)：Windows x64 与 macOS Intel x64 成功。两者通过 593 项生产依赖、ASAR 实际启动、Agent OS/写作/更新桥接与更新清单 SHA-512；Intel 目录包、DMG/ZIP 内应用通过签名、公证票据和 Gatekeeper。日志 `/private/tmp/jarvis-102-release-verification/`。
+- ARM64 首轮作业 `121592334649` 与单作业重试（attempt 2）`121601879925` 均在排队后取消，零步骤执行。GitHub 注释明确为托管运行器容量不足（The job was not acquired by Runner of type hosted even after multiple attempts），不是代码、签名或公证失败。重试复用 Windows 和 Intel 成功结果。
+- attempt 2 已结束，统一发布 skipped；已回读 `gh release view v1.0.2` 为 release not found。**v1.0.2 尚未发布**，不得把成功平台产物等同完整 Release。容量恢复后沿用现有标签和运行，只重试 ARM64 及依赖发布作业；不重建标签、不重跑已成功平台。
+- 本地完整回归 212/213（6.1m），唯一为既有日历周视图 0/7；本地 arm64 打包启动通过。真实 Windows 操作、内网媒体加载卡住和实际升级仍待验证。
+
 ## 1.0.2 发布准备（2026-10-26）
 
 - 用户授权发布补丁版本 v1.0.2。PR #103 已合入 develop `6933736`，从该基线创建 `feature/prepare-v1.0.2`；包含画布节点复制粘贴、视频原生控件恢复及菜单/按钮/标签布局修复。版本与中文说明已更新。
