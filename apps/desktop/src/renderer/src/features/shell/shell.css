@@ -27,7 +27,7 @@
     min-width: 168px;
   }
   .shell-tabs {
-    flex: 1;
+    flex: 0 1 auto;
     mask-image: linear-gradient(
       to right,
       transparent,
