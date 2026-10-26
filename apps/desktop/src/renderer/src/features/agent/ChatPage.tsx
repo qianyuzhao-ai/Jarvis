@@ -160,9 +160,10 @@ export function ChatPage({
       <div data-testid="chat-dock" className="chat-dock">
         {!atBottom && !empty && (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
-            className="chat-latest"
+            shape="capsule"
+            className="absolute right-6 bottom-full mb-2 border border-border"
             onClick={() => {
               const n = viewport.current;
               if (n) n.scrollTop = n.scrollHeight;

@@ -373,7 +373,24 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByTestId('chat-scroll').evaluate((n) => {
       n.scrollTop = 0;
     });
-    await expect(page.getByRole('button', { name: '回到最新' })).toBeVisible();
+    const latestButton = page.getByRole('button', { name: '回到最新' });
+    await expect(latestButton).toBeVisible();
+    await expect(latestButton).toHaveCSS('position', 'absolute');
+    const latestBounds = await latestButton.boundingBox();
+    const dockBounds = await page.getByTestId('chat-dock').boundingBox();
+    expect(latestBounds).not.toBeNull();
+    expect(dockBounds).not.toBeNull();
+    if (latestBounds && dockBounds) {
+      expect(dockBounds.x + dockBounds.width - latestBounds.x - latestBounds.width).toBeCloseTo(
+        24,
+        0,
+      );
+      expect(dockBounds.y - latestBounds.y - latestBounds.height).toBeCloseTo(8, 0);
+    }
+    expect(await latestButton.evaluate((n) => getComputedStyle(n).backgroundColor)).not.toBe(
+      'rgba(0, 0, 0, 0)',
+    );
+    await page.screenshot({ path: test.info().outputPath('chat-latest.png') });
     const length = (
       await page
         .locator(
@@ -394,6 +411,15 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       )
       .toBeGreaterThan(length);
     expect(await page.getByTestId('chat-scroll').evaluate((n) => n.scrollTop)).toBe(0);
+    await latestButton.click();
+    await expect(latestButton).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page
+          .getByTestId('chat-scroll')
+          .evaluate((n) => n.scrollHeight - n.scrollTop - n.clientHeight),
+      )
+      .toBeLessThan(2);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(
