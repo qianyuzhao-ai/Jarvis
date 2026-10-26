@@ -1,3 +1,5 @@
+import { blockContext } from '../src/renderer/src/features/writing/editor/markdown/block-context';
+import { writingSnapshotSchema } from '../src/shared/writing-agent';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { EditorState } from '@codemirror/state';
@@ -158,4 +160,29 @@ test('writing edits and paged reads preserve UTF-16 emoji boundaries', () => {
   expect(textSliceEnd(content, 0, 2)).toBe(1);
   expect(textSliceEnd(content, 1, 2)).toBe(3);
   expect(() => textSliceEnd(content, 1, 1)).toThrow('完整 Unicode');
+});
+
+test('selection context reports rich blocks and the current heading hierarchy compatibly', () => {
+  const content = '# 项目\n\n## 方案\n\n```mermaid\nflowchart LR\n A --> B\n```\n\n## 结论\n\n正文';
+  expect(blockContext(content, content.indexOf('flowchart'))).toEqual({
+    type: 'mermaid',
+    headingPath: ['项目', '方案'],
+  });
+  expect(blockContext(content, content.indexOf('正文'))).toEqual({
+    type: 'paragraph',
+    headingPath: ['项目', '结论'],
+  });
+  const snapshot = {
+    name: 'test.md',
+    version: 'a'.repeat(64),
+    length: 0,
+    from: 0,
+    text: '',
+    next: null,
+    selection: { from: 0, to: 0, text: '', truncated: false },
+  };
+  expect(writingSnapshotSchema.safeParse(snapshot).success).toBe(true);
+  expect(
+    writingSnapshotSchema.parse({ ...snapshot, block: blockContext(content, 0) }).block,
+  ).toEqual({ type: 'heading', headingPath: ['项目'] });
 });

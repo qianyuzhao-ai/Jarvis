@@ -124,6 +124,26 @@
 - 导图使用按文字长度约束的节点宽度与水平布局，数据变化时重新布局；普通图与全屏图共享 Markdown，展开/缩放不落盘。未将静态评审样张坐标写入内容。
 - W4 的自动发送、块类型/headingPath 上下文与富模块系统提示词尚未实施；W5 星图未实施。Claude 阶段视觉验收、Windows/macOS 目标设备与真实模型服务仍未由本轮替代。
 
-## W4–W6
+## W4：块级 Agent 联动（2026-10-26）
+
+用户明确“继续 W4”，沿用 feature/writing-space，不把 W3 的回归失败或 Claude 待验收状态改写为通过。
+
+### 实现
+
+- 统一入口设置 Markdown 选区并展开当前文档侧栏；/ AI 项、块菜单“AI 编辑此块”、BubbleMenu“AI 润色”直接发送指令。侧栏等待 Agent 加载完成再消费请求，消费即移除且提交互斥；发送失败保留指令和错误供重试。
+- 整块选择保留完整 Markdown 范围（含围栏），原子块以 NodeSelection 表示，普通块使用文本选区；局部选区保留源码偏移，后续用户选择或内容修改时清除精确范围。覆盖没有文本子节点的 Mermaid 等原子块。
+- 快照新增可选 block.type / headingPath，旧快照仍可解析；源码与块视图共用从当前缓冲区生成的上下文。系统提示增加 Callout、Mermaid、mindmap 两空格列表示例，要求新增块用 insert_text、润色限制选区、保留块类型。
+- 沿用 W2 增量更新及 W3 高亮、修改卡片与整轮撤销。没有新增依赖、IPC、工具或磁盘权限；版本与账本语义不变。
+
+### 验证
+
+- 命令/事务专项 4/4，通过旧快照兼容、富块类型/标题层级、工具无文件操作、范围/版本/租约、UTF-16 与同轮撤销。
+- 扩展原写作 Agent 实窗：三个入口（另加 Mermaid 整块）关闭侧栏后自动打开并发送，逐项验证一次请求、精确 selection.text、block 元数据、不落盘和撤销；原手动两处编辑、高亮、原生撤销/重做、改名、跨标签修改、冲突和作用域拒绝断言均保留。最终专项 1/1（7.7s）通过。
+- 初轮新增测试因正文未聚焦而未显示 BubbleMenu，修正为先聚焦正文；加入 Mermaid 后其 SVG 的 p 标签使测试定位不唯一，限定正文文本定位。没有放宽业务断言。
+- check/build 通过。首轮完整回归 198/200（6.0m）：日历未授权失败保留，新增整段 NodeSelection 导致视图往返后选中文本多出换行。修正为仅原子块使用 NodeSelection，普通块恢复文本选区；保留原断言，修复后写作/Agent/命令专项 **6/6（15.1s）** 通过。首轮日志 `/private/tmp/jarvis-writing-w4-smoke.log`；最终完整回归 **199/200（6.0m）**，唯一失败为既有 macOS 日历未授权；窗口焦点和写作选区回归通过，日志 `/private/tmp/jarvis-writing-w4-smoke-final.log`。不把完整门禁标为全绿。
+- 最终 check/build/diff 检查通过。未签名 macOS arm64 目录包 `release/d2db49ab-3cef-4404-a678-4907112f6015` 经 `verify-packaged-writing.mjs --rich` 验证 **593 项生产依赖**、ASAR 启动、Mermaid/导图与实际编辑保存通过；截图 `/var/folders/wj/jwvdfxm571qcz67200hp7mkw0000gn/T/jarvis-packaged-writing-En9Jke/writing-blocks.png`。未改版本、未发布。
+- 截图：`apps/desktop/test-results/cf1ba2b9-c2c1-445f-ae30-6bc290666671/writing-agent-writing-Agen-c2325--and-rejects-stale-versions/` 的 w4-block/rich/bubble/slash.png。已查看选区修改、高亮和回执；沿用已有组件与样式，未修改 Figma 或 tokens，Claude 视觉签收仍待进行。只读核对 Figma Block Menu `470:38997`、Block Highlight `471:39798` 的上下文与截图，沿用既有实现。
+
+## W5–W6
 
 尚未开始。

@@ -2,6 +2,11 @@
 
 最后更新：2026-10-26
 
+## 写作空间 W4（2026-10-26）
+
+用户明确继续 W4，沿用 feature/writing-space，按既有阶段授权提交并推送功能分支；不创建 PR、合并、标签或发布。两份已有未跟踪 Figma JSON 保留。详情见 [写作实施记录](writing-space-implementation.md)。
+
+
 ## 写作空间计划 W3（2026-10-26）
 
 - 用户明确继续 W3，沿用 `feature/writing-space`，实现提交 `d6a1bcb`；范围仍不包含 PR、合并、标签或发布。

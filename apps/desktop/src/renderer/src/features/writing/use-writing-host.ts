@@ -1,3 +1,4 @@
+import { blockContext } from './editor/markdown/block-context';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   clearViewCache,
@@ -84,6 +85,7 @@ export function useWritingHost(
         from: start,
         text: doc.content.slice(start, end),
         next: !selectionOnly && end < doc.content.length ? end : null,
+        block: blockContext(doc.content, range.from),
         selection: {
           from: range.from,
           to: range.to,

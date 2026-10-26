@@ -42,7 +42,7 @@ export function BlockControls({
   content: string;
   onSource(): void;
   onOpenLink(target: string, newTab: boolean): void;
-  onAsk(prompt?: string): void;
+  onAsk(prompt?: string, range?: { from: number; to: number }): void;
 }) {
   const [menu, setMenu] = useState(false),
     [href, setHref] = useState('');
@@ -154,7 +154,18 @@ export function BlockControls({
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onSelect={() => onAsk()}>AI 润色</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                const target = menuBlock.current ?? block;
+                if (target)
+                  onAsk('润色所选内容，保持原意，仅修改此块并保留块类型', {
+                    from: target.from,
+                    to: target.to,
+                  });
+              }}
+            >
+              AI 编辑此块
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             {choices.map(([kind, label]) => (
               <DropdownMenuItem key={kind} onSelect={() => convert(kind!)}>
@@ -185,7 +196,16 @@ export function BlockControls({
         }
       >
         <div className="writing-bubble-menu">
-          <Button variant="ghost" size="sm" onClick={() => onAsk()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              onAsk('润色所选内容，保持原意', {
+                from: positionToSource(editor.state.doc, editor.state.selection.from),
+                to: positionToSource(editor.state.doc, editor.state.selection.to),
+              })
+            }
+          >
             <Sparkles />
             AI 润色
           </Button>

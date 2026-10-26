@@ -39,24 +39,27 @@ export function WritingAgentSidebar({
   }, [last?.text, last?.status, agent.session?.messages.length]);
   useEffect(() => {
     const consume = () => {
+      if (agent.loading || pending.current) return;
       const prompt = takeWritingAssistantRequest(document.id);
       if (prompt) {
-        setText(prompt);
-        requestAnimationFrame(() => input.current?.focus());
+        setHistory(false);
+        void submit(prompt);
       }
     };
     consume();
     window.addEventListener('jarvis:writing-assistant-request', consume);
     return () => window.removeEventListener('jarvis:writing-assistant-request', consume);
-  }, [document.id]);
+  });
   const name = document.path.split('/').at(-1) ?? document.path;
-  async function submit() {
-    if (pending.current || !text.trim()) return;
+  async function submit(prompt = text) {
+    if (pending.current || !prompt.trim()) return;
     pending.current = true;
     try {
       await host.snapshot(scope);
-      if (await agent.send(text.trim(), model || undefined)) setText('');
+      if (await agent.send(prompt.trim(), model || undefined)) setText('');
+      else setText(prompt);
     } catch (e) {
+      setText(prompt);
       agent.setError(e instanceof Error ? e.message : '读取文档失败');
     } finally {
       pending.current = false;
@@ -120,7 +123,7 @@ export function WritingAgentSidebar({
               if (agent.session) void agent.model(value);
               else setModel(value);
             }}
-            onSubmit={submit}
+            onSubmit={() => submit()}
           />
         )
       }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { Fragment } from '@tiptap/pm/model';
-import { TextSelection, type Transaction } from '@tiptap/pm/state';
+import { NodeSelection, TextSelection, type Transaction } from '@tiptap/pm/state';
 import { closeHistory } from '@tiptap/pm/history';
 import { writingLinks } from '../../../../../shared/writing-links';
 import { references, assetUrl } from './references';
@@ -34,7 +34,7 @@ export function BlockEditor({
   onSave(): void;
   onSource(): void;
   onOpenLink(target: string, newTab: boolean): void;
-  onAsk(prompt?: string): void;
+  onAsk(prompt?: string, range?: { from: number; to: number }): void;
 }) {
   const callbacks = useRef({ onChange, onPosition, onSave, onSource, onOpenLink });
   callbacks.current = { onChange, onPosition, onSave, onSource, onOpenLink };
@@ -112,8 +112,18 @@ export function BlockEditor({
     if (!editor || !mounted) return;
 
     const generation = cache.generations.get(document.id) ?? 0;
+    let exactSelection: { from: number; to: number } | null = null;
+    const clearSelection = ({ transaction }: { transaction: Transaction }) => {
+      if (transaction.selectionSet || transaction.docChanged) exactSelection = null;
+    };
+    editor.on('transaction', clearSelection);
     const selection = () => {
+      if (exactSelection) return exactSelection;
       const { from, to } = editor.state.selection;
+      if (editor.state.selection instanceof NodeSelection) {
+        const block = blockRanges(editor.state.doc).find((range) => range.position === from);
+        if (block) return { from: block.from, to: block.to };
+      }
       return from <= 1 && to >= editor.state.doc.content.size - 1 && from !== to
         ? { from: 0, to: original.current.length }
         : {
@@ -122,14 +132,24 @@ export function BlockEditor({
           };
     };
     const setSelection = ({ from, to }: { from: number; to: number }) => {
+      const block = blockRanges(editor.state.doc).find(
+        (range) => range.from === from && range.to === to && from !== to,
+      );
       editor.view.dispatch(
         editor.state.tr.setSelection(
-          TextSelection.between(
-            editor.state.doc.resolve(sourceToPosition(editor.state.doc, from)),
-            editor.state.doc.resolve(sourceToPosition(editor.state.doc, to)),
-          ),
+          block && editor.state.doc.nodeAt(block.position)?.isAtom
+            ? NodeSelection.create(editor.state.doc, block.position)
+            : TextSelection.between(
+                editor.state.doc.resolve(
+                  block ? block.position + 1 : sourceToPosition(editor.state.doc, from),
+                ),
+                editor.state.doc.resolve(
+                  block ? block.position + block.size - 1 : sourceToPosition(editor.state.doc, to),
+                ),
+              ),
         ),
       );
+      exactSelection = { from, to };
     };
     const remembered = cache.selections.get(document.id);
     if (remembered) setSelection(remembered);
@@ -211,6 +231,7 @@ export function BlockEditor({
     };
     bufferRef.current = view;
     return () => {
+      editor.off('transaction', clearSelection);
       cache.selections.set(document.id, selection());
       if ((cache.generations.get(document.id) ?? 0) === generation)
         cache.blocks.set(document.id, {

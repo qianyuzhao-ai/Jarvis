@@ -646,8 +646,8 @@ export function WritingSpace({
                 writing.setNotice(e instanceof Error ? e.message : '无法打开文档'),
               );
             }}
-            onAsk={(prompt = '请润色当前选中的内容，保持原意，仅修改选区。') => {
-              askWritingAssistant(active.id, prompt, shell.onAssistant);
+            onAsk={(prompt = '润色所选内容，保持原意', range) => {
+              askWritingAssistant(active.id, prompt, shell.onAssistant, view.current, range);
             }}
           />
         ) : (
