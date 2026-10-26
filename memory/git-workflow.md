@@ -2,6 +2,12 @@
 
 最后更新：2026-10-26
 
+## 界面细节与画布复制粘贴 PR（2026-10-26）
+
+- 用户要求当前分支提 PR 到 dev（develop），已推送 `feature/style-polish-2026-10-26` 并创建 [PR #103](https://github.com/qianyuzhao-ai/Jarvis/pull/103)。包含菜单/按钮/标签布局修复、节点复制粘贴，以及用户指定提交的两份 Figma JSON。
+- 最新 develop `d2a2da5` 已包含视频原生控件修复；合入功能分支时仅 design/engineering 顶部新增记录冲突，保留双方记录。PR 保持打开，未合并到 develop、未发布。
+- 同步后 check/build 通过；复制与媒体专项最终 5/5（16.5s）通过。首轮框选出现 0/2 未选中，未改源码或断言复验通过，保留窗口交互波动记录。
+
 ## 1.0.1 已发布（2026-10-26）
 
 - [v1.0.1](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.1) 于北京时间 2026-10-26 18:46:55 发布，非草稿、沿用预发布设置，12 个资产均 uploaded；标签指向 main 发布合并提交 `50f31e688c14b9c8d60f31521998dc48e3fc947b`，未移动任何旧标签。

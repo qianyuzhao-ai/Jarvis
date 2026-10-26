@@ -149,28 +149,29 @@ export function MediaEditor({
               {data.generateAudio ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </Toggle>
           )}
-          <span className="editor-spacer" />
-          {busy ? (
-            <span className="editor-generation-hint">
-              <Spinner size="sm" />
-              正在生成…
-            </span>
-          ) : (
-            (!data.model || !data.prompt.trim()) && (
+          <div className="editor-generation-actions">
+            {busy ? (
               <span className="editor-generation-hint">
-                {video ? '填写提示词后可生成' : '选择模型并填写提示词后可生成'}
+                <Spinner size="sm" />
+                正在生成…
               </span>
-            )
-          )}
-          <IconButton
-            size="icon-lg"
-            aria-label={`生成${label}`}
-            className="generate-button"
-            disabled={busy || !data.model || !data.prompt.trim()}
-            onClick={onGenerate}
-          >
-            <ArrowUp size={20} />
-          </IconButton>
+            ) : (
+              (!data.model || !data.prompt.trim()) && (
+                <span className="editor-generation-hint">
+                  {video ? '填写提示词后可生成' : '选择模型并填写提示词后可生成'}
+                </span>
+              )
+            )}
+            <IconButton
+              size="icon-lg"
+              aria-label={`生成${label}`}
+              className="generate-button"
+              disabled={busy || !data.model || !data.prompt.trim()}
+              onClick={onGenerate}
+            >
+              <ArrowUp size={20} />
+            </IconButton>
+          </div>
         </div>
         {referenceError && (
           <Alert

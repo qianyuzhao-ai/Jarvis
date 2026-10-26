@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Image, Video, CircleAlert, Trash } from '@jarvis/ui/icons';
+import { Image, Video, CircleAlert, Trash, Copy } from '@jarvis/ui/icons';
 import { Button, IconButton } from '@jarvis/ui/components/Button';
 import { Badge } from '@jarvis/ui/components/Badge';
 import { Spinner } from '@jarvis/ui/components/Spinner';
@@ -130,6 +130,18 @@ export function MediaPlaceholder({
               fileName={name}
             />
           )}
+          <IconButton
+            variant="ghost"
+            size="icon-sm"
+            aria-label="复制节点"
+            title="复制节点（保留上游连线）"
+            onClick={(event) => {
+              event.stopPropagation();
+              actions?.duplicate(id);
+            }}
+          >
+            <Copy size={16} />
+          </IconButton>
           <IconButton
             variant="ghost"
             size="icon-sm"

@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 export const NodeActionsContext = createContext<{
   generate: (id: string) => void;
+  duplicate: (id: string) => void;
   details: (id: string) => void;
   measure: (id: string, height: number) => void;
 } | null>(null);

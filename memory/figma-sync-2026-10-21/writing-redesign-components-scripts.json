@@ -1,0 +1,604 @@
+{
+  "helper": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if(n.type!=='INSTANCE'&&'children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n",
+  "icons": [
+    {
+      "name": "grip-vertical",
+      "size": 24,
+      "node": [
+        [
+          "circle",
+          {
+            "cx": "9",
+            "cy": "12",
+            "r": "1",
+            "key": "1vctgf"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "9",
+            "cy": "5",
+            "r": "1",
+            "key": "hp0tcf"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "9",
+            "cy": "19",
+            "r": "1",
+            "key": "fkjjf6"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "15",
+            "cy": "12",
+            "r": "1",
+            "key": "1tmaij"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "15",
+            "cy": "5",
+            "r": "1",
+            "key": "19l28e"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "15",
+            "cy": "19",
+            "r": "1",
+            "key": "f4zoj3"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "bold",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8",
+            "key": "mg9rjx"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "italic",
+      "size": 24,
+      "node": [
+        [
+          "line",
+          {
+            "x1": "19",
+            "x2": "10",
+            "y1": "4",
+            "y2": "4",
+            "key": "15jd3p"
+          }
+        ],
+        [
+          "line",
+          {
+            "x1": "14",
+            "x2": "5",
+            "y1": "20",
+            "y2": "20",
+            "key": "bu0au3"
+          }
+        ],
+        [
+          "line",
+          {
+            "x1": "15",
+            "x2": "9",
+            "y1": "4",
+            "y2": "20",
+            "key": "uljnxc"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "strikethrough",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M16 4H9a3 3 0 0 0-2.83 4",
+            "key": "43sutm"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M14 12a4 4 0 0 1 0 8H6",
+            "key": "nlfj13"
+          }
+        ],
+        [
+          "line",
+          {
+            "x1": "4",
+            "x2": "20",
+            "y1": "12",
+            "y2": "12",
+            "key": "1e0a9i"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "link-2",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M9 17H7A5 5 0 0 1 7 7h2",
+            "key": "8i5ue5"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M15 7h2a5 5 0 1 1 0 10h-2",
+            "key": "1b9ql8"
+          }
+        ],
+        [
+          "line",
+          {
+            "x1": "8",
+            "x2": "16",
+            "y1": "12",
+            "y2": "12",
+            "key": "1jonct"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "code",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "m16 18 6-6-6-6",
+            "key": "eg8j8"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "m8 6-6 6 6 6",
+            "key": "ppft3o"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "heading-1",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M4 12h8",
+            "key": "17cfdx"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M4 18V6",
+            "key": "1rz3zl"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M12 18V6",
+            "key": "zqpxq5"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "m17 12 3-2v8",
+            "key": "1hhhft"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "heading-2",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M4 12h8",
+            "key": "17cfdx"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M4 18V6",
+            "key": "1rz3zl"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M12 18V6",
+            "key": "zqpxq5"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1",
+            "key": "9jr5yi"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "heading-3",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M4 12h8",
+            "key": "17cfdx"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M4 18V6",
+            "key": "1rz3zl"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M12 18V6",
+            "key": "zqpxq5"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2",
+            "key": "68ncm8"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2",
+            "key": "1ejuhz"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "list",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M3 5h.01",
+            "key": "18ugdj"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M3 12h.01",
+            "key": "nlz23k"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M3 19h.01",
+            "key": "noohij"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M8 5h13",
+            "key": "1pao27"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M8 12h13",
+            "key": "1za7za"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M8 19h13",
+            "key": "m83p4d"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "list-ordered",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M11 5h10",
+            "key": "1cz7ny"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M11 12h10",
+            "key": "1438ji"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M11 19h10",
+            "key": "11t30w"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M4 4h1v5",
+            "key": "10yrso"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M4 9h2",
+            "key": "r1h2o0"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02",
+            "key": "xtkcd5"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "quote",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+            "key": "rib7q0"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z",
+            "key": "1ymkrd"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "network",
+      "size": 24,
+      "node": [
+        [
+          "rect",
+          {
+            "x": "16",
+            "y": "16",
+            "width": "6",
+            "height": "6",
+            "rx": "1",
+            "key": "4q2zg0"
+          }
+        ],
+        [
+          "rect",
+          {
+            "x": "2",
+            "y": "16",
+            "width": "6",
+            "height": "6",
+            "rx": "1",
+            "key": "8cvhb9"
+          }
+        ],
+        [
+          "rect",
+          {
+            "x": "9",
+            "y": "2",
+            "width": "6",
+            "height": "6",
+            "rx": "1",
+            "key": "1egb70"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3",
+            "key": "1jsf9p"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M12 12V8",
+            "key": "2874zd"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "table",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M12 3v18",
+            "key": "108xh3"
+          }
+        ],
+        [
+          "rect",
+          {
+            "width": "18",
+            "height": "18",
+            "x": "3",
+            "y": "3",
+            "rx": "2",
+            "key": "afitv7"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M3 9h18",
+            "key": "1pudct"
+          }
+        ],
+        [
+          "path",
+          {
+            "d": "M3 15h18",
+            "key": "5xshup"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "git-branch",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M15 6a9 9 0 0 0-9 9V3",
+            "key": "1cii5b"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "18",
+            "cy": "6",
+            "r": "3",
+            "key": "1h7g24"
+          }
+        ],
+        [
+          "circle",
+          {
+            "cx": "6",
+            "cy": "18",
+            "r": "3",
+            "key": "fqmcym"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "chevron-right",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "m9 18 6-6-6-6",
+            "key": "mthhwq"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "funnel",
+      "size": 24,
+      "node": [
+        [
+          "path",
+          {
+            "d": "M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z",
+            "key": "sc7q7i"
+          }
+        ]
+      ],
+      "aliases": [
+        "filter"
+      ]
+    },
+    {
+      "name": "pause",
+      "size": 24,
+      "node": [
+        [
+          "rect",
+          {
+            "x": "14",
+            "y": "3",
+            "width": "5",
+            "height": "18",
+            "rx": "1",
+            "key": "kaeet6"
+          }
+        ],
+        [
+          "rect",
+          {
+            "x": "5",
+            "y": "3",
+            "width": "5",
+            "height": "18",
+            "rx": "1",
+            "key": "1wsw3u"
+          }
+        ]
+      ]
+    }
+  ],
+  "phase1": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if('children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n\nconst iconsData=[{\"name\":\"grip-vertical\",\"size\":24,\"node\":[[\"circle\",{\"cx\":\"9\",\"cy\":\"12\",\"r\":\"1\",\"key\":\"1vctgf\"}],[\"circle\",{\"cx\":\"9\",\"cy\":\"5\",\"r\":\"1\",\"key\":\"hp0tcf\"}],[\"circle\",{\"cx\":\"9\",\"cy\":\"19\",\"r\":\"1\",\"key\":\"fkjjf6\"}],[\"circle\",{\"cx\":\"15\",\"cy\":\"12\",\"r\":\"1\",\"key\":\"1tmaij\"}],[\"circle\",{\"cx\":\"15\",\"cy\":\"5\",\"r\":\"1\",\"key\":\"19l28e\"}],[\"circle\",{\"cx\":\"15\",\"cy\":\"19\",\"r\":\"1\",\"key\":\"f4zoj3\"}]]},{\"name\":\"bold\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8\",\"key\":\"mg9rjx\"}]]},{\"name\":\"italic\",\"size\":24,\"node\":[[\"line\",{\"x1\":\"19\",\"x2\":\"10\",\"y1\":\"4\",\"y2\":\"4\",\"key\":\"15jd3p\"}],[\"line\",{\"x1\":\"14\",\"x2\":\"5\",\"y1\":\"20\",\"y2\":\"20\",\"key\":\"bu0au3\"}],[\"line\",{\"x1\":\"15\",\"x2\":\"9\",\"y1\":\"4\",\"y2\":\"20\",\"key\":\"uljnxc\"}]]},{\"name\":\"strikethrough\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M16 4H9a3 3 0 0 0-2.83 4\",\"key\":\"43sutm\"}],[\"path\",{\"d\":\"M14 12a4 4 0 0 1 0 8H6\",\"key\":\"nlfj13\"}],[\"line\",{\"x1\":\"4\",\"x2\":\"20\",\"y1\":\"12\",\"y2\":\"12\",\"key\":\"1e0a9i\"}]]},{\"name\":\"link-2\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M9 17H7A5 5 0 0 1 7 7h2\",\"key\":\"8i5ue5\"}],[\"path\",{\"d\":\"M15 7h2a5 5 0 1 1 0 10h-2\",\"key\":\"1b9ql8\"}],[\"line\",{\"x1\":\"8\",\"x2\":\"16\",\"y1\":\"12\",\"y2\":\"12\",\"key\":\"1jonct\"}]]},{\"name\":\"code\",\"size\":24,\"node\":[[\"path\",{\"d\":\"m16 18 6-6-6-6\",\"key\":\"eg8j8\"}],[\"path\",{\"d\":\"m8 6-6 6 6 6\",\"key\":\"ppft3o\"}]]},{\"name\":\"heading-1\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M4 12h8\",\"key\":\"17cfdx\"}],[\"path\",{\"d\":\"M4 18V6\",\"key\":\"1rz3zl\"}],[\"path\",{\"d\":\"M12 18V6\",\"key\":\"zqpxq5\"}],[\"path\",{\"d\":\"m17 12 3-2v8\",\"key\":\"1hhhft\"}]]},{\"name\":\"heading-2\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M4 12h8\",\"key\":\"17cfdx\"}],[\"path\",{\"d\":\"M4 18V6\",\"key\":\"1rz3zl\"}],[\"path\",{\"d\":\"M12 18V6\",\"key\":\"zqpxq5\"}],[\"path\",{\"d\":\"M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1\",\"key\":\"9jr5yi\"}]]},{\"name\":\"heading-3\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M4 12h8\",\"key\":\"17cfdx\"}],[\"path\",{\"d\":\"M4 18V6\",\"key\":\"1rz3zl\"}],[\"path\",{\"d\":\"M12 18V6\",\"key\":\"zqpxq5\"}],[\"path\",{\"d\":\"M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2\",\"key\":\"68ncm8\"}],[\"path\",{\"d\":\"M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2\",\"key\":\"1ejuhz\"}]]},{\"name\":\"list\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M3 5h.01\",\"key\":\"18ugdj\"}],[\"path\",{\"d\":\"M3 12h.01\",\"key\":\"nlz23k\"}],[\"path\",{\"d\":\"M3 19h.01\",\"key\":\"noohij\"}],[\"path\",{\"d\":\"M8 5h13\",\"key\":\"1pao27\"}],[\"path\",{\"d\":\"M8 12h13\",\"key\":\"1za7za\"}],[\"path\",{\"d\":\"M8 19h13\",\"key\":\"m83p4d\"}]]},{\"name\":\"list-ordered\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M11 5h10\",\"key\":\"1cz7ny\"}],[\"path\",{\"d\":\"M11 12h10\",\"key\":\"1438ji\"}],[\"path\",{\"d\":\"M11 19h10\",\"key\":\"11t30w\"}],[\"path\",{\"d\":\"M4 4h1v5\",\"key\":\"10yrso\"}],[\"path\",{\"d\":\"M4 9h2\",\"key\":\"r1h2o0\"}],[\"path\",{\"d\":\"M6.5 20H3.4c0-1 2.6-1.925 2.6-3.5a1.5 1.5 0 0 0-2.6-1.02\",\"key\":\"xtkcd5\"}]]},{\"name\":\"quote\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z\",\"key\":\"rib7q0\"}],[\"path\",{\"d\":\"M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z\",\"key\":\"1ymkrd\"}]]},{\"name\":\"network\",\"size\":24,\"node\":[[\"rect\",{\"x\":\"16\",\"y\":\"16\",\"width\":\"6\",\"height\":\"6\",\"rx\":\"1\",\"key\":\"4q2zg0\"}],[\"rect\",{\"x\":\"2\",\"y\":\"16\",\"width\":\"6\",\"height\":\"6\",\"rx\":\"1\",\"key\":\"8cvhb9\"}],[\"rect\",{\"x\":\"9\",\"y\":\"2\",\"width\":\"6\",\"height\":\"6\",\"rx\":\"1\",\"key\":\"1egb70\"}],[\"path\",{\"d\":\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\",\"key\":\"1jsf9p\"}],[\"path\",{\"d\":\"M12 12V8\",\"key\":\"2874zd\"}]]},{\"name\":\"table\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M12 3v18\",\"key\":\"108xh3\"}],[\"rect\",{\"width\":\"18\",\"height\":\"18\",\"x\":\"3\",\"y\":\"3\",\"rx\":\"2\",\"key\":\"afitv7\"}],[\"path\",{\"d\":\"M3 9h18\",\"key\":\"1pudct\"}],[\"path\",{\"d\":\"M3 15h18\",\"key\":\"5xshup\"}]]},{\"name\":\"git-branch\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M15 6a9 9 0 0 0-9 9V3\",\"key\":\"1cii5b\"}],[\"circle\",{\"cx\":\"18\",\"cy\":\"6\",\"r\":\"3\",\"key\":\"1h7g24\"}],[\"circle\",{\"cx\":\"6\",\"cy\":\"18\",\"r\":\"3\",\"key\":\"fqmcym\"}]]},{\"name\":\"chevron-right\",\"size\":24,\"node\":[[\"path\",{\"d\":\"m9 18 6-6-6-6\",\"key\":\"mthhwq\"}]]},{\"name\":\"funnel\",\"size\":24,\"node\":[[\"path\",{\"d\":\"M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z\",\"key\":\"sc7q7i\"}]],\"aliases\":[\"filter\"]},{\"name\":\"pause\",\"size\":24,\"node\":[[\"rect\",{\"x\":\"14\",\"y\":\"3\",\"width\":\"5\",\"height\":\"18\",\"rx\":\"1\",\"key\":\"kaeet6\"}],[\"rect\",{\"x\":\"5\",\"y\":\"3\",\"width\":\"5\",\"height\":\"18\",\"rx\":\"1\",\"key\":\"1wsw3u\"}]]}];\nconst si=await section('32 Writing · Editor Icons',12400,15400,2200,900);\nconst iconMasters=[];\nfor(let idx=0;idx<iconsData.length;idx++){\n const data=iconsData[idx],c=comp(si,'Icon / '+data.name,24,24,'NONE');c.description='Lucide '+data.name+'，24px 网格，1.75 描边；通过 Icon Button / Toggle 使用，名称与 lucide-react 1.60.0 一致。';\n c.x=24+(idx%10)*68;c.y=560+Math.floor(idx/10)*76;\n const body=data.node.map(([tag,attrs])=>'<'+tag+' '+Object.entries(attrs).filter(([k])=>k!=='key').map(([k,v])=>k+'=\"'+v+'\"').join(' ')+' />').join('');\n const svg=figma.createNodeFromSvg('<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#000\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\">'+body+'</svg>');c.appendChild(svg);svg.x=0;svg.y=0;\n for(const shape of svg.findAll(n=>'strokes'in n)){if(shape.strokes.length)shape.strokes=[paint('color/fg/default')];}\n iconMasters.push(c);\n}\nfor(const mode of ['334:1','334:2']){\n const panel=await review(si,mode==='334:1'?'编辑图标 / Light':'编辑图标 / Dark',mode==='334:1'?24:1120,80,1040,400,mode);\n await text(panel,'Lucide · 18 个编辑、关系与回放图标','callout','color/fg/secondary');\n for(let rowIdx=0;rowIdx<3;rowIdx++){const r=row(panel,992,70);for(const c of iconMasters.slice(rowIdx*6,rowIdx*6+6)){const cell=frame(r,c.name,150,64);gap(cell,8);cell.counterAxisAlignItems='CENTER';cell.appendChild(c.createInstance());await text(cell,c.name.replace('Icon / ',''),'footnote');}}\n}\nconst s=await section('29 Writing · Block Controls',12400,11857,2900,3350);\nconst handles=[];\nfor(const state of ['default','hover','selected','dragging','focus']){\n const c=comp(s,'state='+state,56,28,'HORIZONTAL');gap(c,4);c.counterAxisAlignItems='CENTER';token(c,'cornerRadius','radius/control');if(state!=='default')fill(c,state==='selected'||state==='dragging'?'color/selection/default':'color/fill/hover');\n await iconButton(c,'plus');await iconButton(c,'grip-vertical');if(state==='default')c.opacity=.45;if(state==='focus')stroke(c,'color/focus-ring',2);handles.push(c);\n}\nconst hs=componentSet(s,'Writing Block Handle',handles,'块操作。+ 在下方插入并打开命令面板；空块原位打开。句柄点击选整块、打开菜单；拖拽移动。default 仅示意待悬停，键盘聚焦显示。',3);hs.x=24;hs.y=1360;\nconst blockVariants=[];\nfor(const state of ['default','hover','selected','agent-changed']){\n const c=comp(s,'state='+state,620,88,'HORIZONTAL');pad(c,12);gap(c,12);token(c,'cornerRadius','radius/control');\n if(state==='selected')fill(c,'color/selection/default');if(state==='agent-changed')fill(c,'color/success/subtle');if(state==='hover')fill(c,'color/fill/default');\n const hd=handles[state==='default'?0:state==='hover'?1:2].createInstance();c.appendChild(hd);if(state==='default')hd.visible=false;bool(c,hd,'showHandle',state!=='default');\n const content=frame(c,'Content',512,64);gap(content,4);const t=await text(content,'把散落的记录，连接成下一次写作的线索。','body-relaxed', 'color/fg/default',500);expose(c,t,'content',t.characters);\n if(state==='agent-changed')await text(content,'助手已修改 · 尚未保存','footnote','color/fg/secondary');\n blockVariants.push(c);\n}\nconst bs=componentSet(s,'Writing Block',blockVariants,'正文块的交互外壳。content 为正文示例；showHandle 控制行首。Agent 修改只更新缓冲区，不表示已保存。富内容块嵌入此容器。',2);bs.x=24;bs.y=1600;\nconst indicators=[];for(const state of ['insert','invalid']){const c=comp(s,'state='+state,620,12,'HORIZONTAL');c.counterAxisAlignItems='CENTER';const v=vector(c,'Drop indicator','M 0 0 L 610 0',610,.01,state==='insert'?'color/accent/default':'color/danger/default',state==='invalid'?[4,4]:null);indicators.push(c);}\nconst ds=componentSet(s,'Writing Drop Indicator',indicators,'拖拽插入指示。蓝色表示可插入；危险色虚线表示不可插入，并以 Tooltip 说明原因。',2);ds.x=24;ds.y=1900;\nconst ticks=[];for(const level of ['h1','h2','h3'])for(const state of ['default','active']){const c=comp(s,'level='+level+', state='+state,40,20,'HORIZONTAL');c.counterAxisAlignItems='CENTER';c.primaryAxisAlignItems='MAX';const len={h1:28,h2:20,h3:12}[level];vector(c,'Heading marker','M 0 0 L '+len+' 0',len,.01,state==='active'?'color/accent/default':'color/fg/secondary');ticks.push(c);}\nconst ts=componentSet(s,'Writing Outline Marker',ticks,'正文边缘大纲条。h1/h2/h3 用长度表达层级，active 表达当前章节。键盘聚焦应打开大纲列表。',3);ts.x=24;ts.y=2100;\nconst navs=[];for(const state of ['collapsed','expanded']){const c=comp(s,'state='+state,state==='collapsed'?48:260,state==='collapsed'?144:216,'VERTICAL',state==='expanded'?'color/surface-raised':null);pad(c,state==='collapsed'?4:12);gap(c,4);token(c,'cornerRadius','radius/panel');if(state==='expanded'){stroke(c,'color/border');await text(c,'文章大纲','headline');const titles=['点线成网','为什么要记录','让旧记录重新出现','下一步'];for(let j=0;j<titles.length;j++){const item=await instance(c,j===1?'392:32639':'392:32605');props(item,{label:titles[j],showIcon:false});item.resize(236,28);}}else for(let j=0;j<6;j++)c.appendChild(ticks[j].createInstance());navs.push(c);}\nconst ns=componentSet(s,'Writing Outline',navs,'collapsed 仅短横线；hover 或键盘 focus 展开章节导航。列表复用 Sidebar Item；不占用助手栏。',2);ns.x=1450;ns.y=1360;\nconst formats=comp(s,'Writing Selection Toolbar',412,36,'HORIZONTAL','color/surface-raised');pad(formats,4);gap(formats,4);token(formats,'cornerRadius','radius/panel');stroke(formats,'color/border');\nawait button(formats,'改写','sparkles');\nfor(const nm of ['bold','italic','strikethrough','code','link-2']){const tog=await instance(formats,'346:29300');props(tog,{iconSwap:page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+nm).id,showLabel:false});tog.name='Toggle / '+nm;}\nformats.description='选中文字后显示。复用 V1 Button 与 Toggle；AI 作用于选区，文字格式只影响选区。Esc 收起并返回编辑焦点。';formats.x=1450;formats.y=1740;\nconst command=comp(s,'Writing Slash Panel',320,320,'VERTICAL','color/surface-raised');pad(command,8);gap(command,4);token(command,'cornerRadius','radius/panel');stroke(command,'color/border');const search=await instance(command,'340:27990');props(search,{placeholder:'搜索块或 AI 指令…'});search.resize(304,28);await text(command,'写作与内容','subheadline','color/fg/secondary');for(const [i,label]of ['AI 续写','正文段落','一级标题','思维导图','Mermaid 图表'].entries()){const item=await instance(command,i===0?'358:30705':'358:30693');props(item,{title:label,showDescription:false,showMeta:i===0,meta:'Enter',iconSwap:page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+['sparkles','file-text','heading-1','git-branch','network'][i]).id});item.resize(304,40);}command.description='由 Input 与 CandidateList Item 组合的斜杠面板。支持上下、Enter、Esc；候选过多时列表滚动，普通正文中的 / 不应误触发。';command.x=1450;command.y=1840;\nfor(const [mode,x]of [['334:1',24],['334:2',1450]]){const panel=await review(s,mode==='334:1'?'块级编辑 / Light':'块级编辑 / Dark',x,80,1380,1180,mode);await text(panel,'正文块、插入、选区工具栏与斜杠入口','callout','color/fg/secondary');const hr=row(panel,1332,40);for(const c of handles)hr.appendChild(c.createInstance());for(const c of blockVariants)panel.appendChild(c.createInstance());panel.appendChild(indicators[0].createInstance());panel.appendChild(formats.createInstance());const rr=row(panel,1332,330);rr.appendChild(command.createInstance());rr.appendChild(navs[1].createInstance());rr.appendChild(navs[0].createInstance());await text(panel,'hover 显示块控件；点击句柄选块；拖拽调整顺序。\\n选区改写、块改写和整轮撤销保持各自范围。','callout','color/fg/secondary',1300);}\nreturn {createdNodeIds:allIds(roots),sections:roots.map(n=>({id:n.id,name:n.name})),sets:[hs,bs,ds,ts,ns].map(n=>({id:n.id,name:n.name,count:n.children.length})),components:[{id:formats.id,name:formats.name},{id:command.id,name:command.name}],iconIds:iconMasters.map(n=>({id:n.id,name:n.name}))};",
+  "phase2": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if('children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n\nconst s=await section('30 Writing · Rich Blocks',15500,11857,2900,4400);\nconst nodeVars=[];\nfor(const state of ['root','default','selected','editing','collapsed']){\n const c=comp(s,'state='+state,148,40,'HORIZONTAL',state==='root'?'color/selection/default':'color/surface-raised');pad(c,8);gap(c,8);token(c,'cornerRadius','radius/control');stroke(c,state==='selected'||state==='editing'?'color/accent/default':'color/border',state==='selected'?2:1);c.counterAxisAlignItems='CENTER';\n if(state==='editing'){const inp=await instance(c,'340:27992');props(inp,{value:'连接旧记录'});inp.resize(130,24);}else{const label=await text(c,state==='root'?'点线成网':'连接旧记录','callout');expose(c,label,'label',label.characters);}\n if(state==='collapsed'){const label=c.children.find(n=>n.type==='TEXT');label.textAutoResize='TRUNCATE';label.resize(92,16);await badge(c,'3');}\n nodeVars.push(c);\n}\nconst nodes=componentSet(s,'Mind Map Node',nodeVars,'导图节点：根主题、普通、选中、编辑与折叠。双击进入编辑；Tab 子节点、Enter 同级；折叠数量不是丢失的内容。',3);nodes.x=24;nodes.y=3650;\nconst edge=comp(s,'Mind Map Branch',136,72,'NONE');vector(edge,'Branch','M 0 36 C 70 36 65 0 136 0 M 0 36 C 70 36 65 72 136 72',136,72,'color/fg/secondary');edge.description='树形导图分支。只表示父子层级，不与文档引用或 AI 候选关系混用。';edge.x=650;edge.y=3650;\nconst rich=[];\nfor(const kind of ['mindmap','mermaid'])for(const state of ['preview','source','empty','error']){\n const c=comp(s,'kind='+kind+', state='+state,620,332,'VERTICAL','color/surface');token(c,'cornerRadius','radius/panel');stroke(c,state==='error'?'color/danger/default':'color/border');c.clipsContent=true;\n const hd=frame(c,'Header',620,44,'HORIZONTAL');pad(hd,8);gap(hd,8);hd.counterAxisAlignItems='CENTER';await icon(hd,kind==='mindmap'?'git-branch':'network');const title=await text(hd,kind==='mindmap'?'思维导图':'Mermaid 图表','headline');expose(c,title,'title',title.characters);const spacer=frame(hd,'Spacer',kind==='mindmap'?217:198,1);await button(hd,state==='source'?'预览':'源码',state==='source'?'eye':'code');await iconButton(hd,'maximize');await iconButton(hd,'ellipsis');\n const body=frame(c,'Content',620,252,'VERTICAL',state==='source'?'color/fill/default':null);pad(body,16);gap(body,12);\n if(state==='preview'&&kind==='mindmap'){\n  const canvas=frame(body,'Mind map preview',588,220,'HORIZONTAL');canvas.layoutMode='NONE';\n  const branch=edge.createInstance();canvas.appendChild(branch);branch.x=190;branch.y=64;\n  for(const [idx,variant,label,x,y]of [[0,0,'点线成网',42,80],[1,1,'捕捉碎片',326,44],[2,2,'建立联系',326,116]]){const n=nodeVars[variant].createInstance();canvas.appendChild(n);props(n,{label});n.x=x;n.y=y;}\n }else if(state==='preview'){\n  const canvas=frame(body,'Mermaid diagram preview',588,220,'HORIZONTAL');canvas.layoutMode='NONE';\n  const items=[['记录',32],['关联',220],['写作',408]];\n  for(const [label,x]of items){const n=nodeVars[1].createInstance();canvas.appendChild(n);props(n,{label});n.resize(116,40);n.x=x;n.y=80;}\n  for(const x of [148,336]){const v=vector(canvas,'Directional edge','M 0 4 L 72 4 M 66 0 L 72 4 L 66 8',72,8);v.x=x;v.y=96;}\n }else if(state==='source'){\n  const source=kind==='mindmap'?'- 点线成网\\n  - 捕捉碎片\\n    - 记录想法\\n  - 建立联系\\n    - 回到写作':'flowchart LR\\n  A[记录] --> B[关联]\\n  B --> C[写作]';\n  const t=await text(body,source,'body-relaxed','color/fg/default',580);expose(c,t,'source',source);await text(body,'源码与预览共享同一份 Markdown 内容','footnote','color/fg/secondary');\n }else if(state==='empty'){\n  await icon(body,kind==='mindmap'?'git-branch':'network',24);await text(body,kind==='mindmap'?'从一个主题开始':'添加第一张图表','headline');await text(body,kind==='mindmap'?'输入中心主题，或让助手根据正文生成导图。':'选择流程图、时序图或状态图模板。','callout','color/fg/secondary',560);const r=row(body,580,28);await button(r,'开始编辑','plus');await button(r,'让助手生成','sparkles');\n }else{\n  const a=await instance(body,'370:31998');props(a,{title:'暂时无法预览',description:'第 3 行语法不完整。源码已保留，请修复后重新预览。',showAction:false,showClose:false});a.resize(580,72);await button(body,'编辑源码','code');\n }\n const ft=frame(c,'Footer',620,36,'HORIZONTAL');pad(ft,8);gap(ft,8);const note=await text(ft,kind==='mindmap'?'Tab 子节点 · Enter 同级 · 双击编辑':'Mermaid · 源码可编辑','footnote','color/fg/secondary');expose(c,note,'hint',note.characters);rich.push(c);\n}\nconst rs=componentSet(s,'Writing Rich Block',rich,'mindmap / mermaid 富内容外壳。preview、source、empty、error 四态；title/source/hint 可编辑。源码错误保留原文；预览与全屏编辑是设计状态，未实现渲染器。',2);rs.x=24;rs.y=1970;\nfor(const [mode,x]of [['334:1',24],['334:2',1450]]){\n const panel=await review(s,mode==='334:1'?'富内容块 / Light':'富内容块 / Dark',x,80,1380,1760,mode);\n await text(panel,'思维导图 / Mermaid · 预览、源码、空态与错误','callout','color/fg/secondary');\n for(let i=0;i<8;i+=2){const r=row(panel,1332,332);r.appendChild(rich[i].createInstance());r.appendChild(rich[i+1].createInstance());}\n const nr=row(panel,1332,48);for(const n of nodeVars)nr.appendChild(n.createInstance());\n await text(panel,'Markdown 围栏代码块保存；解析失败时保留源码。\\n图表仅表示内容，不代表已执行 AI、布局或文件写入。','callout','color/fg/secondary',1300);\n}\nreturn {createdNodeIds:allIds(roots),sections:roots.map(n=>({id:n.id,name:n.name})),sets:[nodes,rs].map(n=>({id:n.id,name:n.name,count:n.children.length})),components:[{id:edge.id,name:edge.name}]};",
+  "phase3": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if(n.type!=='INSTANCE'&&'children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n\nconst s=await section('31 Writing · Dots Graph',18600,11857,2900,4700);\nconst nodeVars=[];\nfor(const state of ['active','connected','isolated','candidate','selected']){\n const c=comp(s,'state='+state,176,60,'HORIZONTAL',state==='active'||state==='selected'?'color/selection/default':'color/surface-raised');pad(c,8);gap(c,8);token(c,'cornerRadius','radius/panel');stroke(c,state==='active'||state==='selected'||state==='candidate'?'color/accent/default':'color/border',state==='selected'?2:1);if(state==='candidate')c.dashPattern=[4,3];c.counterAxisAlignItems='CENTER';\n const ic=await icon(c,'file-text',18);const swap=c.addComponentProperty('icon','INSTANCE_SWAP',(await figma.getNodeByIdAsync('391:32679')).id);ic.componentPropertyReferences={mainComponent:swap};\n const content=frame(c,'Label',130,40);gap(content,4);const t=await text(content,state==='active'?'点线成网':'过去的记录','callout','color/fg/default',126);expose(c,t,'label',t.characters);\n const meta=await text(content,{active:'当前文档 · 6 个连接',connected:'4 个连接',isolated:'尚无连接',candidate:'AI 推荐 · 待确认',selected:'已选中 · 4 个连接'}[state],'footnote','color/fg/secondary',126);expose(c,meta,'meta',meta.characters);nodeVars.push(c);\n}\nconst ns=componentSet(s,'Dots Graph Node',nodeVars,'文件关系节点。active=当前文档，connected=有引用，isolated=无连接，candidate=AI 待确认，selected=交互选中。label/meta 文本和 icon 可覆盖；候选关系不自动写盘。',3);ns.x=24;ns.y=1760;\nconst edges=[];for(const kind of ['reference','topic','candidate']){const c=comp(s,'kind='+kind,200,40,'NONE');const v=vector(c,'Relation', 'M 0 20 C 60 20 125 0 200 0',200,20,kind==='reference'?'color/fg/secondary':kind==='topic'?'color/fg/tertiary':'color/accent/default',kind==='candidate'?[5,5]:null);v.x=0;v.y=10;if(kind==='topic')v.strokeWeight=1;edges.push(c);}\nconst es=componentSet(s,'Dots Graph Edge',edges,'reference 实线=显式引用；topic 细线=标签关系；candidate 虚线=AI 候选。默认静态，动效尊重减少动态效果。',3);es.x=24;es.y=2020;\nconst timeline=[];\nfor(const state of ['paused','playing','focus']){\n const c=comp(s,'state='+state,900,72,'VERTICAL','color/surface');pad(c,8);gap(c,8);token(c,'cornerRadius','radius/panel');stroke(c,state==='focus'?'color/focus-ring':'color/border',state==='focus'?2:1);\n const r=row(c,884,24);await iconButton(r,state==='playing'?'pause':'play');const label=await text(r,'2026.10.01 — 2026.10.25','callout');expose(c,label,'range',label.characters);await text(r,state==='playing'?'正在回放':'历史回放','footnote','color/fg/secondary');await badge(r,'截至 10.25');\n const rail=frame(c,'Track',884,12,'HORIZONTAL');rail.layoutMode='NONE';const base=vector(rail,'Track','M 0 0 L 850 0',850,.01,'color/fg/tertiary');base.x=12;base.y=6;const done=vector(rail,'Played','M 0 0 L 540 0',540,.01,'color/accent/default');done.x=12;done.y=6;const knob=figma.createEllipse();rail.appendChild(knob);knob.resize(10,10);fill(knob,'color/accent/default');knob.x=547;knob.y=1;timeline.push(c);\n}\nconst tl=componentSet(s,'Dots Timeline',timeline,'历史回放时间轴。range 可编辑；playing / paused / focus。仅在存在真实关系历史时使用，不用文件修改时间伪造历史。键盘左右调整，空格播放或暂停。',1);tl.x=24;tl.y=2200;\nconst suggestions=[];\nfor(const state of ['pending','accepted','dismissed']){\n const c=comp(s,'state='+state,620,160,'VERTICAL','color/surface-raised');pad(c,12);gap(c,8);token(c,'cornerRadius','radius/panel');stroke(c,'color/border');const hd=row(c,596,24);await icon(hd,'sparkles');const t=await text(hd,'一条旧记录，可能提供新的解法','headline');expose(c,t,'title',t.characters);await badge(hd,state==='pending'?'待确认':state==='accepted'?'已连接':'已忽略',state==='accepted'?'success':'neutral');\n const reason=await text(c,'《系统设计笔记》讨论了相同的反馈循环，可作为本文的补充。','callout','color/fg/secondary',580);expose(c,reason,'reason',reason.characters);const r=row(c,596,28);if(state==='pending'){await button(r,'查看文稿','file-text');await button(r,'建立连接','link-2');await button(r,'忽略');}else await text(r,state==='accepted'?'已建立关系，可撤销本轮修改。':'这条推荐已忽略。','callout','color/fg/secondary');suggestions.push(c);\n}\nconst ss=componentSet(s,'Dots Connection Suggestion',suggestions,'AI 关系推荐卡。确认前只是候选；确认建立连接须展示目标与写入范围。accepted 与 dismissed 是静态示例，不代表已执行文件操作。',2);ss.x=1120;ss.y=2200;\nconst graphs=[];\nfor(const size of ['mini','full'])for(const state of ['ready','empty']){\n const w=size==='mini'?300:960,h=size==='mini'?340:440;\n const c=comp(s,'size='+size+', state='+state,w,h,'VERTICAL','color/content');pad(c,12);gap(c,8);token(c,'cornerRadius','radius/panel');stroke(c,'color/border');\n const hd=row(c,w-24,28);await text(hd,size==='mini'?'文稿关联':'认知星图','headline');if(size==='full')await badge(hd,'12 个点 · 8 条线');await iconButton(hd,'maximize');\n const canvas=frame(c,'Graph canvas',w-24,h-104,'HORIZONTAL');canvas.layoutMode='NONE';\n if(state==='ready'){\n  const positions=size==='mini'?[[0,'点线成网',50,77],[1,'写作习惯',0,0],[3,'系统设计',84,154]]:[[0,'点线成网',360,116],[1,'写作习惯',84,30],[1,'反馈循环',640,32],[3,'系统设计',636,220],[2,'等待连接',52,216]];\n  for(let i=1;i<positions.length;i++){if(positions[i][0]===2)continue;const ei=(positions[i][0]===3?edges[2]:edges[0]).createInstance();canvas.appendChild(ei);const start=positions[0],end=positions[i];const x1=start[2]+(size==='mini'?66:88),y1=start[3]+(size==='mini'?21:30),x2=end[2]+(size==='mini'?66:88),y2=end[3]+(size==='mini'?21:30);ei.x=Math.min(x1,x2);ei.y=Math.min(y1,y2);ei.resize(Math.max(20,Math.abs(x2-x1)),Math.max(16,Math.abs(y2-y1)));}\n  for(const [variant,label,x,y]of positions){const n=nodeVars[variant].createInstance();canvas.appendChild(n);props(n,{label});n.x=x;n.y=y;if(size==='mini'){n.rescale(.75);}}\n }else{\n  canvas.layoutMode='VERTICAL';pad(canvas,16);gap(canvas,12);await icon(canvas,'network',24);await text(canvas,'还没有关联','headline');await text(canvas,'使用文内链接连接文件，或寻找可能相关的旧记录。','callout','color/fg/secondary',w-80);await button(canvas,'寻找共鸣点','sparkles');\n }\n const footer=row(c,w-24,28);if(size==='mini'){await button(footer,'寻找共鸣点','sparkles');await iconButton(footer,'maximize');}else{await badge(footer,'实线 引用');await badge(footer,'细线 标签');await badge(footer,'虚线 AI 候选');await button(footer,'筛选','funnel');}\n graphs.push(c);\n}\nconst gs=componentSet(s,'Dots Graph',graphs,'mini 用于左侧栏，full 用于编辑区。ready / empty。节点与连线均为可编辑实例；图布局为示意，不执行力导向或后台检索。',2);gs.x=24;gs.y=3000;\nfor(const [mode,x]of [['334:1',24],['334:2',1450]]){\n const panel=await review(s,mode==='334:1'?'星图与关系 / Light':'星图与关系 / Dark',x,80,1380,1520,mode);\n await text(panel,'连接当前文稿、已有引用与待确认的 AI 推荐','callout','color/fg/secondary');\n const nr=row(panel,1332,72);for(const n of nodeVars)nr.appendChild(n.createInstance());\n const er=row(panel,1332,64);for(let i=0;i<3;i++){const cell=frame(er,'Relation example',260,60);cell.appendChild(edges[i].createInstance());await text(cell,['引用 · 实线','标签 · 细线','AI 候选 · 虚线'][i],'footnote','color/fg/secondary');}\n const gr=row(panel,1332,440);gr.appendChild(graphs[2].createInstance());gr.appendChild(graphs[0].createInstance());\n panel.appendChild(timeline[0].createInstance());\n const sr=row(panel,1332,160);sr.appendChild(suggestions[0].createInstance());sr.appendChild(suggestions[1].createInstance());\n const empties=row(panel,1332,440);empties.appendChild(graphs[3].createInstance());empties.appendChild(graphs[1].createInstance());\n await text(panel,'AI 候选确认后才建立关系；真实时间轴依赖关系历史。','callout','color/fg/secondary',1300);\n}\nreturn {createdNodeIds:allIds(roots),sections:roots.map(n=>({id:n.id,name:n.name})),sets:[ns,es,tl,ss,gs].map(n=>({id:n.id,name:n.name,count:n.children.length}))};",
+  "fix": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if(n.type!=='INSTANCE'&&'children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n\nconst sections=['445:37991','445:38367','446:38821','447:39889'];const scope=[];for(const id of sections)scope.push(await figma.getNodeByIdAsync(id));\nconst hs=await figma.getNodeByIdAsync('445:38575');const show=Object.keys(hs.componentPropertyDefinitions).find(k=>k.startsWith('showHandle#'));hs.editComponentProperty(show,{defaultValue:true});\nfor(const c of hs.children){const handle=c.children.find(n=>n.type==='INSTANCE');handle.visible=true;handle.opacity=c.name==='state=default'?0:1;}\nconst toolbar=await figma.getNodeByIdAsync('445:38668');toolbar.primaryAxisSizingMode='AUTO';\nfor(const id of ['445:38851','445:39111']){const f=await figma.getNodeByIdAsync(id);f.resize(760,1100);if(id==='445:39111')f.x=810;for(const child of f.children){if(child.type==='FRAME'&&child.name==='Row')child.resize(712,child.height);if(child.type==='TEXT'&&child.width>712)child.resize(700,child.height);}}\nconst rich=await figma.getNodeByIdAsync('446:39636');const defs=rich.componentPropertyDefinitions;const mm=rich.addComponentProperty('mindmapSource','TEXT','- 点线成网\\n  - 捕捉碎片\\n    - 记录想法\\n  - 建立联系\\n    - 回到写作');const mer=rich.addComponentProperty('mermaidSource','TEXT','flowchart LR\\n  A[记录] --> B[关联]\\n  B --> C[写作]');\nfor(const c of rich.children){\n const kind=c.name.includes('kind=mindmap')?'mindmap':'mermaid',state=c.name.match(/state=(\\w+)/)[1];\n const title=c.children[0].findAllWithCriteria({types:['TEXT']})[0];title.componentPropertyReferences={};title.characters=kind==='mindmap'?'思维导图':'Mermaid 图表';\n const hint=c.children.find(n=>n.name==='Footer').findAllWithCriteria({types:['TEXT']})[0];hint.componentPropertyReferences={};hint.characters=kind==='mindmap'?'Tab 子节点 · Enter 同级 · 双击编辑':'Mermaid · 源码可编辑';\n if(state==='source'){const content=c.children.find(n=>n.name==='Content');const t=content.children.find(n=>n.type==='TEXT');t.componentPropertyReferences={characters:kind==='mindmap'?mm:mer};t.characters=kind==='mindmap'?'- 点线成网\\n  - 捕捉碎片\\n    - 记录想法\\n  - 建立联系\\n    - 回到写作':'flowchart LR\\n  A[记录] --> B[关联]\\n  B --> C[写作]';t.textAutoResize='NONE';t.resize(580,160);}\n}\nfor(const prefix of ['title','hint','source']){const k=Object.keys(defs).find(k=>k.startsWith(prefix+'#'));if(k)rich.deleteComponentProperty(k);}\nconst nodes=await figma.getNodeByIdAsync('447:39945');const nd=nodes.componentPropertyDefinitions;const metaKey=Object.keys(nd).find(k=>k.startsWith('meta#'));\nfor(const c of nodes.children){const state=c.name.split('=')[1];const t=c.children.find(n=>n.name==='Label').children.filter(n=>n.type==='TEXT')[1];t.componentPropertyReferences={};t.characters={active:'当前文档 · 6 个连接',connected:'4 个连接',isolated:'尚无连接',candidate:'AI 推荐 · 待确认',selected:'已选中 · 4 个连接'}[state];}\nif(metaKey)nodes.deleteComponentProperty(metaKey);\nconst graphSet=await figma.getNodeByIdAsync('447:40596');const edgeSet=await figma.getNodeByIdAsync('447:39952');\nfor(const c of edgeSet.children){const v=c.children[0];v.vectorPaths=[{windingRule:'NONE',data:'M 0 0 L 200 0'}];v.resize(200,.01);v.x=0;v.y=20;}\nfor(const c of graphSet.children){\n const ready=c.name.includes('state=ready');const canvas=c.children.find(n=>n.name==='Graph canvas');\n if(ready){const pts=[],links=[];for(const n of canvas.children){if(n.type!=='INSTANCE')continue;const main=await n.getMainComponentAsync();if(main.parent.id===nodes.id)pts.push(n);if(main.parent.id===edgeSet.id)links.push(n);}\n const active=pts.find(n=>n.componentProperties.state.value==='active');const targets=pts.filter(n=>n!==active&&n.componentProperties.state.value!=='isolated');\n for(let i=0;i<links.length;i++){const e=links[i],a=active,b=targets[i];const x1=a.x+a.width/2,y1=a.y+a.height/2,x2=b.x+b.width/2,y2=b.y+b.height/2;const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),cos=dx/len,sin=dy/len;e.resize(200,40);e.rescale(len/200);e.relativeTransform=[[cos,-sin,x1+sin*e.height/2],[sin,cos,y1-cos*e.height/2]];}\n }else{\n const bd=c.children[0].findAllWithCriteria({types:['INSTANCE']});for(const n of bd){const main=await n.getMainComponentAsync();if(main.parent.type==='COMPONENT_SET'&&main.parent.id==='376:32522')props(n,{label:'0 个点 · 0 条线'});}\n if(c.name.includes('size=mini')){const footer=c.children.find(n=>n.name==='Row'&&n!==c.children[0]);if(footer){const first=footer.children.find(n=>n.type==='INSTANCE');if(first)first.visible=false;}}\n }\n}\nfor(const s of scope)for(const n of s.findAllWithCriteria({types:['INSTANCE']})){const main=await n.getMainComponentAsync();if(main?.parent?.id==='336:27571'){n.primaryAxisSizingMode='AUTO';n.layoutSizingHorizontal='HUG';}}\nfor(const id of ['446:39637','446:40054']){const f=await figma.getNodeByIdAsync(id);for(const n of f.findAllWithCriteria({types:['INSTANCE']})){const main=await n.getMainComponentAsync();if(main?.parent?.id===rich.id){props(n,{mindmapSource:'- 点线成网\\n  - 捕捉碎片\\n    - 记录想法\\n  - 建立联系\\n    - 回到写作',mermaidSource:'flowchart LR\\n  A[记录] --> B[关联]\\n  B --> C[写作]'});}}}\nconst rows=scope.flatMap(s=>s.findAllWithCriteria({types:['FRAME']})).filter(n=>/Light|Dark/.test(n.name));\nreturn {mutatedNodeIds:allIds(scope),previews:rows.map(n=>({id:n.id,name:n.name,w:n.width,h:n.height})),richProperties:Object.keys(rich.componentPropertyDefinitions),nodeProperties:Object.keys(nodes.componentPropertyDefinitions)};",
+  "endpointFix": "\nconst page=await figma.getNodeByIdAsync('332:28013');await figma.setCurrentPageAsync(page);\nawait Promise.all(['Regular','Bold','Semibold'].map(style=>figma.loadFontAsync({family:'SF Pro',style})));\nconst vars=await figma.variables.getLocalVariablesAsync();\nconst vm=new Map(vars.filter(v=>v.variableCollectionId==='VariableCollectionId:334:26740'||v.variableCollectionId==='VariableCollectionId:334:26739').map(v=>[v.name,v]));\nconst styles=new Map((await figma.getLocalTextStylesAsync()).filter(s=>s.name.startsWith('V1/')).map(s=>[s.name,s]));\nconst roots=[], changed=[];\nfunction paint(name){return figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0,g:0,b:0}},'color',vm.get(name));}\nfunction fill(n,name){n.fills=name?[paint(name)]:[];}\nfunction stroke(n,name,w=1){n.strokes=[paint(name)];n.strokeWeight=w;}\nfunction token(n,field,name){n.setBoundVariable(field,vm.get(name));}\nfunction pad(n,size=12){for(const k of ['paddingLeft','paddingRight','paddingTop','paddingBottom'])token(n,k,'space/'+size);}\nfunction gap(n,size=8){token(n,'itemSpacing','space/'+size);}\nfunction frame(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createAutoLayout(dir);parent.appendChild(n);n.name=name;n.resize(w,h);n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);return n;}\nfunction comp(parent,name,w,h,dir='VERTICAL',bg=null){const n=figma.createComponent();parent.appendChild(n);n.name=name;n.resize(w,h);n.layoutMode=dir;n.primaryAxisSizingMode='FIXED';n.counterAxisSizingMode='FIXED';fill(n,bg);n.clipsContent=false;return n;}\nasync function text(parent,value,style='body',color='color/fg/default',width=null){const n=figma.createText();parent.appendChild(n);n.name=value.slice(0,35);n.fontName={family:'SF Pro',style:'Regular'};n.characters=value;await n.setTextStyleIdAsync(styles.get('V1/'+style).id);fill(n,color);if(width!==null){n.textAutoResize='HEIGHT';n.resize(width,20);}return n;}\nfunction expose(c,n,name,def){const k=c.addComponentProperty(name,'TEXT',def);n.componentPropertyReferences={characters:k};return k;}\nfunction bool(c,n,name,def=true){const k=c.addComponentProperty(name,'BOOLEAN',def);n.componentPropertyReferences={visible:k};}\nasync function instance(parent,id,name){const c=await figma.getNodeByIdAsync(id);const n=c.createInstance();parent.appendChild(n);if(name)n.name=name;return n;}\nfunction props(n,values){for(const [prefix,v] of Object.entries(values)){const k=Object.keys(n.componentProperties).find(k=>k.split('#')[0]===prefix);if(k)n.setProperties({[k]:v});}}\nasync function icon(parent,name,size=16){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);if(!c)throw Error('Missing icon '+name);const n=c.createInstance();parent.appendChild(n);n.resize(size,size);return n;}\nasync function button(parent,label,iconName=null){const n=await instance(parent,'336:26999');props(n,{label,leadingIcon:!!iconName});if(iconName){const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+iconName);props(n,{leadingIconSwap:c.id});}return n;}\nasync function iconButton(parent,name){const n=await instance(parent,'337:27399');const c=page.findOne(n=>n.type==='COMPONENT'&&n.name==='Icon / '+name);props(n,{icon:c.id});n.name='Icon Button / '+name;return n;}\nasync function badge(parent,label,tone='neutral'){const set=await figma.getNodeByIdAsync('376:32522');const c=set.children.find(n=>n.name==='tone='+tone+', appearance=subtle');const n=c.createInstance();parent.appendChild(n);props(n,{label});return n;}\nfunction componentSet(parent,name,variants,desc,cols=3){const old=page.findOne(n=>n.type==='COMPONENT_SET'&&n.name===name);if(old)throw Error('Exists: '+name);const s=figma.combineAsVariants(variants,parent);s.name=name;s.description=desc;const w=Math.max(...variants.map(n=>n.width)),h=Math.max(...variants.map(n=>n.height));variants.forEach((n,i)=>{n.x=24+(i%cols)*(w+24);n.y=40+Math.floor(i/cols)*(h+30);});s.resize(Math.min(cols,variants.length)*(w+24)+24,Math.ceil(variants.length/cols)*(h+30)+40);return s;}\nasync function section(name,x,y,w,h){if(page.children.some(n=>n.name===name))throw Error('Exists '+name);const s=figma.createSection();page.appendChild(s);s.name=name;s.x=x;s.y=y;s.resizeWithoutConstraints(w,h);roots.push(s);return s;}\nasync function review(s,name,x,y,w,h,mode){const f=frame(s,name,w,h,'VERTICAL','color/content');f.x=x;f.y=y;pad(f,24);gap(f,16);f.setExplicitVariableModeForCollection(await figma.variables.getVariableCollectionByIdAsync('VariableCollectionId:334:26740'),mode);await text(f,name,'title-2');return f;}\nfunction row(parent,w,h){const n=frame(parent,'Row',w,h,'HORIZONTAL');gap(n,12);n.counterAxisAlignItems='CENTER';return n;}\nfunction absolute(n,x,y){n.layoutPositioning='ABSOLUTE';n.x=x;n.y=y;}\nfunction vector(parent,name,path,w,h,color='color/fg/secondary',dash=null){const n=figma.createVector();parent.appendChild(n);n.name=name;n.vectorPaths=[{windingRule:'NONE',data:path}];n.resize(w,h);n.fills=[];stroke(n,color,1.5);n.strokeCap='ROUND';n.strokeJoin='ROUND';if(dash)n.dashPattern=dash;return n;}\nfunction allIds(nodes){const a=[];function walk(n){a.push(n.id);if(n.type!=='INSTANCE'&&'children'in n)for(const c of n.children)walk(c);}nodes.forEach(walk);return [...new Set(a)];}\n\nconst drop=await figma.getNodeByIdAsync('445:38580');for(const id of ['445:38851','445:39111']){const p=await figma.getNodeByIdAsync(id);const found=[];for(const n of p.children){if(n.type==='INSTANCE'){const m=await n.getMainComponentAsync();if(m.parent.id===drop.id)found.push({n,state:m.name});}}const valid=found.find(x=>x.state==='state=insert').n,invalid=found.find(x=>x.state==='state=invalid').n;p.insertChild(p.children.indexOf(valid)+1,invalid);}\nconst gs=await figma.getNodeByIdAsync('447:40596'),ns=await figma.getNodeByIdAsync('447:39945'),es=await figma.getNodeByIdAsync('447:39952');\nconst endpoints=[],created=[],removed=[];\nfor(const c of gs.children.filter(n=>n.name.includes('state=ready'))){\n const canvas=c.children.find(n=>n.name==='Graph canvas'),pts=[],links=[];\n for(const n of canvas.children){if(n.type!=='INSTANCE')continue;const m=await n.getMainComponentAsync();if(m.parent.id===ns.id)pts.push(n);if(m.parent.id===es.id)links.push(n);}\n const a=pts.find(n=>n.componentProperties.state.value==='active'),targets=pts.filter(n=>n!==a&&n.componentProperties.state.value!=='isolated');\n for(let i=0;i<links.length;i++){const old=links[i],main=await old.getMainComponentAsync();const e=main.createInstance();canvas.insertChild(canvas.children.indexOf(old),e);created.push(e.id);removed.push(old.id);old.remove();const b=targets[i];let x1=a.x+a.width/2,y1=a.y+a.height/2,x2=b.x+b.width/2,y2=b.y+b.height/2;const dx=x2-x1,dy=y2-y1;const t1=Math.min(a.width/2/Math.abs(dx),a.height/2/Math.abs(dy)),t2=Math.min(b.width/2/Math.abs(dx),b.height/2/Math.abs(dy));x1+=dx*t1;y1+=dy*t1;x2-=dx*t2;y2-=dy*t2;const vx=x2-x1,vy=y2-y1,len=Math.sqrt(vx*vx+vy*vy),cos=vx/len,sin=vy/len;e.rescale(len/200);e.relativeTransform=[[cos,-sin,x1+sin*e.height/2],[sin,cos,y1-cos*e.height/2]];endpoints.push({id:e.id,width:e.width,lineWidth:e.children[0].width,expected:len});}\n}\nreturn {createdNodeIds:created,removedNodeIds:removed,mutatedNodeIds:['445:38851','445:39111',...allIds([gs])],endpoints};",
+  "note": "脚本仅用于续传审计。运行前核对 state 中的实际节点，不能重复创建。图标缩放和剩余状态预览修正见当前画布与状态文件。"
+}

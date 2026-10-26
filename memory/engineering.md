@@ -2,6 +2,18 @@
 
 最后更新：2026-10-26
 
+## 画布节点 Copy 与复制粘贴（2026-10-26）
+
+- `copy-graph.ts` 生成独立节点、连线与参考素材 ID，清除副本生成任务并保留已有结果；上传中资源复制为明确失败态，避免副本一直等待原上传。`canvas-clipboard.ts` 管理本窗口内存快照与剪贴板标识、单节点上游/多节点内部连线筛选和粘贴偏移；不增加 IPC、依赖或磁盘权限。
+- `Canvas.tsx` 处理原生 copy/paste 事件，排除文本输入，创建后选中副本，通过既有 ProjectStore 路径保存，节点/连线数量上限前置检查。Copy 按钮接入 `NodeActionsContext`，在资源与生成节点删除按钮左侧。
+- check/build 通过；最终 `canvas-copy.spec.ts`、`canvas-copy-ui.spec.ts`、`connections.spec.ts` 共 14/14（36.4s）通过，包含框选两节点后真实 Cmd+C/V、连续粘贴、单节点上游连线、删除后恢复节点数量、文字复制粘贴不创建节点、资源复制、重载持久化及原有引用/连线交互。已检查实窗按钮位置与多选副本截图。
+- 初轮连接专项 10/11，发现 canvas-body pointerdown 抢走引用候选菜单焦点；已将焦点接管限定到画布空白区和节点，最终同轮全部通过。验证主机为 macOS，Windows Ctrl+C/V 实机验证仍待完成。用户已授权本地提交本轮功能、测试与记录；未推送或发布。上一项回到最新修复已按用户要求提交 `e6721b8`。
+
+## Windows 原生菜单栏移除（2026-10-26）
+
+- `feature/style-polish-2026-10-26` 从 develop `87388cf` 创建；`apps/desktop/src/main/index.ts` 在 win32 初始化时设置空应用菜单，不创建 File / Edit / View / Window 菜单栏。
+- `pnpm check`、`pnpm build` 通过；启动导航与隔离冒烟沙箱内无法启动 Electron，沙箱外复验 1/1 通过。验证主机为 macOS，Windows 实机外观仍待验证；用户随后授权本地提交 `ec20340`，未推送或发布。
+
 ## 视频控件与媒体卡住排查（2026-10-26）
 
 - feature/bugfix-2026-10-26：UrlMedia 恢复原生视频 controls，metadata 就绪后展示，移除视频自定义按钮/角标；音频保持原行为。上传与生成节点共用该组件和 jarvis-media 转发。
