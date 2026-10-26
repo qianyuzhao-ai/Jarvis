@@ -230,9 +230,9 @@
 
   .chat-reply-logo {
     display: block;
+    flex-shrink: 0;
     width: 28px;
     height: 28px;
-    margin-top: 12px;
     object-fit: contain;
     border-radius: 8px;
   }

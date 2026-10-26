@@ -165,15 +165,15 @@
     font-weight: 600;
   }
   .window-shell .canvas-create {
-    gap: 4px;
+    gap: 8px;
   }
 
   .window-shell .canvas-create > [data-ui='button'] {
     min-height: 24px;
   }
   .window-shell .canvas-create svg {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
   }
   .window-shell .canvas-export-button {
     height: 24px;

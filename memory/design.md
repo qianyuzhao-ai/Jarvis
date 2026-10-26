@@ -2,9 +2,15 @@
 
 最后更新：2026-10-26
 
+## 画布顶部新建按钮改为圆形图标（2026-10-26）
+
+- 用户要求画布顶栏「图像 / 视频 / 上传」改为圆形大尺寸按钮、去掉文字只留图标。`Canvas.tsx` 三者统一为 `IconButton variant="secondary" size="icon-lg" shape="circle"`（32px，项目最大控件尺寸），图标 18px，名称改由悬停提示显示（aria-label 仍为 图像 / 视频 / 导入素材，现有测试不变）；`pages.css` 中 `.window-shell .canvas-create` 间距 4 → 8px。未运行验证。
+- 居中与图标尺寸（同日）：用户要求这组按钮始终居中。`shell.css` 中 `.shell-panel .canvas-toolbar` 改为三列网格 `minmax(0,1fr) auto minmax(0,1fr)`（标题 / 新建按钮 / 导出靠右），按钮组不再随标题与导出宽度偏移；`pages.css` 原把该组 svg 压到 14px，改为 18px。
+- 回复底部一行（同日）：用户要求 chat 回复中的 logo 与复制、回复时间同一行且 logo 在最左。`ChatMessageItem` 把 logo 移入 `chat-reply-meta` 首位，回复中只显示呼吸 logo，完成后右侧接复制与时间；`.chat-reply-logo` 去掉上边距。未运行验证。
+
 ## 工具调用折叠为「已运行 N 个命令」、去掉侧栏线程项目行（2026-10-26）
 
-- 用户要求回复中的「已读取画布概况 / 已应用画布修改」等逐条显示改为参考图样式：一个大折叠「已运行 N 个命令」，展开后逐条详细展示。`ChatActivity.tsx` 外层改为一个 Collapsible（默认收起，回复中显示「正在运行 N 个命令」），展开为带边框分隔线的列表；有可操作内容（撤销、定位节点、变更明细、文件改动）的条目在展开列表后默认展开，纯标签条目只显示文字。样式在 `agent.css` 末尾（无层）。首页与画布/写作侧栏共用。
+- 用户要求回复中的「已读取画布概况 / 已应用画布修改」等逐条显示改为参考图样式：一个大折叠「已运行 N 个命令」，展开后逐条详细展示。`ChatActivity.tsx` 外层改为一个 Collapsible（默认收起，回复中显示「正在运行 N 个命令」），展开为带边框分隔线的列表；有可操作内容（撤销、定位节点、变更明细、文件改动）的条目为可折叠行，纯标签条目只显示文字。同日用户追加要求：展开后的每一条也默认折叠（去掉行的 defaultOpen；测试助手 `openActivities` 同时展开列表与各行，文件行仍折叠）。样式在 `agent.css` 末尾（无层）。首页与画布/写作侧栏共用。
 - 用户要求去掉画布/写作侧栏线程视图中「线程 · 项目名 / 在首页查看」一行：删除 `SpaceThreadPanel` 中该栏与 `.space-thread-bar` 样式；AGENTS.md 与 agent-os-v1.md 同步。
 - 测试：新增 `openActivities` 助手（tests/helpers/os-ui.ts），space-agent/agent/agent-files-ui 在点击撤销或文件行前先展开；space-agent 原「在首页查看」步骤改为点首页后检查线程列表。按用户要求暂缓 check/build/测试，仅 biome lint；未看截图。
 

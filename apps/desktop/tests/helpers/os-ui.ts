@@ -29,10 +29,16 @@ export async function approveInOverview(page: Page, texts: string[], screenshot?
   await page.getByRole('button', { name: '打开 Jarvis Chat' }).click();
 }
 
-/** Expands every collapsed 「已运行 N 个命令」 list in `scope`, so its undo and file rows can be used. */
+/**
+ * Expands every collapsed 「已运行 N 个命令」 list in `scope` and each step in it, so the steps'
+ * undo buttons and file rows can be used. File rows themselves stay folded.
+ */
 export async function openActivities(scope: Page | Locator) {
-  const closed = scope.locator(
+  for (const selector of [
     '[data-testid="chat-activities"][data-state="closed"] > [data-testid="chat-activities-summary"]',
-  );
-  while ((await closed.count()) > 0) await closed.first().click();
+    '[data-testid="chat-activity"][data-state="closed"] > [data-ui="collapsible-trigger"]',
+  ]) {
+    const closed = scope.locator(selector);
+    while ((await closed.count()) > 0) await closed.first().click();
+  }
 }

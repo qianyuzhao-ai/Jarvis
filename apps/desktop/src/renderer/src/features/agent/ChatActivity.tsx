@@ -78,7 +78,7 @@ export function ChatActivity({
       setUndoing(false);
     }
   }
-  // Steps with something to act on (undo, locate, file changes) open once the list is expanded.
+  // Steps with something to act on (undo, locate, file changes) fold their details; others are a line.
   const actionable = (activity: (typeof activities)[number]) =>
     !!(writing && activity.writingScope && activity.transactionId) ||
     !!(canvas && activity.nodeIds?.length) ||
@@ -98,12 +98,7 @@ export function ChatActivity({
                 {activity.label}
               </div>
             ) : (
-              <Collapsible
-                className="chat-activity"
-                data-testid="chat-activity"
-                key={activity.id}
-                defaultOpen
-              >
+              <Collapsible className="chat-activity" data-testid="chat-activity" key={activity.id}>
                 <CollapsibleTrigger>{activity.label}</CollapsibleTrigger>
                 <CollapsibleContent>
                   {writing && activity.writingScope && activity.transactionId && (

@@ -198,9 +198,18 @@ export function ChatMessageItem({
         )}
       </div>
       {m.role === 'assistant' && (
-        <>
+        <div data-testid="chat-reply-meta" className="chat-reply-meta">
+          <img
+            src={logo}
+            data-testid="chat-reply-logo"
+            data-replying={m.status === 'running'}
+            className={`chat-reply-logo ${m.status === 'running' ? 'is-replying' : ''}`}
+            alt={m.status === 'running' ? 'Jarvis 正在回复' : 'Jarvis'}
+            width={28}
+            height={28}
+          />
           {m.status !== 'running' && (
-            <div data-testid="chat-reply-meta" className="chat-reply-meta">
+            <>
               {m.text && (
                 <IconButton
                   variant="ghost"
@@ -222,18 +231,9 @@ export function ChatMessageItem({
               <span className="sr-only" role="status">
                 {copied ? '已复制' : ''}
               </span>
-            </div>
+            </>
           )}
-          <img
-            src={logo}
-            data-testid="chat-reply-logo"
-            data-replying={m.status === 'running'}
-            className={`chat-reply-logo ${m.status === 'running' ? 'is-replying' : ''}`}
-            alt={m.status === 'running' ? 'Jarvis 正在回复' : 'Jarvis'}
-            width={28}
-            height={28}
-          />
-        </>
+        </div>
       )}
     </article>
   );

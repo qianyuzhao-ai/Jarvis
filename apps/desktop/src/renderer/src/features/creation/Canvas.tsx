@@ -495,17 +495,28 @@ function CanvasContent({
             <span className="canvas-save-label">{status}</span>
           </div>
           <div className="canvas-create">
-            <Button variant="secondary" size="sm" onClick={() => add('image')}>
-              <Image size={18} />
-              图像
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => add('video')}>
-              <Video size={18} />
-              视频
-            </Button>
             <IconButton
               variant="secondary"
-              size="icon-sm"
+              size="icon-lg"
+              shape="circle"
+              aria-label="图像"
+              onClick={() => add('image')}
+            >
+              <Image size={18} />
+            </IconButton>
+            <IconButton
+              variant="secondary"
+              size="icon-lg"
+              shape="circle"
+              aria-label="视频"
+              onClick={() => add('video')}
+            >
+              <Video size={18} />
+            </IconButton>
+            <IconButton
+              variant="secondary"
+              size="icon-lg"
+              shape="circle"
               aria-label="导入素材"
               onClick={() => fileInput.current?.click()}
             >
