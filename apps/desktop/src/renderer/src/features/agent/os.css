@@ -519,3 +519,27 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Overview 折叠分组（已完成 / 已解决）：标题与「进行中」等分组同字号、计数紧跟标题，
+   箭头悬在左侧留白里使标题文字左对齐；卡片不缩进、间距 8px（无层，覆盖 Collapsible 默认样式）。 */
+.os-group-fold > .os-group-title {
+  width: fit-content;
+  margin: 4px 0 0 -22px;
+  padding: 0 6px 0 4px;
+  gap: 6px;
+  color: var(--color-fg);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.os-group-fold > .os-group-title .os-muted {
+  font-weight: 400;
+}
+.os-group-fold > .os-group-body {
+  padding-left: 0;
+}
+.os-group-fold > .os-group-body[data-state='open'] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

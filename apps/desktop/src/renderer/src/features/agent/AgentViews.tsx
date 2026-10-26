@@ -329,6 +329,24 @@ export function OverviewView({ projectId, onOpen }: { projectId: string; onOpen:
         {body}
       </section>
     );
+  // Finished groups fold; their heading matches the open groups, with the chevron hanging left.
+  const folded = (label: string, items: ThreadView[], note?: string) =>
+    items.length > 0 && (
+      <Collapsible className="os-group os-group-fold" data-testid={`overview-${label}`}>
+        <CollapsibleTrigger className="os-group-title">
+          {label}{' '}
+          <span className="os-muted">
+            {items.length}
+            {note && ` · ${note}`}
+          </span>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="os-group-body">
+          {items.map((t) => (
+            <ThreadRow key={t.id} thread={t} snapshot={snapshot} onOpen={onOpen} />
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+    );
   return (
     <section className="os-page" data-testid="overview" aria-label="Overview">
       <header className="os-view-header">
@@ -382,28 +400,8 @@ export function OverviewView({ projectId, onOpen }: { projectId: string; onOpen:
           )}
           {group('待你查看', review)}
           {group('进行中', working)}
-          {finished.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger meta={`${finished.length}`}>已完成</CollapsibleTrigger>
-              <CollapsibleContent>
-                {finished.map((t) => (
-                  <ThreadRow key={t.id} thread={t} snapshot={snapshot} onOpen={onOpen} />
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-          {resolved.length > 0 && (
-            <Collapsible>
-              <CollapsibleTrigger meta={`${resolved.length} · 已隐藏，可重开`}>
-                已解决
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                {resolved.map((t) => (
-                  <ThreadRow key={t.id} thread={t} snapshot={snapshot} onOpen={onOpen} />
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+          {folded('已完成', finished)}
+          {folded('已解决', resolved, '已隐藏，可重开')}
         </div>
       </div>
     </section>
