@@ -1,6 +1,22 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-26
+最后更新：2026-10-27
+
+## 1.0.2 已发布（2026-10-27）
+
+- [v1.0.2](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.2) 于北京时间 2026-10-27 09:43:05 发布，非草稿、沿用预发布设置，12 个资产全部 uploaded。原标签保持指向 main 发布合并提交 `4c40dda0711da7afccadafa844bb12fc125dd9c9`。
+- 唯一运行 [40328778235](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40328778235) attempt 10 的 ARM64 与统一发布成功，复用此前已成功的 Windows 和 Intel Mac 产物；最终三个平台及发布作业全部 success。前九次 ARM64 均因 GitHub 托管运行器容量不足零步骤取消，未修改源码、标签或跳过门禁。
+- 三平台通过 593 项生产依赖、ASAR 实际启动、Agent OS 项目及写作/更新桥接、更新清单版本/目标/大小/SHA-512 校验；两种 macOS 的目录包和 DMG/ZIP 内应用通过签名、公证票据与 Gatekeeper，Windows x64 未签名。
+- 线上 latest-mac.yml/latest.yml 已下载，SHA-256 与 GitHub asset digest 一致，版本/引用目标/大小匹配，macOS 包含 arm64 与 x64 ZIP；全部 12 个资产状态和非空大小回读通过。中文说明保留自动生成记录。证据 `/private/tmp/jarvis-102-final-verification/`，此前 Windows/Intel 日志 `/private/tmp/jarvis-102-release-verification/`。
+- 本地完整回归 212/213（6.1m），唯一既有日历周视图失败保留。Windows 实机操作、内网媒体反复放大后加载卡住、macOS 13 兼容性和真实升级仍待目标环境验证。本次发布不包含后续 interaction-polish 分支的改动。
+
+## 1.0.2 发布受 ARM64 容量阻塞（2026-10-26 历史记录，已解除）
+
+- 版本准备 [PR #104](https://github.com/qianyuzhao-ai/Jarvis/pull/104) 合入 develop `a319dd8`，发布 [PR #105](https://github.com/qianyuzhao-ai/Jarvis/pull/105) 合入 main `4c40dda0711da7afccadafa844bb12fc125dd9c9`，源码树核对一致。新标签 v1.0.2 指向该 main 提交，未移动旧标签。
+- 唯一运行 [40328778235](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40328778235)：Windows x64 与 macOS Intel x64 成功。两者通过 593 项生产依赖、ASAR 实际启动、Agent OS/写作/更新桥接与更新清单 SHA-512；Intel 目录包、DMG/ZIP 内应用通过签名、公证票据和 Gatekeeper。日志 `/private/tmp/jarvis-102-release-verification/`。
+- ARM64 首轮作业 `121592334649` 与单作业重试（attempt 2）`121601879925` 均在排队后取消，零步骤执行。GitHub 注释明确为托管运行器容量不足（The job was not acquired by Runner of type hosted even after multiple attempts），不是代码、签名或公证失败。重试复用 Windows 和 Intel 成功结果。
+- 以下为 attempt 2 结束时的状态，已由顶部 attempt 10 发布成功结果取代：统一发布 skipped；已回读 `gh release view v1.0.2` 为 release not found。**v1.0.2 尚未发布**，不得把成功平台产物等同完整 Release。容量恢复后沿用现有标签和运行，只重试 ARM64 及依赖发布作业；不重建标签、不重跑已成功平台。
+- 本地完整回归 212/213（6.1m），唯一为既有日历周视图 0/7；本地 arm64 打包启动通过。真实 Windows 操作、内网媒体加载卡住和实际升级仍待验证。
 
 ## 1.0.2 发布准备（2026-10-26）
 
