@@ -2,6 +2,14 @@
 
 最后更新：2026-10-27
 
+## 图片与视频预览直连返回 URL（2026-10-27）
+
+- 用户要求视频直接请求返回链接，随后追加图片也采用相同路径。分支 feature/direct-video-url 从 origin/develop b27eacc 创建；生成/上传图片与视频节点、参考图片与视频预览通过 mediaSource 验证 HTTP(S) 后直接作为 img.src/video.src，绕过 jarvis-media 转发。音频及 Agent 图片读取/视频抽帧仍沿用原桥接，避免将跨域抽帧权限变化混入预览修改。
+- 原始签名查询参数保持不变，不追加 retry 参数；重试以 img/video key 重建媒体元素。保留原生控件与 metadata 就绪显示；CSP 的 img-src/media-src 增加 http:/https:，connect-src、sandbox/contextIsolation 不变。
+- 验证：check/build 通过；图片加入直连后 canvas-assets 与 node-visuals 共 9/9 同轮通过，新增带签名图片直连、302 跳转、404 后重试成功并核对实际像素尺寸；覆盖带编码签名的直连 src、无 CORS 响应头的 302 跳转、连续三次重载、错误后的重试、播放/暂停/进度跳转与非法协议拒绝。首次进度跳转失败因模拟视频服务器未支持 Range，补齐 206/416 响应后保留原断言复测通过。
+- Windows 内网反复预览后的卡住仍待用户实机验证；本轮不宣称现场问题已解决。未提交、推送或发布。
+
+
 ## 1.0.3 已发布（2026-10-27）
 
 - [v1.0.3](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.3) 于北京时间 2026-10-27 10:54:12 发布，非草稿、沿用预发布设置，12 个资产均 uploaded。PR #109 合入 develop `18c5587`，PR #110 合入 main `ec6ff0cf59b1652b1502e6e12f1ff81b8fe113eb`；完整源码树一致，新标签指向该 main 提交，未移动旧标签。
