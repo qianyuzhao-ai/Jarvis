@@ -4,6 +4,7 @@ import { Spinner } from '@jarvis/ui/components/Spinner';
 import { CircleAlert, Music, Play, Pause } from '@jarvis/ui/icons';
 import type { AssetData } from './types';
 import { mediaTime } from './node-actions-context';
+import { mediaSource } from './media-source';
 export function UrlMedia({
   url,
   kind,
@@ -24,7 +25,7 @@ export function UrlMedia({
   const media = useRef<HTMLMediaElement | null>(null);
   useEffect(() => {
     let active = true;
-    void window.desktop!.generation.mediaUrl(url).then(
+    void mediaSource(url, kind).then(
       (response) => {
         if (active) setSource(response.ok ? { src: response.value } : { error: response.error });
       },
@@ -35,7 +36,7 @@ export function UrlMedia({
     return () => {
       active = false;
     };
-  }, [url, retry]);
+  }, [url, kind, retry]);
   const onError = () => setSource({ error: '请检查网络或资源 URL 是否仍然有效' });
   if (source.error)
     return (
@@ -71,12 +72,17 @@ export function UrlMedia({
     else node.pause();
   };
   const durationLabel = Number.isFinite(duration) && duration > 0 ? mediaTime(duration) : '—:—';
-  const src = source.src ? `${source.src}?retry=${retry}` : undefined;
+  const src = source.src
+    ? kind === 'audio'
+      ? `${source.src}?retry=${retry}`
+      : source.src
+    : undefined;
   return (
     <div className={`node-media node-media-${kind}`} data-media-ready={ready}>
       {src &&
         (kind === 'image' ? (
           <img
+            key={retry}
             className="generated-image"
             src={src}
             alt={label}
@@ -89,6 +95,7 @@ export function UrlMedia({
           />
         ) : kind === 'video' ? (
           <video
+            key={retry}
             className="generated-video nodrag nopan"
             controls
             ref={(node) => {

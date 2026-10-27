@@ -5,6 +5,7 @@ import { REFERENCE_LIMITS } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
 import type { MediaData, Reference } from './types';
 import type { PromptMention } from './prompt-mentions';
+import { mediaSource } from './media-source';
 
 export function ReferenceMedia({
   item,
@@ -32,7 +33,7 @@ export function ReferenceMedia({
       };
     }
     if (item.url) {
-      void window.desktop!.generation.mediaUrl(item.url).then(
+      void mediaSource(item.url, item.type).then(
         (response) => {
           if (active) setUrl(response.ok ? response.value : '');
         },
@@ -44,7 +45,7 @@ export function ReferenceMedia({
     return () => {
       active = false;
     };
-  }, [item.blob, item.url]);
+  }, [item.blob, item.url, item.type]);
   const src = url;
   if ((!src || failed) && item.type !== 'audio')
     return item.type === 'image' ? <ImageIcon size={24} /> : <Video size={24} />;
