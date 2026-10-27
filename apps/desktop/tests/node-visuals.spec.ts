@@ -1,3 +1,4 @@
+import { mediaSource } from '../src/renderer/src/features/creation/media-source';
 import { seedWorkspace } from './helpers/workspace';
 import { generationInputSchema } from '../src/shared/generation';
 import { createServer } from 'node:http';
@@ -13,6 +14,19 @@ import {
 } from '../src/renderer/src/features/creation/types';
 import { mediaHeight, mediaTime } from '../src/renderer/src/features/creation/node-actions-context';
 import { recordVideo } from './helpers/record-video';
+for (const kind of ['image', 'video'] as const) {
+  test(`direct ${kind} sources preserve signatures and reject non-HTTP URLs`, async () => {
+    const url = 'https://example.test/video.mp4?authorization=a%2Fb&token=c%2Bd';
+    expect(await mediaSource(url, kind)).toEqual({ ok: true, value: url });
+    for (const invalid of [
+      'file:///tmp/video.mp4',
+      'javascript:alert(1)',
+      'https://user:pass@example.test/video.mp4',
+    ]) {
+      expect((await mediaSource(invalid, kind)).ok).toBe(false);
+    }
+  });
+}
 test('node media sizing and elapsed labels clamp to the specified bounds', () => {
   expect(mediaHeight(1600, 900)).toBe(180);
   expect(mediaHeight(900, 1600)).toBe(320);
@@ -45,9 +59,30 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
   wav.writeUInt32LE(16000, 40);
   const server = createServer(async (req, res) => {
     const path = req.url ?? '';
-    if (path === '/video.webm') {
-      res.writeHead(200, { 'Content-Type': 'video/webm', 'Content-Length': video.length });
-      res.end(video);
+    if (path === '/video.webm?authorization=test%2Fsignature&token=a%2Bb') {
+      res.writeHead(302, { Location: '/video-content.webm' });
+      res.end();
+      return;
+    }
+    if (path === '/video-content.webm') {
+      const range = req.headers.range?.match(/^bytes=(\d+)-(\d*)$/);
+      const start = range ? Number(range[1]) : 0;
+      const end = range?.[2] ? Math.min(Number(range[2]), video.length - 1) : video.length - 1;
+      if (start > end) {
+        res.writeHead(416, { 'Content-Range': `bytes */${video.length}` }).end();
+        return;
+      }
+      res.writeHead(range ? 206 : 200, {
+        'Content-Type': 'video/webm',
+        'Content-Length': end - start + 1,
+        'Accept-Ranges': 'bytes',
+        ...(range ? { 'Content-Range': `bytes ${start}-${end}/${video.length}` } : {}),
+      });
+      res.end(video.subarray(start, end + 1));
+      return;
+    }
+    if (path === '/signed.svg?authorization=test%2Fsignature&token=a%2Bb') {
+      res.writeHead(302, { Location: '/broken.svg' }).end();
       return;
     }
     if (path === '/audio.wav') {
@@ -155,8 +190,13 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     add('old-result', 'failed', base + '/wide.svg');
     add('unknown', 'unknown');
     add('loading', 'succeeded', base + '/slow.svg');
-    add('broken', 'succeeded', base + '/broken.svg');
-    add('video', 'succeeded', base + '/video.webm', 'video');
+    add('broken', 'succeeded', base + '/signed.svg?authorization=test%2Fsignature&token=a%2Bb');
+    add(
+      'video',
+      'succeeded',
+      base + '/video.webm?authorization=test%2Fsignature&token=a%2Bb',
+      'video',
+    );
     p.nodes.push({
       id: 'portrait',
       type: 'asset',
@@ -295,11 +335,36 @@ test('canvas visual states, sizing, hot areas, inline playback, retries and edit
     await page.getByRole('button', { name: '关闭编辑面板' }).click();
     broken = false;
     await node('broken').getByRole('button', { name: '重新加载媒体' }).click();
-    await expect(node('broken').getByAltText('生成的图像')).toBeVisible();
+    const recoveredImage = node('broken').getByAltText('生成的图像');
+    await expect(recoveredImage).toBeVisible();
+    await expect(recoveredImage).toHaveAttribute(
+      'src',
+      base + '/signed.svg?authorization=test%2Fsignature&token=a%2Bb',
+    );
+    await expect(recoveredImage).toHaveJSProperty('naturalWidth', 160);
     releaseSlow();
     await expect(node('loading').getByAltText('生成的图像')).toBeVisible();
     const v = node('video').getByLabel('生成的视频', { exact: true });
+    await expect(v).toHaveAttribute(
+      'src',
+      base + '/video.webm?authorization=test%2Fsignature&token=a%2Bb',
+    );
     await expect(v).toHaveJSProperty('controls', true);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await v.evaluate((e) => (e as HTMLVideoElement).load());
+      await expect
+        .poll(() => v.evaluate((e) => (e as HTMLVideoElement).readyState))
+        .toBeGreaterThanOrEqual(2);
+    }
+    await v.dispatchEvent('error');
+    await node('video').getByRole('button', { name: '重新加载媒体' }).click();
+    await expect(v).toHaveAttribute(
+      'src',
+      base + '/video.webm?authorization=test%2Fsignature&token=a%2Bb',
+    );
+    await expect
+      .poll(() => v.evaluate((e) => (e as HTMLVideoElement).readyState))
+      .toBeGreaterThanOrEqual(2);
     await expect(v).toHaveClass(/nodrag nopan/);
     await node('video').hover();
     await v.evaluate((e) => (e as HTMLVideoElement).play());

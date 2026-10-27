@@ -763,7 +763,10 @@ test('connected references preview upstream media and keep long mention rows on 
         );
       }),
     ).toBe(true);
-    await expect(preview.getByAltText(longName)).toHaveAttribute('src', /^jarvis-media:/);
+    await expect(preview.getByAltText(longName)).toHaveAttribute(
+      'src',
+      mock.base + '/image.png?asset=1',
+    );
     await expect
       .poll(() =>
         preview.getByAltText(longName).evaluate((img) => (img as HTMLImageElement).naturalWidth),
