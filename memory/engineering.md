@@ -2,6 +2,13 @@
 
 最后更新：2026-10-27
 
+## 1.0.3 发布准备（2026-10-27）
+
+- 用户授权将当前 `feature/interaction-polish` 发布为新的小版本，按补丁版本 v1.0.3 执行。同步 origin/main 的 v1.0.2 发布记录，无冲突；版本与中文说明已更新。
+- 包含画布多节点拖动优化、助手 Markdown 回复、模型与思考菜单整合、工具调用折叠和窗口/画布交互调整。按功能 PR → develop → main → 新标签的流程发布，沿用三平台统一预发布。
+- check/build、版本一致性、发布工具 8 项与 Apple 网络重试测试通过；完整 Electron 回归 211/213（6.1m），仅既有日历周视图 0/7 与原生窗口焦点 false 失败，未改断言或跳过。日志 `/private/tmp/jarvis-103-smoke.log`。
+- 本地 arm64 目录包 `release/f99dee76-814b-40cf-908a-258224421cef` 通过 593 项生产依赖、ASAR 实际启动、Agent OS/写作/更新桥接与块编辑保存、Mermaid、思维导图、星图验证。日志 `/private/tmp/jarvis-103-packaged-check.log`、`/private/tmp/jarvis-103-packaged-rich.log`。云端验证待执行。
+
 ## 1.0.2 已发布（2026-10-27）
 
 - [v1.0.2](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.2) 于北京时间 2026-10-27 09:43:05 发布，非草稿、沿用预发布设置，12 个资产全部 uploaded。原标签保持指向 main 发布合并提交 `4c40dda0711da7afccadafa844bb12fc125dd9c9`。
