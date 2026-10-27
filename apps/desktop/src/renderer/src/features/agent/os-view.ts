@@ -35,7 +35,9 @@ export function placeTitle(snapshot: OsSnapshot, ref: string | null) {
   if (place.kind === 'overview') return 'Overview';
   if (place.kind === 'project') return '项目设置';
   if (place.kind === 'home')
-    return snapshot.projects.find((p) => p.id === snapshot.currentProjectId)?.title ?? '协调对话';
+    return (
+      snapshot.projects.find((p) => p.id === snapshot.currentProjectId)?.title ?? 'Jarvis Chat'
+    );
   return (
     snapshot.projects.find((p) => p.coordinatorId === place.id)?.title ??
     snapshot.threads.find((t) => t.id === place.id)?.title

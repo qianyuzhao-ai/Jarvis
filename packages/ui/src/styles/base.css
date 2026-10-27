@@ -363,12 +363,13 @@
   .ui-toggle-item:hover {
     background: var(--color-fill);
   }
-  .ui-toggle[data-state='on'],
+  /* Tooltip 包裹时 data-state 会被改写为提示状态，开关态以 aria-pressed 为准。 */
+  .ui-toggle[aria-pressed='true'],
   .ui-toggle-item[data-variant='default'][data-state='on'] {
     background: var(--color-selection);
     color: var(--color-accent);
   }
-  .ui-toggle[data-variant='outline'][data-state='on'] {
+  .ui-toggle[data-variant='outline'][aria-pressed='true'] {
     border: var(--border-standard) solid var(--color-accent);
   }
   .ui-toggle-item {
@@ -387,7 +388,7 @@
     border-color: transparent;
     background: transparent;
   }
-  .ui-toggle:disabled[data-state='on'],
+  .ui-toggle:disabled[aria-pressed='true'],
   .ui-toggle-item:disabled[data-state='on'] {
     background: var(--color-fill);
   }
@@ -397,7 +398,7 @@
     color: var(--color-fg-disabled);
     box-shadow: none;
   }
-  .ui-toggle[data-variant='outline']:disabled[data-state='on'] {
+  .ui-toggle[data-variant='outline']:disabled[aria-pressed='true'] {
     background: var(--color-fill);
   }
   .ui-toggle svg,
@@ -537,7 +538,8 @@
   .ui-menu-item[data-disabled] * {
     color: inherit;
   }
-  .ui-menu:has([role='menuitemcheckbox'], [role='menuitemradio']) .ui-menu-item {
+  .ui-menu:has([role='menuitemcheckbox'], [role='menuitemradio']:not([data-indicator='trailing']))
+    .ui-menu-item {
     padding-left: calc(var(--spacing) * 4 + var(--icon-small));
   }
   .ui-menu-check {
@@ -549,6 +551,21 @@
   .ui-menu-check svg {
     width: 100%;
     height: 100%;
+  }
+  .ui-menu-check-trailing {
+    display: flex;
+    flex-shrink: 0;
+    margin-left: auto;
+    width: var(--icon-small);
+    height: var(--icon-small);
+    color: var(--color-accent);
+  }
+  .ui-menu-check-trailing svg {
+    width: 100%;
+    height: 100%;
+  }
+  .ui-menu-item[data-highlighted] .ui-menu-check-trailing {
+    color: inherit;
   }
   .ui-candidate-item {
     cursor: default;
@@ -920,7 +937,7 @@
     min-width: 120px;
     max-width: 240px;
     width: 200px;
-    height: 28px;
+    height: 32px;
     gap: 6px;
     padding: 0 4px 0 10px;
     border: var(--border-hairline) solid transparent;

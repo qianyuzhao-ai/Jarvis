@@ -106,7 +106,6 @@ test('a project shows its threads, Overview, decision questions and settings', a
     await page.getByLabel('项目名称', { exact: true }).fill('周报与日程');
     await page.getByRole('button', { name: '保存名称与说明' }).click();
     await expect(page.getByTestId('project-switcher')).toHaveText('周报与日程');
-    await expect(page.getByTestId('os-sidebar-foot')).toHaveText('1 个可访问目录');
     await page.screenshot({ path: test.info().outputPath('project-settings.png') });
 
     // A second project from the menu starts empty and keeps the first one's threads apart.

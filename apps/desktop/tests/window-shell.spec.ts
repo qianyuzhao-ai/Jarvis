@@ -21,6 +21,7 @@ test('window shell opens, deduplicates, travels, closes and restores cross-space
       '-webkit-app-region',
       'no-drag',
     );
+    expect((await tabs().locator('[data-ui="window-tab"]').first().boundingBox())?.height).toBe(32);
     await expect(page.getByRole('button', { name: '日历', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: '展开画布助手' })).toHaveCount(0);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();

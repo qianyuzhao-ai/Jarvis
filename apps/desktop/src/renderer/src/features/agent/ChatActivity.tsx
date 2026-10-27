@@ -78,146 +78,171 @@ export function ChatActivity({
       setUndoing(false);
     }
   }
+  // Steps with something to act on (undo, locate, file changes) fold their details; others are a line.
+  const actionable = (activity: (typeof activities)[number]) =>
+    !!(writing && activity.writingScope && activity.transactionId) ||
+    !!(canvas && activity.nodeIds?.length) ||
+    !!activity.changes?.length ||
+    firstOfRound.has(activity.id) ||
+    activity.files.length > 0;
   return (
-    <div data-testid="chat-activities" className="chat-activities">
-      {activities.map((activity) => (
-        <Collapsible className="chat-activity" key={activity.id} defaultOpen>
-          <CollapsibleTrigger>{activity.label}</CollapsibleTrigger>
-          <CollapsibleContent>
-            {writing && activity.writingScope && activity.transactionId && (
-              <Alert
-                tone="success"
-                title={activity.label}
-                action={
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={!writing.canUndo(activity.transactionId)}
-                    onClick={() => writing.undo(activity.transactionId!)}
-                  >
-                    撤销本次修改
-                  </Button>
-                }
-              >
-                {activity.label.includes('未保存')
-                  ? '编辑器内容已更新，尚未保存到磁盘。'
-                  : '文档没有打开，修改已保存到文件；文件没再变化时可以撤销。'}
-              </Alert>
-            )}
-            {canvas && activity.nodeIds?.length ? (
-              <div className="canvas-activity-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  type="button"
-                  onClick={() => canvas.focus(activity.nodeIds ?? [])}
-                >
-                  定位节点
-                </Button>
-                {activity.transactionId && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    disabled={!canvas.canUndo(activity.transactionId)}
-                    onClick={() => canvas.undo(activity.transactionId ?? '')}
-                  >
-                    撤销本次修改
-                  </Button>
-                )}
+    <Collapsible data-testid="chat-activities" className="chat-activities">
+      <CollapsibleTrigger data-testid="chat-activities-summary">
+        {replying ? '正在运行' : '已运行'} {activities.length} 个命令
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="chat-activity-list">
+          {activities.map((activity) =>
+            !actionable(activity) ? (
+              <div className="chat-activity" data-testid="chat-activity" key={activity.id}>
+                {activity.label}
               </div>
-            ) : null}
-            {!!activity.changes?.length && (
-              <Collapsible data-testid="canvas-change-details" className="canvas-change-details">
-                <CollapsibleTrigger>查看 {activity.changes.length} 项变更</CollapsibleTrigger>
+            ) : (
+              <Collapsible className="chat-activity" data-testid="chat-activity" key={activity.id}>
+                <CollapsibleTrigger>{activity.label}</CollapsibleTrigger>
                 <CollapsibleContent>
-                  {activity.changes.map((change, index) => (
-                    <div key={`${change.nodeId}-${index}`}>
-                      <strong>{change.label}</strong>
-                      <del>{change.before || '未填写'}</del>
-                      <ins>{change.after || '未填写'}</ins>
+                  {writing && activity.writingScope && activity.transactionId && (
+                    <Alert
+                      tone="success"
+                      title={activity.label}
+                      action={
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={!writing.canUndo(activity.transactionId)}
+                          onClick={() => writing.undo(activity.transactionId!)}
+                        >
+                          撤销本次修改
+                        </Button>
+                      }
+                    >
+                      {activity.label.includes('未保存')
+                        ? '编辑器内容已更新，尚未保存到磁盘。'
+                        : '文档没有打开，修改已保存到文件；文件没再变化时可以撤销。'}
+                    </Alert>
+                  )}
+                  {canvas && activity.nodeIds?.length ? (
+                    <div className="canvas-activity-actions">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        onClick={() => canvas.focus(activity.nodeIds ?? [])}
+                      >
+                        定位节点
+                      </Button>
+                      {activity.transactionId && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          type="button"
+                          disabled={!canvas.canUndo(activity.transactionId)}
+                          onClick={() => canvas.undo(activity.transactionId ?? '')}
+                        >
+                          撤销本次修改
+                        </Button>
+                      )}
                     </div>
-                  ))}
+                  ) : null}
+                  {!!activity.changes?.length && (
+                    <Collapsible
+                      data-testid="canvas-change-details"
+                      className="canvas-change-details"
+                    >
+                      <CollapsibleTrigger>查看 {activity.changes.length} 项变更</CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {activity.changes.map((change, index) => (
+                          <div key={`${change.nodeId}-${index}`}>
+                            <strong>{change.label}</strong>
+                            <del>{change.before || '未填写'}</del>
+                            <ins>{change.after || '未填写'}</ins>
+                          </div>
+                        ))}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
+                  {firstOfRound.has(activity.id) && activity.transactionId && (
+                    <div className="canvas-activity-actions">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        disabled={undoing || replying || !!activity.undone}
+                        onClick={() => void undoFiles(activity.transactionId ?? '')}
+                      >
+                        {activity.undone ? '本轮文件修改已撤销' : '撤销本轮文件修改'}
+                      </Button>
+                    </div>
+                  )}
+                  {activity.files.length > 0 && (
+                    <div className="chat-files">
+                      {activity.files.map((file, index) => (
+                        <Collapsible
+                          data-testid="chat-file"
+                          className="chat-file"
+                          key={`${file.path}-${index}`}
+                        >
+                          <CollapsibleTrigger>
+                            <span>
+                              {
+                                { created: '创建', edited: '修改', deleted: '删除', moved: '移动' }[
+                                  file.action
+                                ]
+                              }
+                            </span>
+                            <span className="chat-file-name">
+                              {file.path.split(/[\\/]/).at(-1)}
+                            </span>
+                            <span className="diff-added">+{file.added}</span>
+                            <span className="diff-removed">−{file.removed}</span>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div data-testid="chat-file-path" className="chat-file-path">
+                              {file.path}
+                            </div>
+                            <pre
+                              data-testid="chat-diff"
+                              className="chat-diff"
+                              tabIndex={0}
+                              aria-label={`${file.path} 文件差异`}
+                            >
+                              <code>
+                                {diffLines(file.diff).map((line, index) => (
+                                  <span
+                                    key={`${index}-${line.text}`}
+                                    data-diff-kind={line.kind || 'header'}
+                                    className={`diff-${line.kind || 'header'}`}
+                                  >
+                                    <span
+                                      data-testid="diff-line-number"
+                                      className="diff-line-number"
+                                      aria-hidden="true"
+                                    >
+                                      {line.before}
+                                    </span>
+                                    <span
+                                      data-testid="diff-line-number"
+                                      className="diff-line-number"
+                                      aria-hidden="true"
+                                    >
+                                      {line.after}
+                                    </span>
+                                    <span>{line.text || ' '}</span>
+                                  </span>
+                                ))}
+                              </code>
+                            </pre>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      ))}
+                    </div>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
-            )}
-            {firstOfRound.has(activity.id) && activity.transactionId && (
-              <div className="canvas-activity-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  type="button"
-                  disabled={undoing || replying || !!activity.undone}
-                  onClick={() => void undoFiles(activity.transactionId ?? '')}
-                >
-                  {activity.undone ? '本轮文件修改已撤销' : '撤销本轮文件修改'}
-                </Button>
-              </div>
-            )}
-            {activity.files.length > 0 && (
-              <div className="chat-files">
-                {activity.files.map((file, index) => (
-                  <Collapsible
-                    data-testid="chat-file"
-                    className="chat-file"
-                    key={`${file.path}-${index}`}
-                  >
-                    <CollapsibleTrigger>
-                      <span>
-                        {
-                          { created: '创建', edited: '修改', deleted: '删除', moved: '移动' }[
-                            file.action
-                          ]
-                        }
-                      </span>
-                      <span className="chat-file-name">{file.path.split(/[\\/]/).at(-1)}</span>
-                      <span className="diff-added">+{file.added}</span>
-                      <span className="diff-removed">−{file.removed}</span>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div data-testid="chat-file-path" className="chat-file-path">
-                        {file.path}
-                      </div>
-                      <pre
-                        data-testid="chat-diff"
-                        className="chat-diff"
-                        tabIndex={0}
-                        aria-label={`${file.path} 文件差异`}
-                      >
-                        <code>
-                          {diffLines(file.diff).map((line, index) => (
-                            <span
-                              key={`${index}-${line.text}`}
-                              data-diff-kind={line.kind || 'header'}
-                              className={`diff-${line.kind || 'header'}`}
-                            >
-                              <span
-                                data-testid="diff-line-number"
-                                className="diff-line-number"
-                                aria-hidden="true"
-                              >
-                                {line.before}
-                              </span>
-                              <span
-                                data-testid="diff-line-number"
-                                className="diff-line-number"
-                                aria-hidden="true"
-                              >
-                                {line.after}
-                              </span>
-                              <span>{line.text || ' '}</span>
-                            </span>
-                          ))}
-                        </code>
-                      </pre>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-              </div>
-            )}
-          </CollapsibleContent>
-        </Collapsible>
-      ))}
-    </div>
+            ),
+          )}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

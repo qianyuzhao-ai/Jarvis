@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { addRelayModel } from './helpers/model-setup';
 import { osRelay } from './helpers/os-relay';
-import { approveInOverview, newProject, projectMenu } from './helpers/os-ui';
+import { approveInOverview, newProject, openActivities, projectMenu } from './helpers/os-ui';
 
 test('a folder authorized in settings lets Jarvis overwrite a file after approval, and the round undoes', async () => {
   test.setTimeout(60000);
@@ -57,10 +57,9 @@ test('a folder authorized in settings lets Jarvis overwrite a file after approva
     await page.getByRole('button', { name: '添加文件夹' }).click();
     await expect(page.getByTestId('folder-row').filter({ hasText: '素材' })).toHaveCount(1);
     await expect(page.getByTestId('folder-row').filter({ hasText: '项目文件' })).toHaveCount(1);
-    await expect(page.getByTestId('os-sidebar-foot')).toHaveText('2 个可访问目录');
     await page.screenshot({ path: test.info().outputPath('file-access.png') });
 
-    await page.getByRole('button', { name: '返回协调对话' }).click();
+    await page.getByRole('button', { name: '返回 Jarvis Chat' }).click();
     await page.getByLabel('消息', { exact: true }).fill('在待办里加上取快递');
     await page.getByRole('button', { name: '发送消息' }).click();
     await approveInOverview(
@@ -74,6 +73,7 @@ test('a folder authorized in settings lets Jarvis overwrite a file after approva
     await page.getByTestId('thread-card').filter({ hasText: '整理待办' }).click();
     await expect(page.getByTestId('chat-file')).toContainText('修改');
 
+    await openActivities(page);
     await page.getByRole('button', { name: '撤销本轮文件修改' }).click();
     await expect(page.getByRole('button', { name: '本轮文件修改已撤销' })).toBeDisabled();
     expect(await readFile(join(folder, '待办.txt'), 'utf8')).toBe('一、买菜');

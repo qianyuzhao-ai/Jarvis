@@ -22,7 +22,7 @@
     width: max(100px, calc(var(--shell-sidebar-width) + 40px));
     flex-shrink: 0;
   }
-  [data-platform='darwin'] .shell-navigation {
+  .window-shell[data-platform='darwin']:not([data-fullscreen]) .shell-navigation {
     padding-left: 76px;
     min-width: 168px;
   }
@@ -194,13 +194,18 @@
   }
 }
 @layer components {
+  /* 左标题、中新建按钮、右导出：两侧等宽列让按钮始终居中。 */
   .shell-panel .canvas-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 8px;
     overflow-x: auto;
   }
   .shell-panel .canvas-title {
     min-width: 100px;
-    flex: 1;
+  }
+  .shell-panel .canvas-toolbar > .canvas-status {
+    justify-self: end;
   }
   .shell-panel .canvas-title input {
     width: 100%;
@@ -209,8 +214,6 @@
   .shell-panel .canvas-create {
     position: static;
     transform: none;
-    margin-inline: auto;
-    flex-shrink: 0;
   }
 }
 @layer components {

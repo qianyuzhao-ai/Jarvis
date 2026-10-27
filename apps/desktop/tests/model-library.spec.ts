@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
 import { newProject } from './helpers/os-ui';
+import { pickModel, pickThinking, thinkingLevelCount } from './helpers/model-picker';
 
 test('model settings migrate legacy credentials, add providers in the dialog and switch one chat across models', async () => {
   test.setTimeout(60000);
@@ -154,19 +155,18 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await newProject(page);
-    await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
-    const thinking = page.getByRole('combobox', { name: '思考程度' });
-    await expect(thinking).toHaveValue('off');
-    await expect(thinking.locator('option')).toHaveCount(deepseek.thinkingLevels.length);
+    await expect(page.getByTestId('model-trigger')).toContainText(deepseek.name);
+    await expect(page.getByTestId('thinking-value')).toHaveText('关闭');
+    expect(await thinkingLevelCount(page)).toBe(deepseek.thinkingLevels.length);
     let count = 0;
     for (const [profile, text] of [
       [relay, '第一条'],
       [deepseek, '继续第二条'],
       [beta, '第三条'],
     ] as const) {
-      await page.getByRole('combobox', { name: '聊天模型' }).selectOption(profile.id);
-      if (profile === deepseek) await thinking.selectOption('high');
-      else await expect(thinking).toHaveCount(0);
+      await pickModel(page, profile.name);
+      if (profile === deepseek) await pickThinking(page, '高');
+      else await expect(page.getByTestId('thinking-value')).toHaveCount(0);
       await page.getByLabel('消息', { exact: true }).fill(text);
       await page.getByRole('button', { name: '发送消息', exact: true }).click();
       await expect(
@@ -252,17 +252,13 @@ test('model settings migrate legacy credentials, add providers in the dialog and
     page = await app.firstWindow();
     await redirectDeepSeek();
     await page.getByRole('button', { name: '首页', exact: true }).click();
-    await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue('');
-    await expect(page.locator('[data-testid="model-trigger"] option:checked')).toHaveText(
-      '选择模型',
-    );
+    await expect(page.getByTestId('model-trigger')).toHaveText('选择模型');
     // A new project's conversation starts from the level last used with the model it picks.
     await newProject(page);
-    await page.getByRole('combobox', { name: '聊天模型' }).selectOption(deepseek.id);
-    await expect(page.getByRole('combobox', { name: '聊天模型' })).toHaveValue(deepseek.id);
-    const thinkingAgain = page.getByRole('combobox', { name: '思考程度' });
-    await expect(thinkingAgain).toHaveValue('high');
-    await thinkingAgain.selectOption('off');
+    await pickModel(page, deepseek.name);
+    await expect(page.getByTestId('model-trigger')).toContainText(deepseek.name);
+    await expect(page.getByTestId('thinking-value')).toHaveText('高');
+    await pickThinking(page, '关闭');
     await page.getByLabel('消息', { exact: true }).fill('不要思考');
     await page.getByRole('button', { name: '发送消息', exact: true }).click();
     await expect(

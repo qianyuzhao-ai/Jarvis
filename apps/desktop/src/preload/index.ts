@@ -18,6 +18,14 @@ const desktop: DesktopInfo = {
         ipcRenderer.removeListener('appearance:accent-changed', handle);
       };
     },
+    getFullScreen: () => ipcRenderer.invoke('appearance:fullscreen'),
+    onFullScreen: (listener) => {
+      const handle = (_event: Electron.IpcRendererEvent, value: boolean) => listener(value);
+      ipcRenderer.on('appearance:fullscreen-changed', handle);
+      return () => {
+        ipcRenderer.removeListener('appearance:fullscreen-changed', handle);
+      };
+    },
   },
   updates: {
     getState: () => ipcRenderer.invoke('updates:state'),

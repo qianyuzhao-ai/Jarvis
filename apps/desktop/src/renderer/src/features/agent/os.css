@@ -105,6 +105,32 @@
     color: var(--color-success);
     flex-shrink: 0;
   }
+  /* 线程卡片可点：悬停加深底色、文字提亮，右箭头右移提示可打开。 */
+  .os-thread-notice {
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard);
+  }
+  .os-thread-notice svg:last-child {
+    flex-shrink: 0;
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+  .os-thread-notice:hover {
+    background: var(--color-fill-hover);
+    color: var(--color-fg);
+  }
+  .os-thread-notice:hover svg:last-child {
+    transform: translateX(2px);
+  }
+  .os-thread-notice:active {
+    background: var(--color-fill-pressed);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .os-thread-notice,
+    .os-thread-notice svg:last-child {
+      transition: none;
+    }
+  }
   .os-thread-notice span {
     overflow: hidden;
     white-space: nowrap;
@@ -363,13 +389,6 @@
     display: flex;
     justify-content: flex-end;
   }
-  .os-sidebar-foot {
-    margin: auto 8px 0;
-    padding-top: 12px;
-    font-size: 12px;
-    line-height: 18px;
-    color: var(--color-fg-tertiary);
-  }
   @media (max-width: 1050px) {
     .os-view-header,
     .os-page-scroll {
@@ -400,7 +419,6 @@
   .space-thread-spacer {
     flex: 1;
   }
-  .space-thread-bar,
   .space-thread-progress {
     display: flex;
     align-items: center;
@@ -412,13 +430,6 @@
     font-size: 12px;
     line-height: 18px;
     color: var(--color-fg-tertiary);
-  }
-  .space-thread-bar > span {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .space-thread-progress {
     padding-block: 8px;
@@ -497,4 +508,38 @@
     color: var(--color-fg);
     font-weight: 600;
   }
+}
+
+/* 项目切换：菜单与按钮同宽，菜单打开时按钮保持选中底色。 */
+.os-project-switcher[data-state='open'] {
+  background: var(--color-fill);
+}
+.os-project-menu {
+  width: var(--radix-dropdown-menu-trigger-width);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Overview 折叠分组（已完成 / 已解决）：标题与「进行中」等分组同字号、计数紧跟标题，
+   箭头悬在左侧留白里使标题文字左对齐；卡片不缩进、间距 8px（无层，覆盖 Collapsible 默认样式）。 */
+.os-group-fold > .os-group-title {
+  width: fit-content;
+  margin: 4px 0 0 -22px;
+  padding: 0 6px 0 4px;
+  gap: 6px;
+  color: var(--color-fg);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.os-group-fold > .os-group-title .os-muted {
+  font-weight: 400;
+}
+.os-group-fold > .os-group-body {
+  padding-left: 0;
+}
+.os-group-fold > .os-group-body[data-state='open'] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
