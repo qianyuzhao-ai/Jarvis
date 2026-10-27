@@ -2,6 +2,14 @@
 
 最后更新：2026-10-27
 
+## 1.0.4 发布准备（2026-10-27）
+
+- 用户授权提交并发布补丁版本 v1.0.4。直连实现提交 3fa40b4；当前 feature/direct-video-url 从 develop b27eacc 创建，根包与桌面包升级为 1.0.4，CHANGELOG 记录图片/视频节点与参考素材直接请求返回 URL、保留签名参数和原生控件。
+- check/build、版本一致性、发布工具 8 项与 Apple 网络重试测试通过。完整窗口回归首轮 212/215（6.2m）：日历周视图和原生焦点为既有失败；参考图测试仍断言 jarvis-media，已改为核对实际原始 URL，保留自然尺寸检查，单独复验 1/1 通过。日志 /private/tmp/jarvis-104-smoke.log。
+- 本地 arm64 目录包 release/0b66d1e5-9371-4dd1-a536-0888cd6d9e79 已通过 593 项依赖及实际 ASAR 启动、窗口标签、Agent OS 项目、写作和更新桥接验证（日志 /private/tmp/jarvis-104-packaged-check.log）。Windows 内网反复预览卡住仍待实机确认。
+- 发布按功能 PR → develop → main → 新标签，沿用三平台统一预发布；当前尚未发布。
+
+
 ## 图片与视频预览直连返回 URL（2026-10-27）
 
 - 用户要求视频直接请求返回链接，随后追加图片也采用相同路径。分支 feature/direct-video-url 从 origin/develop b27eacc 创建；生成/上传图片与视频节点、参考图片与视频预览通过 mediaSource 验证 HTTP(S) 后直接作为 img.src/video.src，绕过 jarvis-media 转发。音频及 Agent 图片读取/视频抽帧仍沿用原桥接，避免将跨域抽帧权限变化混入预览修改。
