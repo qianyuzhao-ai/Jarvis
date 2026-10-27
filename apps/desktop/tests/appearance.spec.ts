@@ -37,6 +37,8 @@ test('accent subscription rejects invalid colors, falls back and cannot apply st
         disposed = true;
       };
     },
+    getFullScreen: () => Promise.resolve(false),
+    onFullScreen: () => () => {},
   };
   const stop = subscribeAccentColor(bridge, root);
   receive('aa33bbff');

@@ -2,7 +2,8 @@ import { createServer } from 'node:http';
 import { appendFile, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
-import { newProject } from './helpers/os-ui';
+import { newProject, openActivities } from './helpers/os-ui';
+import { pickModel } from './helpers/model-picker';
 
 test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and isolation', async () => {
   test.setTimeout(60000);
@@ -264,7 +265,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.screenshot({ path: test.info().outputPath('models-dark.png') });
     await page.getByRole('button', { name: '首页', exact: true }).click();
     await expect(page.getByTestId('project-switcher')).toHaveText('本周工作安排');
-    await page.getByRole('button', { name: '打开协调对话' }).click();
+    await page.getByRole('button', { name: '打开 Jarvis Chat' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     const historyColor = await page
       .getByTestId('side-link')
@@ -282,7 +283,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     await page.getByLabel('项目名称', { exact: true }).fill('已保存的对话');
     await page.getByRole('button', { name: '保存名称与说明' }).click();
     await expect(page.getByTestId('project-switcher')).toHaveText('已保存的对话');
-    await page.getByRole('button', { name: '返回协调对话' }).click();
+    await page.getByRole('button', { name: '返回 Jarvis Chat' }).click();
     await app.close();
     // The conversation is the first project's Coordinator; its log replays message upserts.
     const os = join(userData, 'agent', 'os');
@@ -323,6 +324,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       ),
     ).toContainText('这是流式回复。');
     await expect(page.getByTestId('project-switcher')).toHaveText('已保存的对话');
+    await openActivities(page);
     await page.locator('[data-testid="chat-file"] > [data-ui="collapsible-trigger"]').click();
     await expect(page.getByTestId('chat-file-path')).toHaveText('Jarvis/preview.html');
     await expect(page.getByTestId('chat-diff')).toBeVisible();
@@ -361,7 +363,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       if (!saved.ok) throw new Error(saved.error);
     }, 'slow');
     await page.reload();
-    await page.getByRole('combobox', { name: '聊天模型' }).selectOption({ label: 'slow' });
+    await pickModel(page, 'slow');
     await page.getByLabel('消息', { exact: true }).fill('停止验证');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(
@@ -381,8 +383,8 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
     expect(latestBounds).not.toBeNull();
     expect(dockBounds).not.toBeNull();
     if (latestBounds && dockBounds) {
-      expect(dockBounds.x + dockBounds.width - latestBounds.x - latestBounds.width).toBeCloseTo(
-        24,
+      expect(latestBounds.x + latestBounds.width / 2).toBeCloseTo(
+        dockBounds.x + dockBounds.width / 2,
         0,
       );
       expect(dockBounds.y - latestBounds.y - latestBounds.height).toBeCloseTo(8, 0);
@@ -462,7 +464,7 @@ test('homepage Chat: relay setup, SSE, cancellation, history, secrets, theme and
       if (!saved.ok) throw new Error(saved.error);
     }, 'broken');
     await page.reload();
-    await page.getByRole('combobox', { name: '聊天模型' }).selectOption({ label: 'broken' });
+    await pickModel(page, 'broken');
     await page.getByLabel('消息', { exact: true }).fill('断流验证');
     await page.getByRole('button', { name: '发送消息' }).click();
     await expect(

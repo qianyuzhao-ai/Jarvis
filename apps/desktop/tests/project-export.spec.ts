@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { writeFile, readFile } from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 import { _electron as electron, expect as baseExpect, test } from '@playwright/test';
+import { canvasMenu } from './helpers/canvas-menu';
 
 import {
   createProjectWorkbook,
@@ -277,14 +278,14 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await app.evaluate(({ dialog }) => {
       dialog.showSaveDialog = async () => ({ canceled: true, filePath: '' });
     });
-    await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
+    await canvasMenu(page, '导出 Excel');
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('已取消导出');
     await expect(page.getByTestId('canvas-export-feedback')).toHaveAttribute('data-tone', 'info');
     const emptyPath = test.info().outputPath('empty-project.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, emptyPath);
-    await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
+    await canvasMenu(page, '导出 Excel');
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('Excel 已导出');
     expect((await readBook(emptyPath)).getWorksheet('请求明细')!.rowCount).toBe(1);
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
@@ -328,13 +329,13 @@ test('canvas Excel export keeps deleted-node history after restart and supports 
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, badPath);
-    await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
+    await canvasMenu(page, '导出 Excel');
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('导出失败');
     const file = test.info().outputPath('deleted-nodes.xlsx');
     await app.evaluate(({ dialog }, filePath) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath });
     }, file);
-    await page.getByRole('button', { name: '导出 Excel', exact: true }).click();
+    await canvasMenu(page, '导出 Excel');
     await expect(page.getByTestId('canvas-export-feedback')).toContainText('Excel 已导出');
     const book = await readBook(file);
     const details = book.getWorksheet('请求明细')!;

@@ -421,3 +421,10 @@
     pointer-events: all;
   }
 }
+
+/* 画布「更多」菜单：宽度随内容，最宽 240px（无层，覆盖菜单默认最小宽 220px）。 */
+.canvas-more-menu {
+  width: max-content;
+  min-width: 0;
+  max-width: 240px;
+}

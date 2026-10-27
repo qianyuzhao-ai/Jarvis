@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@jarvis/ui/components/Button';
-import { Progress, ProgressField } from '@jarvis/ui/components/Progress';
+import { ProgressField, ProgressRing } from '@jarvis/ui/components/Progress';
 import {
   Popover,
   PopoverTrigger,
@@ -38,10 +38,12 @@ export function ContextUsage({
     >
       <Tooltip content={label} open={!open && tooltipOpen} onOpenChange={setTooltipOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="w-12" aria-label="上下文占用">
-            <span className="w-8">
-              <Progress size="small" value={percent} aria-label="上下文使用进度" />
-            </span>
+          <Button variant="ghost" size="icon-sm" aria-label="上下文占用">
+            <ProgressRing
+              value={percent ?? 0}
+              tone={percent !== null && percent >= 90 ? 'danger' : 'accent'}
+              aria-label="上下文使用进度"
+            />
           </Button>
         </PopoverTrigger>
       </Tooltip>

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Picks an item from the project menu. A menu that is still closing hands focus back to its
@@ -26,5 +26,19 @@ export async function approveInOverview(page: Page, texts: string[], screenshot?
   if (screenshot) await page.screenshot({ path: screenshot });
   await card.getByRole('button', { name: '批准执行' }).click();
   await expect(card).toHaveCount(0);
-  await page.getByRole('button', { name: '打开协调对话' }).click();
+  await page.getByRole('button', { name: '打开 Jarvis Chat' }).click();
+}
+
+/**
+ * Expands every collapsed 「已运行 N 个命令」 list in `scope` and each step in it, so the steps'
+ * undo buttons and file rows can be used. File rows themselves stay folded.
+ */
+export async function openActivities(scope: Page | Locator) {
+  for (const selector of [
+    '[data-testid="chat-activities"][data-state="closed"] > [data-testid="chat-activities-summary"]',
+    '[data-testid="chat-activity"][data-state="closed"] > [data-ui="collapsible-trigger"]',
+  ]) {
+    const closed = scope.locator(selector);
+    while ((await closed.count()) > 0) await closed.first().click();
+  }
 }

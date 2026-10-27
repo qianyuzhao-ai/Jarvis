@@ -163,7 +163,7 @@ export function ChatPage({
             variant="secondary"
             size="sm"
             shape="capsule"
-            className="absolute right-6 bottom-full mb-2 border border-border"
+            className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 border border-border"
             onClick={() => {
               const n = viewport.current;
               if (n) n.scrollTop = n.scrollHeight;

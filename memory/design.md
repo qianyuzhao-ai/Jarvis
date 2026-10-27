@@ -2,6 +2,86 @@
 
 最后更新：2026-10-26
 
+## 画布缩略图开关并入左下角按钮组（2026-10-26）
+
+- 用户要求右下角缩略图与左下角按钮组合并：「缩略图显示」开关移到左下角「缩小 / 百分比 / 放大 | 适应视图」之后，右下角面板删除；缩略图本身显示位置不变（右下角）。smoke 按名称查找，无需改测试。画布相关测试 54/54 通过（见 engineering.md）。
+
+## 画布顶栏「更多」菜单（2026-10-26）
+
+- 用户要求收起顶栏「导出 Excel」，原位置换成「更多」按钮，内含：导出 Excel、画布磁性吸附、显示背景圆点。
+- 实现：`CanvasExport.tsx` 更名为 `CanvasMoreMenu.tsx`：ghost 图标按钮（MoreHorizontal，aria「更多」，`data-testid="canvas-more"`）+ DropdownMenu：「导出 Excel」（按用户要求不带图标；导出中显示「正在导出…」并禁用，导出逻辑与提示不变）、分隔、两个勾选项分别读写项目原有 `snap` / `dots`。原右下角「背景点阵显示」「磁力吸附」两个开关移入菜单（不再重复显示），右下角保留「缩略图显示」。删除不再使用的 `.canvas-export-button` 样式。菜单宽度随内容、最宽 240px（`nodes.css` 末尾 `.canvas-more-menu`，无层）。
+- 测试：新增 `tests/helpers/canvas-menu.ts`（canvasMenu / canvasOption），smoke 与 project-export 改为通过菜单操作。按用户要求暂缓 check/build/测试，仅 biome lint；未看截图。
+
+## Overview 分组排版统一（2026-10-26）
+
+- 用户指出 Overview 排版有问题。原因：「等你 / 待你查看 / 进行中」为 h2 标题 + 紧跟计数、卡片不缩进；「已完成 / 已解决」用默认 Collapsible：箭头在前、计数被推到最右、卡片缩进 20px 且卡片之间无间距，两种分组左缘与标题样式不一致。
+- 修复：`AgentViews.tsx` 新增 `folded()`，两组折叠分组与其他分组共用 `os-group` 结构；`os.css` 末尾（无层）让折叠标题同 13px/600、计数紧跟标题（「已解决」为「3 · 已隐藏，可重开」），箭头用负边距悬在左侧留白使标题文字与其他分组对齐，内容不缩进、卡片间距 8px。未运行验证。
+
+## 画布顶部新建按钮改为圆形图标（2026-10-26）
+
+- 用户要求画布顶栏「图像 / 视频 / 上传」改为圆形大尺寸按钮、去掉文字只留图标。`Canvas.tsx` 三者统一为 `IconButton variant="secondary" size="icon-lg" shape="circle"`（32px，项目最大控件尺寸），图标 18px，名称改由悬停提示显示（aria-label 仍为 图像 / 视频 / 导入素材，现有测试不变）；`pages.css` 中 `.window-shell .canvas-create` 间距 4 → 8px。未运行验证。
+- 居中与图标尺寸（同日）：用户要求这组按钮始终居中。`shell.css` 中 `.shell-panel .canvas-toolbar` 改为三列网格 `minmax(0,1fr) auto minmax(0,1fr)`（标题 / 新建按钮 / 导出靠右），按钮组不再随标题与导出宽度偏移；`pages.css` 原把该组 svg 压到 14px，改为 18px。
+- 回复底部一行（同日）：用户要求 chat 回复中的 logo 与复制、回复时间同一行且 logo 在最左。`ChatMessageItem` 把 logo 移入 `chat-reply-meta` 首位，回复中只显示呼吸 logo，完成后右侧接复制与时间；`.chat-reply-logo` 去掉上边距。未运行验证。
+- 等待回复一行与动效（同日）：用户要求等待中「正在等待模型回复…」与 logo 同一行并加动效。助手消息运行中且尚无正文时（`pending`）不渲染 `chat-text`，改在 `chat-reply-meta` 中 logo 右侧显示 `chat-pending`（并发上限时为「等待中：同时回复的对话已达上限」）；文字为渐变高光从左到右扫过（1.8s 循环），减少动态效果时为静态次要色。首个字到达后回到正文 + 光标的原样式。未运行验证。
+
+## 工具调用折叠为「已运行 N 个命令」、去掉侧栏线程项目行（2026-10-26）
+
+- 用户要求回复中的「已读取画布概况 / 已应用画布修改」等逐条显示改为参考图样式：一个大折叠「已运行 N 个命令」，展开后逐条详细展示。`ChatActivity.tsx` 外层改为一个 Collapsible（默认收起，回复中显示「正在运行 N 个命令」），展开为带边框分隔线的列表；有可操作内容（撤销、定位节点、变更明细、文件改动）的条目为可折叠行，纯标签条目只显示文字。同日用户追加要求：展开后的每一条也默认折叠（去掉行的 defaultOpen；测试助手 `openActivities` 同时展开列表与各行，文件行仍折叠）。样式在 `agent.css` 末尾（无层）。首页与画布/写作侧栏共用。
+- 用户要求去掉画布/写作侧栏线程视图中「线程 · 项目名 / 在首页查看」一行：删除 `SpaceThreadPanel` 中该栏与 `.space-thread-bar` 样式；AGENTS.md 与 agent-os-v1.md 同步。
+- 测试：新增 `openActivities` 助手（tests/helpers/os-ui.ts），space-agent/agent/agent-files-ui 在点击撤销或文件行前先展开；space-agent 原「在首页查看」步骤改为点首页后检查线程列表。按用户要求暂缓 check/build/测试，仅 biome lint；未看截图。
+
+## 线程通知卡片悬停反馈（2026-10-26）
+
+- 用户要求 Jarvis Chat 中「线程「…」待你查看」卡片（`ThreadNotice`，`.os-thread-notice`）悬停有交互效果。`os.css` 新增：悬停底色 `--color-fill` → `--color-fill-hover`、文字提亮为 `--color-fg`、右箭头右移 2px；按下 `--color-fill-pressed`；120ms 过渡，减少动态效果时关闭过渡。未运行验证。
+
+## 助手回复 Markdown 渲染（2026-10-26）
+
+- 背景：聊天回复原为 `.chat-text` 纯文本（pre-wrap），模型返回 Markdown 时符号原样显示；提示词未约束格式。用户确认按建议方案加渲染。
+- 实现：新增 `features/agent/ChatMarkdown.tsx`，用现有 `unified + remark-parse + remark-gfm` 解析为 mdast，再逐节点生成 React 元素（不插入 HTML，原始 HTML 以文本显示）；支持段落、标题、粗斜体/删除线、行内代码、代码块（复用写作空间 `lowlight`，支持 js/ts/json/python/css/xml）、列表与任务列表、引用、分隔线、表格（含对齐）、脚注引用。`ChatMessageItem` 仅对助手且有正文的消息使用；用户消息、等待/空提示仍为纯文本；复制按钮仍复制原文；流式输出时每次更新重新解析，光标在内容下方。样式 `.chat-md*` 在 `agent.css`（块间距 8px、标题 20/17/15/14px、代码与表格横向滚动、高亮配色同写作空间）。
+- 限制：渲染层没有打开外部链接的接口，链接与图片显示为下划线文字、悬停显示地址，不可点击跳转；如需点击打开需新增最小桥接（待决策）。
+- 验证：按用户要求本分支暂缓 check/build/测试，仅对改动文件跑了 biome lint；未看截图。
+
+## 输入框模型与思考程度合并为一个菜单（2026-10-26）
+
+- 用户要求把模型选择与思考程度选择合并，参考其提供的截图布局（顶部模型列表、思考强度子菜单、更多模型子菜单），组件样式沿用项目。
+- 实现：`ModelPicker.tsx` 改为单个 ghost `sm` 按钮（`data-testid="model-trigger"`，aria「聊天模型」），显示「模型名 档位」，档位仅在模型可选思考档位 >1 时显示（`data-testid="thinking-value"`）。菜单用 `@jarvis/ui` DropdownMenu：当前服务商模型（RadioItem，多服务商时加服务商标签）→ 分隔 →「思考程度」子菜单（RadioItem，右侧显示当前档位）→ 分隔 →「更多模型」子菜单（其他服务商按标签分组）。已下线/图片不支持的模型禁用并在右侧注明原因。删除原 `ThinkingPicker` 与两个 NativeSelect 的宽度样式，新增 `.composer-model-trigger`（最宽 280px，侧栏 180px）与 `.composer-model-menu`。未加参考图中的数字快捷键、快速模式等项目没有的功能。
+- 选中标记（同日）：用户要求选中模型用对勾、放最右。`@jarvis/ui` 的 `DropdownMenuRadioItem` 新增 `indicator="trailing"`（默认 `leading` 圆点不变）：右侧 accent 色对勾，高亮时随前景色；菜单内仅有 trailing 单选项时不再为左侧指示留缩进。模型列表与思考程度子菜单都用 trailing。
+- 思考程度子菜单宽度（同日）：用户反馈过宽。原因是继承菜单默认最小宽 220px（`--menu-min-width`）；子菜单加 `composer-thinking-menu`（`agent.css` 末尾无层规则：最小 120px、按内容宽）。
+- 测试：新增 `tests/helpers/model-picker.ts`（pickModel / pickThinking / thinkingLevelCount），model-library 与 agent 两个用例改为通过菜单选择。按用户要求本分支暂缓 check/build/测试，仅对改动文件跑了 biome lint；未看截图。本轮未改 Figma。
+
+## 首页项目切换按钮全宽（2026-10-26）
+
+- 用户要求项目切换按钮占满侧栏标题行，下拉箭头靠最右。`ProjectSidebar.tsx` 中按钮 `flex-1`，内部 `.ui-button-content` 撑满并两端对齐，项目名过长截断，箭头不收缩；共用的 `.shell-sidebar-title` 未改。
+- 对齐修正（同日）：用户反馈按钮与下方行不齐。原因是标题行自带左右 8/4px 外边距叠加按钮 8px 内边距，按钮框比行背景内缩、文字比行图标右移 8px。该行加 `mx-0`，按钮 `pl-2 pr-1` 与 `.ui-sidebar-item` 内边距一致：框与行背景同宽，项目名与行图标左对齐，箭头与行右侧时间右对齐。
+- 高度与间距（同日）：用户要求切换按钮与下方行等高、Jarvis Chat 与 Overview 间距 4px。按钮加 `h-8`（32px，同 `.ui-sidebar-row`）；两行包进 `flex flex-col gap-1`（SidebarItem 的 className 落在固定 32px 行内的按钮上，不能用外边距）。未运行验证。
+- 菜单全宽与打开态（同日）：项目菜单改用 `os-project-menu`（宽度 = `--radix-dropdown-menu-trigger-width`，`align="start"`），不再用通用 `shell-row-menu`；按钮加 `os-project-switcher`，`data-state='open'` 时保持 `--color-fill` 底色，悬停菜单项不丢选中态。样式在 `os.css` 末尾（无层，覆盖 ghost 悬停规则）。未运行验证。
+- 去掉侧栏底部「N 个可访问目录」（同日）：删除 `ProjectSidebar.tsx` 的 `os-sidebar-foot` 与其样式，os-ui/agent-files-ui 中读取该字样的两条断言同步删除（目录数量仍由项目设置的 folder-row 断言覆盖）。项目设置里的「可访问目录」区块保留。未运行验证。
+- 聊天内容与输入框同宽（同日）：输入框为 `.ui-composer-wide`（`min(720px, 100%)`，dock 左右 24px），消息区原为 880px + 左右 48px。`pages.css` 中 `.window-shell .chat-messages` 改 720px、`.window-shell .chat-scroll` 左右 24px，宽窄窗口下两者等宽对齐；侧栏线程视图同样受 720 上限影响（本就更窄，无变化）。未运行验证。
+- 输入区三项（同日）：①首页「回到最新」由右侧改为在 dock 上方水平居中（`left-1/2 -translate-x-1/2`），agent.spec 位置断言改为中心对齐；侧栏线程的回到最新原本就居中。②输入框去掉「技能」按钮（含容器查询隐藏规则），输入 `/` 仍可打开技能列表。③上下文占用由横条改为 `@jarvis/ui` 现有 `ProgressRing`（16px 圆环，按钮 `icon-sm`），≥90% 显示 danger 色，未知时只显示轨道；点击弹出的用量面板不变。本轮未改 Figma，未运行验证。
+- 验证：用户要求本分支暂停 check/build/Electron 测试，PR 时统一跑；本项未运行验证、未看截图。
+
+## 首页侧栏「Jarvis Chat」置顶（2026-10-26）
+
+- 用户要求首页项目侧栏两行互换并改名：原「协调对话」移到 Overview 上方，名称改为「Jarvis Chat」。`ProjectSidebar.tsx` 调整顺序；渲染层面向用户的名称同步改为 Jarvis Chat（侧栏行、标签标题、对话页标题、「打开/返回 Jarvis Chat」按钮、空线程提示、项目设置说明、写作右侧栏说明）。主进程给模型的提示词仍称「协调对话」，未改。本轮未修改 Figma。
+- 验证：check/build 通过；os-ui/agent/agent-files-ui/window-shell/smoke 9/9 通过（测试中按钮名同步更新）；深色真实窗口截图确认 Jarvis Chat 在上、Overview 在下，对话页标题为 Jarvis Chat。
+
+## 左侧空间导航选中态恢复（2026-10-26）
+
+- 用户反馈左侧首页/AIGC/写作/日历/设置按钮在当前页面时没有选中高亮。原因：`Toggle` 外包 `Tooltip`（Radix asChild）时 `data-state` 被改写为提示状态 `closed`，`.ui-toggle[data-state='on']` 永不命中；标题栏右侧助手开关同样受影响。
+- 修复：`packages/ui/src/styles/base.css` 中 `.ui-toggle` 的开启态选择器改为 `[aria-pressed='true']`（Radix Toggle 自带，Tooltip 不改写）；`ui-toggle-item` 不变。选中态沿用 `--color-selection` 背景 + `--color-accent` 图标色。
+- 验证：check/build 通过；smoke/ui-preview/window-shell/sidebar 17 项中 16 通过，sidebar 尺寸动画 1 项首轮失败，单独重跑及 repeat-each 3 共 6/6 通过（时序波动，未改断言）；smoke 新增当前空间按钮有背景、其他透明的断言；深色真实窗口截图确认写作空间按钮高亮。
+
+## 窗口标签高度 32px（2026-10-26）
+
+- 用户要求顶部 Tab 标签总高改为 32px（原 28px）。改 `packages/ui/src/styles/base.css` 的 `.ui-window-tab` 高度；44px 标题栏中上下各留 6px 居中。本轮未修改 Figma。
+- 验证：check/build 通过；window-shell/ui-preview/smoke 15/15 通过（window-shell 新增标签高 32px 断言）；真实 Electron 实测高 32、顶部偏移 6，已看截图。
+
+## macOS 全屏标题栏按钮靠左、侧栏按钮置首（2026-10-26）
+
+- 用户要求（分支 `feature/interaction-polish`）：macOS 全屏时红绿灯隐藏，侧栏/后退/前进按钮不再保留 76px 红绿灯留白而靠最左；侧栏按钮移到三者最左。顺序改为 侧栏 → 后退 → 前进。本轮未修改 Figma。
+- 实现：外观桥新增 `getFullScreen`/`onFullScreen`（主进程转发窗口 enter/leave-full-screen，沿用外观来源校验）；`AppShell` 在 `.window-shell` 上标 `data-fullscreen`，`shell.css` 留白规则改为 `.window-shell[data-platform='darwin']:not([data-fullscreen])`（`<html>` 也带 data-platform，不能用裸属性选择器）。
+- 验证：check/build 通过；smoke/appearance/sidebar 8/8 通过（新增按钮顺序与全屏事件留白断言）；真实 Electron `setFullScreen(true)` 留白 0px、退出后恢复 76px，已看截图。未提交。
+
 ## 顶部新建标签按钮紧邻标签（2026-10-26）
 
 - 用户要求顶部加号默认靠左，紧跟最后一个标签。`shell.css` 将 `.shell-tabs` 从占满剩余空间改为按内容宽度排布并允许收缩；右侧助手入口仍由已有自动间距靠右，标签溢出时保留横向滚动及可见加号。本轮未修改 Figma。

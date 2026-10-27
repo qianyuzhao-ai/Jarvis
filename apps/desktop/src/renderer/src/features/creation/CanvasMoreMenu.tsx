@@ -1,16 +1,33 @@
-import { Button } from '@jarvis/ui/components/Button';
+import { IconButton } from '@jarvis/ui/components/Button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@jarvis/ui/components/DropdownMenu';
 import { toast } from '@jarvis/ui/components/Toast';
 import { useEffect, useRef, useState } from 'react';
-import { Download } from '@jarvis/ui/icons';
+import { MoreHorizontal } from '@jarvis/ui/icons';
 
-export function CanvasExport({
+/** The canvas header's 更多 menu: Excel export and the canvas's snapping and dot-grid switches. */
+export function CanvasMoreMenu({
   projectId,
   projectName,
   status,
+  snap,
+  dots,
+  onSnap,
+  onDots,
 }: {
   projectId: string;
   projectName: string;
   status: string;
+  snap: boolean;
+  dots: boolean;
+  onSnap: (value: boolean) => void;
+  onDots: (value: boolean) => void;
 }) {
   const pending = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -58,18 +75,25 @@ export function CanvasExport({
       <span className="sr-only" role="status">
         {status}
       </span>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="canvas-export-button"
-        type="button"
-        disabled={busy}
-        aria-label="导出 Excel"
-        onClick={() => void exportExcel()}
-      >
-        <Download size={16} />
-        <span>{busy ? '正在导出…' : '导出 Excel'}</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <IconButton variant="ghost" size="icon" aria-label="更多" data-testid="canvas-more">
+            <MoreHorizontal size={18} />
+          </IconButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="canvas-more-menu">
+          <DropdownMenuItem disabled={busy} onSelect={() => void exportExcel()}>
+            {busy ? '正在导出…' : '导出 Excel'}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem checked={snap} onCheckedChange={(v) => onSnap(v === true)}>
+            画布磁性吸附
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={dots} onCheckedChange={(v) => onDots(v === true)}>
+            显示背景圆点
+          </DropdownMenuCheckboxItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

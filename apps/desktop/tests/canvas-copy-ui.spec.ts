@@ -66,8 +66,14 @@ test('node Copy and box-selection clipboard preserve connections and survive rel
     await page.getByRole('button', { name: 'AIGC 创作空间', exact: true }).click();
     await page.getByText(project.name, { exact: true }).first().click();
     const node = (id: string) => page.locator(`.react-flow__node[data-id="${id}"]`);
+    // Two pointer moves inside the node, as a real mouse makes, so its hover toolbar takes clicks
+    // even when the node was not re-rendered since the pointer arrived.
+    const reveal = async (id: string) => {
+      await node(id).hover({ position: { x: 24, y: 24 } });
+      await node(id).hover();
+    };
     const count = () => readProjects(page).then((p) => p.find((p) => p.id === project.id)!);
-    await node(b!).hover();
+    await reveal(b!);
     const copy = node(b!).getByRole('button', { name: '复制节点', exact: true });
     const remove = node(b!).getByRole('button', { name: '删除节点', exact: true });
     const copyBox = await copy.boundingBox(),
@@ -120,7 +126,7 @@ test('node Copy and box-selection clipboard preserve connections and survive rel
     await page.keyboard.press('ControlOrMeta+v');
     expect((await count()).nodes).toHaveLength(7);
 
-    await node(a!).hover();
+    await reveal(a!);
     await node(a!).getByRole('button', { name: '复制资源 参考图片' }).click();
     await expect.poll(async () => (await count()).nodes.length).toBe(8);
     await page.reload();

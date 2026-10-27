@@ -87,17 +87,31 @@ export function DropdownMenuCheckboxItem({
     </Primitive.CheckboxItem>
   );
 }
+/** `indicator="trailing"` marks the chosen item with a check at the right edge instead of a dot. */
 export function DropdownMenuRadioItem({
   className,
   children,
+  indicator = 'leading',
   ...props
-}: ComponentProps<typeof Primitive.RadioItem>) {
+}: ComponentProps<typeof Primitive.RadioItem> & { indicator?: 'leading' | 'trailing' }) {
   return (
-    <Primitive.RadioItem {...props} data-ui="menu-item" className={cn(item, className)}>
-      <Primitive.ItemIndicator className="ui-menu-check">
-        <Circle aria-hidden="true" />
-      </Primitive.ItemIndicator>
+    <Primitive.RadioItem
+      {...props}
+      data-ui="menu-item"
+      data-indicator={indicator}
+      className={cn(item, className)}
+    >
+      {indicator === 'leading' && (
+        <Primitive.ItemIndicator className="ui-menu-check">
+          <Circle aria-hidden="true" />
+        </Primitive.ItemIndicator>
+      )}
       {children}
+      {indicator === 'trailing' && (
+        <Primitive.ItemIndicator className="ui-menu-check-trailing">
+          <Check aria-hidden="true" />
+        </Primitive.ItemIndicator>
+      )}
     </Primitive.RadioItem>
   );
 }
