@@ -4,7 +4,7 @@
 
 当前源码版本：`1.0.3`，功能和验证边界见 [版本记录](CHANGELOG.md)。
 
-`v1.0.3` 发布准备中：优化画布多节点拖动，增加助手 Markdown 回复，并调整聊天、画布菜单和窗口交互。
+[v1.0.3 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.3) 已发布：优化画布多节点拖动，增加助手 Markdown 回复，并调整聊天、画布菜单和窗口交互。三平台依赖、实际启动与更新清单校验通过，12 个资产已核对；macOS arm64/x64 签名公证，Windows x64 未签名。
 
 [v1.0.2 预发布版](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.2) 已发布：新增画布节点复制粘贴，恢复视频原生控件，并修复菜单、生成按钮、聊天回到底部和标签栏布局。三平台依赖、实际打包启动和更新清单验证通过；macOS arm64/x64 签名公证，Windows x64 未签名。12 个资产已核对。
 
