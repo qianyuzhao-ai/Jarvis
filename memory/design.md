@@ -1,6 +1,16 @@
 # Jarvis 设计记忆
 
-最后更新：2026-10-27
+最后更新：2026-11-03
+
+## Friday（Mac + iPhone）聊天与任务设计稿（2026-11-03）
+
+- 用户要求：先做设计稿，重新设计已跑通功能的基本界面（主聊天、会话列表与历史、任务列表/详情/进度、暂停恢复取消重试、决策选项、成果与部分结果、离线待发送与失败恢复）。iOS 为 26/27 Liquid Glass 风格；Mac 为 Electron 应用，组件库 shadcn/ui + 官方 AI 套件（AI Elements）+ Base UI。本轮只做 Figma，未改代码。
+- 文件：`https://www.figma.com/design/smBlg4YmDjbvLJAIsz4Wcx/Untitled`，页面「Friday 设计稿」（0:1）。
+  - `00 基础与组件`（4:31）：变量集合 `Friday`（Light/Dark 两套，28 个颜色：shadcn 中性色 + 品牌靛蓝 + 运行/等待/完成/失败/暂停状态色 + ios/* 系统色）；Lucide 图标组件 36 个（4:32）；`Status Badge`（5:29，9 个状态）；`Button`（5:90，Default/Brand/Secondary/Outline/Ghost/Destructive × sm/md，Label/Show Icon/Icon 属性）；`Mac/Session Item`（7:39，Default/Active/Pending）；`Mac/Task Item`（7:58，Default/Selected）；`iOS/Task Row`（7:68）；`iOS/Session Row`（7:73）。
+  - `01 Mac 桌面端`（8:35，1440×900）：01 主聊天 8:36、02 任务列表与详情 9:160、03 任务等你选择 11:289、04 离线/停止/失败恢复 13:410、05 对话历史 14:565、06 成果查看 15:644。
+  - `02 iPhone`（16:1101，402×874，iPhone 17 Pro）：01 对话列表 16:1102、02 聊天 17:823、03 任务列表 19:998、04 任务详情 19:1162、05 等你选择 Sheet 20:1006、06 离线/停止/失败 18:844、07 成果查看 20:1114。状态栏、Home Indicator、Tab Bar（Search Role）、Liquid Glass 按钮引用社区库「iOS and iPadOS 27」；自绘玻璃层使用 GLASS 效果。
+- 关键设计决定（当前方案，待用户确认）：停止按钮只停回复，并在输入框下说明后台任务不受影响；任务在对话里内联为可折叠任务卡，Mac 右侧任务面板常驻；决策在 Mac 内联为卡片，iPhone 为底部 Sheet，均支持自己输入；待发送消息用虚线气泡 + 时钟状态，发送失败用红色重试；历史标注来源设备和已下载到本机。
+- 字体：中文用 Noto Sans SC 代替 PingFang SC，iOS 图标用 SF Pro 内的 SF Symbols 字符。验证：13 屏均截图检查，无裁切与重叠；暗色模式变量已建但未出暗色画面。
 
 ## 图片与视频预览使用原始 HTTP(S) 地址（2026-10-27）
 
