@@ -2,6 +2,14 @@
 
 最后更新：2026-11-04
 
+## Friday Mac 代码实现（firday 仓库，2026-11-04）
+
+- 分支 `ccr-976beb7f-xhfuun`，提交 7b90172，未合入 main；说明文档 `docs/design/UX04-mac-v2.md`，无后端项仍见 `docs/design/UX04-backend-gaps.md`。
+- Mac 渲染层改为 Jarvis 工作台框架（标题栏 + 图标导航 Firday / Coding / 日历 / 文档 / 设置 + 圆角内容卡片），代码在 `apps/mac/src/ui/firday/`：主 Agent（标题 `Firday` 的对话）+ 子 Agent 列表、统一回复状态行、决定卡、派出卡片、任务面板与子 Agent 详情（暂停 / 恢复 / 取消 / 重试）、新建子 Agent、登录（邮箱 + 密码 + 重置、邀请码激活）、设置（账户与设备、外观）；日历、文档为占位。
+- 外观存本机（`firday.theme` / `firday.accent`），强调色含「跟随系统」（预加载新增 `systemAccent()`，主进程读 `systemPreferences.getAccentColor()`）；子 Agent 默认头像与 iPhone 同一哈希算法。
+- 旧 `Chat.tsx`、`Auth.tsx`、`Devices.tsx` 与样式已移除；`tests/integration/mac-chat-ui.mjs` 改用新选择器。
+- 已验证：`pnpm check`、Mac 构建通过；模拟数据下 Chromium 渲染登录、主对话浅 / 深色、子 Agent 详情、任务面板、新建弹窗、外观设置正常。待验：macOS 真实 Electron 窗口与集成测试。
+
 ## Friday iPhone 代码实现（firday 仓库，2026-11-04）
 
 - 代码在 `qianyuzhao-ai/firday`（代码中产品名仍为 Firday），分支 `ccr-976beb7f-xhfuun`，提交 8fb05a4，未合入 main；说明文档 `docs/design/UX04-ios-v2.md`。
