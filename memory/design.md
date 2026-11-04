@@ -1,6 +1,15 @@
 # Jarvis 设计记忆
 
-最后更新：2026-11-03
+最后更新：2026-11-04
+
+## Friday Mac v2：套用 Jarvis 桌面框架（2026-11-04）
+
+- 用户提供 Jarvis Coding 工作台截图，说明 Mac 端框架就是这样：顶部工具栏（红绿灯、前进后退、侧栏开关、右侧面板按钮）→ 左侧图标栏（Agent / Coding / 日历 / 写作，底部设置与头像）→ 白色圆角卡片，内含侧边栏与主区。Friday 对应图标栏最上方的机器人图标。
+- 视觉取自 `packages/ui` 令牌：窗口底 #EFEFF1、卡片白、正文 13px、强调色系统蓝 #007AFF、面板圆角 10、等宽字体用 Geist Mono；在 Figma 变量集合 Friday 中新增 `jv/*`（window、surface、fg、fg-2、fg-3、fill、fill-hover、separator、border、accent、success、warning、danger，含暗色值）。
+- Figma 区块 `05 Mac v2（Jarvis 框架 · Friday 空间）`（47:2432）：
+  - 01 Friday 主聊天 47:2433：侧边栏「Friday」标题 → 新建子 Agent → 主 Agent（Friday）→ 子 Agent 列表（等你 / 失败文字，进行中转圈，蓝点为未读）→ 已归档；回复头部「用时 · 创建 N 个子 Agent」，子 Agent 卡片仿「改动了 N 个文件」卡片；输入框与下方模型 / 上下文用量环同 Coding。
+  - 02 等你选择 48:2448、03 子 Agent 对话（定价分析，右侧信息面板）48:2762、04 离线 / 停止 / 发送失败 49:2513、05 任务面板（工具栏「任务」按钮打开）49:2875、06 新建子 Agent 弹窗 49:3244。
+- 旧的 shadcn 风格 Mac 区块（01）已被 05 取代；「03 Mac 状态与提醒」里的状态规则仍有效，视觉需后续按 jv 令牌重新套用。
 
 ## Friday iPhone v2（按用户参考稿重做，2026-11-03）
 
