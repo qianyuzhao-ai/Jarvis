@@ -2,6 +2,14 @@
 
 最后更新：2026-11-04
 
+## Friday iPhone 代码实现（firday 仓库，2026-11-04）
+
+- 代码在 `qianyuzhao-ai/firday`（代码中产品名仍为 Firday），分支 `ccr-976beb7f-xhfuun`，提交 8fb05a4，未合入 main；说明文档 `docs/design/UX04-ios-v2.md`。
+- 用户确认：子 Agent = Firday 派出的任务（worker）+ 手动新建的对话；外观先存本机（同步开关显示需云端支持）；提交并推到新分支。
+- 已实现：主 Agent + 子 Agent 首页、Chat / 任务 / 文档 / 日历 + 搜索标签、统一回复结构（状态行 / 正文 / 子 Agent 卡片 / 操作，用时与派出数取真实时间）、强调色切换、任务分组与子 Agent 详情（A/B/C 选项）、登录与重置密码、新建子 Agent（形状颜色存本机）。
+- 未接（界面不伪造）：重新生成、赞踩、继续生成、token 数、限流倒计时、进度条、子 Agent 职责与外观跨设备同步。
+- 验证：本环境无 Xcode，仅用 tree-sitter 做了 Swift 语法解析（改动文件全部通过）；需在 Mac 上跑 `pnpm build:ios`、`pnpm test:ios`。
+
 ## 强调色改为可在设置里切换（2026-11-04）
 
 - 用户说明：系统强调色是可选项，不写死，可在设置里切换。
