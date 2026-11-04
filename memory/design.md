@@ -2,6 +2,11 @@
 
 最后更新：2026-11-04
 
+## Friday 三端流程架构图（FigJam，2026-11-04）
+
+- 画在 FigJam「星期五-Agent架构」（`uRXVBTr3hIqaZnP0tzJ51l`）：① 三端架构图（区块 iPhone 端 4:19、Mac 端 4:39、云端 Vercel 4:60，外加 contracts、DeepSeek Flash、Resend）；② 主流程时序图 5:123（Mac 发消息 → 主 Agent 回复并派出 worker → 等你选择 → iPhone 回答 → 新执行版本继续 → 两端同一成果），旁边便签 6:227 说明本机先存 operationId 与离线重试。
+- 内容依据 firday 仓库 `docs/architecture/M1/M2` 与代码（mac-agent Unix socket、SQLite、Keychain，iOS FirdayCore 每 3 秒轮询任务，NDJSON 文字流）。已截图检查中文显示正常。
+
 ## Friday Mac 代码实现（firday 仓库，2026-11-04）
 
 - 分支 `ccr-976beb7f-xhfuun`，提交 7b90172，未合入 main；说明文档 `docs/design/UX04-mac-v2.md`，无后端项仍见 `docs/design/UX04-backend-gaps.md`。
