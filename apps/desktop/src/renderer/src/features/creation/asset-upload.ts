@@ -1,4 +1,9 @@
-import { httpUrl, serviceSettingsSchema, UPLOAD_LIMIT_MIB } from '../../../../shared/generation';
+import {
+  httpUrl,
+  serviceSettingsSchema,
+  UPLOAD_LIMIT_MIB,
+  uploadUrlFor,
+} from '../../../../shared/generation';
 import type { AssetData, Settings } from './types';
 
 const mimeByExtension: Record<string, string> = {
@@ -50,10 +55,9 @@ export function uploadSettings(value: Settings, kind: AssetData['kind']) {
   if (!result.success)
     throw new Error(result.error.issues.map((issue) => issue.message).join('；'));
   const settings = result.data;
-  const target = kind === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl;
-  if (!httpUrl.safeParse(target).success)
+  if (!httpUrl.safeParse(uploadUrlFor(settings, kind)).success)
     throw new Error(
-      `请在内网地址设置中填写有效的 ${kind === 'audio' ? 'upload-media' : 'upload'} 地址`,
+      `请在内网地址设置中填写有效的 ${kind === 'image' ? 'upload' : 'upload-media'} 地址`,
     );
   return settings;
 }

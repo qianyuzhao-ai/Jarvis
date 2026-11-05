@@ -1,6 +1,11 @@
 # Jarvis Gitflow 管理方案
 
-最后更新：2026-10-27
+最后更新：2026-11-05
+
+## 1.0.5 发布准备（2026-11-05）
+
+- 用户要求以视频上传改走 upload-media（提交 af8eafc）发布小版本并提 PR，明确跳过本地测试。按补丁版本 v1.0.5 执行：`feature/video-upload-media` 从 origin/develop f16f523 创建，根包与桌面包升级为 1.0.5，CHANGELOG 记录上传路由变更。
+- 未运行发布前完整回归与本地打包验证（用户要求跳过）；此前 Windows 本机 typecheck 与画布上传 12/15 结果见 engineering.md。发布按功能 PR → develop → main → 新标签，沿用三平台统一预发布，结果待回读。
 
 ## 1.0.4 已发布（2026-10-27）
 

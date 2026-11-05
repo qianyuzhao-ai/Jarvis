@@ -1,6 +1,11 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-27
+最后更新：2026-11-05
+
+## 视频上传改走 upload-media（2026-11-05）
+
+- 用户要求创作空间上传视频和音频都走 upload-media，图片仍走 upload。新增 `shared/generation.ts` 的 `uploadUrlFor`，画布拖入（`asset-upload.ts`）、手动生成参考上传（`useGeneration.ts`）、画布 Agent 生成（`agent-runner.ts`）与主进程上传（`protocol.ts`）统一调用；设置字段名仍为 `audioUploadUrl`，不迁移已存设置。参考素材按 `uploadedFor`（地址 + req_from 哈希）判断复用，旧的视频 upload 地址缓存会自然失效并重新上传。`canvas-assets.spec.ts` 期望 clip.webm 走 `/upload-media`。
+- 分支 `feature/video-upload-media` 从 origin/develop f16f523 创建。Windows 本机验证：typecheck 通过，token 检查通过；`pnpm check` 的 Biome 在本机因 autocrlf 检出为 CRLF 报 413 条格式错（与改动无关），改用 `biome check . --line-ending=crlf` 后仅剩未跟踪的 `.claude/settings.local.json` 与 install 改写的 package.json 行尾（已还原）。窗口测试 canvas-assets / generation / agent-generation / project-export 共 15 项 12 过 3 败；同 3 项在未改动的 develop 上同样失败，均为视频元素未就绪或生成视频节点未出现（Windows 媒体播放环境问题）。canvas-assets 失败点在上传路径断言之后，clip.webm 走 `/upload-media` 已验证；generation.spec 中视频参考的上传路径因前置失败未覆盖。
 
 ## 1.0.4 已发布（2026-10-27）
 
@@ -1079,7 +1084,7 @@ E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二�
 
 ## 画布资源导入与 URL 渲染（2026-10-20）
 
-- 用户要求从桌面拖入图片、视频和音频后立即上传，图片/视频走 `imageUploadUrl`（upload），音频走 `audioUploadUrl`（upload-media）。复用现有 multipart `files` + `req_from` 协议及设置；导入无需填写 aigc 地址。
+- 用户要求从桌面拖入图片、视频和音频后立即上传，图片/视频走 `imageUploadUrl`（upload），音频走 `audioUploadUrl`（upload-media）（2026-11-05 起视频改走 upload-media，见文件顶部）。复用现有 multipart `files` + `req_from` 协议及设置；导入无需填写 aigc 地址。
 - `types.ts` 新增 `asset` 节点，与原 `media` 生成节点组成联合类型；兼容旧 version 1 数据。资源保存名称、类型、位置、上传状态及成功返回的 HTTP(S) URL，不把 File/Blob/字节或临时预览地址存入资源节点。
 - `useAssetUpload` 在工作台层维持异步上传，切换项目后仍更新原项目，已删除节点不会复活。加载时把中断的 uploading 状态转为明确失败；重新拖入才重新上传，不自动重传。
 - `UrlMedia` 统一渲染导入资源及生成结果的实际 URL。主进程验证 HTTP(S) 后注册不透明的 `jarvis-media://url/<id>` 媒体地址，保留 CSP 与上下文隔离，转发 Range 和媒体响应头。主进程重启后由节点 URL 重新注册，无需依赖临时映射持久化。

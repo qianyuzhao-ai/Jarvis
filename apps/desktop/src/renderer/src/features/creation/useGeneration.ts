@@ -6,6 +6,7 @@ import {
   serviceSettingsSchema,
   type GenerationInput,
   type GenerationJob,
+  uploadUrlFor,
 } from '../../../../shared/generation';
 import { numberReferences } from './reference-order';
 import { submittedPrompt } from './prompt-mentions';
@@ -170,8 +171,7 @@ export function useGeneration(
           generation: { requestId, status: 'uploading', startedAt },
         }));
         for (const { item: reference } of numberReferences(node.data.references)) {
-          const target =
-            reference.type === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl;
+          const target = uploadUrlFor(settings, reference.type);
           httpUrl.parse(target);
           const digest = await crypto.subtle.digest(
             'SHA-256',

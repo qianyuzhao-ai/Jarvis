@@ -6,6 +6,7 @@ import {
   httpUrl,
   type GenerationInput,
   type UploadRequest,
+  uploadUrlFor,
 } from '../../shared/generation';
 
 const dispatcher = new Agent({ connectTimeout: 10000, headersTimeout: 0, bodyTimeout: 0 });
@@ -158,9 +159,7 @@ export function uploadDescription(request: UploadRequest) {
   const limit = UPLOAD_LIMIT_MIB[file.kind] * 1024 * 1024;
   if (!file.bytes.byteLength || file.bytes.byteLength > limit)
     throw new Error('素材为空或超过大小限制');
-  const url = httpUrl.parse(
-    file.kind === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl,
-  );
+  const url = httpUrl.parse(uploadUrlFor(settings, file.kind));
   return {
     endpoint: url,
     requestJson: JSON.stringify({
