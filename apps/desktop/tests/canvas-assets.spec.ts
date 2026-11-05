@@ -252,7 +252,7 @@ test('desktop file drops upload three media kinds, render URLs and restore witho
     await expect(page.locator('[data-node-kind="asset"][data-ready="true"]')).toHaveCount(3);
     expect(mock.calls).toEqual([
       { path: '/upload', name: 'image.png', reqFrom: 'canvas-import-test' },
-      { path: '/upload', name: 'clip.webm', reqFrom: 'canvas-import-test' },
+      { path: '/upload-media', name: 'clip.webm', reqFrom: 'canvas-import-test' },
       { path: '/upload-media', name: 'voice.wav', reqFrom: 'canvas-import-test' },
     ]);
     await expect

@@ -1,13 +1,26 @@
 # Jarvis 工程记忆
 
-最后更新：2026-10-27
+最后更新：2026-11-05
+
+## 视频上传改走 upload-media（2026-11-05）
+
+- 用户要求创作空间上传视频和音频都走 upload-media，图片仍走 upload。新增 `shared/generation.ts` 的 `uploadUrlFor`，画布拖入（`asset-upload.ts`）、手动生成参考上传（`useGeneration.ts`）、画布 Agent 生成（`agent-runner.ts`）与主进程上传（`protocol.ts`）统一调用；设置字段名仍为 `audioUploadUrl`，不迁移已存设置。参考素材按 `uploadedFor`（地址 + req_from 哈希）判断复用，旧的视频 upload 地址缓存会自然失效并重新上传。`canvas-assets.spec.ts` 期望 clip.webm 走 `/upload-media`。
+- 分支 `feature/video-upload-media` 从 origin/develop f16f523 创建。Windows 本机验证：typecheck 通过，token 检查通过；`pnpm check` 的 Biome 在本机因 autocrlf 检出为 CRLF 报 413 条格式错（与改动无关），改用 `biome check . --line-ending=crlf` 后仅剩未跟踪的 `.claude/settings.local.json` 与 install 改写的 package.json 行尾（已还原）。窗口测试 canvas-assets / generation / agent-generation / project-export 共 15 项 12 过 3 败；同 3 项在未改动的 develop 上同样失败，均为视频元素未就绪或生成视频节点未出现（Windows 媒体播放环境问题）。canvas-assets 失败点在上传路径断言之后，clip.webm 走 `/upload-media` 已验证；generation.spec 中视频参考的上传路径因前置失败未覆盖。
+
+## 1.0.4 已发布（2026-10-27）
+
+- [v1.0.4](https://github.com/qianyuzhao-ai/Jarvis/releases/tag/v1.0.4) 于北京时间 2026-10-27 11:39:52 发布，非草稿、沿用预发布设置，12 个资产均 uploaded。实现提交 3fa40b4，版本准备 8b98f79；PR #113 合入 develop 58f9381，PR #114 合入 main 49a122738ab2f7031219194d263a5bd50f62b1d7，源码树完全一致，新标签指向该 main 提交。
+- 唯一运行 [40443741504](https://github.com/qianyuzhao-ai/Jarvis/actions/runs/40443741504) 首次运行三平台与统一发布全部 success。三平台通过 593 项生产依赖、实际 ASAR 启动、Agent OS/写作/更新桥接与更新清单门禁；macOS arm64/x64 目录及 DMG/ZIP 内应用通过签名、公证票据和 Gatekeeper，Windows x64 未签名。
+- 线上 latest-mac.yml/latest.yml 已下载，SHA-256 与 GitHub digest 一致，版本、引用目标、大小和双架构 ZIP 核对通过；安装包 SHA-512 在云端验证。中文说明保留自动生成记录。证据 /private/tmp/jarvis-104-release-verification/。
+- 本地完整回归首轮 212/215，参考图旧协议断言改为原始 URL 后复验 1/1 通过，日历和原生焦点两项既有失败保留；媒体专项 9/9 和实际目录包启动通过。Windows 内网反复预览卡住是否解决仍待实机确认，本版不宣称已经现场验收。
+
 
 ## 1.0.4 发布准备（2026-10-27）
 
 - 用户授权提交并发布补丁版本 v1.0.4。直连实现提交 3fa40b4；当前 feature/direct-video-url 从 develop b27eacc 创建，根包与桌面包升级为 1.0.4，CHANGELOG 记录图片/视频节点与参考素材直接请求返回 URL、保留签名参数和原生控件。
 - check/build、版本一致性、发布工具 8 项与 Apple 网络重试测试通过。完整窗口回归首轮 212/215（6.2m）：日历周视图和原生焦点为既有失败；参考图测试仍断言 jarvis-media，已改为核对实际原始 URL，保留自然尺寸检查，单独复验 1/1 通过。日志 /private/tmp/jarvis-104-smoke.log。
 - 本地 arm64 目录包 release/0b66d1e5-9371-4dd1-a536-0888cd6d9e79 已通过 593 项依赖及实际 ASAR 启动、窗口标签、Agent OS 项目、写作和更新桥接验证（日志 /private/tmp/jarvis-104-packaged-check.log）。Windows 内网反复预览卡住仍待实机确认。
-- 发布按功能 PR → develop → main → 新标签，沿用三平台统一预发布；当前尚未发布。
+- 发布按功能 PR → develop → main → 新标签，沿用三平台统一预发布；已发布，见上方最终记录。
 
 
 ## 图片与视频预览直连返回 URL（2026-10-27）
@@ -1071,7 +1084,7 @@ E–H 已完成并提交推送 feature/ui-v1-overlays。@jarvis/ui 增加第二�
 
 ## 画布资源导入与 URL 渲染（2026-10-20）
 
-- 用户要求从桌面拖入图片、视频和音频后立即上传，图片/视频走 `imageUploadUrl`（upload），音频走 `audioUploadUrl`（upload-media）。复用现有 multipart `files` + `req_from` 协议及设置；导入无需填写 aigc 地址。
+- 用户要求从桌面拖入图片、视频和音频后立即上传，图片/视频走 `imageUploadUrl`（upload），音频走 `audioUploadUrl`（upload-media）（2026-11-05 起视频改走 upload-media，见文件顶部）。复用现有 multipart `files` + `req_from` 协议及设置；导入无需填写 aigc 地址。
 - `types.ts` 新增 `asset` 节点，与原 `media` 生成节点组成联合类型；兼容旧 version 1 数据。资源保存名称、类型、位置、上传状态及成功返回的 HTTP(S) URL，不把 File/Blob/字节或临时预览地址存入资源节点。
 - `useAssetUpload` 在工作台层维持异步上传，切换项目后仍更新原项目，已删除节点不会复活。加载时把中断的 uploading 状态转为明确失败；重新拖入才重新上传，不自动重传。
 - `UrlMedia` 统一渲染导入资源及生成结果的实际 URL。主进程验证 HTTP(S) 后注册不透明的 `jarvis-media://url/<id>` 媒体地址，保留 CSP 与上下文隔离，转发 Range 和媒体响应头。主进程重启后由节点 URL 重新注册，无需依赖临时映射持久化。
