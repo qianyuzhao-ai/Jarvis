@@ -12,6 +12,13 @@ export const serviceSettingsSchema = z.object({
   imageUploadUrl: z.string(),
   audioUploadUrl: z.string(),
 });
+// Images go to upload; video and audio go to upload-media (stored as audioUploadUrl).
+export function uploadUrlFor(
+  settings: { imageUploadUrl: string; audioUploadUrl: string },
+  kind: 'image' | 'video' | 'audio',
+) {
+  return kind === 'image' ? settings.imageUploadUrl : settings.audioUploadUrl;
+}
 export const httpUrl = z
   .string()
   .trim()

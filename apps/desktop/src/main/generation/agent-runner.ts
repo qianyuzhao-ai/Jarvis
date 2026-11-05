@@ -9,6 +9,7 @@ import {
   type GenerationJob,
   type ServiceSettings,
   type UploadRequest,
+  uploadUrlFor,
 } from '../../shared/generation';
 import {
   linkedReferences,
@@ -119,7 +120,7 @@ export class GenerationRunner {
     let sent = false;
     try {
       for (const { item: ref } of numberReferences(node.data.references)) {
-        const target = ref.type === 'audio' ? settings.audioUploadUrl : settings.imageUploadUrl;
+        const target = uploadUrlFor(settings, ref.type);
         httpUrl.parse(target);
         const uploadedFor = createHash('sha256')
           .update(target + '\n' + settings.reqFrom)
